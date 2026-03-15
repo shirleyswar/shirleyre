@@ -51,7 +51,7 @@
   .hero-pill-badge { background: var(--gold); color: var(--bg); font-family: 'Syne Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; font-weight: 600; }
   section { position: relative; z-index: 1; padding: 100px 60px; max-width: 1200px; margin: 0 auto; }
   .section-eyebrow { display: flex; align-items: center; gap: 10px; font-family: 'Syne Mono', monospace; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; }
-  .section-eyebrow::before { content: '⟩'; font-size: 14px; }
+  .section-eyebrow::before { content: 'â©'; font-size: 14px; }
   .section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: clamp(28px, 3.5vw, 48px); letter-spacing: -0.02em; color: var(--text); margin-bottom: 48px; line-height: 1.1; }
   .section-title em { font-family: 'Instrument Serif', serif; font-style: italic; color: var(--gold2); font-weight: 400; }
   .divider { width: 100%; height: 1px; background: var(--border); position: relative; z-index: 1; }
@@ -107,7 +107,7 @@
   .footer-tagline a { color: var(--gold); text-decoration: none; transition: color 0.2s; }
   .footer-tagline a:hover { color: var(--gold2); }
   .footer-copy { font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: rgba(122,138,143,0.5); }
-  /* ── FEATURE CARDS ── */
+  /* ââ FEATURE CARDS ââ */
   .features-wrap { position: relative; z-index: 1; padding: 24px 60px 80px; max-width: 1200px; margin: 0 auto; }
   .features-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .feat-card {
@@ -242,7 +242,7 @@
       const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
       const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24));
       document.getElementById('exp-counter').innerHTML =
-        `Been at this <strong style="color:var(--text)">${years} years, ${days} days</strong> —`;
+        `Been at this <strong style="color:var(--text)">${years} years, ${days} days</strong> â`;
     }
     updateCounter();
     setInterval(updateCounter, 60000);
@@ -266,7 +266,7 @@
         <rect x="17" y="4.5" width="3" height="2.5" rx="0.5"/>
       </svg></div>
       <div class="feat-title">Current Listings</div>
-      <div class="feat-arrow">→</div>
+      <div class="feat-arrow">â</div>
     </a>
 
     <!-- Past Projects: globe/world icon -->
@@ -279,7 +279,7 @@
         <path d="M4.93 18.5C6.64 16.7 9.2 15.5 12 15.5s5.36 1.2 7.07 3"/>
       </svg></div>
       <div class="feat-title">Past Projects</div>
-      <div class="feat-arrow">→</div>
+      <div class="feat-arrow">â</div>
     </a>
 
     <!-- Thoughts: proper brain icon -->
@@ -296,11 +296,11 @@
         <path d="M16 17c0-.6-.2-1.2-.5-1.7"/>
       </svg></div>
       <div class="feat-title">Thoughts</div>
-      <div class="feat-arrow">→</div>
+      <div class="feat-arrow">â</div>
     </a>
 
     <!-- Contact: classic phone handset -->
-    <a href="#contact" class="feat-card">
+    <a href="javascript:void(0)" class="feat-card" onclick="if(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){window.location='tel:2259075214';}else{window.location='mailto:matthew@sr-cre.com';}">
       <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/>
         <path d="M14 2c1.2.4 2.3 1 3.2 1.8"/>
@@ -309,7 +309,7 @@
         <path d="M16.5 7.5c.2.4.3.8.4 1.3"/>
       </svg></div>
       <div class="feat-title">Contact</div>
-      <div class="feat-arrow">→</div>
+      <div class="feat-arrow">â</div>
     </a>
 
     <!-- About: detailed person with network/connections -->
@@ -325,7 +325,7 @@
         <line x1="18" y1="12" x2="15" y2="11"/>
       </svg></div>
       <div class="feat-title">About</div>
-      <div class="feat-arrow">→</div>
+      <div class="feat-arrow">â</div>
     </a>
 
     <!-- Learn: open book -->
@@ -342,15 +342,15 @@
         <line x1="15" y1="14" x2="18" y2="14"/>
       </svg></div>
       <div class="feat-title">Learn</div>
-      <div class="feat-arrow">→</div>
+      <div class="feat-arrow">â</div>
     </a>
   </div>
 </div>
 
 <footer>
   <div class="footer-logo">Matthew Shirley</div>
-  <p class="footer-tagline">Associate Broker · <a href="https://saurage-rotenberg.com" target="_blank">Saurage Rotenberg Commercial Real Estate</a> · Baton Rouge, Louisiana · Independent project, not affiliated with any other platform.</p>
-  <p class="footer-copy">© 2026 shirleyre.com</p>
+  <p class="footer-tagline">Associate Broker Â· <a href="https://saurage-rotenberg.com" target="_blank">Saurage Rotenberg Commercial Real Estate</a> Â· Baton Rouge, Louisiana Â· Independent project, not affiliated with any other platform.</p>
+  <p class="footer-copy">Â© 2026 shirleyre.com</p>
 </footer>
 
 <script>
