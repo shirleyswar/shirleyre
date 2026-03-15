@@ -10,12 +10,12 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #060d0f; --gold: #c9933a; --gold-light: #e0b060; --gold-dark: #a06820;
-    --text: #e8e0d0; --muted: #8a8070; --card-bg: #0c1618; --card-border: rgba(201,147,58,0.18);
+    --bg: #060d0f; --gold: #e8a020; --gold-light: #f5c040; --gold-dark: #c97010;
+    --text: #e8e0d0; --muted: #8a8070; --card-bg: #0c1618; --card-border: rgba(232,160,32,0.18);
   }
   html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; overflow-x: hidden; }
   #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
-  nav { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 1.5rem 2.5rem; border-bottom: 1px solid rgba(201,147,58,0.15); background: rgba(6,13,15,0.85); backdrop-filter: blur(12px); }
+  nav { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 1.5rem 2.5rem; border-bottom: 1px solid rgba(232,160,32,0.15); background: rgba(6,13,15,0.85); backdrop-filter: blur(12px); }
   .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem; letter-spacing: 0.04em; background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
   .nav-back { font-family: 'Syne Mono', monospace; font-size: 0.78rem; color: var(--muted); text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase; display: flex; align-items: center; gap: 0.5rem; transition: color 0.2s; }
   .nav-back:hover { color: var(--gold-light); }
@@ -26,30 +26,30 @@
   .page-sub { font-family: 'Syne Mono', monospace; font-size: 0.8rem; color: var(--muted); letter-spacing: 0.1em; }
   .gold-rule { width: 60px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); margin: 1.5rem auto 0; }
   .monroe-divider { display: flex; align-items: center; gap: 1rem; grid-column: 1 / -1; margin: 1.5rem 0 0.5rem; }
-  .monroe-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(201,147,58,0.4), transparent); }
-  .monroe-label { font-family: 'Syne Mono', monospace; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); white-space: nowrap; padding: 0.3rem 1rem; border: 1px solid rgba(201,147,58,0.25); border-radius: 2px; }
+  .monroe-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(232,160,32,0.4), transparent); }
+  .monroe-label { font-family: 'Syne Mono', monospace; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); white-space: nowrap; padding: 0.3rem 1rem; border: 1px solid rgba(232,160,32,0.25); border-radius: 2px; }
   .listings-container { position: relative; z-index: 5; max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 5rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; }
   .listing-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; overflow: hidden; position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
-  .listing-card::after { content: ''; position: absolute; inset: -3px; border-radius: 6px; border: 2px solid var(--gold); opacity: 0; transform: scale(0.97); transition: opacity 0.3s ease, transform 0.4s ease; pointer-events: none; box-shadow: 0 0 18px rgba(201,147,58,0.35), inset 0 0 18px rgba(201,147,58,0.05); }
-  .listing-card:hover { transform: translateY(-6px); border-color: rgba(201,147,58,0.45); box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(201,147,58,0.12); }
+  .listing-card::after { content: ''; position: absolute; inset: -3px; border-radius: 6px; border: 2px solid var(--gold); opacity: 0; transform: scale(0.97); transition: opacity 0.3s ease, transform 0.4s ease; pointer-events: none; box-shadow: 0 0 18px rgba(232,160,32,0.35), inset 0 0 18px rgba(232,160,32,0.05); }
+  .listing-card:hover { transform: translateY(-6px); border-color: rgba(232,160,32,0.45); box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(232,160,32,0.12); }
   .listing-card:hover::after { opacity: 1; transform: scale(1.01); }
   .listing-img { width: 100%; height: 200px; object-fit: cover; display: block; filter: brightness(0.88) saturate(0.9); transition: filter 0.3s; }
   .listing-card:hover .listing-img { filter: brightness(0.95) saturate(1.05); }
-  .listing-type-badge { position: absolute; top: 0.85rem; right: 0.85rem; font-family: 'Syne Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; background: rgba(6,13,15,0.82); color: var(--gold); border: 1px solid rgba(201,147,58,0.4); padding: 0.3rem 0.65rem; border-radius: 2px; backdrop-filter: blur(4px); }
+  .listing-type-badge { position: absolute; top: 0.85rem; right: 0.85rem; font-family: 'Syne Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; background: rgba(6,13,15,0.82); color: var(--gold); border: 1px solid rgba(232,160,32,0.4); padding: 0.3rem 0.65rem; border-radius: 2px; backdrop-filter: blur(4px); }
   .listing-body { padding: 1.4rem 1.4rem 1.6rem; }
   .listing-use { font-family: 'Syne Mono', monospace; font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.5rem; }
   .listing-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--text); line-height: 1.3; margin-bottom: 0.4rem; }
   .listing-address { font-family: 'Syne Mono', monospace; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.05em; margin-bottom: 1.2rem; }
-  .listing-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1rem; margin-bottom: 1.3rem; padding: 1rem; background: rgba(201,147,58,0.04); border: 1px solid rgba(201,147,58,0.1); border-radius: 3px; }
+  .listing-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1rem; margin-bottom: 1.3rem; padding: 1rem; background: rgba(232,160,32,0.04); border: 1px solid rgba(232,160,32,0.1); border-radius: 3px; }
   .stat-label { font-family: 'Syne Mono', monospace; font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.2rem; }
   .stat-value { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--gold-light); }
   .listing-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.6; margin-bottom: 1.3rem; }
   .listing-highlights { list-style: none; margin-bottom: 1.3rem; }
   .listing-highlights li { font-size: 0.8rem; color: var(--muted); padding: 0.2rem 0 0.2rem 1.1rem; position: relative; line-height: 1.5; }
   .listing-highlights li::before { content: '▸'; position: absolute; left: 0; color: var(--gold); font-size: 0.65rem; top: 0.28rem; }
-  .listing-cta { display: inline-block; font-family: 'Syne Mono', monospace; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); border: 1px solid rgba(201,147,58,0.4); padding: 0.55rem 1.1rem; border-radius: 2px; text-decoration: none; transition: background 0.2s, color 0.2s, border-color 0.2s; }
-  .listing-cta:hover { background: rgba(201,147,58,0.1); color: var(--gold-light); border-color: var(--gold); }
-  footer { position: relative; z-index: 5; text-align: center; padding: 2rem; border-top: 1px solid rgba(201,147,58,0.1); font-family: 'Syne Mono', monospace; font-size: 0.65rem; letter-spacing: 0.12em; color: var(--muted); }
+  .listing-cta { display: inline-block; font-family: 'Syne Mono', monospace; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); border: 1px solid rgba(232,160,32,0.4); padding: 0.55rem 1.1rem; border-radius: 2px; text-decoration: none; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+  .listing-cta:hover { background: rgba(232,160,32,0.1); color: var(--gold-light); border-color: var(--gold); }
+  footer { position: relative; z-index: 5; text-align: center; padding: 2rem; border-top: 1px solid rgba(232,160,32,0.1); font-family: 'Syne Mono', monospace; font-size: 0.65rem; letter-spacing: 0.12em; color: var(--muted); }
   footer span { color: var(--gold); }
   @media (max-width: 600px) { nav { padding: 1.2rem; } .listings-container { padding: 1.5rem 1rem 4rem; gap: 1.5rem; } }
 </style>
