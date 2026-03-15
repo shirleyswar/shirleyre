@@ -35,14 +35,14 @@
   .nav-links a:hover { color: var(--gold2); }
   .nav-cta { font-family: 'Syne Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--bg); background: var(--gold); padding: 10px 22px; text-decoration: none; border-radius: 100px; transition: all 0.2s; }
   .nav-cta:hover { background: var(--gold2); transform: translateY(-1px); }
-  .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 120px 40px 80px; position: relative; z-index: 1; overflow: visible; }
-  .hero-icon-wrap { position: relative; display: inline-flex; flex-direction: column; align-items: center; margin-bottom: 28px; cursor: pointer; }
+  .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 120px 40px 0; position: relative; z-index: 1; overflow: visible; }
+  .hero-icon-wrap { position: relative; display: inline-flex; flex-direction: column; align-items: center; margin-bottom: 28px; margin-top: -40px; cursor: pointer; }
   .hero-icon { width: 140px; height: 140px; animation: float 4s ease-in-out infinite; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s ease; }
   @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-14px); } }
   .hero-icon svg { width: 100%; height: 100%; filter: drop-shadow(0 0 32px rgba(232,160,32,0.7)); transition: filter 0.25s ease; }
   .hero-icon-wrap:hover .hero-icon { transform: translateY(-8px) scale(1.22); animation-play-state: paused; }
   .hero-icon-wrap:hover .hero-icon svg { filter: drop-shadow(0 0 48px rgba(232,160,32,1)) drop-shadow(0 0 16px rgba(232,160,32,0.9)); }
-  .hero-tooltip { position: absolute; bottom: -42px; left: 50%; transform: translateX(-50%); font-family: 'Syne Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: #a855f7; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s ease; text-shadow: 0 0 20px rgba(168,85,247,0.8), 0 0 40px rgba(168,85,247,0.4); }
+  .hero-tooltip { position: absolute; bottom: -52px; left: 50%; transform: translateX(-50%); font-family: 'Syne Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: #d946ef; font-size: 15px; letter-spacing: 0.12em; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s ease; text-shadow: 0 0 1px #000, 0 0 2px #000, 0 0 16px rgba(217,70,239,1), 0 0 40px rgba(217,70,239,0.7); }
   .hero-icon-wrap:hover .hero-tooltip { opacity: 1; animation: wiggle 0.18s linear infinite; }
   @keyframes wiggle { 0%, 100% { transform: translateX(-50%); } 25% { transform: translateX(calc(-50% + 5px)); } 75% { transform: translateX(calc(-50% - 5px)); } }
   .hero-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(36px, 6vw, 72px); letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 10px; animation: fadeUp 0.9s ease forwards 0.2s; opacity: 0; }
@@ -51,7 +51,7 @@
   .hero-tagline { font-family: 'Syne Mono', monospace; font-size: clamp(11px, 1.2vw, 14px); letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 28px; opacity: 0; animation: fadeUp 0.9s ease forwards 0.5s; }
   .hero-sub { font-size: clamp(15px, 1.3vw, 17px); color: var(--muted); max-width: 600px; line-height: 1.9; margin-bottom: 20px; padding-bottom: 0.3em; opacity: 0; animation: fadeUp 0.9s ease forwards 0.7s; }
   .hero-sub strong { color: var(--text); font-weight: 500; }
-  .hero-firm { font-family: 'Syne Mono', monospace; font-size: clamp(10px, 1vw, 12px); letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 18px; opacity: 0; animation: fadeUp 0.9s ease forwards 1.0s; }
+  .hero-firm { font-family: 'Syne Mono', monospace; font-size: clamp(10px, 1vw, 12px); letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 8px; opacity: 0; animation: fadeUp 0.9s ease forwards 1.0s; }
   .hero-pill { display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 100px; padding: 10px 20px 10px 10px; font-size: 13px; color: var(--text); text-decoration: none; transition: all 0.2s; opacity: 0; animation: fadeUp 0.9s ease forwards 0.9s; }
   .hero-pill:hover { background: rgba(232,160,32,0.08); border-color: rgba(232,160,32,0.4); }
   .hero-pill-badge { background: var(--gold); color: var(--bg); font-family: 'Syne Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; font-weight: 600; }
@@ -114,7 +114,7 @@
   .footer-tagline a:hover { color: var(--gold2); }
   .footer-copy { font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: rgba(122,138,143,0.5); }
   /* ── FEATURE CARDS ── */
-  .features-wrap { position: relative; z-index: 1; padding: 24px 60px 80px; max-width: 1200px; margin: 0 auto; }
+  .features-wrap { position: relative; z-index: 1; padding: 0px 60px 80px; max-width: 1200px; margin: 0 auto; }
   .features-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .feat-card {
     background: var(--card);
@@ -200,6 +200,34 @@
     footer { flex-direction: column; gap: 16px; text-align: center; padding: 28px 24px; }
     .pulse-band { padding: 48px 24px; }
   }
+
+  .hero-icon-wrap { position: relative; }
+  .hero-icon-wrap .tooltip {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Syne Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #d946ef;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 20px rgba(217,70,239,1), 0 0 40px rgba(217,70,239,0.6);
+    z-index: 50;
+  }
+  .hero-icon-wrap:hover .tooltip {
+    opacity: 1;
+    animation: wiggle 0.18s linear infinite;
+  }
+  @keyframes wiggle {
+    0%   { transform: translateX(calc(-50% - 5px)); }
+    50%  { transform: translateX(calc(-50% + 5px)); }
+    100% { transform: translateX(calc(-50% - 5px)); }
+  }
 </style>
 </head>
 <body>
@@ -231,15 +259,15 @@
       <rect x="34" y="56" width="12" height="12" rx="1" fill="#060d0f" opacity="0.5"/>
       </svg>
     </div>
-    <span class="hero-tooltip">LET'S DO THIS!</span>
+    <span class="tooltip">LET'S DO THIS!</span>
   </div>
-  <h1 class="hero-name"><span class="hero-name-line">Matthew Shirley</span></h1>
+  <h1 class="hero-name"><span class="hero-name-line" style="font-variant: small-caps;">Matthew Shirley</span></h1>
   <p class="hero-tagline">Commercial Real Estate Broker &nbsp;|&nbsp; HQ &nbsp;|&nbsp; Baton Rouge, LA</p>
   <p class="hero-sub">
     <span id="exp-counter"></span><br>
     as a broker (mostly), but also a buyer, seller,<br>landlord, tenant and even a wannabe developer.
   </p>
-  <p class="hero-firm">Associate Broker &nbsp;|&nbsp; Saurage Rotenberg Commercial Real Estate</p>
+  <p class="hero-firm">Associate Broker &nbsp;|&nbsp; Saurage Rotenberg Commercial Real Estate &nbsp;|&nbsp; 5135 Bluebonnet Blvd., Baton Rouge, LA 70809</p>
   <script>
     function updateCounter() {
       const start = new Date('2011-01-05T00:00:00');
@@ -391,5 +419,6 @@
   }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
   reveals.forEach(el => observer.observe(el));
 </script>
+
 </body>
 </html>
