@@ -1,0 +1,32 @@
+name: Deploy to Cloudflare Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - run: npm ci
+      
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://mtkyyaorvensylrfbhxv.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_qGuGE-6ExwYvFC01eBvV_g_ewDYx77M
+        run: npm run build
+      
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: e7969d8b6291f3aa7784d466e5d22b51
+          command: pages deploy out --project-name=shirleyre --branch=main

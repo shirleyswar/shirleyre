@@ -1,0 +1,23 @@
+name: Run Supabase Migration
+on:
+  workflow_dispatch:
+    inputs:
+      run_migration:
+        description: 'Run migration'
+        required: true
+        default: 'true'
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Run Migration via psql
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          psql "$DB_URL" -f supabase/migration.sql
