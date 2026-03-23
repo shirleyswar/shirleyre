@@ -381,7 +381,120 @@
     </a>
 
   </div>
+
+  <!-- WAR ROOM ACCESS BUTTON -->
+  <div style="margin-top:24px;text-align:center;">
+    <button id="warroom-btn" onclick="openWarRoomPin()" style="
+      font-family:'Syne Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;
+      padding:14px 32px;border-radius:8px;cursor:pointer;
+      background:rgba(201,147,58,0.07);border:1px solid rgba(201,147,58,0.22);
+      color:rgba(201,147,58,0.6);transition:all 0.2s;
+    " onmouseover="this.style.background='rgba(201,147,58,0.13)';this.style.color='rgba(201,147,58,0.9)';this.style.borderColor='rgba(201,147,58,0.4)';"
+       onmouseout="this.style.background='rgba(201,147,58,0.07)';this.style.color='rgba(201,147,58,0.6)';this.style.borderColor='rgba(201,147,58,0.22)';">
+      War Room
+    </button>
+  </div>
 </div>
+
+<!-- WAR ROOM PIN GATE (inline, on homepage) -->
+<div id="wr-pin-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(6,13,15,0.96);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:28px;">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;letter-spacing:-0.02em;background:linear-gradient(90deg,#a06820,#c9933a,#e0b060);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">WAR ROOM</div>
+  <div style="font-family:'Syne Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#6a7a80;">Access Code</div>
+  <div style="display:flex;gap:14px;" id="wr-dots">
+    <div class="wr-dot" id="wr-pd0" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #2a3a40;background:transparent;transition:all 0.15s;"></div>
+    <div class="wr-dot" id="wr-pd1" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #2a3a40;background:transparent;transition:all 0.15s;"></div>
+    <div class="wr-dot" id="wr-pd2" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #2a3a40;background:transparent;transition:all 0.15s;"></div>
+    <div class="wr-dot" id="wr-pd3" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #2a3a40;background:transparent;transition:all 0.15s;"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,60px);gap:8px;" id="wr-keypad">
+    <button onclick="wrPin('1')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">1</button>
+    <button onclick="wrPin('2')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">2</button>
+    <button onclick="wrPin('3')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">3</button>
+    <button onclick="wrPin('4')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">4</button>
+    <button onclick="wrPin('5')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">5</button>
+    <button onclick="wrPin('6')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">6</button>
+    <button onclick="wrPin('7')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">7</button>
+    <button onclick="wrPin('8')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">8</button>
+    <button onclick="wrPin('9')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">9</button>
+    <button onclick="wrClear()" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#6a7a80;font-family:'Syne Mono',monospace;font-size:10px;letter-spacing:0.1em;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">CLR</button>
+    <button onclick="wrPin('0')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">0</button>
+    <button onclick="wrBack()" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#6a7a80;font-family:'Syne Mono',monospace;font-size:16px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">&#9003;</button>
+  </div>
+  <div id="wr-error" style="font-family:'Syne Mono',monospace;font-size:10px;color:#ef4444;letter-spacing:0.12em;opacity:0;transition:opacity 0.2s;">ACCESS DENIED</div>
+  <button onclick="closeWarRoomPin()" style="font-family:'Syne Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#3a4a50;background:none;border:none;cursor:pointer;margin-top:-8px;">Cancel</button>
+</div>
+
+<script>
+// War Room PIN (on homepage)
+const WR_DEFAULT_HASH = 'b136ef5f6a01d816991fe3cf7a6ac763300c1a26257de0e434e545c743fafe37'; // SHA-256('1234')
+const WR_SESSION_KEY  = 'warroom_session';
+const WR_SESSION_TTL  = 8 * 60 * 60 * 1000;
+let wrBuffer = '';
+
+async function wrSha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function openWarRoomPin() {
+  // Check active session first
+  try {
+    const s = JSON.parse(localStorage.getItem(WR_SESSION_KEY) || '{}');
+    if (s.ts && Date.now() - s.ts < WR_SESSION_TTL) { window.location.href = '/warroom/'; return; }
+  } catch(e) {}
+  wrBuffer = '';
+  wrUpdateDots();
+  const overlay = document.getElementById('wr-pin-overlay');
+  overlay.style.display = 'flex';
+}
+
+function closeWarRoomPin() {
+  document.getElementById('wr-pin-overlay').style.display = 'none';
+  wrBuffer = '';
+  wrUpdateDots();
+}
+
+function wrPin(d) {
+  if (wrBuffer.length >= 4) return;
+  wrBuffer += d;
+  wrUpdateDots();
+  if (wrBuffer.length === 4) wrVerify();
+}
+
+function wrBack() { wrBuffer = wrBuffer.slice(0,-1); wrUpdateDots(); }
+function wrClear() { wrBuffer = ''; wrUpdateDots(); }
+
+function wrUpdateDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('wr-pd' + i);
+    if (i < wrBuffer.length) { dot.style.background='#c9933a'; dot.style.borderColor='#c9933a'; }
+    else { dot.style.background='transparent'; dot.style.borderColor='#2a3a40'; }
+  }
+}
+
+async function wrVerify() {
+  const stored = localStorage.getItem('warroom_pin') || WR_DEFAULT_HASH;
+  const input  = await wrSha256(wrBuffer);
+  if (input === stored) {
+    localStorage.setItem(WR_SESSION_KEY, JSON.stringify({ ts: Date.now() }));
+    window.location.href = '/warroom/';
+  } else {
+    const err = document.getElementById('wr-error');
+    err.style.opacity = '1';
+    setTimeout(() => { err.style.opacity='0'; wrBuffer=''; wrUpdateDots(); }, 1200);
+  }
+}
+
+// Keyboard support when overlay is open
+document.addEventListener('keydown', (e) => {
+  const overlay = document.getElementById('wr-pin-overlay');
+  if (overlay.style.display !== 'none' && overlay.style.display !== '') {
+    if (e.key >= '0' && e.key <= '9') wrPin(e.key);
+    if (e.key === 'Backspace') wrBack();
+    if (e.key === 'Escape') closeWarRoomPin();
+  }
+});
+</script>
 
 <footer>
   <div class="footer-logo">Matthew Shirley</div>

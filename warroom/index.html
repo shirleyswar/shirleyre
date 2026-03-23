@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>War Room — ShirleyCRE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Syne+Mono&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════════════════════════════════════════════
+     DESIGN SYSTEM — Dark Cosmic / Mission Control
+  ═══════════════════════════════════════════════════ */
+  :root {
+    --bg:       #060d0f;
+    --bg2:      #0a1518;
+    --bg3:      #0e1c21;
+    --panel:    rgba(10,21,24,0.85);
+    --border:   rgba(201,147,58,0.15);
+    --border2:  rgba(201,147,58,0.08);
+    --gold:     #c9933a;
+    --gold-l:   #e0b060;
+    --gold-d:   #a06820;
+    --text:     #ddd6c8;
+    --muted:    #6a7a80;
+    --dim:      #3a4a50;
+
+    /* Status colors */
+    --s-active:    #22c55e;   /* green */
+    --s-pipeline:  #c9933a;   /* gold */
+    --s-contract:  #3b82f6;   /* blue */
+    --s-pending:   #a855f7;   /* purple */
+    --s-closed:    #6b7280;   /* gray */
+    --s-dead:      #ef4444;   /* red */
+
+    --radius: 8px;
+    --radius-lg: 12px;
+    --font-mono: 'Syne Mono', monospace;
+    --font-sans: 'Inter', sans-serif;
+    --font-display: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 14px; overflow: hidden; }
+  body { display: flex; flex-direction: column; }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+
+  /* ═══════════════════════════════════════════════════
+     PIN GATE
+  ═══════════════════════════════════════════════════ */
+  #pin-gate {
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 32px;
+  }
+  #pin-gate.hidden { display: none; }
+  .pin-logo {
+    font-family: var(--font-display); font-weight: 800; font-size: 28px;
+    letter-spacing: -0.03em;
+    background: linear-gradient(90deg, var(--gold-d), var(--gold), var(--gold-l));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .pin-label {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .pin-dots { display: flex; gap: 16px; }
+  .pin-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 1.5px solid var(--dim); background: transparent;
+    transition: all 0.15s;
+  }
+  .pin-dot.filled { background: var(--gold); border-color: var(--gold); }
+  .pin-keypad { display: grid; grid-template-columns: repeat(3, 64px); gap: 10px; }
+  .pin-key {
+    height: 56px; border-radius: var(--radius);
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font-display); font-size: 20px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .pin-key:hover { background: rgba(201,147,58,0.12); border-color: var(--gold); }
+  .pin-key:active { transform: scale(0.94); }
+  .pin-key.delete { font-size: 14px; color: var(--muted); }
+  .pin-error { font-family: var(--font-mono); font-size: 11px; color: var(--s-dead); letter-spacing: 0.1em; opacity: 0; transition: opacity 0.2s; }
+  .pin-error.visible { opacity: 1; }
+
+  /* ═══════════════════════════════════════════════════
+     TOP BAR
+  ═══════════════════════════════════════════════════ */
+  #topbar {
+    flex: 0 0 52px; display: flex; align-items: center;
+    padding: 0 24px; gap: 20px;
+    border-bottom: 1px solid var(--border2);
+    background: rgba(6,13,15,0.95);
+  }
+  .topbar-logo {
+    font-family: var(--font-display); font-weight: 800; font-size: 16px;
+    letter-spacing: -0.02em;
+    background: linear-gradient(90deg, var(--gold), var(--gold-l));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    white-space: nowrap;
+  }
+  .topbar-sep { width: 1px; height: 20px; background: var(--border); }
+  .topbar-label {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted);
+  }
+  .topbar-status-row { display: flex; gap: 16px; align-items: center; margin-left: auto; }
+  .status-pill {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 100px;
+    border: 1px solid; display: flex; align-items: center; gap: 6px;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .sp-active  { color: var(--s-active);   border-color: rgba(34,197,94,0.3);  background: rgba(34,197,94,0.06);  }
+  .sp-active  .dot { background: var(--s-active); }
+  .sp-pipeline { color: var(--s-pipeline); border-color: rgba(201,147,58,0.3); background: rgba(201,147,58,0.06); }
+  .sp-pipeline .dot { background: var(--s-pipeline); }
+  .sp-contract { color: var(--s-contract); border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.06); }
+  .sp-contract .dot { background: var(--s-contract); }
+  .sp-pending  { color: var(--s-pending);  border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.06); }
+  .sp-pending  .dot { background: var(--s-pending); }
+  #sync-indicator { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.08em; }
+  .topbar-btn {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 6px 14px; border-radius: 6px;
+    background: rgba(201,147,58,0.12); border: 1px solid var(--border);
+    color: var(--gold-l); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .topbar-btn:hover { background: rgba(201,147,58,0.2); }
+  .topbar-btn.primary { background: var(--gold); color: #060d0f; font-weight: 700; border-color: var(--gold); }
+  .topbar-btn.primary:hover { background: var(--gold-l); }
+
+  /* ═══════════════════════════════════════════════════
+     MAIN GRID — 4 panels
+  ═══════════════════════════════════════════════════ */
+  #main {
+    flex: 1; display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: 1fr 1fr;
+    gap: 1px;
+    background: var(--border2);
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ═══════════════════════════════════════════════════
+     PANELS
+  ═══════════════════════════════════════════════════ */
+  .panel {
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    overflow: hidden; min-height: 0;
+  }
+  .panel-header {
+    flex: 0 0 auto;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--border2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .panel-title {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gold); flex: 1;
+  }
+  .panel-count {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--muted); background: var(--bg3);
+    padding: 2px 8px; border-radius: 100px;
+    border: 1px solid var(--border2);
+  }
+  .panel-action {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+    color: var(--gold); cursor: pointer; opacity: 0.7;
+    transition: opacity 0.15s; text-transform: uppercase;
+  }
+  .panel-action:hover { opacity: 1; }
+  .panel-body {
+    flex: 1; overflow-y: auto; padding: 12px;
+    display: flex; flex-direction: column; gap: 4px;
+    min-height: 0;
+  }
+
+  /* ═══════════════════════════════════════════════════
+     DEALS (Battle Plan + Money Movers)
+  ═══════════════════════════════════════════════════ */
+  .deal-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radius);
+    background: var(--bg3); border: 1px solid transparent;
+    cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .deal-row:hover { border-color: var(--border); background: rgba(14,28,33,0.95); }
+  .deal-row.expanded { border-color: var(--border); }
+  .deal-status-bar {
+    width: 3px; height: 32px; border-radius: 2px; flex: 0 0 3px;
+  }
+  .deal-info { flex: 1; min-width: 0; }
+  .deal-name { font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .deal-meta { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.05em; margin-top: 2px; }
+  .deal-commission { font-family: var(--font-mono); font-size: 12px; color: var(--gold); font-weight: 700; white-space: nowrap; }
+  .deal-expand { transition: transform 0.2s; color: var(--muted); font-size: 10px; }
+  .deal-expand.open { transform: rotate(180deg); }
+  .deal-detail {
+    padding: 10px 12px 12px 37px;
+    border-top: 1px solid var(--border2);
+    display: none; flex-direction: column; gap: 8px;
+  }
+  .deal-detail.visible { display: flex; }
+  .deal-detail-field { display: flex; gap: 8px; }
+  .ddf-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; min-width: 72px; }
+  .ddf-value { font-size: 12px; color: var(--text); }
+  .deal-detail-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+  .deal-btn {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 5px 10px; border-radius: 5px; cursor: pointer; transition: all 0.15s; border: 1px solid;
+  }
+  .deal-btn.edit { color: var(--gold); border-color: rgba(201,147,58,0.3); background: rgba(201,147,58,0.06); }
+  .deal-btn.edit:hover { background: rgba(201,147,58,0.15); }
+  .deal-btn.delete { color: var(--s-dead); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.06); }
+  .deal-btn.delete:hover { background: rgba(239,68,68,0.15); }
+  .deal-btn.status-change { color: var(--muted); border-color: var(--border); background: var(--bg2); }
+  .deal-btn.status-change:hover { color: var(--text); border-color: var(--border); }
+
+  /* Money mover rank badge */
+  .mm-rank {
+    font-family: var(--font-mono); font-size: 11px; color: var(--gold-d);
+    font-weight: 700; min-width: 20px; text-align: center;
+  }
+  .mm-rank-1 { color: var(--gold-l); }
+  .mm-rank-2 { color: var(--gold); }
+  .mm-rank-3 { color: var(--gold-d); }
+
+  /* ═══════════════════════════════════════════════════
+     TASKS PANEL
+  ═══════════════════════════════════════════════════ */
+  .task-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius);
+    background: var(--bg3); border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .task-row:hover { border-color: var(--border); }
+  .task-row.done { opacity: 0.4; }
+  .task-check {
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 1.5px solid var(--dim); background: transparent;
+    cursor: pointer; flex: 0 0 18px; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .task-check:hover { border-color: var(--gold); }
+  .task-check.checked { background: var(--gold); border-color: var(--gold); }
+  .task-check.checked::after { content: '✓'; font-size: 11px; color: #060d0f; font-weight: 800; }
+  .task-info { flex: 1; min-width: 0; }
+  .task-title { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .task-row.done .task-title { text-decoration: line-through; color: var(--muted); }
+  .task-deal { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.05em; margin-top: 1px; }
+  .task-del { font-size: 14px; color: var(--dim); cursor: pointer; transition: color 0.15s; opacity: 0; padding: 4px; }
+  .task-row:hover .task-del { opacity: 1; }
+  .task-del:hover { color: var(--s-dead); }
+
+  /* ═══════════════════════════════════════════════════
+     CONTACTS PANEL
+  ═══════════════════════════════════════════════════ */
+  .contact-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius);
+    background: var(--bg3); border: 1px solid transparent;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .contact-row:hover { border-color: var(--border); }
+  .contact-avatar {
+    width: 32px; height: 32px; border-radius: 8px; flex: 0 0 32px;
+    background: rgba(201,147,58,0.1); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 800; font-size: 12px;
+    color: var(--gold);
+  }
+  .contact-info { flex: 1; min-width: 0; }
+  .contact-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .contact-meta { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .contact-badge {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+    padding: 2px 7px; border-radius: 100px; text-transform: uppercase;
+  }
+  .cb-ehvp { color: var(--gold-l); border: 1px solid rgba(224,176,96,0.4); background: rgba(224,176,96,0.08); }
+  .cb-hvp  { color: var(--s-pipeline); border: 1px solid rgba(201,147,58,0.3); background: rgba(201,147,58,0.06); }
+
+  /* ═══════════════════════════════════════════════════
+     MODALS
+  ═══════════════════════════════════════════════════ */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(6,13,15,0.85); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); width: 100%; max-width: 520px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--text); }
+  .modal-close {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    color: var(--muted); cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .modal-close:hover { color: var(--text); border-color: var(--border); }
+  .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-height: 70vh; overflow-y: auto; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border2); display: flex; gap: 8px; justify-content: flex-end; }
+  .form-field { display: flex; flex-direction: column; gap: 6px; }
+  .form-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .form-input, .form-select, .form-textarea {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 10px 12px;
+    color: var(--text); font-family: var(--font-sans); font-size: 13px;
+    transition: border-color 0.15s; outline: none; width: 100%;
+  }
+  .form-textarea { resize: vertical; min-height: 80px; }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--gold); }
+  .form-select option { background: var(--bg2); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn-cancel {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 9px 18px; border-radius: var(--radius); cursor: pointer;
+    background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { color: var(--text); }
+  .btn-save {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 9px 20px; border-radius: var(--radius); cursor: pointer;
+    background: var(--gold); border: 1px solid var(--gold); color: #060d0f; font-weight: 700;
+    transition: all 0.15s;
+  }
+  .btn-save:hover { background: var(--gold-l); }
+
+  /* ═══════════════════════════════════════════════════
+     EMPTY STATES
+  ═══════════════════════════════════════════════════ */
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 10px; padding: 40px 20px; text-align: center;
+  }
+  .empty-icon { font-size: 32px; opacity: 0.3; }
+  .empty-text { font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* ═══════════════════════════════════════════════════
+     TOAST NOTIFICATIONS
+  ═══════════════════════════════════════════════════ */
+  #toast-container {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9998;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .toast {
+    padding: 12px 16px; border-radius: var(--radius);
+    background: var(--bg2); border: 1px solid var(--border);
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--text); box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    transform: translateX(120%); transition: transform 0.25s ease;
+    max-width: 280px;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.success { border-color: rgba(34,197,94,0.4); color: var(--s-active); }
+  .toast.error   { border-color: rgba(239,68,68,0.4);  color: var(--s-dead); }
+
+  /* ═══════════════════════════════════════════════════
+     LOADING STATE
+  ═══════════════════════════════════════════════════ */
+  .loading-dots::after {
+    content: '...';
+    animation: dots 1.2s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%, 100% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     STATUS COLOR HELPERS
+  ═══════════════════════════════════════════════════ */
+  .status-bar-active   { background: var(--s-active); }
+  .status-bar-pipeline { background: var(--s-pipeline); }
+  .status-bar-under_contract { background: var(--s-contract); }
+  .status-bar-pending_payment { background: var(--s-pending); }
+  .status-bar-closed   { background: var(--s-closed); }
+  .status-bar-dead     { background: var(--s-dead); }
+
+  /* ═══════════════════════════════════════════════════
+     PIPELINE SUMMARY BAR (in Battle Plan header)
+  ═══════════════════════════════════════════════════ */
+  .pipeline-stats {
+    display: flex; gap: 16px; padding: 10px 18px;
+    border-bottom: 1px solid var(--border2); flex-wrap: wrap;
+  }
+  .pip-stat { display: flex; flex-direction: column; gap: 2px; }
+  .pip-stat-label { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+  .pip-stat-value { font-family: var(--font-mono); font-size: 14px; font-weight: 700; }
+  .psv-total    { color: var(--gold); }
+  .psv-active   { color: var(--s-active); }
+  .psv-contract { color: var(--s-contract); }
+  .psv-pending  { color: var(--s-pending); }
+
+  /* Panel spanning */
+  .panel-span-row { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     PIN GATE
+═══════════════════════════════════════════════════ -->
+<div id="pin-gate">
+  <div class="pin-logo">WAR ROOM</div>
+  <div class="pin-label">Enter access code</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-keypad">
+    <button class="pin-key" onclick="pinPress('1')">1</button>
+    <button class="pin-key" onclick="pinPress('2')">2</button>
+    <button class="pin-key" onclick="pinPress('3')">3</button>
+    <button class="pin-key" onclick="pinPress('4')">4</button>
+    <button class="pin-key" onclick="pinPress('5')">5</button>
+    <button class="pin-key" onclick="pinPress('6')">6</button>
+    <button class="pin-key" onclick="pinPress('7')">7</button>
+    <button class="pin-key" onclick="pinPress('8')">8</button>
+    <button class="pin-key" onclick="pinPress('9')">9</button>
+    <button class="pin-key delete" onclick="pinClear()">CLR</button>
+    <button class="pin-key" onclick="pinPress('0')">0</button>
+    <button class="pin-key delete" onclick="pinBack()">&#9003;</button>
+  </div>
+  <div class="pin-error" id="pin-error">ACCESS DENIED</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     TOP BAR
+═══════════════════════════════════════════════════ -->
+<div id="topbar">
+  <div class="topbar-logo">SHIRLEYCRE / WAR ROOM</div>
+  <div class="topbar-sep"></div>
+  <div class="topbar-label" id="sync-indicator">Ready</div>
+  <div class="topbar-status-row" id="status-pills">
+    <!-- populated by JS -->
+  </div>
+  <div class="topbar-sep"></div>
+  <button class="topbar-btn primary" onclick="openModal('deal')">+ Deal</button>
+  <button class="topbar-btn" onclick="openModal('task')">+ Task</button>
+  <button class="topbar-btn" onclick="openModal('contact')">+ Contact</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN GRID
+═══════════════════════════════════════════════════ -->
+<div id="main">
+  <!-- BATTLE PLAN — top left -->
+  <div class="panel" id="panel-deals">
+    <div class="panel-header">
+      <div class="panel-title">Battle Plan — Deal Pipeline</div>
+      <div class="panel-count" id="deal-count">0</div>
+      <div class="panel-action" onclick="openModal('deal')">+ Add</div>
+    </div>
+    <div class="pipeline-stats" id="pipeline-stats">
+      <div class="pip-stat"><div class="pip-stat-label">Commission Total</div><div class="pip-stat-value psv-total" id="stat-total">$0</div></div>
+      <div class="pip-stat"><div class="pip-stat-label">Active</div><div class="pip-stat-value psv-active" id="stat-active">0</div></div>
+      <div class="pip-stat"><div class="pip-stat-label">Under Contract</div><div class="pip-stat-value psv-contract" id="stat-contract">0</div></div>
+      <div class="pip-stat"><div class="pip-stat-label">Pend. Payment</div><div class="pip-stat-value psv-pending" id="stat-pending">0</div></div>
+    </div>
+    <div class="panel-body" id="deals-list">
+      <div class="empty-state">
+        <div class="empty-icon">&#9776;</div>
+        <div class="empty-text loading-dots">Loading pipeline</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONEY MOVERS — top right -->
+  <div class="panel" id="panel-movers">
+    <div class="panel-header">
+      <div class="panel-title">Money Movers</div>
+      <div class="panel-count" id="movers-count">Top 5</div>
+    </div>
+    <div class="panel-body" id="movers-list">
+      <div class="empty-state">
+        <div class="empty-icon">&#8593;</div>
+        <div class="empty-text loading-dots">Loading</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASKS — bottom left -->
+  <div class="panel" id="panel-tasks">
+    <div class="panel-header">
+      <div class="panel-title">Action Items</div>
+      <div class="panel-count" id="task-count">0</div>
+      <div class="panel-action" onclick="openModal('task')">+ Add</div>
+    </div>
+    <div class="panel-body" id="tasks-list">
+      <div class="empty-state">
+        <div class="empty-icon">&#10003;</div>
+        <div class="empty-text loading-dots">Loading tasks</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACTS — bottom right -->
+  <div class="panel" id="panel-contacts">
+    <div class="panel-header">
+      <div class="panel-title">Contacts</div>
+      <div class="panel-count" id="contact-count">0</div>
+      <div class="panel-action" onclick="openModal('contact')">+ Add</div>
+    </div>
+    <div class="panel-body" id="contacts-list">
+      <div class="empty-state">
+        <div class="empty-icon">&#9786;</div>
+        <div class="empty-text loading-dots">Loading contacts</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ADD DEAL MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-deal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="deal-modal-title">New Deal</div>
+      <button class="modal-close" onclick="closeModal('deal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="deal-edit-id">
+      <div class="form-field">
+        <div class="form-label">Deal Name *</div>
+        <input class="form-input" id="deal-name" placeholder="e.g. Wicker Park — Hobby Lobby" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Type</div>
+          <select class="form-select" id="deal-type">
+            <option value="">Select type</option>
+            <option value="Sale">Sale</option>
+            <option value="Lease">Lease</option>
+            <option value="Land">Land</option>
+            <option value="Industrial">Industrial</option>
+            <option value="Office">Office</option>
+            <option value="Retail">Retail</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <div class="form-label">Status</div>
+          <select class="form-select" id="deal-status">
+            <option value="pipeline">Pipeline</option>
+            <option value="active">Active</option>
+            <option value="under_contract">Under Contract</option>
+            <option value="pending_payment">Pending Payment</option>
+            <option value="closed">Closed</option>
+            <option value="dead">Dead</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Commission ($)</div>
+          <input class="form-input" id="deal-commission" placeholder="e.g. 45000" type="number">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Deal Value ($)</div>
+          <input class="form-input" id="deal-value" placeholder="e.g. 1200000" type="number">
+        </div>
+      </div>
+      <div class="form-field">
+        <div class="form-label">Address</div>
+        <input class="form-input" id="deal-address" placeholder="e.g. 4950 Government St, Baton Rouge, LA">
+      </div>
+      <div class="form-field">
+        <div class="form-label">Primary Contact</div>
+        <input class="form-input" id="deal-contact" placeholder="e.g. Donnie Braud">
+      </div>
+      <div class="form-field">
+        <div class="form-label">Notes</div>
+        <textarea class="form-textarea" id="deal-notes" placeholder="Current status, action items, key dates..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('deal')">Cancel</button>
+      <button class="btn-save" onclick="saveDeal()">Save Deal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ADD TASK MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-task">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Task</div>
+      <button class="modal-close" onclick="closeModal('task')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <div class="form-label">Task *</div>
+        <input class="form-input" id="task-title" placeholder="e.g. Call Fidelity re: title order" autocomplete="off">
+      </div>
+      <div class="form-field">
+        <div class="form-label">Deal (optional)</div>
+        <input class="form-input" id="task-deal-name" placeholder="e.g. Dutch Brothers — GVI" list="deal-list">
+        <datalist id="deal-list"></datalist>
+      </div>
+      <div class="form-field">
+        <div class="form-label">Person / Notes</div>
+        <input class="form-input" id="task-person" placeholder="e.g. Austin — order survey, start DD">
+      </div>
+      <div class="form-field">
+        <div class="form-label">Commission Tied ($)</div>
+        <input class="form-input" id="task-commission" placeholder="e.g. 16650" type="number">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('task')">Cancel</button>
+      <button class="btn-save" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ADD CONTACT MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-contact">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Contact</div>
+      <button class="modal-close" onclick="closeModal('contact')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <div class="form-label">Name *</div>
+        <input class="form-input" id="contact-name" placeholder="e.g. Hank Saurage" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Company</div>
+          <input class="form-input" id="contact-company" placeholder="e.g. Saurage Partners">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Priority</div>
+          <select class="form-select" id="contact-priority">
+            <option value="normal">Normal</option>
+            <option value="hvp">HVP</option>
+            <option value="ehvp">EHVP</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Phone</div>
+          <input class="form-input" id="contact-phone" placeholder="225-000-0000">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Email</div>
+          <input class="form-input" id="contact-email" placeholder="name@example.com" type="email">
+        </div>
+      </div>
+      <div class="form-field">
+        <div class="form-label">Role</div>
+        <input class="form-input" id="contact-role" placeholder="e.g. Client, Broker, Tenant, Landlord">
+      </div>
+      <div class="form-field">
+        <div class="form-label">Notes</div>
+        <textarea class="form-textarea" id="contact-notes" placeholder="Key relationship context..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('contact')">Cancel</button>
+      <button class="btn-save" onclick="saveContact()">Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     APPLICATION SCRIPT
+═══════════════════════════════════════════════════ -->
+<script>
+// ──────────────────────────────────────────────────────────────
+// CONFIG
+// ──────────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://mtkyyaorvensylrfbhxv.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_qGuGE-6ExwYvFC01eBvV_g_ewDYx77M';
+// PIN is stored as a hash in localStorage. Default is 1234 (SHA-256 hash).
+// To change: open console → warroom.setPin('XXXX')
+const DEFAULT_PIN_HASH = 'b136ef5f6a01d816991fe3cf7a6ac763300c1a26257de0e434e545c743fafe37'; // SHA-256('1234')
+const SESSION_KEY = 'warroom_session';
+const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 hours
+
+// ──────────────────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────────────────
+let state = {
+  deals: [],
+  tasks: [],
+  contacts: [],
+  loaded: false
+};
+let pinBuffer = '';
+let tablesExist = { deals: false, tasks: false, contacts: false };
+
+// ──────────────────────────────────────────────────────────────
+// PIN SYSTEM
+// ──────────────────────────────────────────────────────────────
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function checkSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
+    if (s.ts && Date.now() - s.ts < SESSION_TTL) return true;
+  } catch(e) {}
+  return false;
+}
+
+function startSession() {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ ts: Date.now() }));
+}
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) verifyPin();
+}
+
+function pinBack() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+}
+
+function pinClear() {
+  pinBuffer = '';
+  updatePinDots();
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd' + i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+async function verifyPin() {
+  const storedHash = localStorage.getItem('warroom_pin') || DEFAULT_PIN_HASH;
+  const inputHash  = await sha256(pinBuffer);
+  if (inputHash === storedHash) {
+    startSession();
+    document.getElementById('pin-gate').classList.add('hidden');
+    init();
+  } else {
+    const err = document.getElementById('pin-error');
+    err.classList.add('visible');
+    setTimeout(() => { err.classList.remove('visible'); pinBuffer = ''; updatePinDots(); }, 1200);
+  }
+}
+
+// Keyboard PIN input
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('pin-gate').classList.contains('hidden')) {
+    if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+    if (e.key === 'Backspace') pinBack();
+    if (e.key === 'Escape') pinClear();
+  }
+});
+
+// Expose PIN change function
+window.warroom = {
+  async setPin(newPin) {
+    if (!/^\d{4}$/.test(newPin)) { console.error('PIN must be 4 digits'); return; }
+    const hash = await sha256(newPin);
+    localStorage.setItem('warroom_pin', hash);
+    console.log('PIN updated successfully');
+  },
+  state: () => state
+};
+
+// ──────────────────────────────────────────────────────────────
+// SUPABASE API
+// ──────────────────────────────────────────────────────────────
+async function sbFetch(path, options = {}) {
+  const url = `${SUPABASE_URL}/rest/v1${path}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_ANON,
+      'Authorization': `Bearer ${SUPABASE_ANON}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...(options.headers || {})
+    }
+  });
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = text; }
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function sbGet(table, query = '') {
+  return sbFetch(`/${table}${query}`);
+}
+
+async function sbInsert(table, row) {
+  return sbFetch(`/${table}`, { method: 'POST', body: JSON.stringify(row) });
+}
+
+async function sbUpdate(table, id, updates) {
+  return sbFetch(`/${table}?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
+}
+
+async function sbDelete(table, id) {
+  return sbFetch(`/${table}?id=eq.${id}`, { method: 'DELETE', headers: { 'Prefer': 'return=minimal' } });
+}
+
+// ──────────────────────────────────────────────────────────────
+// TABLE DETECTION
+// ──────────────────────────────────────────────────────────────
+async function checkTables() {
+  // Try fetching each table; 404/PGRST205 means table doesn't exist
+  for (const t of ['deals', 'tasks', 'contacts']) {
+    const r = await sbGet(t, '?limit=1');
+    tablesExist[t] = r.ok || (r.status !== 404 && !(r.data?.code === 'PGRST205'));
+  }
+  return tablesExist;
+}
+
+// ──────────────────────────────────────────────────────────────
+// LOAD DATA
+// ──────────────────────────────────────────────────────────────
+async function loadAll() {
+  setSyncStatus('Syncing');
+
+  await checkTables();
+
+  const results = await Promise.allSettled([
+    tablesExist.deals    ? sbGet('deals',    '?order=created_at.asc') : Promise.resolve({ ok: false, data: [] }),
+    tablesExist.tasks    ? sbGet('tasks',    '?order=created_at.asc') : Promise.resolve({ ok: false, data: [] }),
+    tablesExist.contacts ? sbGet('contacts', '?order=priority.desc,created_at.asc') : Promise.resolve({ ok: false, data: [] }),
+  ]);
+
+  state.deals    = (results[0].status === 'fulfilled' && results[0].value.ok) ? (results[0].value.data || []) : [];
+  state.tasks    = (results[1].status === 'fulfilled' && results[1].value.ok) ? (results[1].value.data || []) : [];
+  state.contacts = (results[2].status === 'fulfilled' && results[2].value.ok) ? (results[2].value.data || []) : [];
+  state.loaded = true;
+
+  renderAll();
+  setSyncStatus('Live');
+
+  // If tables don't exist, show setup banner
+  if (!tablesExist.deals) {
+    showSetupBanner();
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// SETUP BANNER (shows when DB tables not yet created)
+// ──────────────────────────────────────────────────────────────
+function showSetupBanner() {
+  document.getElementById('deals-list').innerHTML = `
+    <div style="padding:16px;background:rgba(201,147,58,0.06);border:1px solid rgba(201,147,58,0.25);border-radius:8px;margin:4px 0;">
+      <div style="font-family:'Syne Mono',monospace;font-size:11px;color:#c9933a;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Database Setup Required</div>
+      <div style="font-size:12px;color:#ddd6c8;line-height:1.6;margin-bottom:12px;">
+        The War Room database tables need to be created. This is a one-time setup step.<br><br>
+        <strong>Steps:</strong><br>
+        1. Go to <a href="https://supabase.com/dashboard/project/mtkyyaorvensylrfbhxv/sql/new" target="_blank" style="color:#c9933a;">Supabase SQL Editor</a><br>
+        2. Copy and paste the contents of <code style="color:#e0b060;">warroom/migration.sql</code> from the GitHub repo<br>
+        3. Click Run<br>
+        4. Refresh this page
+      </div>
+      <div style="font-family:'Syne Mono',monospace;font-size:10px;color:#6a7a80;">Migration file: github.com/shirleyswar/shirleyre/blob/main/warroom/migration.sql</div>
+    </div>
+  `;
+  document.getElementById('tasks-list').innerHTML = `<div class="empty-state"><div class="empty-text">Waiting for DB setup</div></div>`;
+  document.getElementById('contacts-list').innerHTML = `<div class="empty-state"><div class="empty-text">Waiting for DB setup</div></div>`;
+  document.getElementById('movers-list').innerHTML = `<div class="empty-state"><div class="empty-text">Waiting for DB setup</div></div>`;
+}
+
+// ──────────────────────────────────────────────────────────────
+// RENDER
+// ──────────────────────────────────────────────────────────────
+function renderAll() {
+  renderDeals();
+  renderMovers();
+  renderTasks();
+  renderContacts();
+  updateStatusPills();
+  updateDealDatalist();
+}
+
+const STATUS_LABELS = {
+  pipeline:        'Pipeline',
+  active:          'Active',
+  under_contract:  'Under Contract',
+  pending_payment: 'Pend. Payment',
+  closed:          'Closed',
+  dead:            'Dead',
+};
+
+function fmtMoney(val) {
+  if (!val && val !== 0) return '—';
+  return '$' + Number(val).toLocaleString();
+}
+
+function renderDeals() {
+  const list = document.getElementById('deals-list');
+  const count = document.getElementById('deal-count');
+  const deals = state.deals.filter(d => d.status !== 'closed' && d.status !== 'dead');
+  count.textContent = deals.length;
+
+  // Pipeline stats
+  const total = deals.reduce((s, d) => s + (Number(d.commission) || 0), 0);
+  const active = deals.filter(d => d.status === 'active').length;
+  const contract = deals.filter(d => d.status === 'under_contract').length;
+  const pending = deals.filter(d => d.status === 'pending_payment').length;
+  document.getElementById('stat-total').textContent = fmtMoney(total);
+  document.getElementById('stat-active').textContent = active;
+  document.getElementById('stat-contract').textContent = contract;
+  document.getElementById('stat-pending').textContent = pending;
+
+  if (!deals.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#9776;</div><div class="empty-text">No active deals — add one above</div></div>`;
+    return;
+  }
+
+  // Sort: pending_payment → under_contract → active → pipeline
+  const order = { pending_payment: 0, under_contract: 1, active: 2, pipeline: 3 };
+  const sorted = [...deals].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+
+  list.innerHTML = sorted.map(d => `
+    <div class="deal-row" id="dr-${d.id}" onclick="toggleDeal('${d.id}')">
+      <div class="deal-status-bar status-bar-${d.status || 'pipeline'}"></div>
+      <div class="deal-info">
+        <div class="deal-name">${escHtml(d.name)}</div>
+        <div class="deal-meta">${escHtml(d.type || '')}${d.type && d.contact ? ' · ' : ''}${escHtml(d.contact || '')} <span style="color:var(--dim);font-size:9px;margin-left:4px;">${STATUS_LABELS[d.status] || d.status || ''}</span></div>
+      </div>
+      ${d.commission ? `<div class="deal-commission">${fmtMoney(d.commission)}</div>` : ''}
+      <div class="deal-expand" id="de-${d.id}">&#9660;</div>
+    </div>
+    <div class="deal-detail" id="dd-${d.id}">
+      ${d.address ? `<div class="deal-detail-field"><div class="ddf-label">Address</div><div class="ddf-value">${escHtml(d.address)}</div></div>` : ''}
+      ${d.value ? `<div class="deal-detail-field"><div class="ddf-label">Deal Value</div><div class="ddf-value">${fmtMoney(d.value)}</div></div>` : ''}
+      ${d.notes ? `<div class="deal-detail-field"><div class="ddf-label">Notes</div><div class="ddf-value" style="white-space:pre-wrap">${escHtml(d.notes)}</div></div>` : ''}
+      <div class="deal-detail-actions">
+        <button class="deal-btn edit" onclick="editDeal('${d.id}');event.stopPropagation()">Edit</button>
+        <button class="deal-btn status-change" onclick="cycleStatus('${d.id}');event.stopPropagation()">&#10227; Status</button>
+        <button class="deal-btn delete" onclick="deleteDeal('${d.id}');event.stopPropagation()">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderMovers() {
+  const list = document.getElementById('movers-list');
+  const all  = state.deals.filter(d => d.status !== 'closed' && d.status !== 'dead');
+  const top  = [...all].sort((a, b) => (Number(b.commission) || 0) - (Number(a.commission) || 0)).slice(0, 5);
+
+  if (!top.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#8593;</div><div class="empty-text">No deals yet</div></div>`;
+    return;
+  }
+
+  list.innerHTML = top.map((d, i) => `
+    <div class="deal-row" style="cursor:default">
+      <div class="mm-rank mm-rank-${i+1}">#${i+1}</div>
+      <div class="deal-status-bar status-bar-${d.status || 'pipeline'}"></div>
+      <div class="deal-info">
+        <div class="deal-name">${escHtml(d.name)}</div>
+        <div class="deal-meta">${escHtml(d.type || '')}${d.type ? ' · ' : ''}${STATUS_LABELS[d.status] || ''}</div>
+      </div>
+      ${d.commission ? `<div class="deal-commission">${fmtMoney(d.commission)}</div>` : '<div style="color:var(--dim);font-size:11px;">—</div>'}
+    </div>
+  `).join('');
+}
+
+function renderTasks() {
+  const list  = document.getElementById('tasks-list');
+  const count = document.getElementById('task-count');
+  const open  = state.tasks.filter(t => t.status !== 'done');
+  count.textContent = open.length;
+
+  if (!state.tasks.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#10003;</div><div class="empty-text">No tasks — add one above</div></div>`;
+    return;
+  }
+
+  const sorted = [...state.tasks].sort((a, b) => {
+    // open tasks first, then by created_at
+    if ((a.status === 'done') !== (b.status === 'done')) return a.status === 'done' ? 1 : -1;
+    return new Date(a.created_at) - new Date(b.created_at);
+  });
+
+  list.innerHTML = sorted.map(t => `
+    <div class="task-row ${t.status === 'done' ? 'done' : ''}" id="tr-${t.id}">
+      <div class="task-check ${t.status === 'done' ? 'checked' : ''}" onclick="toggleTask('${t.id}')"></div>
+      <div class="task-info">
+        <div class="task-title">${escHtml(t.title)}</div>
+        ${t.deal_name || t.person ? `<div class="task-deal">${escHtml(t.deal_name || '')}${t.deal_name && t.person ? ' · ' : ''}${escHtml(t.person || '')}${t.commission ? ' · <span style="color:var(--gold-d)">' + fmtMoney(t.commission) + '</span>' : ''}</div>` : ''}
+      </div>
+      <div class="task-del" onclick="deleteTask('${t.id}')">&#10005;</div>
+    </div>
+  `).join('');
+}
+
+function renderContacts() {
+  const list  = document.getElementById('contacts-list');
+  const count = document.getElementById('contact-count');
+  count.textContent = state.contacts.length;
+
+  if (!state.contacts.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#9786;</div><div class="empty-text">No contacts — add one above</div></div>`;
+    return;
+  }
+
+  // Sort: ehvp → hvp → normal
+  const order = { ehvp: 0, hvp: 1, normal: 2 };
+  const sorted = [...state.contacts].sort((a, b) => (order[a.priority] ?? 2) - (order[b.priority] ?? 2));
+
+  list.innerHTML = sorted.map(c => {
+    const initials = c.name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+    return `
+      <div class="contact-row">
+        <div class="contact-avatar">${initials}</div>
+        <div class="contact-info">
+          <div class="contact-name">${escHtml(c.name)}</div>
+          <div class="contact-meta">${escHtml(c.company || c.role || '')}${c.phone ? ' · ' + escHtml(c.phone) : ''}</div>
+        </div>
+        ${c.priority === 'ehvp' ? '<div class="contact-badge cb-ehvp">EHVP</div>' : ''}
+        ${c.priority === 'hvp'  ? '<div class="contact-badge cb-hvp">HVP</div>'  : ''}
+        <div class="task-del" onclick="deleteContact('${c.id}')">&#10005;</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateStatusPills() {
+  const pills = document.getElementById('status-pills');
+  const active   = state.deals.filter(d => d.status === 'active').length;
+  const pipeline = state.deals.filter(d => d.status === 'pipeline').length;
+  const contract = state.deals.filter(d => d.status === 'under_contract').length;
+  const pending  = state.deals.filter(d => d.status === 'pending_payment').length;
+  pills.innerHTML = `
+    <div class="status-pill sp-active"><div class="dot"></div>${active} Active</div>
+    <div class="status-pill sp-pipeline"><div class="dot"></div>${pipeline} Pipeline</div>
+    <div class="status-pill sp-contract"><div class="dot"></div>${contract} Contract</div>
+    <div class="status-pill sp-pending"><div class="dot"></div>${pending} Pending</div>
+  `;
+}
+
+function updateDealDatalist() {
+  const dl = document.getElementById('deal-list');
+  if (dl) dl.innerHTML = state.deals.map(d => `<option value="${escAttr(d.name)}">`).join('');
+}
+
+function setSyncStatus(msg) {
+  document.getElementById('sync-indicator').textContent = msg;
+}
+
+// ──────────────────────────────────────────────────────────────
+// INTERACTIONS — DEALS
+// ──────────────────────────────────────────────────────────────
+function toggleDeal(id) {
+  const dd = document.getElementById('dd-' + id);
+  const de = document.getElementById('de-' + id);
+  if (!dd) return;
+  const open = dd.classList.toggle('visible');
+  de.classList.toggle('open', open);
+}
+
+const STATUS_CYCLE = ['pipeline', 'active', 'under_contract', 'pending_payment', 'closed'];
+
+async function cycleStatus(id) {
+  const deal = state.deals.find(d => d.id === id);
+  if (!deal) return;
+  const idx = STATUS_CYCLE.indexOf(deal.status);
+  const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+  await sbUpdate('deals', id, { status: next, updated_at: new Date().toISOString() });
+  deal.status = next;
+  renderAll();
+  toast(`Status → ${STATUS_LABELS[next]}`, 'success');
+}
+
+async function deleteDeal(id) {
+  if (!confirm('Delete this deal? This cannot be undone.')) return;
+  await sbDelete('deals', id);
+  state.deals = state.deals.filter(d => d.id !== id);
+  renderAll();
+  toast('Deal deleted');
+}
+
+function editDeal(id) {
+  const d = state.deals.find(d => d.id === id);
+  if (!d) return;
+  document.getElementById('deal-edit-id').value = d.id;
+  document.getElementById('deal-modal-title').textContent = 'Edit Deal';
+  document.getElementById('deal-name').value = d.name || '';
+  document.getElementById('deal-type').value = d.type || '';
+  document.getElementById('deal-status').value = d.status || 'pipeline';
+  document.getElementById('deal-commission').value = d.commission || '';
+  document.getElementById('deal-value').value = d.value || '';
+  document.getElementById('deal-address').value = d.address || '';
+  document.getElementById('deal-contact').value = d.contact || '';
+  document.getElementById('deal-notes').value = d.notes || '';
+  document.getElementById('modal-deal').classList.remove('hidden');
+}
+
+async function saveDeal() {
+  const name = document.getElementById('deal-name').value.trim();
+  if (!name) { toast('Deal name is required', 'error'); return; }
+
+  const editId = document.getElementById('deal-edit-id').value;
+  const payload = {
+    name,
+    type:       document.getElementById('deal-type').value || null,
+    status:     document.getElementById('deal-status').value || 'pipeline',
+    commission: parseFloat(document.getElementById('deal-commission').value) || null,
+    value:      parseFloat(document.getElementById('deal-value').value) || null,
+    address:    document.getElementById('deal-address').value.trim() || null,
+    contact:    document.getElementById('deal-contact').value.trim() || null,
+    notes:      document.getElementById('deal-notes').value.trim() || null,
+  };
+
+  setSyncStatus('Saving');
+  if (editId) {
+    payload.updated_at = new Date().toISOString();
+    const r = await sbUpdate('deals', editId, payload);
+    if (r.ok) {
+      const idx = state.deals.findIndex(d => d.id === editId);
+      if (idx !== -1) state.deals[idx] = { ...state.deals[idx], ...payload };
+      toast('Deal updated', 'success');
+    } else { toast('Save failed', 'error'); }
+  } else {
+    const r = await sbInsert('deals', payload);
+    if (r.ok) {
+      const newDeal = Array.isArray(r.data) ? r.data[0] : r.data;
+      state.deals.push(newDeal);
+      toast('Deal added', 'success');
+    } else { toast('Save failed', 'error'); }
+  }
+
+  setSyncStatus('Live');
+  closeModal('deal');
+  renderAll();
+}
+
+// ──────────────────────────────────────────────────────────────
+// INTERACTIONS — TASKS
+// ──────────────────────────────────────────────────────────────
+async function toggleTask(id) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+  const newStatus = task.status === 'done' ? 'open' : 'done';
+  const updates = { status: newStatus, done_at: newStatus === 'done' ? new Date().toISOString() : null };
+  await sbUpdate('tasks', id, updates);
+  task.status = newStatus;
+  task.done_at = updates.done_at;
+  renderTasks();
+  if (newStatus === 'done') toast('Task complete', 'success');
+}
+
+async function deleteTask(id) {
+  await sbDelete('tasks', id);
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  renderTasks();
+  updateStatusPills();
+}
+
+async function saveTask() {
+  const title = document.getElementById('task-title').value.trim();
+  if (!title) { toast('Task title is required', 'error'); return; }
+
+  const payload = {
+    title,
+    deal_name:  document.getElementById('task-deal-name').value.trim() || null,
+    person:     document.getElementById('task-person').value.trim() || null,
+    commission: parseFloat(document.getElementById('task-commission').value) || null,
+    status:     'open',
+  };
+
+  setSyncStatus('Saving');
+  const r = await sbInsert('tasks', payload);
+  if (r.ok) {
+    const newTask = Array.isArray(r.data) ? r.data[0] : r.data;
+    state.tasks.push(newTask);
+    toast('Task added', 'success');
+  } else {
+    toast('Save failed', 'error');
+  }
+  setSyncStatus('Live');
+  closeModal('task');
+  renderTasks();
+  updateStatusPills();
+}
+
+// ──────────────────────────────────────────────────────────────
+// INTERACTIONS — CONTACTS
+// ──────────────────────────────────────────────────────────────
+async function deleteContact(id) {
+  await sbDelete('contacts', id);
+  state.contacts = state.contacts.filter(c => c.id !== id);
+  renderContacts();
+}
+
+async function saveContact() {
+  const name = document.getElementById('contact-name').value.trim();
+  if (!name) { toast('Name is required', 'error'); return; }
+
+  const payload = {
+    name,
+    company:  document.getElementById('contact-company').value.trim() || null,
+    priority: document.getElementById('contact-priority').value || 'normal',
+    phone:    document.getElementById('contact-phone').value.trim() || null,
+    email:    document.getElementById('contact-email').value.trim() || null,
+    role:     document.getElementById('contact-role').value.trim() || null,
+    notes:    document.getElementById('contact-notes').value.trim() || null,
+  };
+
+  setSyncStatus('Saving');
+  const r = await sbInsert('contacts', payload);
+  if (r.ok) {
+    const newContact = Array.isArray(r.data) ? r.data[0] : r.data;
+    state.contacts.push(newContact);
+    toast('Contact added', 'success');
+  } else {
+    toast('Save failed', 'error');
+  }
+  setSyncStatus('Live');
+  closeModal('contact');
+  renderContacts();
+}
+
+// ──────────────────────────────────────────────────────────────
+// MODALS
+// ──────────────────────────────────────────────────────────────
+function openModal(type) {
+  // Reset forms
+  if (type === 'deal') {
+    document.getElementById('deal-edit-id').value = '';
+    document.getElementById('deal-modal-title').textContent = 'New Deal';
+    document.getElementById('deal-name').value = '';
+    document.getElementById('deal-type').value = '';
+    document.getElementById('deal-status').value = 'pipeline';
+    document.getElementById('deal-commission').value = '';
+    document.getElementById('deal-value').value = '';
+    document.getElementById('deal-address').value = '';
+    document.getElementById('deal-contact').value = '';
+    document.getElementById('deal-notes').value = '';
+  } else if (type === 'task') {
+    document.getElementById('task-title').value = '';
+    document.getElementById('task-deal-name').value = '';
+    document.getElementById('task-person').value = '';
+    document.getElementById('task-commission').value = '';
+    updateDealDatalist();
+  } else if (type === 'contact') {
+    document.getElementById('contact-name').value = '';
+    document.getElementById('contact-company').value = '';
+    document.getElementById('contact-priority').value = 'normal';
+    document.getElementById('contact-phone').value = '';
+    document.getElementById('contact-email').value = '';
+    document.getElementById('contact-role').value = '';
+    document.getElementById('contact-notes').value = '';
+  }
+  document.getElementById('modal-' + type).classList.remove('hidden');
+  // Focus first input
+  setTimeout(() => {
+    const first = document.querySelector(`#modal-${type} .form-input, #modal-${type} .form-textarea`);
+    if (first) first.focus();
+  }, 50);
+}
+
+function closeModal(type) {
+  document.getElementById('modal-' + type).classList.add('hidden');
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) {
+      overlay.classList.add('hidden');
+    }
+  });
+});
+
+// ──────────────────────────────────────────────────────────────
+// TOAST
+// ──────────────────────────────────────────────────────────────
+function toast(msg, type = '') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 300);
+  }, 2500);
+}
+
+// ──────────────────────────────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────────────────────────────
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(str) {
+  if (!str) return '';
+  return String(str).replace(/"/g,'&quot;');
+}
+
+// ──────────────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────────────
+async function init() {
+  await loadAll();
+  // Auto-refresh every 60 seconds
+  setInterval(loadAll, 60000);
+}
+
+// Check session on load
+if (checkSession()) {
+  document.getElementById('pin-gate').classList.add('hidden');
+  init();
+}
+</script>
+</body>
+</html>
