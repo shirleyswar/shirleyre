@@ -140,17 +140,17 @@ export default function WarRoomPage() {
               <OperationsView key="ops" activePanel={activePanel} />
             )}
             {activeSection === 'life' && (
-              <SectionView key="life">
+              <SectionView key="life" title="Life" onBack={() => setActiveSection('operations')}>
                 <LifePanel />
               </SectionView>
             )}
             {activeSection === 'entities' && (
-              <SectionView key="entities">
+              <SectionView key="entities" title="Entities" onBack={() => setActiveSection('operations')}>
                 <EntitiesPanel />
               </SectionView>
             )}
             {activeSection === 'portfolio' && (
-              <SectionView key="portfolio">
+              <SectionView key="portfolio" title="Portfolio" onBack={() => setActiveSection('operations')}>
                 <PortfolioPanel />
               </SectionView>
             )}
@@ -344,21 +344,23 @@ function NavRibbon({
             {/* Label */}
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: 11, fontWeight: 700,
-                color: isActive ? '#EEEAF4' : '#9B85C8',
-                letterSpacing: '0.02em',
+                fontSize: 10, fontWeight: 800,
+                color: isActive ? '#EEEAF4' : '#9080B0',
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                fontFamily: 'var(--font-body)',
                 marginBottom: 1,
               }}>
                 {sec.label}
               </div>
               <div style={{
-                fontSize: 9, fontWeight: 600,
-                letterSpacing: '0.10em',
+                fontSize: 8, fontWeight: 600,
+                letterSpacing: '0.12em',
                 textTransform: 'uppercase',
-                color: isActive ? '#C8B8E8' : '#7B6CA0',
+                color: isActive ? '#C8B8E8' : 'rgba(130,90,200,0.55)',
                 fontFamily: 'var(--font-body)',
               }}>
-                {isActive ? 'Active' : 'View'}
+                {isActive ? '● Active' : 'View'}
               </div>
             </div>
           </motion.button>
@@ -401,7 +403,7 @@ function LiveStatusDot() {
 
 // ─── SECTION VIEWS ───────────────────────────────────────────────────────────
 
-function SectionView({ children }: { children: React.ReactNode }) {
+function SectionView({ children, onBack, title }: { children: React.ReactNode; onBack?: () => void; title?: string }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -410,6 +412,39 @@ function SectionView({ children }: { children: React.ReactNode }) {
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}
     >
+      {/* Back to War Room */}
+      {onBack && (
+        <motion.button
+          onClick={onBack}
+          whileHover={{ x: -3 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            marginBottom: 16,
+            background: 'rgba(40,30,65,0.6)',
+            border: '1px solid rgba(130,90,200,0.3)',
+            borderRadius: 8,
+            padding: '6px 14px',
+            cursor: 'pointer',
+            color: '#9B85C8',
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.10em',
+            textTransform: 'uppercase',
+            fontFamily: 'var(--font-body)',
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          War Room
+          {title && (
+            <span style={{ color: 'rgba(130,90,200,0.5)', fontWeight: 400, marginLeft: 2 }}>/ {title}</span>
+          )}
+        </motion.button>
+      )}
       {children}
     </motion.div>
   )
