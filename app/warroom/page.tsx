@@ -131,8 +131,7 @@ export default function WarRoomPage() {
           onSectionChange={setActiveSection}
         />
 
-        {/* ── TICKER STRIP ── */}
-        <StatsRibbon />
+        {/* StatsRibbon now lives inline in header */}
 
         {/* ── DASHBOARD BODY ── */}
         <main style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 28px' }}>
@@ -168,39 +167,51 @@ function WarRoomHeader() {
   return (
     <header
       style={{
-        height: 56,
+        height: 52,
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
         alignItems: 'center',
         paddingLeft: 20,
         paddingRight: 20,
-        gap: 16,
+        gap: 0,
         flexShrink: 0,
         position: 'relative',
+        overflow: 'hidden',
       }}
     >
+      {/* Title */}
       <h1 style={{
         fontFamily: 'var(--font-display)',
-        fontSize: 'clamp(18px, 2.2vw, 26px)',
+        fontSize: 20,
         fontWeight: 800,
         color: '#F0F2FF',
         letterSpacing: '-0.04em',
         lineHeight: 1,
         margin: 0,
+        flexShrink: 0,
         textShadow: '0 0 32px rgba(79,142,247,0.28)',
       }}>
         WAR ROOM
       </h1>
       <span style={{
-        fontSize: 10, fontWeight: 600,
-        color: 'rgba(79,142,247,0.6)',
+        fontSize: 9, fontWeight: 600,
+        color: 'rgba(79,142,247,0.5)',
         letterSpacing: '0.12em',
         textTransform: 'uppercase',
         fontFamily: 'var(--font-body)',
+        marginLeft: 8,
+        flexShrink: 0,
       }}>
         ShirleyCRE
       </span>
+
+      {/* Divider */}
+      <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.07)', marginLeft: 16, marginRight: 16, flexShrink: 0 }} />
+
+      {/* Stats inline */}
+      <StatsRibbon inline />
+
       <div style={{ flex: 1 }} />
       <LiveStatusDot />
     </header>
@@ -250,15 +261,15 @@ function NavRibbon({
               minWidth: 140,
               height: 84,
               background: isActive
-                ? 'linear-gradient(135deg, #1A1040 0%, #1E1545 40%, #180F38 100%)'
-                : 'linear-gradient(135deg, #0F0D1C 0%, #120E22 50%, #0D0B1A 100%)',
-              border: `1px solid ${isActive ? 'rgba(167,139,250,0.40)' : 'rgba(167,139,250,0.08)'}`,
+                ? 'linear-gradient(135deg, #2A1F50 0%, #221845 40%, #1E1540 100%)'
+                : 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
+              border: `1px solid ${isActive ? 'rgba(140,100,220,0.65)' : 'rgba(90,70,140,0.35)'}`,
               borderRadius: 16,
               cursor: 'pointer',
               overflow: 'hidden',
               boxShadow: isActive
-                ? '0 0 0 1px rgba(167,139,250,0.12), 0 8px 32px rgba(0,0,0,0.6), 0 0 28px rgba(139,92,246,0.18), inset 0 1px 0 rgba(167,139,250,0.1)'
-                : '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03)',
+                ? '0 0 0 1px rgba(140,100,220,0.2), 0 8px 32px rgba(0,0,0,0.6), 0 0 32px rgba(100,60,180,0.25), inset 0 1px 0 rgba(167,139,250,0.15)'
+                : '0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(80,50,140,0.15), inset 0 1px 0 rgba(140,100,220,0.06)',
               userSelect: 'none',
               WebkitUserSelect: 'none',
             }}
@@ -268,7 +279,7 @@ function NavRibbon({
               position: 'absolute', top: -30, right: -30,
               width: 100, height: 100,
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(167,139,250,0.06) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(100,60,180,0.20) 0%, transparent 70%)',
               pointerEvents: 'none',
             }} />
 
@@ -296,18 +307,18 @@ function NavRibbon({
               <motion.div
                 style={{
                   position: 'absolute', inset: 0, borderRadius: '50%',
-                  border: '1px solid rgba(167,139,250,0.10)',
+                  border: '1px solid rgba(130,90,200,0.35)',
                 }}
-                animate={{ scale: [1, 1.45, 1], opacity: [0.3, 0, 0.3] }}
+                animate={{ scale: [1, 1.45, 1], opacity: [0.5, 0, 0.5] }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
               />
               {/* Inner orbit ring */}
               <motion.div
                 style={{
                   position: 'absolute', inset: 7, borderRadius: '50%',
-                  border: '1px solid rgba(167,139,250,0.18)',
+                  border: '1px solid rgba(130,90,200,0.55)',
                 }}
-                animate={{ scale: [1, 1.25, 1], opacity: [0.45, 0.05, 0.45] }}
+                animate={{ scale: [1, 1.25, 1], opacity: [0.65, 0.08, 0.65] }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.55 }}
               />
               {/* Core glow circle */}
@@ -315,15 +326,15 @@ function NavRibbon({
                 animate={{
                   boxShadow: isActive
                     ? ['0 0 10px rgba(167,139,250,0.35)', '0 0 22px rgba(167,139,250,0.65)', '0 0 10px rgba(167,139,250,0.35)']
-                    : ['0 0 2px rgba(167,139,250,0.06)', '0 0 8px rgba(167,139,250,0.15)', '0 0 2px rgba(167,139,250,0.06)'],
+                    : ['0 0 6px rgba(120,80,200,0.2)', '0 0 14px rgba(120,80,200,0.4)', '0 0 6px rgba(120,80,200,0.2)'],
                 }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
                 style={{
                   position: 'absolute', inset: 15, borderRadius: '50%',
-                  background: isActive ? 'rgba(167,139,250,0.18)' : 'rgba(167,139,250,0.05)',
-                  border: `1px solid ${isActive ? 'rgba(167,139,250,0.50)' : 'rgba(167,139,250,0.14)'}`,
+                  background: isActive ? 'rgba(75,50,130,0.7)' : 'rgba(40,30,65,0.9)',
+                  border: `1px solid ${isActive ? 'rgba(140,100,220,0.7)' : 'rgba(130,90,200,0.5)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: isActive ? '#A78BFA' : 'rgba(167,139,250,0.35)',
+                  color: isActive ? '#C4B5FD' : '#8B6CC1',
                 }}
               >
                 <sec.icon />
@@ -334,7 +345,7 @@ function NavRibbon({
             <div style={{ textAlign: 'center' }}>
               <div style={{
                 fontSize: 11, fontWeight: 700,
-                color: isActive ? 'rgba(240,242,255,0.9)' : 'rgba(240,242,255,0.4)',
+                color: isActive ? '#EEEAF4' : '#9B85C8',
                 letterSpacing: '0.02em',
                 marginBottom: 1,
               }}>
@@ -344,7 +355,7 @@ function NavRibbon({
                 fontSize: 9, fontWeight: 600,
                 letterSpacing: '0.10em',
                 textTransform: 'uppercase',
-                color: isActive ? 'rgba(167,139,250,0.6)' : 'rgba(167,139,250,0.22)',
+                color: isActive ? '#C8B8E8' : '#7B6CA0',
                 fontFamily: 'var(--font-body)',
               }}>
                 {isActive ? 'Active' : 'View'}
