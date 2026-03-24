@@ -334,7 +334,7 @@ function NavRibbon({
                 }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
                 style={{
-                  position: 'absolute', inset: 15, borderRadius: '50%',
+                  position: 'absolute', inset: 10, borderRadius: '50%',
                   background: isActive ? 'rgba(75,50,130,0.7)' : 'rgba(40,30,65,0.9)',
                   border: `1px solid ${isActive ? 'rgba(140,100,220,0.7)' : 'rgba(130,90,200,0.5)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -501,7 +501,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 
 function HeartIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0.5">
       <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
     </svg>
   )
@@ -509,22 +509,17 @@ function HeartIcon() {
 
 function BuildingIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="2" y="3" width="8" height="18"/>
-      <rect x="14" y="8" width="8" height="13"/>
-      <line x1="2" y1="21" x2="22" y2="21"/>
-      <line x1="6" y1="7" x2="6" y2="7"/>
-      <line x1="6" y1="11" x2="6" y2="11"/>
-      <line x1="6" y1="15" x2="6" y2="15"/>
-      <line x1="18" y1="12" x2="18" y2="12"/>
-      <line x1="18" y1="16" x2="18" y2="16"/>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0.5">
+      <path d="M2 3h8v18H2z"/>
+      <path d="M14 8h8v13h-8z"/>
+      <line x1="2" y1="21" x2="22" y2="21" strokeWidth="1.5" stroke="currentColor"/>
     </svg>
   )
 }
 
 function ChartIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
     </svg>
   )
