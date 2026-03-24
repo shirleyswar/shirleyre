@@ -65,8 +65,9 @@ export default function BattlePlanPanel() {
           <SwordIcon />
         </span>
         <span className="wr-card-title">Battle Plan</span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
-          Today's Actions
+        <span className="wr-panel-line" />
+        <span className="wr-panel-stat" style={{ fontSize: 16 }}>
+          {tasks.length > 0 ? tasks.length : '—'}
         </span>
       </div>
 

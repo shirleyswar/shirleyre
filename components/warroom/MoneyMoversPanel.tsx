@@ -16,6 +16,32 @@ const STATUS_COLORS: Record<string, string> = {
   pending_payment: 'badge-pending',
 }
 
+// Generates deterministic atmospheric sparkline points from a seed number
+function generateSparkline(seed: number, count = 12): number[] {
+  const pts: number[] = []
+  let val = 40 + (seed % 30)
+  for (let i = 0; i < count; i++) {
+    val += ((seed * (i + 1) * 7919) % 21) - 9
+    val = Math.max(10, Math.min(90, val))
+    pts.push(val)
+  }
+  return pts
+}
+
+// Converts a value array to SVG path string (area + line)
+function buildSparkPaths(values: number[], w: number, h: number) {
+  const max = Math.max(...values)
+  const min = Math.min(...values)
+  const range = max - min || 1
+  const pts = values.map((v, i) => ({
+    x: (i / (values.length - 1)) * w,
+    y: h - ((v - min) / range) * (h * 0.85) - h * 0.05,
+  }))
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const areaPath = `${linePath} L${w},${h} L0,${h} Z`
+  return { linePath, areaPath, pts }
+}
+
 export default function MoneyMoversPanel() {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,12 +70,14 @@ export default function MoneyMoversPanel() {
 
   return (
     <div className="wr-card h-full min-h-[240px]">
+      {/* Chapter-heading panel header */}
       <div className="wr-card-header">
         <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
           <RocketIcon />
         </span>
         <span className="wr-card-title">Money Movers</span>
-        <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 700, color: 'var(--accent-gold)', fontVariantNumeric: 'tabular-nums' }}>
+        <span className="wr-panel-line" />
+        <span className="wr-panel-stat wr-panel-stat-gold" style={{ fontSize: 16 }}>
           {formatCurrency(total)}
         </span>
       </div>
@@ -57,11 +85,12 @@ export default function MoneyMoversPanel() {
       {loading ? (
         <SkeletonList />
       ) : deals.length === 0 ? (
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0' }}>
-          No active deals ranked yet.
+        <div className="wr-empty">
+          <div className="wr-empty-text">Pipeline clear.</div>
+          <div className="wr-empty-line" />
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {deals.map((deal, i) => (
             <DealRow key={deal.id} deal={deal} rank={i + 1} />
           ))}
@@ -72,57 +101,88 @@ export default function MoneyMoversPanel() {
 }
 
 function DealRow({ deal, rank }: { deal: Deal; rank: number }) {
-  const pct = deal.commission_estimated && deal.value
-    ? Math.round((deal.commission_estimated / deal.value) * 100)
-    : null
+  // Generate a sparkline seeded from deal id
+  const seed = deal.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + (deal.commission_estimated || 1)
+  const sparkValues = generateSparkline(seed)
+  const sparkId = `spark-mm-${deal.id}`
+  const W = 64, H = 28
+  const { linePath, areaPath } = buildSparkPaths(sparkValues, W, H)
 
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      padding: '8px 10px',
-      background: 'var(--bg-elevated)',
-      borderRadius: 6,
-      border: '1px solid var(--border-subtle)',
-    }}>
-      {/* Rank */}
-      <span style={{
-        width: 20,
-        height: 20,
-        borderRadius: '50%',
-        background: rank === 1 ? 'rgba(201,147,58,0.2)' : 'rgba(255,255,255,0.04)',
+    <div
+      style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 10,
-        fontWeight: 700,
+        gap: 10,
+        padding: '8px 10px',
+        background: 'var(--bg-nested)',
+        borderRadius: 8,
+        border: '1px solid rgba(255,255,255,0.05)',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'
+        e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.3)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
+        e.currentTarget.style.boxShadow = 'none'
+      }}
+    >
+      {/* Rank */}
+      <span style={{
+        width: 20, height: 20,
+        borderRadius: '50%',
+        background: rank === 1 ? 'rgba(232,184,75,0.18)' : 'rgba(255,255,255,0.04)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 10, fontWeight: 700,
         color: rank === 1 ? 'var(--accent-gold)' : 'var(--text-muted)',
         flexShrink: 0,
+        border: rank === 1 ? '1px solid rgba(232,184,75,0.25)' : 'none',
       }}>
         {rank}
       </span>
 
-      {/* Deal name */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      {/* Deal name + type */}
+      <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
         <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {deal.name}
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
-          {deal.type.replace('_', ' ')}
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, textTransform: 'capitalize' }}>
+          {deal.type.replace(/_/g, ' ')}
         </div>
       </div>
 
+      {/* Sparkline — atmospheric area chart */}
+      <svg
+        width={W} height={H}
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ flexShrink: 0, overflow: 'visible' }}
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id={sparkId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#4F8EF7" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#4F8EF7" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#${sparkId})`} />
+        <path d={linePath} fill="none" stroke="#4F8EF7" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+
       {/* Commission */}
-      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-gold)', fontVariantNumeric: 'tabular-nums' }}>
+      <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 60 }}>
+        <div style={{
+          fontSize: 13, fontWeight: 700,
+          color: 'var(--accent-gold)',
+          fontVariantNumeric: 'tabular-nums',
+          letterSpacing: '-0.01em',
+        }}>
           {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-          <span className={`badge ${STATUS_COLORS[deal.status] || 'badge-pipeline'}`}>
-            {deal.status.replace('_', ' ')}
-          </span>
-        </div>
+        <span className={`badge ${STATUS_COLORS[deal.status] || 'badge-pipeline'}`}>
+          {deal.status.replace(/_/g, ' ')}
+        </span>
       </div>
     </div>
   )
@@ -148,14 +208,14 @@ const PLACEHOLDER_DEALS: Deal[] = [
 function SkeletonList() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 44 }} />)}
+      {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 44 }} />)}
     </div>
   )
 }
 
 function RocketIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/>
       <path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/>
     </svg>

@@ -40,15 +40,10 @@ export default function StatsRibbon() {
             .filter(d => d.status === 'pending_payment')
             .reduce((sum, d) => sum + ((d.commission_estimated || 0) - (d.commission_collected || 0)), 0)
 
-          setStats({
-            totalPipeline,
-            activeDeals,
-            arOutstanding,
-            nextClosing: null, // TODO: pull from tasks table
-          })
+          setStats({ totalPipeline, activeDeals, arOutstanding, nextClosing: null })
         }
-      } catch (e) {
-        // DB not yet migrated — show zeroes, no crash
+      } catch {
+        // DB not yet migrated — show zeroes
       } finally {
         setLoading(false)
       }
@@ -58,111 +53,99 @@ export default function StatsRibbon() {
     return () => clearInterval(interval)
   }, [])
 
-  const statItems = [
+  const items: { label: string; value: string; accentColor: string }[] = [
     {
       label: 'Total Pipeline',
       value: loading ? '—' : formatCurrency(stats.totalPipeline),
-      color: 'var(--accent-gold)',
+      accentColor: 'var(--accent-gold)',
     },
     {
-      label: 'Active Deals',
+      label: 'Open Deals',
       value: loading ? '—' : String(stats.activeDeals),
-      color: 'var(--success)',
+      accentColor: 'var(--success)',
     },
     {
       label: 'AR Outstanding',
       value: loading ? '—' : formatCurrency(stats.arOutstanding),
-      color: '#60A5FA',
+      accentColor: 'var(--accent-blue)',
     },
     {
       label: 'Next Closing',
       value: loading ? '—' : (stats.nextClosing || '—'),
-      color: 'var(--text-primary)',
+      accentColor: 'var(--accent-violet)',
     },
   ]
 
   return (
-    <header
-      style={{
-        height: 56,
-        background: 'var(--bg-card)',
-        borderBottom: '1px solid var(--border-subtle)',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 20px',
-        gap: 0,
-        flexShrink: 0,
-      }}
-    >
-      {/* War Room label */}
-      <div style={{ marginRight: 24, flexShrink: 0 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-gold)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          War Room
-        </span>
-      </div>
-
-      {/* Divider */}
-      <div style={{ width: 1, height: 24, background: 'var(--border-subtle)', marginRight: 24 }} />
-
-      {/* Stats */}
-      <div style={{ display: 'flex', gap: 0, flex: 1, overflowX: 'auto' }}>
-        {statItems.map((stat, i) => (
+    <div className="wr-ticker-strip">
+      {items.map((item, i) => (
+        <div
+          key={item.label}
+          className="wr-ticker-item"
+          style={{ borderLeftColor: i === 0 ? 'transparent' : undefined }}
+        >
+          <div className="wr-ticker-label">{item.label}</div>
           <div
-            key={stat.label}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 24,
-              paddingRight: 24,
-              flexShrink: 0,
-            }}
+            className="wr-ticker-value"
+            style={{ color: item.accentColor }}
           >
-            {i > 0 && (
-              <div style={{ width: 1, height: 20, background: 'var(--border-subtle)', marginRight: 0 }} />
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', marginLeft: i > 0 ? 24 : 0 }}>
-              <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1 }}>
-                {stat.label}
-              </span>
-              <span style={{ fontSize: 16, fontWeight: 700, color: stat.color, lineHeight: 1.3, fontVariantNumeric: 'tabular-nums' }}>
-                {stat.value}
-              </span>
-            </div>
+            {item.value}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
 
-      {/* Right: timestamp */}
-      <LiveClock />
-    </header>
+      {/* Right: live clock */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          paddingRight: 20,
+          paddingLeft: 20,
+          borderLeft: '1px solid rgba(255,255,255,0.05)',
+          flexShrink: 0,
+        }}
+      >
+        <LiveClock />
+      </div>
+    </div>
   )
 }
 
 function LiveClock() {
   const [time, setTime] = useState('')
+  const [date, setDate] = useState('')
 
   useEffect(() => {
     function update() {
       const now = new Date()
-      const cst = now.toLocaleString('en-US', {
+      const t = now.toLocaleString('en-US', {
         timeZone: 'America/Chicago',
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
         hour12: true,
       })
-      setTime(cst + ' CST')
+      const d = now.toLocaleString('en-US', {
+        timeZone: 'America/Chicago',
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      })
+      setTime(t + ' CST')
+      setDate(d)
     }
     update()
-    const id = setInterval(update, 60_000)
+    const id = setInterval(update, 30_000)
     return () => clearInterval(id)
   }, [])
 
   return (
-    <div style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-      {time}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
+      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+        {date}
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>
+        {time}
+      </div>
     </div>
   )
 }

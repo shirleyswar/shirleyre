@@ -39,10 +39,14 @@ export default function AccountsReceivablePanel() {
   return (
     <div className="wr-card h-full min-h-[200px]">
       <div className="wr-card-header">
-        <span style={{ color: '#C084FC', display: 'flex' }}>
+        <span style={{ color: 'var(--accent-violet)', display: 'flex' }}>
           <DollarIcon />
         </span>
-        <span className="wr-card-title">Accounts Receivable</span>
+        <span className="wr-card-title">Receivable</span>
+        <span className="wr-panel-line" />
+        <span className="wr-panel-stat" style={{ color: total > 0 ? 'var(--accent-violet)' : 'var(--success)', fontSize: 16 }}>
+          {loading ? '—' : formatCurrency(total)}
+        </span>
       </div>
 
       {/* Big number */}

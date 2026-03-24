@@ -4,114 +4,128 @@ import { motion } from 'framer-motion'
 
 export default function ShirleyCREAgentCard() {
   return (
-    <div className="wr-card h-full min-h-[200px]" style={{
-      background: 'linear-gradient(135deg, rgba(26,29,39,0.8) 0%, rgba(34,38,50,0.5) 100%)',
-      border: '1px solid rgba(201,147,58,0.15)',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      {/* Background pulse glow */}
+    <div
+      className="wr-card wr-agent-card-bg h-full min-h-[200px]"
+      style={{ overflow: 'hidden', position: 'relative' }}
+    >
+      {/* Atmospheric glow orbs */}
       <div style={{
         position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 200,
-        height: 200,
+        top: -40, right: -40,
+        width: 180, height: 180,
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(201,147,58,0.06) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute',
+        bottom: -30, left: -20,
+        width: 140, height: 140,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(79,142,247,0.08) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
-      <div className="wr-card-header">
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
+      {/* Header */}
+      <div className="wr-card-header" style={{ borderBottomColor: 'rgba(167,139,250,0.12)' }}>
+        <span style={{ color: 'rgba(167,139,250,0.8)', display: 'flex' }}>
           <AgentIcon />
         </span>
-        <span className="wr-card-title">ShirleyCRE Agent</span>
+        <span className="wr-card-title" style={{ color: 'rgba(167,139,250,0.6)' }}>
+          ShirleyCRE Agent
+        </span>
       </div>
 
+      {/* Content */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '24px 0',
+        padding: '20px 0',
         gap: 12,
         position: 'relative',
       }}>
-        {/* Animated rings */}
-        <div style={{ position: 'relative', width: 64, height: 64 }}>
+        {/* Animated orbit rings */}
+        <div style={{ position: 'relative', width: 60, height: 60 }}>
           <motion.div
             style={{
-              position: 'absolute',
-              inset: 0,
+              position: 'absolute', inset: 0,
               borderRadius: '50%',
-              border: '1.5px solid rgba(201,147,58,0.3)',
+              border: '1px solid rgba(167,139,250,0.25)',
             }}
-            animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+            animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
           />
           <motion.div
             style={{
-              position: 'absolute',
-              inset: 8,
+              position: 'absolute', inset: 8,
               borderRadius: '50%',
-              border: '1.5px solid rgba(201,147,58,0.5)',
+              border: '1px solid rgba(167,139,250,0.4)',
             }}
-            animate={{ scale: [1, 1.2, 1], opacity: [0.8, 0.1, 0.8] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
+            animate={{ scale: [1, 1.22, 1], opacity: [0.7, 0.1, 0.7] }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
           />
+          {/* Core */}
           <div style={{
-            position: 'absolute',
-            inset: 16,
+            position: 'absolute', inset: 16,
             borderRadius: '50%',
-            background: 'rgba(201,147,58,0.12)',
-            border: '1px solid rgba(201,147,58,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            background: 'rgba(167,139,250,0.10)',
+            border: '1px solid rgba(167,139,250,0.28)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <AgentIcon />
           </div>
         </div>
 
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
+        <div style={{ textAlign: 'center', position: 'relative' }}>
+          <div style={{
+            fontSize: 14, fontWeight: 700,
+            color: 'rgba(240,242,255,0.9)',
+            marginBottom: 3,
+            letterSpacing: '-0.01em',
+          }}>
             ShirleyCRE
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          <div style={{
+            fontSize: 11,
+            color: 'rgba(167,139,250,0.5)',
+            letterSpacing: '0.04em',
+          }}>
             Autonomous CRE Agent
           </div>
         </div>
 
         {/* Status pill */}
         <div style={{
-          padding: '4px 14px',
-          borderRadius: 9999,
-          background: 'rgba(201,147,58,0.08)',
-          border: '1px solid rgba(201,147,58,0.2)',
-          fontSize: 11,
-          color: 'var(--accent-gold)',
-          fontWeight: 500,
-          letterSpacing: '0.06em',
+          padding: '3px 12px',
+          borderRadius: 4,
+          background: 'rgba(167,139,250,0.08)',
+          border: '1px solid rgba(167,139,250,0.18)',
+          fontSize: 10,
+          color: 'rgba(167,139,250,0.7)',
+          fontWeight: 700,
+          letterSpacing: '0.10em',
+          textTransform: 'uppercase',
         }}>
-          COMING SOON
+          Phase 3 — Coming Soon
         </div>
 
-        {/* Phase indicator */}
+        {/* Phase description */}
         <div style={{
-          padding: '8px 12px',
-          background: 'rgba(255,255,255,0.02)',
-          borderRadius: 6,
-          border: '1px solid var(--border-subtle)',
+          padding: '8px 14px',
+          background: 'rgba(0,0,0,0.2)',
+          borderRadius: 8,
+          border: '1px solid rgba(167,139,250,0.08)',
           fontSize: 11,
-          color: 'var(--text-muted)',
-          lineHeight: 1.5,
-          maxWidth: 220,
+          color: 'rgba(240,242,255,0.35)',
+          lineHeight: 1.6,
+          maxWidth: 210,
           textAlign: 'center',
+          letterSpacing: '0.01em',
         }}>
-          Dedicated hardware · Phase 3<br/>
-          Deal intake · Agent-to-agent ops
+          Dedicated hardware · Deal intake<br/>
+          Agent-to-agent operations
         </div>
       </div>
     </div>
@@ -120,7 +134,7 @@ export default function ShirleyCREAgentCard() {
 
 function AgentIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: 'var(--accent-gold)' }}>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(167,139,250,0.8)" strokeWidth="1.8">
       <path d="M12 2L2 7l10 5 10-5-10-5z"/>
       <path d="M2 17l10 5 10-5"/>
       <path d="M2 12l10 5 10-5"/>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import type { JSX } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PinGate from '@/components/warroom/PinGate'
 import Sidebar from '@/components/warroom/Sidebar'
@@ -30,68 +31,17 @@ async function sha256(text: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-// ─── DESIGN TOKENS — Session 3 Blue Theme ─────────────────────────────────
-const T = {
-  bgBase:        '#0A0A0F',
-  bgCard:        'rgba(26, 27, 33, 0.92)',
-  bgCardInner:   '#13141A',
-  accentBlue:    '#3B82F6',
-  accentBlueLt:  '#60A5FA',
-  accentGold:    '#D4A030',
-  textPrimary:   '#FFFFFF',
-  textSecondary: '#8B8D98',
-  textMuted:     '#5C5E6A',
-  success:       '#22C55E',
-  danger:        '#EF4444',
-  border:        'rgba(255,255,255,0.06)',
-} as const
-
-// Card style object — reusable
-const cardStyle: React.CSSProperties = {
-  background: T.bgCard,
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  border: `1px solid ${T.border}`,
-  borderRadius: 18,
-  boxShadow: '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)',
-}
-
-// Top-level nav sections
 type NavSection = 'life' | 'entities' | 'portfolio'
 
-// Floating button configs
-const FLOAT_BUTTONS: {
+// ─── NAV SECTION CONFIG ─────────────────────────────────────────────────────
+const NAV_SECTIONS: {
   id: NavSection
   label: string
-  icon: string
-  gradFrom: string
-  gradTo: string
-  glowColor: string
+  icon: () => JSX.Element
 }[] = [
-  {
-    id: 'life',
-    label: 'Life',
-    icon: '❤️',
-    gradFrom: '#FF6B6B',
-    gradTo: '#FF4500',
-    glowColor: 'rgba(255,107,107,0.5)',
-  },
-  {
-    id: 'entities',
-    label: 'Entities',
-    icon: '🏢',
-    gradFrom: '#00D2FF',
-    gradTo: '#0094B3',
-    glowColor: 'rgba(0,210,255,0.5)',
-  },
-  {
-    id: 'portfolio',
-    label: 'Portfolio',
-    icon: '📈',
-    gradFrom: '#D4A030',
-    gradTo: '#F5C842',
-    glowColor: 'rgba(212,160,48,0.5)',
-  },
+  { id: 'life',      label: 'Life',      icon: HeartIcon     },
+  { id: 'entities',  label: 'Entities',  icon: BuildingIcon  },
+  { id: 'portfolio', label: 'Portfolio', icon: ChartIcon     },
 ]
 
 export default function WarRoomPage() {
@@ -101,7 +51,6 @@ export default function WarRoomPage() {
   const [activePanel, setActivePanel] = useState('overview')
   const [activeSection, setActiveSection] = useState<NavSection | 'operations'>('operations')
 
-  // Check existing session on mount
   useEffect(() => {
     const expiry = localStorage.getItem(SESSION_KEY)
     if (expiry && Date.now() < parseInt(expiry)) {
@@ -143,25 +92,23 @@ export default function WarRoomPage() {
   }
 
   return (
-    // wr-blue-theme overrides CSS variables for all child components
     <div
-      className="wr-blue-theme"
       style={{
         display: 'flex',
         height: '100vh',
-        background: T.bgBase,
+        background: 'var(--bg-page)',
         overflow: 'hidden',
         // CSS variable overrides — cascade to all child components
-        ['--bg-base' as string]: T.bgBase,
-        ['--bg-card' as string]: '#1A1B21',
-        ['--bg-elevated' as string]: T.bgCardInner,
-        ['--accent-gold' as string]: T.accentBlue,
-        ['--accent-gold-light' as string]: T.accentBlueLt,
-        ['--text-primary' as string]: T.textPrimary,
-        ['--text-muted' as string]: T.textSecondary,
-        ['--success' as string]: T.success,
-        ['--danger' as string]: T.danger,
-        ['--border-subtle' as string]: T.border,
+        ['--bg-base' as string]: 'var(--bg-page)',
+        ['--bg-card' as string]: '#1A1E25',
+        ['--bg-elevated' as string]: '#22272F',
+        ['--accent-gold' as string]: '#E8B84B',
+        ['--accent-gold-light' as string]: '#F5CE7A',
+        ['--text-primary' as string]: '#F0F2FF',
+        ['--text-muted' as string]: '#6B7280',
+        ['--success' as string]: '#22C55E',
+        ['--danger' as string]: '#EF4444',
+        ['--border-subtle' as string]: 'rgba(255,255,255,0.06)',
       }}
     >
       {/* Sidebar */}
@@ -172,19 +119,20 @@ export default function WarRoomPage() {
         onPanelSelect={setActivePanel}
       />
 
-      {/* Main content area */}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-        {/* War Room Header */}
+      {/* Main content */}
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minWidth: 0 }}>
+
+        {/* ── WAR ROOM HEADER ── */}
         <WarRoomHeader
           activeSection={activeSection}
           onSectionChange={setActiveSection}
         />
 
-        {/* Stats ribbon */}
+        {/* ── TICKER STRIP ── */}
         <StatsRibbon />
 
-        {/* Dashboard content */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px' }}>
+        {/* ── DASHBOARD BODY ── */}
+        <main style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 28px' }}>
           <AnimatePresence mode="wait">
             {activeSection === 'operations' && (
               <OperationsView key="ops" activePanel={activePanel} />
@@ -211,7 +159,7 @@ export default function WarRoomPage() {
   )
 }
 
-// ─── WAR ROOM HEADER ───────────────────────────────────────────────────────
+// ─── WAR ROOM HEADER ────────────────────────────────────────────────────────
 
 function WarRoomHeader({
   activeSection,
@@ -221,272 +169,149 @@ function WarRoomHeader({
   onSectionChange: (s: NavSection | 'operations') => void
 }) {
   return (
-    <div
+    <header
       style={{
-        background: `linear-gradient(180deg, ${T.bgBase} 0%, rgba(10,10,15,0.97) 100%)`,
-        borderBottom: `1px solid rgba(59,130,246,0.12)`,
-        padding: '16px 20px 14px',
+        height: 64,
+        background: 'var(--bg-sidebar)',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex',
+        alignItems: 'center',
+        paddingLeft: 20,
+        paddingRight: 20,
+        gap: 16,
         flexShrink: 0,
-      }}
-    >
-      {/* Header row: title left, floating buttons right */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        {/* Left: Title + badge */}
-        <div
-          style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-          onClick={() => onSectionChange('operations')}
-        >
-          <h1
-            style={{
-              fontSize: 'clamp(28px, 4vw, 46px)',
-              fontWeight: 900,
-              color: T.textPrimary,
-              letterSpacing: '-0.02em',
-              lineHeight: 1,
-              margin: 0,
-              textShadow: `0 0 40px rgba(59,130,246,0.4), 0 0 80px rgba(59,130,246,0.15)`,
-              transition: 'text-shadow 0.3s',
-            }}
-          >
-            WAR ROOM
-          </h1>
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: T.accentBlue,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              padding: '3px 9px',
-              border: `1px solid rgba(59,130,246,0.3)`,
-              borderRadius: 5,
-              alignSelf: 'center',
-              background: 'rgba(59,130,246,0.08)',
-            }}
-          >
-            ShirleyCRE v2
-          </div>
-        </div>
-
-        {/* Right: Floating buttons */}
-        <FloatingNavButtons activeSection={activeSection} onSectionChange={onSectionChange} />
-      </div>
-    </div>
-  )
-}
-
-// ─── FLOATING NAV BUTTONS ──────────────────────────────────────────────────
-
-function FloatingNavButtons({
-  activeSection,
-  onSectionChange,
-}: {
-  activeSection: NavSection | 'operations'
-  onSectionChange: (s: NavSection | 'operations') => void
-}) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        gap: 12,
-        alignItems: 'center',
-        flexWrap: 'wrap',
-      }}
-    >
-      {FLOAT_BUTTONS.map((btn, i) => (
-        <FloatingButton
-          key={btn.id}
-          btn={btn}
-          active={activeSection === btn.id}
-          entranceDelay={i * 0.08}
-          onClick={() =>
-            onSectionChange(activeSection === btn.id ? 'operations' : btn.id)
-          }
-        />
-      ))}
-    </div>
-  )
-}
-
-function FloatingButton({
-  btn,
-  active,
-  entranceDelay,
-  onClick,
-}: {
-  btn: typeof FLOAT_BUTTONS[0]
-  active: boolean
-  entranceDelay: number
-  onClick: () => void
-}) {
-  const [hovered, setHovered] = useState(false)
-  const [pressed, setPressed] = useState(false)
-
-  const bgColor = active
-    ? `rgba(${hexToRgb(btn.gradFrom)}, 0.18)`
-    : hovered
-    ? `rgba(${hexToRgb(btn.gradFrom)}, 0.12)`
-    : `rgba(${hexToRgb(btn.gradFrom)}, 0.06)`
-
-  const borderColor = active
-    ? btn.gradFrom
-    : hovered
-    ? `rgba(${hexToRgb(btn.gradFrom)}, 0.7)`
-    : `rgba(${hexToRgb(btn.gradFrom)}, 0.35)`
-
-  const glow = active
-    ? `0 0 24px ${btn.glowColor}, 0 0 48px rgba(${hexToRgb(btn.gradFrom)}, 0.2), 0 4px 16px rgba(0,0,0,0.4)`
-    : hovered
-    ? `0 0 16px ${btn.glowColor}, 0 4px 12px rgba(0,0,0,0.3)`
-    : `0 2px 8px rgba(0,0,0,0.3)`
-
-  const scale = pressed ? 0.97 : active ? 1.02 : hovered ? 1.06 : 1.0
-  const translateY = active ? -2 : hovered ? -1 : 0
-  const opacity = !active && !hovered && activeSection_isOther() ? 0.7 : 1.0
-
-  function activeSection_isOther() {
-    // dims when another section is active
-    return false // handled by parent opacity prop
-  }
-
-  return (
-    <motion.button
-      onClick={onClick}
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => { setHovered(false); setPressed(false) }}
-      onTapStart={() => setPressed(true)}
-      onTap={() => setPressed(false)}
-      onTapCancel={() => setPressed(false)}
-      initial={{ opacity: 0, y: 12, scale: 0.9 }}
-      animate={{
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        transition: { delay: entranceDelay, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] },
-      }}
-      style={{
         position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '13px 26px',
-        background: bgColor,
-        border: `2px solid ${borderColor}`,
-        borderRadius: 50,
-        cursor: 'pointer',
-        outline: 'none',
-        boxShadow: glow,
-        transform: `scale(${scale}) translateY(${translateY}px)`,
-        transition: 'all 0.2s ease',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
         overflow: 'hidden',
       }}
-      whileHover={{ scale: 1.06, y: -1 }}
-      whileTap={{ scale: 0.97 }}
     >
-      {/* Breathing pulse for idle/active */}
-      <motion.span
-        animate={
-          active
-            ? {
-                boxShadow: [
-                  `0 0 0 0 rgba(${hexToRgb(btn.gradFrom)}, 0.4)`,
-                  `0 0 0 8px rgba(${hexToRgb(btn.gradFrom)}, 0)`,
-                  `0 0 0 0 rgba(${hexToRgb(btn.gradFrom)}, 0)`,
-                ],
-              }
-            : {
-                scale: [1.0, 1.02, 1.0],
-              }
-        }
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+      {/* Subtle top highlight line */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+        background: 'linear-gradient(to right, transparent 0%, rgba(255,255,255,0.07) 30%, rgba(255,255,255,0.04) 70%, transparent 100%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Title — clickable to return to operations */}
+      <button
+        onClick={() => onSectionChange('operations')}
         style={{
-          position: 'absolute',
-          inset: 0,
-          borderRadius: 50,
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Gradient shimmer overlay on hover */}
-      {hovered && (
-        <motion.span
-          initial={{ x: '-100%', opacity: 0 }}
-          animate={{ x: '200%', opacity: [0, 0.4, 0] }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)`,
-            pointerEvents: 'none',
-            borderRadius: 50,
-          }}
-        />
-      )}
-
-      {/* Icon */}
-      <span style={{ fontSize: 16, lineHeight: 1 }}>{btn.icon}</span>
-
-      {/* Label */}
-      <span
-        style={{
-          fontSize: 13,
-          fontWeight: active ? 700 : 600,
-          color: active
-            ? T.textPrimary
-            : hovered
-            ? T.textPrimary
-            : `rgba(${hexToRgb(btn.gradFrom)}, 0.9)`,
-          letterSpacing: '0.02em',
-          transition: 'color 0.2s ease',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 10,
+          flexShrink: 0,
         }}
       >
-        {btn.label}
-      </span>
-
-      {/* Active indicator dot */}
-      {active && (
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
+        <h1
           style={{
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: btn.gradFrom,
-            boxShadow: `0 0 8px ${btn.gradFrom}`,
-            flexShrink: 0,
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(22px, 2.8vw, 34px)',
+            fontWeight: 800,
+            color: '#F0F2FF',
+            letterSpacing: '-0.04em',
+            lineHeight: 1,
+            margin: 0,
+            // Subtle blue-white glow
+            textShadow: '0 0 32px rgba(79,142,247,0.28)',
           }}
-        />
-      )}
-    </motion.button>
+        >
+          WAR ROOM
+        </h1>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: 'rgba(79,142,247,0.6)',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            fontFamily: 'var(--font-body)',
+            alignSelf: 'center',
+            marginBottom: 1,
+          }}
+        >
+          ShirleyCRE
+        </span>
+      </button>
+
+      {/* Vertical divider */}
+      <div style={{
+        width: 1, height: 28,
+        background: 'rgba(255,255,255,0.07)',
+        flexShrink: 0,
+      }} />
+
+      {/* Nav section cards */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        {NAV_SECTIONS.map(sec => {
+          const isActive = activeSection === sec.id
+          return (
+            <button
+              key={sec.id}
+              onClick={() => onSectionChange(isActive ? 'operations' : sec.id)}
+              className={`wr-nav-card${isActive ? ' active' : ''}`}
+            >
+              <span className="wr-nav-card-icon">
+                <sec.icon />
+              </span>
+              <span className="wr-nav-card-label">{sec.label}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+
+      {/* Live status indicator */}
+      <LiveStatusDot />
+    </header>
   )
 }
 
-// ─── SECTION VIEWS ─────────────────────────────────────────────────────────
+// Pulsing live status indicator — top right
+function LiveStatusDot() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      <motion.div
+        style={{
+          width: 6, height: 6, borderRadius: '50%',
+          background: '#22C55E',
+          boxShadow: '0 0 0 0 rgba(34,197,94,0.6)',
+        }}
+        animate={{
+          boxShadow: [
+            '0 0 0 0 rgba(34,197,94,0.6)',
+            '0 0 0 5px rgba(34,197,94,0)',
+          ],
+        }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
+      />
+      <span style={{
+        fontSize: 10, fontWeight: 600,
+        color: 'rgba(34,197,94,0.6)',
+        letterSpacing: '0.10em',
+        textTransform: 'uppercase',
+        fontFamily: 'var(--font-body)',
+      }}>
+        Live
+      </span>
+    </div>
+  )
+}
+
+// ─── SECTION VIEWS ───────────────────────────────────────────────────────────
 
 function SectionView({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.2 }}
-      style={{ maxWidth: 900, margin: '0 auto', width: '100%' }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}
     >
       {children}
     </motion.div>
@@ -499,14 +324,11 @@ function OperationsView({ activePanel }: { activePanel: string }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.18 }}
     >
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 max-w-[1600px] mx-auto"
-        initial="hidden"
-        animate="visible"
-      >
-        {/* Row 1: Battle Plan (large) + Schedule (medium) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 max-w-[1640px] mx-auto">
+
+        {/* Row 1: Battle Plan (2-col) + Schedule (1-col) */}
         <div className="lg:col-span-2 card-reveal card-reveal-1">
           <BattlePlanPanel />
         </div>
@@ -514,7 +336,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
           <SchedulePanel />
         </div>
 
-        {/* Row 2: Under Contract (large) + Money Movers (medium) */}
+        {/* Row 2: Under Contract (2-col) + Money Movers (1-col) */}
         <div className="lg:col-span-2 card-reveal card-reveal-3">
           <UnderContractPanel />
         </div>
@@ -534,17 +356,40 @@ function OperationsView({ activePanel }: { activePanel: string }) {
         <div className="card-reveal card-reveal-7">
           <ShirleyCREAgentCard />
         </div>
-      </motion.div>
+      </div>
     </motion.div>
   )
 }
 
-// ─── UTILITY ───────────────────────────────────────────────────────────────
+// ─── SECTION NAV ICONS ────────────────────────────────────────────────────────
 
-function hexToRgb(hex: string): string {
-  const clean = hex.replace('#', '')
-  const r = parseInt(clean.substring(0, 2), 16)
-  const g = parseInt(clean.substring(2, 4), 16)
-  const b = parseInt(clean.substring(4, 6), 16)
-  return `${r},${g},${b}`
+function HeartIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+    </svg>
+  )
+}
+
+function BuildingIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="2" y="3" width="8" height="18"/>
+      <rect x="14" y="8" width="8" height="13"/>
+      <line x1="2" y1="21" x2="22" y2="21"/>
+      <line x1="6" y1="7" x2="6" y2="7"/>
+      <line x1="6" y1="11" x2="6" y2="11"/>
+      <line x1="6" y1="15" x2="6" y2="15"/>
+      <line x1="18" y1="12" x2="18" y2="12"/>
+      <line x1="18" y1="16" x2="18" y2="16"/>
+    </svg>
+  )
+}
+
+function ChartIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+  )
 }

@@ -2,129 +2,276 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ═══════════════════════════════════════════════════════════════
+   SESSION 4 — AWARD-LEVEL DESIGN SYSTEM
+   4-tier elevation · teal pill nav · sparklines · ticker strip
+   ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg-base: #0D0F14;
-  --bg-card: #1A1D27;
-  --bg-elevated: #222632;
-  --accent-gold: #c9933a;
-  --accent-gold-light: #e0b060;
-  --text-primary: #e8e0d0;
-  --text-muted: #8a8070;
-  --success: #22C55E;
-  --danger: #EF4444;
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  /* ── 4-Tier Elevation Surface System ── */
+  --bg-page:        #0D0F12;   /* deepest — page background              */
+  --bg-sidebar:     #13161B;   /* tier 2 — sidebar                       */
+  --bg-card:        #1A1E25;   /* tier 3 — cards                         */
+  --bg-nested:      #22272F;   /* tier 4 — nested / hover states         */
+
+  /* Legacy aliases so existing panel components don't break */
+  --bg-base:        #0D0F12;
+  --bg-card-mid:    #1A1E25;
+  --bg-elevated:    #22272F;
+
+  /* ── Accent Colors ── */
+  --accent-blue:    #4F8EF7;
+  --accent-blue-lt: #7AABFF;
+  --accent-teal:    #0EA5A0;    /* Active nav pill signature color        */
+  --accent-violet:  #A78BFA;    /* Sparingly — special elements           */
+  --accent-gold:    #E8B84B;    /* Commission / money values ONLY         */
+  --accent-gold-lt: #F5CE7A;
+
+  /* Legacy aliases */
+  --accent-gold-light: #F5CE7A;
+
+  /* ── Text ── */
+  --text-primary:   #F0F2FF;   /* Slightly blue-white                    */
+  --text-secondary: #9BA3AF;
+  --text-muted:     #6B7280;
+  --text-dim:       #484C58;   /* Near-invisible section labels          */
+
+  /* ── State ── */
+  --success:        #22C55E;
+  --danger:         #EF4444;
+  --warning:        #F59E0B;
+
+  /* ── Borders ── */
+  --border-subtle:  rgba(255,255,255,0.06);
+  --border-mid:     rgba(255,255,255,0.10);
+  --border-bright:  rgba(255,255,255,0.18);
+
+  /* ── Typography ── */
+  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Syne', 'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Courier New', monospace;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ─── RESET ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html,
-body {
-  background-color: var(--bg-base);
+html, body {
+  background-color: var(--bg-page);
   color: var(--text-primary);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-base);
-}
+/* ─── SCROLLBARS ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 3px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
 
-/* War Room card base */
+/* ─── CARD — Tier 3 surface ──────────────────────────────────── */
 .wr-card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: 14px;
   padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  transition: box-shadow 0.2s ease;
+  position: relative;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.07),
+    0 2px 16px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
 .wr-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.11),
+    0 8px 32px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.07);
+  transform: translateY(-1px);
 }
 
-/* Gold accent line */
+/* ─── PANEL HEADER — chapter-heading style ───────────────────── */
 .wr-card-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-subtle);
+  gap: 10px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  position: relative;
 }
 
+.wr-card-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(to right, rgba(255,255,255,0.08) 0%, transparent 70%);
+}
+
+/* Chapter label */
 .wr-card-title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   color: var(--text-muted);
+  font-family: var(--font-body);
 }
 
-/* Big number display */
+/* Extending line after label */
+.wr-panel-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, rgba(255,255,255,0.06), transparent);
+  margin-left: 6px;
+}
+
+/* Stat in header — right side */
+.wr-panel-stat {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-blue);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  margin-left: auto;
+  line-height: 1;
+}
+.wr-panel-stat-gold { color: var(--accent-gold); }
+
+/* ─── EMPTY STATES ───────────────────────────────────────────── */
+.wr-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 0;
+  gap: 8px;
+}
+.wr-empty-text {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-muted);
+  opacity: 0.55;
+  letter-spacing: 0.02em;
+}
+.wr-empty-line {
+  width: 36px;
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin-top: 4px;
+}
+
+/* ─── BIG NUMBERS ────────────────────────────────────────────── */
 .wr-big-number {
   font-size: 32px;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
 }
 
-/* Status badges */
+/* ─── BADGES ─────────────────────────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 9999px;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.badge-pipeline  { background: rgba(201,147,58,0.15);  color: #e0b060; }
-.badge-active    { background: rgba(34,197,94,0.15);   color: #22C55E; }
-.badge-contract  { background: rgba(59,130,246,0.15);  color: #60A5FA; }
-.badge-pending   { background: rgba(168,85,247,0.15);  color: #C084FC; }
-.badge-closed    { background: rgba(100,116,139,0.15); color: #94A3B8; }
-.badge-dead      { background: rgba(239,68,68,0.15);   color: #EF4444; }
+.badge-pipeline  { background: rgba(232,184,75,0.12);  color: var(--accent-gold);   }
+.badge-active    { background: rgba(34,197,94,0.12);   color: #22C55E;              }
+.badge-contract  { background: rgba(79,142,247,0.12);  color: var(--accent-blue);   }
+.badge-pending   { background: rgba(167,139,250,0.12); color: var(--accent-violet); }
+.badge-closed    { background: rgba(100,116,139,0.12); color: #94A3B8;              }
+.badge-dead      { background: rgba(239,68,68,0.12);   color: #EF4444;              }
 
-/* Shimmer skeleton */
+/* ─── INPUTS ─────────────────────────────────────────────────── */
+.wr-input {
+  background: var(--bg-nested);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: var(--font-body);
+  padding: 9px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  caret-color: var(--accent-blue);
+}
+.wr-input::placeholder { color: var(--text-muted); opacity: 0.5; }
+.wr-input:focus {
+  border-color: rgba(79,142,247,0.45);
+  box-shadow: 0 0 0 2px rgba(79,142,247,0.10);
+}
+
+/* ─── BUTTONS ────────────────────────────────────────────────── */
+.wr-btn {
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  font-family: var(--font-body);
+}
+.wr-btn:hover  { opacity: 0.88; transform: translateY(-1px); }
+.wr-btn:active { opacity: 1;    transform: none; }
+
+.wr-btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 7px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: var(--font-body);
+}
+.wr-btn-ghost:hover {
+  color: var(--text-primary);
+  border-color: rgba(255,255,255,0.18);
+}
+
+/* ─── SKELETON SHIMMER ───────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--bg-elevated) 25%,
+    var(--bg-nested) 25%,
     rgba(255,255,255,0.04) 50%,
-    var(--bg-elevated) 75%
+    var(--bg-nested) 75%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 4px;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 5px;
 }
 
-/* PIN Gate */
+/* ─── PIN GATE ───────────────────────────────────────────────── */
 .pin-digit {
   width: 56px;
   height: 64px;
-  background: var(--bg-elevated);
+  background: var(--bg-nested);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   font-size: 28px;
@@ -132,66 +279,241 @@ body {
   color: var(--accent-gold);
   text-align: center;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-
 .pin-digit:focus {
   border-color: var(--accent-gold);
-  box-shadow: 0 0 0 2px rgba(201,147,58,0.2);
+  box-shadow: 0 0 0 2px rgba(232,184,75,0.2);
 }
 
-/* Gold flash overlay for PIN unlock */
+/* ─── GOLD FLASH OVERLAY ─────────────────────────────────────── */
 @keyframes goldFlashOverlay {
   0%   { opacity: 0; }
   30%  { opacity: 1; }
   100% { opacity: 0; }
 }
-
 .gold-flash-overlay {
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(ellipse at center, rgba(201,147,58,0.4) 0%, transparent 70%);
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, rgba(232,184,75,0.3) 0%, transparent 70%);
   pointer-events: none;
   animation: goldFlashOverlay 0.8s ease-out forwards;
   z-index: 100;
 }
 
-/* Staggered card animations */
+/* ─── CARD REVEAL ANIMATIONS ─────────────────────────────────── */
 @keyframes cardReveal {
-  0%   { opacity: 0; transform: translateY(20px) scale(0.98); }
-  100% { opacity: 1; transform: translateY(0)   scale(1);    }
+  0%   { opacity: 0; transform: translateY(14px) scale(0.99); }
+  100% { opacity: 1; transform: none; }
 }
-
 .card-reveal {
-  animation: cardReveal 0.45s ease-out forwards;
+  animation: cardReveal 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
+.card-reveal-1 { animation-delay: 0.04s; }
+.card-reveal-2 { animation-delay: 0.10s; }
+.card-reveal-3 { animation-delay: 0.16s; }
+.card-reveal-4 { animation-delay: 0.22s; }
+.card-reveal-5 { animation-delay: 0.28s; }
+.card-reveal-6 { animation-delay: 0.34s; }
+.card-reveal-7 { animation-delay: 0.40s; }
 
-.card-reveal-1 { animation-delay: 0.05s; }
-.card-reveal-2 { animation-delay: 0.12s; }
-.card-reveal-3 { animation-delay: 0.19s; }
-.card-reveal-4 { animation-delay: 0.26s; }
-.card-reveal-5 { animation-delay: 0.33s; }
-.card-reveal-6 { animation-delay: 0.40s; }
-.card-reveal-7 { animation-delay: 0.47s; }
-
-/* Nav shimmer animation */
-@keyframes navShimmer {
-  0%   { transform: translateX(-100%); opacity: 0; }
-  50%  { opacity: 1; }
-  100% { transform: translateX(100%); opacity: 0; }
+/* ─── SIDEBAR ICON BUTTONS ───────────────────────────────────── */
+.wr-sidebar-btn {
+  position: relative;
+  width: 100%;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  opacity: 0.4;
+  transition: color 0.15s, opacity 0.15s;
+}
+.wr-sidebar-btn:hover { opacity: 0.75; color: var(--text-secondary); }
+.wr-sidebar-btn.active {
+  opacity: 1;
+  color: var(--text-primary);
+}
+/* Left accent blade for active state */
+.wr-sidebar-btn.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px; bottom: 10px;
+  width: 2px;
+  background: var(--accent-teal);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 6px rgba(14,165,160,0.6);
 }
 
-/* Portfolio panel pulse animations */
+/* ─── TICKER STRIP ───────────────────────────────────────────── */
+.wr-ticker-strip {
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(to right, #111419 0%, #131720 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  height: 52px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.wr-ticker-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 22px;
+  border-left: 2px solid transparent;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  transition: background 0.2s ease;
+  cursor: default;
+}
+.wr-ticker-item:hover {
+  background: rgba(255,255,255,0.02);
+}
+.wr-ticker-item + .wr-ticker-item {
+  border-left: 1px solid rgba(255,255,255,0.05);
+}
+
+.wr-ticker-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  line-height: 1;
+}
+
+.wr-ticker-value {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* ─── NAV SECTION CARDS (header) ────────────────────────────── */
+.wr-nav-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 104px;
+  height: 54px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.wr-nav-card:hover {
+  border-color: rgba(255,255,255,0.13);
+  background: var(--bg-nested);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  transform: translateY(-2px);
+}
+
+.wr-nav-card.active {
+  background: var(--bg-nested);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08),
+    0 6px 20px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  transform: translateY(-1px);
+}
+
+.wr-nav-card-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color 0.15s;
+  font-family: var(--font-body);
+}
+.wr-nav-card.active .wr-nav-card-label { color: var(--text-primary); }
+
+.wr-nav-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.45;
+  transition: color 0.15s, opacity 0.15s;
+}
+.wr-nav-card.active .wr-nav-card-icon {
+  color: var(--accent-teal);
+  opacity: 1;
+}
+
+/* Active inner top glow */
+.wr-nav-card.active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% -10%, rgba(14,165,160,0.07) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* Active top edge accent line */
+.wr-nav-card.active::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 20%; right: 20%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--accent-teal), transparent);
+  opacity: 0.6;
+}
+
+/* ─── SIDEBAR SECTION LABELS ─────────────────────────────────── */
+.wr-sidebar-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  color: var(--text-dim);
+  padding: 12px 0 6px;
+  text-align: center;
+  user-select: none;
+}
+
+/* ─── SPARKLINE CONTAINER ────────────────────────────────────── */
+.wr-sparkline {
+  width: 100%;
+  height: 40px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.wr-sparkline:hover { opacity: 1; }
+
+/* ─── PORTFOLIO PANEL PLACEHOLDER ────────────────────────────── */
 @keyframes portfolioPulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 @keyframes portfolioIconPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(201,147,58,0.15); }
-  50% { box-shadow: 0 0 0 12px rgba(201,147,58,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232,184,75,0.12); }
+  50% { box-shadow: 0 0 0 12px rgba(232,184,75,0); }
 }
 @keyframes portfolioDot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
+}
+
+/* ─── AGENT CARD GRADIENT ────────────────────────────────────── */
+.wr-agent-card-bg {
+  background: linear-gradient(135deg, #160E2C 0%, #1A1030 40%, #130E24 100%);
+  border: 1px solid rgba(167,139,250,0.15);
 }
