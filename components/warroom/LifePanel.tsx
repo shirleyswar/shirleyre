@@ -82,7 +82,7 @@ export default function LifePanel() {
           <HeartIcon />
         </span>
         <span className="wr-card-title">Life</span>
-        <span style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(201,147,58,0.15)', color: 'var(--accent-gold)', fontWeight: 600 }}>
+        <span style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(139,92,246,0.15)', color: 'var(--accent-gold)', fontWeight: 600 }}>
           Personal
         </span>
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
@@ -137,7 +137,7 @@ export default function LifePanel() {
                 style={{
                   fontSize: 20,
                   padding: '4px',
-                  background: selectedEmoji === e ? 'rgba(201,147,58,0.2)' : 'transparent',
+                  background: selectedEmoji === e ? 'rgba(139,92,246,0.2)' : 'transparent',
                   border: selectedEmoji === e ? '1px solid var(--accent-gold)' : '1px solid transparent',
                   borderRadius: 4,
                   cursor: 'pointer',
@@ -172,7 +172,7 @@ export default function LifePanel() {
           style={{
             padding: '8px 16px',
             background: 'var(--accent-gold)',
-            color: '#000',
+            color: '#fff',
             border: 'none',
             borderRadius: 6,
             fontSize: 13,

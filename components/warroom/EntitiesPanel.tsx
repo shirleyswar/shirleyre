@@ -131,7 +131,7 @@ export default function EntitiesPanel() {
           <BuildingIcon />
         </span>
         <span className="wr-card-title">Entities</span>
-        <span style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(201,147,58,0.12)', color: 'var(--accent-gold)', fontWeight: 600 }}>
+        <span style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(139,92,246,0.12)', color: 'var(--accent-gold)', fontWeight: 600 }}>
           Registry
         </span>
         <span style={{ marginLeft: 'auto' }}>
@@ -140,9 +140,9 @@ export default function EntitiesPanel() {
             style={{
               fontSize: 11,
               padding: '4px 12px',
-              background: showAddForm ? 'var(--accent-gold)' : 'rgba(201,147,58,0.15)',
+              background: showAddForm ? 'var(--accent-gold)' : 'rgba(139,92,246,0.15)',
               color: showAddForm ? '#000' : 'var(--accent-gold)',
-              border: '1px solid rgba(201,147,58,0.3)',
+              border: '1px solid rgba(139,92,246,0.3)',
               borderRadius: 6,
               cursor: 'pointer',
               fontWeight: 600,
@@ -157,7 +157,7 @@ export default function EntitiesPanel() {
       {showAddForm && (
         <div style={{
           background: 'var(--bg-elevated)',
-          border: '1px solid rgba(201,147,58,0.25)',
+          border: '1px solid rgba(139,92,246,0.25)',
           borderRadius: 8,
           padding: 14,
           marginBottom: 14,
@@ -198,7 +198,7 @@ export default function EntitiesPanel() {
             style={{
               padding: '8px 16px',
               background: 'var(--accent-gold)',
-              color: '#000',
+              color: '#fff',
               border: 'none',
               borderRadius: 6,
               fontSize: 13,
@@ -307,7 +307,7 @@ function EntityCard({
             fontSize: 10,
             padding: '2px 8px',
             borderRadius: 10,
-            background: 'rgba(201,147,58,0.1)',
+            background: 'rgba(139,92,246,0.1)',
             color: 'var(--accent-gold)',
             fontWeight: 600,
             flexShrink: 0,
@@ -378,7 +378,7 @@ function EntityCard({
                   padding: '6px 8px',
                   background: 'rgba(255,255,255,0.03)',
                   borderRadius: 6,
-                  borderLeft: '2px solid rgba(201,147,58,0.3)',
+                  borderLeft: '2px solid rgba(139,92,246,0.3)',
                 }}>
                   <span style={{ fontSize: 11, color: 'var(--text-primary)', flex: 1 }}>
                     {item.title}
@@ -426,7 +426,7 @@ function EntityCard({
               />
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={onAddItem} disabled={!newItemTitle.trim()} style={{
-                  padding: '5px 12px', background: 'var(--accent-gold)', color: '#000',
+                  padding: '5px 12px', background: 'var(--accent-gold)', color: '#fff',
                   border: 'none', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer',
                 }}>Add</button>
                 <button onClick={onCancelAddItem} style={{
@@ -441,9 +441,9 @@ function EntityCard({
               style={{
                 fontSize: 11,
                 padding: '4px 10px',
-                background: 'rgba(201,147,58,0.1)',
+                background: 'rgba(139,92,246,0.1)',
                 color: 'var(--accent-gold)',
-                border: '1px solid rgba(201,147,58,0.2)',
+                border: '1px solid rgba(139,92,246,0.2)',
                 borderRadius: 5,
                 cursor: 'pointer',
                 fontWeight: 600,

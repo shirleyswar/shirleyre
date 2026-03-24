@@ -414,7 +414,14 @@ function SectionView({ children, onBack, title }: { children: React.ReactNode; o
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}
+      style={{
+        maxWidth: 960,
+        margin: '0 auto',
+        width: '100%',
+        // Override accent color to purple for all child panels
+        ['--accent-gold' as string]: '#A78BFA',
+        ['--accent-gold-light' as string]: '#C4B5FD',
+      } as React.CSSProperties}
     >
       {/* Back to War Room */}
       {onBack && (

@@ -8,7 +8,7 @@ export default function PortfolioPanel() {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at 50% 50%, rgba(201,147,58,0.04) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at 50% 50%, rgba(139,92,246,0.04) 0%, transparent 70%)',
           animation: 'portfolioPulse 4s ease-in-out infinite',
           pointerEvents: 'none',
         }}
@@ -41,12 +41,12 @@ export default function PortfolioPanel() {
           width: 64,
           height: 64,
           borderRadius: '50%',
-          border: '2px solid rgba(201,147,58,0.4)',
+          border: '2px solid rgba(139,92,246,0.4)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: 24,
-          background: 'rgba(201,147,58,0.08)',
+          background: 'rgba(139,92,246,0.08)',
           animation: 'portfolioIconPulse 3s ease-in-out infinite',
         }}>
           <ChartIcon />
@@ -70,8 +70,8 @@ export default function PortfolioPanel() {
           gap: 6,
           padding: '4px 12px',
           borderRadius: 20,
-          background: 'rgba(201,147,58,0.12)',
-          border: '1px solid rgba(201,147,58,0.3)',
+          background: 'rgba(139,92,246,0.12)',
+          border: '1px solid rgba(139,92,246,0.3)',
           marginBottom: 20,
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-gold)', animation: 'portfolioDot 2s ease-in-out infinite' }} />
@@ -93,13 +93,13 @@ export default function PortfolioPanel() {
         </p>
 
         {/* Divider */}
-        <div style={{ width: 40, height: 1, background: 'rgba(201,147,58,0.3)', marginBottom: 24 }} />
+        <div style={{ width: 40, height: 1, background: 'rgba(139,92,246,0.3)', marginBottom: 24 }} />
 
         {/* Architecture note */}
         <div style={{
           padding: '14px 20px',
-          background: 'rgba(201,147,58,0.06)',
-          border: '1px solid rgba(201,147,58,0.15)',
+          background: 'rgba(139,92,246,0.06)',
+          border: '1px solid rgba(139,92,246,0.15)',
           borderRadius: 8,
           maxWidth: 440,
         }}>
@@ -136,8 +136,8 @@ export default function PortfolioPanel() {
           50% { opacity: 1; transform: scale(1.05); }
         }
         @keyframes portfolioIconPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(201,147,58,0.15); }
-          50% { box-shadow: 0 0 0 12px rgba(201,147,58,0); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.15); }
+          50% { box-shadow: 0 0 0 12px rgba(139,92,246,0); }
         }
         @keyframes portfolioDot {
           0%, 100% { opacity: 1; }
