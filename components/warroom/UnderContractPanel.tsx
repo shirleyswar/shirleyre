@@ -173,7 +173,11 @@ export default function UnderContractPanel() {
                     </td>
                     {/* Dropbox */}
                     <td style={{ padding: '6px 8px' }}>
-                      <DropboxButton url={deal.dropbox_link} />
+                      <DropboxCell
+                        dealId={deal.id}
+                        url={deal.dropbox_link}
+                        onSaved={(id, url) => setDeals(prev => prev.map(d => d.id === id ? { ...d, dropbox_link: url } : d))}
+                      />
                     </td>
                   </tr>
                 )
@@ -216,42 +220,56 @@ function DocIcon() {
   )
 }
 
+
 const DROPBOX_FALLBACK = 'https://www.dropbox.com/scl/fo/r9dq6fwfmp81tv1ec02gb/ANqIOI6hM94j-v4jv9czcpo?rlkey=0bd4kas03bfl3vakbcln602tp&st=dc2a5sqy&dl=0'
 
-function DropboxButton({ url }: { url: string | null | undefined }) {
-  const href = url || DROPBOX_FALLBACK
+function DropboxCell({ dealId, url, onSaved }: { dealId: string; url: string | null | undefined; onSaved: (id: string, url: string | null) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(url || '')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    setSaving(true)
+    const val = draft.trim() || null
+    try {
+      await supabase.from('deals').update({ dropbox_link: val }).eq('id', dealId)
+      onSaved(dealId, val)
+    } catch {}
+    setSaving(false)
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 200 }} onClick={e => e.stopPropagation()}>
+        <input
+          autoFocus
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
+          placeholder="Paste Dropbox link..."
+          style={{ flex: 1, fontSize: 11, padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid rgba(0,97,255,0.4)', borderRadius: 5, color: 'var(--text-primary)', outline: 'none', minWidth: 0 }}
+        />
+        <button onClick={save} disabled={saving} style={{ padding: '4px 8px', fontSize: 11, fontWeight: 700, background: 'rgba(0,97,255,0.2)', border: '1px solid rgba(0,97,255,0.4)', borderRadius: 5, color: '#4F8EF7', cursor: 'pointer' }}>
+          {saving ? '…' : '✓'}
+        </button>
+        <button onClick={() => setEditing(false)} style={{ padding: '4px 6px', fontSize: 11, background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
+      </div>
+    )
+  }
+
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={url ? 'Open deal folder' : 'Open Active Listings folder'}
-      onClick={e => e.stopPropagation()}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 28,
-        height: 28,
-        borderRadius: 6,
-        background: url ? 'rgba(0,97,255,0.12)' : 'rgba(255,255,255,0.05)',
-        border: `1px solid ${url ? 'rgba(0,97,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
-        color: url ? '#4F8EF7' : 'var(--text-dim)',
-        transition: 'all 0.15s',
-        textDecoration: 'none',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = 'rgba(0,97,255,0.22)'
-        e.currentTarget.style.borderColor = 'rgba(0,97,255,0.5)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = url ? 'rgba(0,97,255,0.12)' : 'rgba(255,255,255,0.05)'
-        e.currentTarget.style.borderColor = url ? 'rgba(0,97,255,0.3)' : 'rgba(255,255,255,0.08)'
-      }}
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2L6 6.5L12 11L18 6.5L12 2ZM6 6.5L0 11L6 15.5L12 11L6 6.5ZM18 6.5L12 11L18 15.5L24 11L18 6.5ZM6 15.5L12 20L18 15.5L12 11L6 15.5Z"/>
-      </svg>
-    </a>
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+      <a href={url || DROPBOX_FALLBACK} target="_blank" rel="noopener noreferrer"
+        title={url ? 'Open deal folder' : 'Open Active Listings folder'}
+        onClick={e => e.stopPropagation()}
+        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, background: url ? 'rgba(0,97,255,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${url ? 'rgba(0,97,255,0.3)' : 'rgba(255,255,255,0.08)'}`, color: url ? '#4F8EF7' : 'var(--text-dim)', textDecoration: 'none' }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L6 6.5L12 11L18 6.5L12 2ZM6 6.5L0 11L6 15.5L12 11L6 6.5ZM18 6.5L12 11L18 15.5L24 11L18 6.5ZM6 15.5L12 20L18 15.5L12 11L6 15.5Z"/></svg>
+      </a>
+      <button onClick={() => { setDraft(url || ''); setEditing(true) }}
+        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.07)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 10 }}>
+        ✎
+      </button>
+    </div>
   )
 }
