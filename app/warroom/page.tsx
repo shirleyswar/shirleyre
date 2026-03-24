@@ -222,8 +222,8 @@ function NavRibbon({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 20,
-        padding: '14px 24px',
+        gap: 16,
+        padding: '10px 24px',
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(167,139,250,0.08)',
         flexShrink: 0,
@@ -235,24 +235,24 @@ function NavRibbon({
           <motion.button
             key={sec.id}
             onClick={() => onSectionChange(isActive ? 'operations' : sec.id)}
-            whileHover={{ scale: 1.04, y: -3 }}
-            whileTap={{ scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 280, damping: 18 }}
+            whileHover={{ scale: 1.10, y: -6 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 14 }}
             style={{
               position: 'relative',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 10,
+              gap: 7,
               flex: 1,
-              maxWidth: 260,
-              minWidth: 160,
-              height: 120,
+              maxWidth: 240,
+              minWidth: 140,
+              height: 84,
               background: isActive
                 ? 'linear-gradient(135deg, #1A1040 0%, #1E1545 40%, #180F38 100%)'
-                : 'linear-gradient(135deg, #13112A 0%, #160E2C 50%, #110C24 100%)',
-              border: `1px solid ${isActive ? 'rgba(167,139,250,0.45)' : 'rgba(167,139,250,0.15)'}`,
+                : 'linear-gradient(135deg, #0F0D1C 0%, #120E22 50%, #0D0B1A 100%)',
+              border: `1px solid ${isActive ? 'rgba(167,139,250,0.40)' : 'rgba(167,139,250,0.08)'}`,
               borderRadius: 16,
               cursor: 'pointer',
               overflow: 'hidden',
@@ -268,7 +268,7 @@ function NavRibbon({
               position: 'absolute', top: -30, right: -30,
               width: 100, height: 100,
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(167,139,250,0.13) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(167,139,250,0.06) 0%, transparent 70%)',
               pointerEvents: 'none',
             }} />
 
@@ -291,23 +291,23 @@ function NavRibbon({
             )}
 
             {/* Orbit icon */}
-            <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}>
               {/* Outer orbit ring */}
               <motion.div
                 style={{
                   position: 'absolute', inset: 0, borderRadius: '50%',
-                  border: '1px solid rgba(167,139,250,0.2)',
+                  border: '1px solid rgba(167,139,250,0.10)',
                 }}
-                animate={{ scale: [1, 1.45, 1], opacity: [0.45, 0, 0.45] }}
+                animate={{ scale: [1, 1.45, 1], opacity: [0.3, 0, 0.3] }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
               />
               {/* Inner orbit ring */}
               <motion.div
                 style={{
                   position: 'absolute', inset: 7, borderRadius: '50%',
-                  border: '1px solid rgba(167,139,250,0.32)',
+                  border: '1px solid rgba(167,139,250,0.18)',
                 }}
-                animate={{ scale: [1, 1.25, 1], opacity: [0.65, 0.08, 0.65] }}
+                animate={{ scale: [1, 1.25, 1], opacity: [0.45, 0.05, 0.45] }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.55 }}
               />
               {/* Core glow circle */}
@@ -315,15 +315,15 @@ function NavRibbon({
                 animate={{
                   boxShadow: isActive
                     ? ['0 0 10px rgba(167,139,250,0.35)', '0 0 22px rgba(167,139,250,0.65)', '0 0 10px rgba(167,139,250,0.35)']
-                    : ['0 0 4px rgba(167,139,250,0.1)', '0 0 12px rgba(167,139,250,0.28)', '0 0 4px rgba(167,139,250,0.1)'],
+                    : ['0 0 2px rgba(167,139,250,0.06)', '0 0 8px rgba(167,139,250,0.15)', '0 0 2px rgba(167,139,250,0.06)'],
                 }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
                 style={{
                   position: 'absolute', inset: 15, borderRadius: '50%',
-                  background: isActive ? 'rgba(167,139,250,0.2)' : 'rgba(167,139,250,0.08)',
-                  border: `1px solid ${isActive ? 'rgba(167,139,250,0.55)' : 'rgba(167,139,250,0.22)'}`,
+                  background: isActive ? 'rgba(167,139,250,0.18)' : 'rgba(167,139,250,0.05)',
+                  border: `1px solid ${isActive ? 'rgba(167,139,250,0.50)' : 'rgba(167,139,250,0.14)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: isActive ? '#A78BFA' : 'rgba(167,139,250,0.5)',
+                  color: isActive ? '#A78BFA' : 'rgba(167,139,250,0.35)',
                 }}
               >
                 <sec.icon />
@@ -333,18 +333,18 @@ function NavRibbon({
             {/* Label */}
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: 13, fontWeight: 700,
-                color: isActive ? 'rgba(240,242,255,0.9)' : 'rgba(240,242,255,0.5)',
-                letterSpacing: '-0.01em',
-                marginBottom: 2,
+                fontSize: 11, fontWeight: 700,
+                color: isActive ? 'rgba(240,242,255,0.9)' : 'rgba(240,242,255,0.4)',
+                letterSpacing: '0.02em',
+                marginBottom: 1,
               }}>
                 {sec.label}
               </div>
               <div style={{
-                fontSize: 10, fontWeight: 600,
+                fontSize: 9, fontWeight: 600,
                 letterSpacing: '0.10em',
                 textTransform: 'uppercase',
-                color: isActive ? 'rgba(167,139,250,0.7)' : 'rgba(167,139,250,0.3)',
+                color: isActive ? 'rgba(167,139,250,0.6)' : 'rgba(167,139,250,0.22)',
                 fontFamily: 'var(--font-body)',
               }}>
                 {isActive ? 'Active' : 'View'}
