@@ -259,11 +259,11 @@ function NavRibbon({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 7,
+              gap: 8,
               flex: '1 0 auto',
-              width: 'clamp(110px, 28vw, 220px)',
+              width: 'clamp(120px, 28vw, 220px)',
               maxWidth: 220,
-              height: 80,
+              height: 110,
               background: isActive
                 ? 'linear-gradient(135deg, #2A1F50 0%, #221845 40%, #1E1540 100%)'
                 : 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
@@ -306,7 +306,7 @@ function NavRibbon({
             )}
 
             {/* Orbit icon */}
-            <div style={{ position: 'relative', width: 38, height: 38, flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
               {/* Outer orbit ring */}
               <motion.div
                 style={{
@@ -319,7 +319,7 @@ function NavRibbon({
               {/* Inner orbit ring */}
               <motion.div
                 style={{
-                  position: 'absolute', inset: 7, borderRadius: '50%',
+                  position: 'absolute', inset: 8, borderRadius: '50%',
                   border: '1px solid rgba(130,90,200,0.55)',
                 }}
                 animate={{ scale: [1, 1.25, 1], opacity: [0.65, 0.08, 0.65] }}
@@ -329,14 +329,14 @@ function NavRibbon({
               <motion.div
                 animate={{
                   boxShadow: isActive
-                    ? ['0 0 10px rgba(167,139,250,0.35)', '0 0 22px rgba(167,139,250,0.65)', '0 0 10px rgba(167,139,250,0.35)']
-                    : ['0 0 6px rgba(120,80,200,0.2)', '0 0 14px rgba(120,80,200,0.4)', '0 0 6px rgba(120,80,200,0.2)'],
+                    ? ['0 0 14px rgba(167,139,250,0.4)', '0 0 28px rgba(167,139,250,0.7)', '0 0 14px rgba(167,139,250,0.4)']
+                    : ['0 0 8px rgba(120,80,200,0.2)', '0 0 18px rgba(120,80,200,0.45)', '0 0 8px rgba(120,80,200,0.2)'],
                 }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
                 style={{
-                  position: 'absolute', inset: 10, borderRadius: '50%',
-                  background: isActive ? 'rgba(75,50,130,0.7)' : 'rgba(40,30,65,0.9)',
-                  border: `1px solid ${isActive ? 'rgba(140,100,220,0.7)' : 'rgba(130,90,200,0.5)'}`,
+                  position: 'absolute', inset: 16, borderRadius: '50%',
+                  background: isActive ? 'rgba(75,50,130,0.8)' : 'rgba(40,30,65,0.95)',
+                  border: `1px solid ${isActive ? 'rgba(140,100,220,0.8)' : 'rgba(130,90,200,0.55)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: isActive ? '#C4B5FD' : '#8B6CC1',
                 }}
@@ -501,7 +501,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 
 function HeartIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0.5">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
     </svg>
   )
@@ -509,17 +509,15 @@ function HeartIcon() {
 
 function BuildingIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0.5">
-      <path d="M2 3h8v18H2z"/>
-      <path d="M14 8h8v13h-8z"/>
-      <line x1="2" y1="21" x2="22" y2="21" strokeWidth="1.5" stroke="currentColor"/>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path d="M2 3h8v18H2zM14 8h8v13h-8zM2 20h20v2H2z"/>
     </svg>
   )
 }
 
 function ChartIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
     </svg>
   )
