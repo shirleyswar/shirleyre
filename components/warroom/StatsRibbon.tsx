@@ -78,7 +78,16 @@ export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
 
   if (inline) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0, flex: 1, minWidth: 0 }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0,
+        flex: 1,
+        minWidth: 0,
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        WebkitOverflowScrolling: 'touch',
+      } as React.CSSProperties}>
         {items.map((item, i) => (
           <div
             key={item.label}
@@ -87,16 +96,16 @@ export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
               flexDirection: 'column',
               justifyContent: 'center',
               gap: 1,
-              paddingLeft: i === 0 ? 0 : 18,
-              paddingRight: 18,
+              paddingLeft: i === 0 ? 0 : 14,
+              paddingRight: 14,
               borderLeft: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
               flexShrink: 0,
             }}
           >
-            <div style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', color: 'var(--text-dim)', lineHeight: 1 }}>
+            <div style={{ fontSize: 7, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', color: 'var(--text-dim)', lineHeight: 1, whiteSpace: 'nowrap' }}>
               {item.label}
             </div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: item.accentColor, fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: item.accentColor, fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
               {item.value}
             </div>
           </div>

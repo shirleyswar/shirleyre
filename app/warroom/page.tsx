@@ -172,12 +172,13 @@ function WarRoomHeader() {
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
         alignItems: 'center',
-        paddingLeft: 20,
-        paddingRight: 20,
+        paddingLeft: 12,
+        paddingRight: 12,
         gap: 0,
         flexShrink: 0,
         position: 'relative',
         overflow: 'hidden',
+        minWidth: 0,
       }}
     >
       {/* Title */}
@@ -233,11 +234,14 @@ function NavRibbon({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 16,
-        padding: '10px 24px',
+        gap: 10,
+        padding: '8px 12px',
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(167,139,250,0.08)',
         flexShrink: 0,
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
+        scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
       }}
     >
       {NAV_SECTIONS.map(sec => {
@@ -256,10 +260,10 @@ function NavRibbon({
               alignItems: 'center',
               justifyContent: 'center',
               gap: 7,
-              flex: 1,
-              maxWidth: 240,
-              minWidth: 140,
-              height: 84,
+              flex: '1 0 auto',
+              width: 'clamp(110px, 28vw, 220px)',
+              maxWidth: 220,
+              height: 80,
               background: isActive
                 ? 'linear-gradient(135deg, #2A1F50 0%, #221845 40%, #1E1540 100%)'
                 : 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
@@ -302,7 +306,7 @@ function NavRibbon({
             )}
 
             {/* Orbit icon */}
-            <div style={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 38, height: 38, flexShrink: 0 }}>
               {/* Outer orbit ring */}
               <motion.div
                 style={{
