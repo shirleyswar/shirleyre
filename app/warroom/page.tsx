@@ -244,6 +244,39 @@ function NavRibbon({
         scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
       }}
     >
+      {/* Gold home pill — only when inside a section */}
+      {activeSection !== 'operations' && (
+        <motion.button
+          onClick={() => onSectionChange('operations')}
+          whileHover={{ scale: 1.06, y: -2 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 14 }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '8px 16px',
+            background: 'linear-gradient(135deg, #C9933A 0%, #E8B84B 100%)',
+            border: '1px solid rgba(232,184,75,0.6)',
+            borderRadius: 999,
+            cursor: 'pointer',
+            color: '#000',
+            fontSize: 10,
+            fontWeight: 800,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            flexShrink: 0,
+            boxShadow: '0 0 14px rgba(201,147,58,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          Home
+        </motion.button>
+      )}
+
       {NAV_SECTIONS.map(sec => {
         const isActive = activeSection === sec.id
         return (
@@ -423,39 +456,6 @@ function SectionView({ children, onBack, title }: { children: React.ReactNode; o
         ['--accent-gold-light' as string]: '#C4B5FD',
       } as React.CSSProperties}
     >
-      {/* Back to War Room */}
-      {onBack && (
-        <motion.button
-          onClick={onBack}
-          whileHover={{ x: -3 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            marginBottom: 16,
-            background: 'rgba(40,30,65,0.6)',
-            border: '1px solid rgba(130,90,200,0.3)',
-            borderRadius: 8,
-            padding: '6px 14px',
-            cursor: 'pointer',
-            color: '#9B85C8',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.10em',
-            textTransform: 'uppercase',
-            fontFamily: 'var(--font-body)',
-          }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 5l-7 7 7 7"/>
-          </svg>
-          War Room
-          {title && (
-            <span style={{ color: 'rgba(130,90,200,0.5)', fontWeight: 400, marginLeft: 2 }}>/ {title}</span>
-          )}
-        </motion.button>
-      )}
       {children}
     </motion.div>
   )
