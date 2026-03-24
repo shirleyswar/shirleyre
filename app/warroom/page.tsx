@@ -123,7 +123,10 @@ export default function WarRoomPage() {
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minWidth: 0 }}>
 
         {/* ── WAR ROOM HEADER ── */}
-        <WarRoomHeader
+        <WarRoomHeader />
+
+        {/* ── NAV RIBBON ── */}
+        <NavRibbon
           activeSection={activeSection}
           onSectionChange={setActiveSection}
         />
@@ -161,17 +164,11 @@ export default function WarRoomPage() {
 
 // ─── WAR ROOM HEADER ────────────────────────────────────────────────────────
 
-function WarRoomHeader({
-  activeSection,
-  onSectionChange,
-}: {
-  activeSection: NavSection | 'operations'
-  onSectionChange: (s: NavSection | 'operations') => void
-}) {
+function WarRoomHeader() {
   return (
     <header
       style={{
-        height: 96,
+        height: 56,
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
@@ -181,195 +178,182 @@ function WarRoomHeader({
         gap: 16,
         flexShrink: 0,
         position: 'relative',
-        overflow: 'hidden',
       }}
     >
-      {/* Subtle top highlight line */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-        background: 'linear-gradient(to right, transparent 0%, rgba(255,255,255,0.07) 30%, rgba(255,255,255,0.04) 70%, transparent 100%)',
-        pointerEvents: 'none',
-      }} />
-
-      {/* Title — clickable to return to operations */}
-      <button
-        onClick={() => onSectionChange('operations')}
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: 0,
-          display: 'flex',
-          alignItems: 'baseline',
-          gap: 10,
-          flexShrink: 0,
-        }}
-      >
-        <h1
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(22px, 2.8vw, 34px)',
-            fontWeight: 800,
-            color: '#F0F2FF',
-            letterSpacing: '-0.04em',
-            lineHeight: 1,
-            margin: 0,
-            // Subtle blue-white glow
-            textShadow: '0 0 32px rgba(79,142,247,0.28)',
-          }}
-        >
-          WAR ROOM
-        </h1>
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 600,
-            color: 'rgba(79,142,247,0.6)',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            fontFamily: 'var(--font-body)',
-            alignSelf: 'center',
-            marginBottom: 1,
-          }}
-        >
-          ShirleyCRE
-        </span>
-      </button>
-
-      {/* Vertical divider */}
-      <div style={{
-        width: 1, height: 28,
-        background: 'rgba(255,255,255,0.07)',
-        flexShrink: 0,
-      }} />
-
-      {/* Nav section cards */}
-      <div style={{ display: 'flex', gap: 0, alignItems: 'center', flex: 1, justifyContent: 'space-evenly' }}>
-        {NAV_SECTIONS.map(sec => {
-          const isActive = activeSection === sec.id
-          return (
-            <motion.button
-              key={sec.id}
-              onClick={() => onSectionChange(isActive ? 'operations' : sec.id)}
-              whileHover={{ scale: 1.04, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                width: 220,
-                height: 88,
-                background: isActive
-                  ? 'linear-gradient(135deg, #1A1040 0%, #1E1545 40%, #180F38 100%)'
-                  : 'linear-gradient(135deg, #13112A 0%, #160E2C 40%, #110C24 100%)',
-                border: `1px solid ${isActive ? 'rgba(167,139,250,0.5)' : 'rgba(167,139,250,0.18)'}`,
-                borderRadius: 16,
-                cursor: 'pointer',
-                overflow: 'hidden',
-                boxShadow: isActive
-                  ? '0 0 0 1px rgba(167,139,250,0.15), 0 8px 32px rgba(0,0,0,0.6), 0 0 24px rgba(139,92,246,0.2), inset 0 1px 0 rgba(167,139,250,0.12)'
-                  : '0 0 0 1px rgba(167,139,250,0.06), 0 4px 20px rgba(0,0,0,0.5)',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-              }}
-            >
-              {/* Atmospheric glow orb */}
-              <div style={{
-                position: 'absolute',
-                top: -20, right: -20,
-                width: 80, height: 80,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 70%)',
-                pointerEvents: 'none',
-              }} />
-
-              {/* Active top edge line */}
-              {isActive && (
-                <div style={{
-                  position: 'absolute',
-                  top: 0, left: '15%', right: '15%',
-                  height: 1,
-                  background: 'linear-gradient(to right, transparent, #A78BFA, transparent)',
-                  pointerEvents: 'none',
-                }} />
-              )}
-
-              {/* Active inner glow */}
-              {isActive && (
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.1) 0%, transparent 65%)',
-                  pointerEvents: 'none',
-                }} />
-              )}
-
-              {/* Orbit icon */}
-              <div style={{ position: 'relative', width: 38, height: 38, flexShrink: 0 }}>
-                {/* Outer orbit ring */}
-                <motion.div
-                  style={{
-                    position: 'absolute', inset: 0,
-                    borderRadius: '50%',
-                    border: '1px solid rgba(167,139,250,0.22)',
-                  }}
-                  animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
-                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-                />
-                {/* Inner orbit ring */}
-                <motion.div
-                  style={{
-                    position: 'absolute', inset: 6,
-                    borderRadius: '50%',
-                    border: '1px solid rgba(167,139,250,0.35)',
-                  }}
-                  animate={{ scale: [1, 1.25, 1], opacity: [0.7, 0.1, 0.7] }}
-                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-                />
-                {/* Core circle */}
-                <motion.div
-                  animate={isActive
-                    ? { boxShadow: ['0 0 8px rgba(167,139,250,0.3)', '0 0 18px rgba(167,139,250,0.6)', '0 0 8px rgba(167,139,250,0.3)'] }
-                    : { boxShadow: ['0 0 4px rgba(167,139,250,0.1)', '0 0 10px rgba(167,139,250,0.25)', '0 0 4px rgba(167,139,250,0.1)'] }
-                  }
-                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-                  style={{
-                    position: 'absolute', inset: 12,
-                    borderRadius: '50%',
-                    background: isActive ? 'rgba(167,139,250,0.18)' : 'rgba(167,139,250,0.08)',
-                    border: `1px solid ${isActive ? 'rgba(167,139,250,0.5)' : 'rgba(167,139,250,0.25)'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: isActive ? '#A78BFA' : 'rgba(167,139,250,0.55)',
-                  }}
-                >
-                  <sec.icon />
-                </motion.div>
-              </div>
-
-              {/* Label */}
-              <span style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: isActive ? '#C4B5FD' : 'rgba(167,139,250,0.45)',
-                fontFamily: 'var(--font-body)',
-                transition: 'color 0.15s',
-              }}>
-                {sec.label}
-              </span>
-            </motion.button>
-          )
-        })}
-      </div>
-
-      {/* Live status indicator */}
+      <h1 style={{
+        fontFamily: 'var(--font-display)',
+        fontSize: 'clamp(18px, 2.2vw, 26px)',
+        fontWeight: 800,
+        color: '#F0F2FF',
+        letterSpacing: '-0.04em',
+        lineHeight: 1,
+        margin: 0,
+        textShadow: '0 0 32px rgba(79,142,247,0.28)',
+      }}>
+        WAR ROOM
+      </h1>
+      <span style={{
+        fontSize: 10, fontWeight: 600,
+        color: 'rgba(79,142,247,0.6)',
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+        fontFamily: 'var(--font-body)',
+      }}>
+        ShirleyCRE
+      </span>
+      <div style={{ flex: 1 }} />
       <LiveStatusDot />
     </header>
+  )
+}
+
+// ─── NAV RIBBON ─────────────────────────────────────────────────────────────
+
+function NavRibbon({
+  activeSection,
+  onSectionChange,
+}: {
+  activeSection: NavSection | 'operations'
+  onSectionChange: (s: NavSection | 'operations') => void
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 20,
+        padding: '14px 24px',
+        background: 'var(--bg-sidebar)',
+        borderBottom: '1px solid rgba(167,139,250,0.08)',
+        flexShrink: 0,
+      }}
+    >
+      {NAV_SECTIONS.map(sec => {
+        const isActive = activeSection === sec.id
+        return (
+          <motion.button
+            key={sec.id}
+            onClick={() => onSectionChange(isActive ? 'operations' : sec.id)}
+            whileHover={{ scale: 1.04, y: -3 }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 18 }}
+            style={{
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              flex: 1,
+              maxWidth: 260,
+              minWidth: 160,
+              height: 120,
+              background: isActive
+                ? 'linear-gradient(135deg, #1A1040 0%, #1E1545 40%, #180F38 100%)'
+                : 'linear-gradient(135deg, #13112A 0%, #160E2C 50%, #110C24 100%)',
+              border: `1px solid ${isActive ? 'rgba(167,139,250,0.45)' : 'rgba(167,139,250,0.15)'}`,
+              borderRadius: 16,
+              cursor: 'pointer',
+              overflow: 'hidden',
+              boxShadow: isActive
+                ? '0 0 0 1px rgba(167,139,250,0.12), 0 8px 32px rgba(0,0,0,0.6), 0 0 28px rgba(139,92,246,0.18), inset 0 1px 0 rgba(167,139,250,0.1)'
+                : '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03)',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+            }}
+          >
+            {/* Atmospheric glow orb — top right */}
+            <div style={{
+              position: 'absolute', top: -30, right: -30,
+              width: 100, height: 100,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(167,139,250,0.13) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            }} />
+
+            {/* Active top edge line */}
+            {isActive && (
+              <div style={{
+                position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
+                background: 'linear-gradient(to right, transparent, #A78BFA, transparent)',
+                pointerEvents: 'none',
+              }} />
+            )}
+
+            {/* Active inner glow */}
+            {isActive && (
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.09) 0%, transparent 65%)',
+                pointerEvents: 'none',
+              }} />
+            )}
+
+            {/* Orbit icon */}
+            <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
+              {/* Outer orbit ring */}
+              <motion.div
+                style={{
+                  position: 'absolute', inset: 0, borderRadius: '50%',
+                  border: '1px solid rgba(167,139,250,0.2)',
+                }}
+                animate={{ scale: [1, 1.45, 1], opacity: [0.45, 0, 0.45] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              {/* Inner orbit ring */}
+              <motion.div
+                style={{
+                  position: 'absolute', inset: 7, borderRadius: '50%',
+                  border: '1px solid rgba(167,139,250,0.32)',
+                }}
+                animate={{ scale: [1, 1.25, 1], opacity: [0.65, 0.08, 0.65] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.55 }}
+              />
+              {/* Core glow circle */}
+              <motion.div
+                animate={{
+                  boxShadow: isActive
+                    ? ['0 0 10px rgba(167,139,250,0.35)', '0 0 22px rgba(167,139,250,0.65)', '0 0 10px rgba(167,139,250,0.35)']
+                    : ['0 0 4px rgba(167,139,250,0.1)', '0 0 12px rgba(167,139,250,0.28)', '0 0 4px rgba(167,139,250,0.1)'],
+                }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute', inset: 15, borderRadius: '50%',
+                  background: isActive ? 'rgba(167,139,250,0.2)' : 'rgba(167,139,250,0.08)',
+                  border: `1px solid ${isActive ? 'rgba(167,139,250,0.55)' : 'rgba(167,139,250,0.22)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: isActive ? '#A78BFA' : 'rgba(167,139,250,0.5)',
+                }}
+              >
+                <sec.icon />
+              </motion.div>
+            </div>
+
+            {/* Label */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                fontSize: 13, fontWeight: 700,
+                color: isActive ? 'rgba(240,242,255,0.9)' : 'rgba(240,242,255,0.5)',
+                letterSpacing: '-0.01em',
+                marginBottom: 2,
+              }}>
+                {sec.label}
+              </div>
+              <div style={{
+                fontSize: 10, fontWeight: 600,
+                letterSpacing: '0.10em',
+                textTransform: 'uppercase',
+                color: isActive ? 'rgba(167,139,250,0.7)' : 'rgba(167,139,250,0.3)',
+                fontFamily: 'var(--font-body)',
+              }}>
+                {isActive ? 'Active' : 'View'}
+              </div>
+            </div>
+          </motion.button>
+        )
+      })}
+    </div>
   )
 }
 
