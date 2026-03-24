@@ -197,12 +197,13 @@ function WarRoomHeader() {
       </h1>
       <span style={{
         fontSize: 9, fontWeight: 600,
-        color: 'rgba(79,142,247,0.5)',
+        color: '#E8B84B',
         letterSpacing: '0.12em',
         textTransform: 'uppercase',
         fontFamily: 'var(--font-body)',
         marginLeft: 8,
         flexShrink: 0,
+        textShadow: '0 0 10px rgba(232,184,75,0.6)',
       }}>
         ShirleyCRE
       </span>
