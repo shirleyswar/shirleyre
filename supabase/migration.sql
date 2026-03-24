@@ -161,7 +161,59 @@ CREATE POLICY "anon_all_activity_log"  ON activity_log  FOR ALL TO anon USING (t
 CREATE POLICY "anon_all_folder_queue"  ON folder_queue  FOR ALL TO anon USING (true) WITH CHECK (true);
 
 -- ============================================================
--- DONE. Tables created:
+-- SESSION 2 ADDITIONS — March 23, 2026
+-- Run via Supabase SQL Editor: https://supabase.com/dashboard/project/mtkyyaorvensylrfbhxv/sql/new
+-- ============================================================
+
+-- Entity registry (LLCs, partnerships, personal CRE entities)
+CREATE TABLE IF NOT EXISTS entities (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name          TEXT NOT NULL,
+  type          TEXT,                      -- 'LLC', 'S-Corp', 'Trust', 'Partnership', etc.
+  notes         TEXT,
+  dropbox_link  TEXT,                      -- link to Dropbox folder for this entity
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Sub-items within each entity (tenant rosters, tax return tracking, etc.)
+CREATE TABLE IF NOT EXISTS entity_items (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_id   UUID NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  notes       TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Personal tasks (Life panel — separate from business tasks)
+CREATE TABLE IF NOT EXISTS personal_tasks (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title       TEXT NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'done')),
+  emoji       TEXT DEFAULT '📋',
+  sort_order  INTEGER DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for session 2 tables
+CREATE INDEX IF NOT EXISTS idx_entity_items_entity ON entity_items(entity_id);
+CREATE INDEX IF NOT EXISTS idx_personal_tasks_status ON personal_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_personal_tasks_order  ON personal_tasks(sort_order);
+
+-- RLS for session 2 tables
+ALTER TABLE entities       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE entity_items   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE personal_tasks ENABLE ROW LEVEL SECURITY;
+
+-- Open read policies (anon PIN-gated client) — read + write for all
+CREATE POLICY "anon read entities"       ON entities       FOR SELECT TO anon USING (true);
+CREATE POLICY "anon write entities"      ON entities       FOR ALL    TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon read entity_items"   ON entity_items   FOR SELECT TO anon USING (true);
+CREATE POLICY "anon write entity_items"  ON entity_items   FOR ALL    TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon read personal_tasks" ON personal_tasks FOR SELECT TO anon USING (true);
+CREATE POLICY "anon write personal_tasks" ON personal_tasks FOR ALL   TO anon USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- DONE. Full schema:
 --   deals, tasks, contacts, deal_contacts, activity_log, folder_queue
--- All 11 schema requirements from the build directive satisfied.
+--   entities, entity_items, personal_tasks  (Session 2)
 -- ============================================================

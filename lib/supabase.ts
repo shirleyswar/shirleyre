@@ -85,3 +85,30 @@ export interface FolderQueue {
   completed_at: string | null
   error_message: string | null
 }
+
+// Session 2 types
+export interface Entity {
+  id: string
+  name: string
+  type: string | null
+  notes: string | null
+  dropbox_link: string | null
+  created_at: string
+}
+
+export interface EntityItem {
+  id: string
+  entity_id: string
+  title: string
+  notes: string | null
+  created_at: string
+}
+
+export interface PersonalTask {
+  id: string
+  title: string
+  status: 'pending' | 'done'
+  emoji: string
+  sort_order: number
+  created_at: string
+}
