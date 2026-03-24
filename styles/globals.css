@@ -399,71 +399,66 @@ html, body {
 }
 
 /* ─── NAV SECTION CARDS (header) ────────────────────────────── */
+@keyframes navCardBreathe {
+  0%, 100% {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(167,139,250,0.1), 0 0 0 rgba(167,139,250,0);
+  }
+  50% {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(167,139,250,0.15), 0 0 20px rgba(167,139,250,0.12);
+  }
+}
+
+@keyframes navIconPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0px rgba(167,139,250,0));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 6px rgba(167,139,250,0.5));
+  }
+}
+
 .wr-nav-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  width: 104px;
-  height: 54px;
-  background: var(--bg-card);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 10px;
+  width: 220px;
+  height: 88px;
+  background: rgba(20, 15, 35, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   position: relative;
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  animation: navCardBreathe 3s ease-in-out infinite;
 }
 
 .wr-nav-card:hover {
-  border-color: rgba(255,255,255,0.13);
-  background: var(--bg-nested);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-  transform: translateY(-2px);
+  animation: none;
+  transform: scale(1.04);
+  border-color: rgba(167, 139, 250, 0.5);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(167,139,250,0.1), 0 0 24px rgba(167,139,250,0.25);
 }
 
 .wr-nav-card.active {
-  background: var(--bg-nested);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.08),
-    0 6px 20px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.06);
-  transform: translateY(-1px);
+  border-color: rgba(167, 139, 250, 0.6);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(167,139,250,0.2);
 }
 
-.wr-nav-card-label {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  transition: color 0.15s;
-  font-family: var(--font-body);
-}
-.wr-nav-card.active .wr-nav-card-label { color: var(--text-primary); }
-
-.wr-nav-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  opacity: 0.45;
-  transition: color 0.15s, opacity 0.15s;
-}
-.wr-nav-card.active .wr-nav-card-icon {
-  color: var(--accent-teal);
-  opacity: 1;
-}
-
-/* Active inner top glow */
+/* Active inner glow */
 .wr-nav-card.active::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% -10%, rgba(14,165,160,0.07) 0%, transparent 65%);
+  background: radial-gradient(ellipse at 50% -10%, rgba(167,139,250,0.12) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -471,10 +466,41 @@ html, body {
 .wr-nav-card.active::before {
   content: '';
   position: absolute;
-  top: 0; left: 20%; right: 20%;
+  top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(to right, transparent, var(--accent-teal), transparent);
-  opacity: 0.6;
+  background: linear-gradient(to right, transparent, #A78BFA, transparent);
+  opacity: 1;
+}
+
+.wr-nav-card-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color 0.15s;
+  font-family: var(--font-body);
+}
+.wr-nav-card.active .wr-nav-card-label { color: #A78BFA; }
+
+.wr-nav-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(167, 139, 250, 0.5);
+  font-size: 22px;
+  opacity: 1;
+  transition: color 0.15s, opacity 0.15s, transform 0.15s;
+  animation: navIconPulse 3s ease-in-out infinite;
+}
+.wr-nav-card:hover .wr-nav-card-icon {
+  animation: none;
+}
+.wr-nav-card.active .wr-nav-card-icon {
+  color: #A78BFA;
+  opacity: 1;
+  transform: scale(1.1);
+  animation: navIconPulse 3s ease-in-out infinite;
 }
 
 /* ─── SIDEBAR SECTION LABELS ─────────────────────────────────── */

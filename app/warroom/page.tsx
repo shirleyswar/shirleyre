@@ -171,7 +171,7 @@ function WarRoomHeader({
   return (
     <header
       style={{
-        height: 64,
+        height: 96,
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
@@ -244,7 +244,7 @@ function WarRoomHeader({
       }} />
 
       {/* Nav section cards */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 0, alignItems: 'center', flex: 1, justifyContent: 'space-evenly' }}>
         {NAV_SECTIONS.map(sec => {
           const isActive = activeSection === sec.id
           return (
@@ -261,9 +261,6 @@ function WarRoomHeader({
           )
         })}
       </div>
-
-      {/* Spacer */}
-      <div style={{ flex: 1 }} />
 
       {/* Live status indicator */}
       <LiveStatusDot />
