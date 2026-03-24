@@ -30,14 +30,68 @@ async function sha256(text: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-// Top-level nav sections
-type NavSection = 'operations' | 'life' | 'entities' | 'portfolio'
+// ─── DESIGN TOKENS — Session 3 Blue Theme ─────────────────────────────────
+const T = {
+  bgBase:        '#0A0A0F',
+  bgCard:        'rgba(26, 27, 33, 0.92)',
+  bgCardInner:   '#13141A',
+  accentBlue:    '#3B82F6',
+  accentBlueLt:  '#60A5FA',
+  accentGold:    '#D4A030',
+  textPrimary:   '#FFFFFF',
+  textSecondary: '#8B8D98',
+  textMuted:     '#5C5E6A',
+  success:       '#22C55E',
+  danger:        '#EF4444',
+  border:        'rgba(255,255,255,0.06)',
+} as const
 
-const NAV_ITEMS: { id: NavSection; label: string; emoji: string; desc: string }[] = [
-  { id: 'operations', label: 'Operations', emoji: '⚡', desc: 'Deals, pipeline, tasks' },
-  { id: 'life',       label: 'Life',       emoji: '❤️', desc: 'Personal tasks & admin' },
-  { id: 'entities',   label: 'Entities',   emoji: '🏢', desc: 'LLCs, trusts, registry' },
-  { id: 'portfolio',  label: 'Portfolio',  emoji: '📈', desc: 'Financial intelligence' },
+// Card style object — reusable
+const cardStyle: React.CSSProperties = {
+  background: T.bgCard,
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: `1px solid ${T.border}`,
+  borderRadius: 18,
+  boxShadow: '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)',
+}
+
+// Top-level nav sections
+type NavSection = 'life' | 'entities' | 'portfolio'
+
+// Floating button configs
+const FLOAT_BUTTONS: {
+  id: NavSection
+  label: string
+  icon: string
+  gradFrom: string
+  gradTo: string
+  glowColor: string
+}[] = [
+  {
+    id: 'life',
+    label: 'Life',
+    icon: '❤️',
+    gradFrom: '#FF6B6B',
+    gradTo: '#FF4500',
+    glowColor: 'rgba(255,107,107,0.5)',
+  },
+  {
+    id: 'entities',
+    label: 'Entities',
+    icon: '🏢',
+    gradFrom: '#00D2FF',
+    gradTo: '#0094B3',
+    glowColor: 'rgba(0,210,255,0.5)',
+  },
+  {
+    id: 'portfolio',
+    label: 'Portfolio',
+    icon: '📈',
+    gradFrom: '#D4A030',
+    gradTo: '#F5C842',
+    glowColor: 'rgba(212,160,48,0.5)',
+  },
 ]
 
 export default function WarRoomPage() {
@@ -45,7 +99,7 @@ export default function WarRoomPage() {
   const [showFlash, setShowFlash] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activePanel, setActivePanel] = useState('overview')
-  const [activeSection, setActiveSection] = useState<NavSection>('operations')
+  const [activeSection, setActiveSection] = useState<NavSection | 'operations'>('operations')
 
   // Check existing session on mount
   useEffect(() => {
@@ -89,7 +143,27 @@ export default function WarRoomPage() {
   }
 
   return (
-    <div className="flex h-screen bg-bg-base overflow-hidden">
+    // wr-blue-theme overrides CSS variables for all child components
+    <div
+      className="wr-blue-theme"
+      style={{
+        display: 'flex',
+        height: '100vh',
+        background: T.bgBase,
+        overflow: 'hidden',
+        // CSS variable overrides — cascade to all child components
+        ['--bg-base' as string]: T.bgBase,
+        ['--bg-card' as string]: '#1A1B21',
+        ['--bg-elevated' as string]: T.bgCardInner,
+        ['--accent-gold' as string]: T.accentBlue,
+        ['--accent-gold-light' as string]: T.accentBlueLt,
+        ['--text-primary' as string]: T.textPrimary,
+        ['--text-muted' as string]: T.textSecondary,
+        ['--success' as string]: T.success,
+        ['--danger' as string]: T.danger,
+        ['--border-subtle' as string]: T.border,
+      }}
+    >
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}
@@ -99,15 +173,18 @@ export default function WarRoomPage() {
       />
 
       {/* Main content area */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        {/* War Room Title Header */}
-        <WarRoomHeader activeSection={activeSection} onSectionChange={setActiveSection} />
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+        {/* War Room Header */}
+        <WarRoomHeader
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+        />
 
         {/* Stats ribbon */}
         <StatsRibbon />
 
         {/* Dashboard content */}
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
+        <main style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px' }}>
           <AnimatePresence mode="wait">
             {activeSection === 'operations' && (
               <OperationsView key="ops" activePanel={activePanel} />
@@ -134,158 +211,269 @@ export default function WarRoomPage() {
   )
 }
 
-// ─── WAR ROOM HEADER + NAV ─────────────────────────────────────────────────
+// ─── WAR ROOM HEADER ───────────────────────────────────────────────────────
 
 function WarRoomHeader({
   activeSection,
   onSectionChange,
 }: {
-  activeSection: NavSection
-  onSectionChange: (s: NavSection) => void
+  activeSection: NavSection | 'operations'
+  onSectionChange: (s: NavSection | 'operations') => void
 }) {
   return (
     <div
       style={{
-        background: 'linear-gradient(180deg, rgba(10,16,20,1) 0%, rgba(8,13,17,0.95) 100%)',
-        borderBottom: '1px solid rgba(201,147,58,0.15)',
-        padding: '16px 20px 0',
+        background: `linear-gradient(180deg, ${T.bgBase} 0%, rgba(10,10,15,0.97) 100%)`,
+        borderBottom: `1px solid rgba(59,130,246,0.12)`,
+        padding: '16px 20px 14px',
         flexShrink: 0,
       }}
     >
-      {/* Title */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        marginBottom: 14,
-      }}>
-        <h1 style={{
-          fontSize: 'clamp(28px, 4vw, 42px)',
-          fontWeight: 900,
-          color: 'var(--accent-gold)',
-          letterSpacing: '-0.02em',
-          lineHeight: 1,
-          margin: 0,
-          textShadow: '0 0 40px rgba(201,147,58,0.3)',
-        }}>
-          WAR ROOM
-        </h1>
-        <div style={{
-          fontSize: 10,
-          fontWeight: 600,
-          color: 'var(--text-muted)',
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          padding: '3px 8px',
-          border: '1px solid rgba(201,147,58,0.2)',
-          borderRadius: 4,
-          alignSelf: 'center',
-        }}>
-          ShirleyCRE v2
+      {/* Header row: title left, floating buttons right */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+        }}
+      >
+        {/* Left: Title + badge */}
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+          onClick={() => onSectionChange('operations')}
+        >
+          <h1
+            style={{
+              fontSize: 'clamp(28px, 4vw, 46px)',
+              fontWeight: 900,
+              color: T.textPrimary,
+              letterSpacing: '-0.02em',
+              lineHeight: 1,
+              margin: 0,
+              textShadow: `0 0 40px rgba(59,130,246,0.4), 0 0 80px rgba(59,130,246,0.15)`,
+              transition: 'text-shadow 0.3s',
+            }}
+          >
+            WAR ROOM
+          </h1>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: T.accentBlue,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              padding: '3px 9px',
+              border: `1px solid rgba(59,130,246,0.3)`,
+              borderRadius: 5,
+              alignSelf: 'center',
+              background: 'rgba(59,130,246,0.08)',
+            }}
+          >
+            ShirleyCRE v2
+          </div>
         </div>
-      </div>
 
-      {/* Nav bar */}
-      <div style={{
-        display: 'flex',
-        gap: 4,
-        overflowX: 'auto',
-        paddingBottom: 0,
-      }}>
-        {NAV_ITEMS.map(item => (
-          <NavButton
-            key={item.id}
-            item={item}
-            active={activeSection === item.id}
-            onClick={() => onSectionChange(item.id)}
-          />
-        ))}
+        {/* Right: Floating buttons */}
+        <FloatingNavButtons activeSection={activeSection} onSectionChange={onSectionChange} />
       </div>
     </div>
   )
 }
 
-function NavButton({
-  item,
+// ─── FLOATING NAV BUTTONS ──────────────────────────────────────────────────
+
+function FloatingNavButtons({
+  activeSection,
+  onSectionChange,
+}: {
+  activeSection: NavSection | 'operations'
+  onSectionChange: (s: NavSection | 'operations') => void
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 12,
+        alignItems: 'center',
+        flexWrap: 'wrap',
+      }}
+    >
+      {FLOAT_BUTTONS.map((btn, i) => (
+        <FloatingButton
+          key={btn.id}
+          btn={btn}
+          active={activeSection === btn.id}
+          entranceDelay={i * 0.08}
+          onClick={() =>
+            onSectionChange(activeSection === btn.id ? 'operations' : btn.id)
+          }
+        />
+      ))}
+    </div>
+  )
+}
+
+function FloatingButton({
+  btn,
   active,
+  entranceDelay,
   onClick,
 }: {
-  item: { id: NavSection; label: string; emoji: string; desc: string }
+  btn: typeof FLOAT_BUTTONS[0]
   active: boolean
+  entranceDelay: number
   onClick: () => void
 }) {
   const [hovered, setHovered] = useState(false)
+  const [pressed, setPressed] = useState(false)
+
+  const bgColor = active
+    ? `rgba(${hexToRgb(btn.gradFrom)}, 0.18)`
+    : hovered
+    ? `rgba(${hexToRgb(btn.gradFrom)}, 0.12)`
+    : `rgba(${hexToRgb(btn.gradFrom)}, 0.06)`
+
+  const borderColor = active
+    ? btn.gradFrom
+    : hovered
+    ? `rgba(${hexToRgb(btn.gradFrom)}, 0.7)`
+    : `rgba(${hexToRgb(btn.gradFrom)}, 0.35)`
+
+  const glow = active
+    ? `0 0 24px ${btn.glowColor}, 0 0 48px rgba(${hexToRgb(btn.gradFrom)}, 0.2), 0 4px 16px rgba(0,0,0,0.4)`
+    : hovered
+    ? `0 0 16px ${btn.glowColor}, 0 4px 12px rgba(0,0,0,0.3)`
+    : `0 2px 8px rgba(0,0,0,0.3)`
+
+  const scale = pressed ? 0.97 : active ? 1.02 : hovered ? 1.06 : 1.0
+  const translateY = active ? -2 : hovered ? -1 : 0
+  const opacity = !active && !hovered && activeSection_isOther() ? 0.7 : 1.0
+
+  function activeSection_isOther() {
+    // dims when another section is active
+    return false // handled by parent opacity prop
+  }
 
   return (
-    <button
+    <motion.button
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => { setHovered(false); setPressed(false) }}
+      onTapStart={() => setPressed(true)}
+      onTap={() => setPressed(false)}
+      onTapCancel={() => setPressed(false)}
+      initial={{ opacity: 0, y: 12, scale: 0.9 }}
+      animate={{
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        transition: { delay: entranceDelay, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] },
+      }}
       style={{
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
         gap: 8,
-        padding: '10px 18px',
-        background: active
-          ? 'rgba(201,147,58,0.12)'
-          : hovered
-          ? 'rgba(201,147,58,0.06)'
-          : 'transparent',
-        border: 'none',
-        borderBottom: active ? '2px solid var(--accent-gold)' : '2px solid transparent',
-        borderRadius: '6px 6px 0 0',
+        padding: '13px 26px',
+        background: bgColor,
+        border: `2px solid ${borderColor}`,
+        borderRadius: 50,
         cursor: 'pointer',
-        transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: hovered && !active ? 'translateY(-1px)' : 'none',
         outline: 'none',
-        flexShrink: 0,
-        // Glow on active
-        boxShadow: active ? '0 -2px 20px rgba(201,147,58,0.15) inset' : 'none',
+        boxShadow: glow,
+        transform: `scale(${scale}) translateY(${translateY}px)`,
+        transition: 'all 0.2s ease',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        overflow: 'hidden',
       }}
+      whileHover={{ scale: 1.06, y: -1 }}
+      whileTap={{ scale: 0.97 }}
     >
-      {/* Shimmer on hover */}
-      {hovered && !active && (
-        <span style={{
+      {/* Breathing pulse for idle/active */}
+      <motion.span
+        animate={
+          active
+            ? {
+                boxShadow: [
+                  `0 0 0 0 rgba(${hexToRgb(btn.gradFrom)}, 0.4)`,
+                  `0 0 0 8px rgba(${hexToRgb(btn.gradFrom)}, 0)`,
+                  `0 0 0 0 rgba(${hexToRgb(btn.gradFrom)}, 0)`,
+                ],
+              }
+            : {
+                scale: [1.0, 1.02, 1.0],
+              }
+        }
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(90deg, transparent 0%, rgba(201,147,58,0.08) 50%, transparent 100%)',
-          borderRadius: 'inherit',
-          animation: 'navShimmer 0.6s ease-in-out',
+          borderRadius: 50,
           pointerEvents: 'none',
-        }} />
+        }}
+      />
+
+      {/* Gradient shimmer overlay on hover */}
+      {hovered && (
+        <motion.span
+          initial={{ x: '-100%', opacity: 0 }}
+          animate={{ x: '200%', opacity: [0, 0.4, 0] }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)`,
+            pointerEvents: 'none',
+            borderRadius: 50,
+          }}
+        />
       )}
 
-      <span style={{
-        fontSize: 15,
-        lineHeight: 1,
-        filter: active ? 'none' : hovered ? 'none' : 'grayscale(60%)',
-        transition: 'filter 0.18s',
-      }}>
-        {item.emoji}
-      </span>
-      <span style={{
-        fontSize: 13,
-        fontWeight: active ? 700 : 500,
-        color: active ? 'var(--accent-gold)' : hovered ? 'var(--text-primary)' : 'var(--text-muted)',
-        transition: 'color 0.18s',
-        letterSpacing: active ? '0.02em' : 0,
-      }}>
-        {item.label}
+      {/* Icon */}
+      <span style={{ fontSize: 16, lineHeight: 1 }}>{btn.icon}</span>
+
+      {/* Label */}
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: active ? 700 : 600,
+          color: active
+            ? T.textPrimary
+            : hovered
+            ? T.textPrimary
+            : `rgba(${hexToRgb(btn.gradFrom)}, 0.9)`,
+          letterSpacing: '0.02em',
+          transition: 'color 0.2s ease',
+        }}
+      >
+        {btn.label}
       </span>
 
       {/* Active indicator dot */}
       {active && (
-        <span style={{
-          width: 5,
-          height: 5,
-          borderRadius: '50%',
-          background: 'var(--accent-gold)',
-          boxShadow: '0 0 6px rgba(201,147,58,0.8)',
-          flexShrink: 0,
-        }} />
+        <motion.span
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: btn.gradFrom,
+            boxShadow: `0 0 8px ${btn.gradFrom}`,
+            flexShrink: 0,
+          }}
+        />
       )}
-    </button>
+    </motion.button>
   )
 }
 
@@ -349,4 +537,14 @@ function OperationsView({ activePanel }: { activePanel: string }) {
       </motion.div>
     </motion.div>
   )
+}
+
+// ─── UTILITY ───────────────────────────────────────────────────────────────
+
+function hexToRgb(hex: string): string {
+  const clean = hex.replace('#', '')
+  const r = parseInt(clean.substring(0, 2), 16)
+  const g = parseInt(clean.substring(2, 4), 16)
+  const b = parseInt(clean.substring(4, 6), 16)
+  return `${r},${g},${b}`
 }
