@@ -419,6 +419,13 @@ html, body {
   }
 }
 
+@keyframes navIconHover {
+  0%   { transform: scale(1);    filter: drop-shadow(0 0 4px rgba(167,139,250,0.4)); }
+  30%  { transform: scale(1.18); filter: drop-shadow(0 0 10px rgba(167,139,250,0.8)); }
+  60%  { transform: scale(1.10); filter: drop-shadow(0 0 7px rgba(167,139,250,0.6)); }
+  100% { transform: scale(1.14); filter: drop-shadow(0 0 8px rgba(167,139,250,0.7)); }
+}
+
 .wr-nav-card {
   display: flex;
   flex-direction: column;
@@ -427,7 +434,7 @@ html, body {
   gap: 5px;
   width: 220px;
   height: 88px;
-  background: rgba(20, 15, 35, 0.7);
+  background: linear-gradient(135deg, #160E2C 0%, #1A1030 40%, #130E24 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(167, 139, 250, 0.2);
@@ -494,7 +501,7 @@ html, body {
   animation: navIconPulse 3s ease-in-out infinite;
 }
 .wr-nav-card:hover .wr-nav-card-icon {
-  animation: none;
+  animation: navIconHover 0.5s ease-out forwards;
 }
 .wr-nav-card.active .wr-nav-card-icon {
   color: #A78BFA;
