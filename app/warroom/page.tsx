@@ -248,16 +248,121 @@ function WarRoomHeader({
         {NAV_SECTIONS.map(sec => {
           const isActive = activeSection === sec.id
           return (
-            <button
+            <motion.button
               key={sec.id}
               onClick={() => onSectionChange(isActive ? 'operations' : sec.id)}
-              className={`wr-nav-card${isActive ? ' active' : ''}`}
+              whileHover={{ scale: 1.04, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              style={{
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                width: 220,
+                height: 88,
+                background: isActive
+                  ? 'linear-gradient(135deg, #1A1040 0%, #1E1545 40%, #180F38 100%)'
+                  : 'linear-gradient(135deg, #13112A 0%, #160E2C 40%, #110C24 100%)',
+                border: `1px solid ${isActive ? 'rgba(167,139,250,0.5)' : 'rgba(167,139,250,0.18)'}`,
+                borderRadius: 16,
+                cursor: 'pointer',
+                overflow: 'hidden',
+                boxShadow: isActive
+                  ? '0 0 0 1px rgba(167,139,250,0.15), 0 8px 32px rgba(0,0,0,0.6), 0 0 24px rgba(139,92,246,0.2), inset 0 1px 0 rgba(167,139,250,0.12)'
+                  : '0 0 0 1px rgba(167,139,250,0.06), 0 4px 20px rgba(0,0,0,0.5)',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+              }}
             >
-              <span className="wr-nav-card-icon">
-                <sec.icon />
+              {/* Atmospheric glow orb */}
+              <div style={{
+                position: 'absolute',
+                top: -20, right: -20,
+                width: 80, height: 80,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 70%)',
+                pointerEvents: 'none',
+              }} />
+
+              {/* Active top edge line */}
+              {isActive && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0, left: '15%', right: '15%',
+                  height: 1,
+                  background: 'linear-gradient(to right, transparent, #A78BFA, transparent)',
+                  pointerEvents: 'none',
+                }} />
+              )}
+
+              {/* Active inner glow */}
+              {isActive && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.1) 0%, transparent 65%)',
+                  pointerEvents: 'none',
+                }} />
+              )}
+
+              {/* Orbit icon */}
+              <div style={{ position: 'relative', width: 38, height: 38, flexShrink: 0 }}>
+                {/* Outer orbit ring */}
+                <motion.div
+                  style={{
+                    position: 'absolute', inset: 0,
+                    borderRadius: '50%',
+                    border: '1px solid rgba(167,139,250,0.22)',
+                  }}
+                  animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                {/* Inner orbit ring */}
+                <motion.div
+                  style={{
+                    position: 'absolute', inset: 6,
+                    borderRadius: '50%',
+                    border: '1px solid rgba(167,139,250,0.35)',
+                  }}
+                  animate={{ scale: [1, 1.25, 1], opacity: [0.7, 0.1, 0.7] }}
+                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                />
+                {/* Core circle */}
+                <motion.div
+                  animate={isActive
+                    ? { boxShadow: ['0 0 8px rgba(167,139,250,0.3)', '0 0 18px rgba(167,139,250,0.6)', '0 0 8px rgba(167,139,250,0.3)'] }
+                    : { boxShadow: ['0 0 4px rgba(167,139,250,0.1)', '0 0 10px rgba(167,139,250,0.25)', '0 0 4px rgba(167,139,250,0.1)'] }
+                  }
+                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+                  style={{
+                    position: 'absolute', inset: 12,
+                    borderRadius: '50%',
+                    background: isActive ? 'rgba(167,139,250,0.18)' : 'rgba(167,139,250,0.08)',
+                    border: `1px solid ${isActive ? 'rgba(167,139,250,0.5)' : 'rgba(167,139,250,0.25)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: isActive ? '#A78BFA' : 'rgba(167,139,250,0.55)',
+                  }}
+                >
+                  <sec.icon />
+                </motion.div>
+              </div>
+
+              {/* Label */}
+              <span style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: isActive ? '#C4B5FD' : 'rgba(167,139,250,0.45)',
+                fontFamily: 'var(--font-body)',
+                transition: 'color 0.15s',
+              }}>
+                {sec.label}
               </span>
-              <span className="wr-nav-card-label">{sec.label}</span>
-            </button>
+            </motion.button>
           )
         })}
       </div>
