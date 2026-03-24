@@ -136,7 +136,7 @@ export default function DealPipelinePanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                {['Deal Name', 'Address', 'Type', 'Status', 'Tier', 'Value', 'Commission', 'Source'].map(h => (
+                {['Deal Name', 'Address', 'Type', 'Status', 'Tier', 'Value', 'Commission', 'Source', 'Files'].map(h => (
                   <th key={h} style={{
                     textAlign: 'left',
                     padding: '7px 10px',
@@ -153,7 +153,7 @@ export default function DealPipelinePanel() {
             <tbody>
               {deals.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
                     No deals match this filter. Add one above ↑
                   </td>
                 </tr>
@@ -205,6 +205,9 @@ export default function DealPipelinePanel() {
                     </td>
                     <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>
                       {deal.deal_source || '—'}
+                    </td>
+                    <td style={{ padding: '10px 8px' }}>
+                      <DropboxButton url={deal.dropbox_link} />
                     </td>
                   </tr>
                 ))
@@ -290,14 +293,14 @@ const PLACEHOLDER_DEALS: Deal[] = [
     id: 'p1', name: 'Edinburgh Ave. N. 1873', address: 'Edinburgh Ave. N. 1873, Baton Rouge',
     type: 'listing', status: 'under_contract', tier: 'filed',
     value: 1200000, commission_rate: 0.06, commission_estimated: 72000, commission_collected: 0,
-    deal_source: 'Referral', notes: null,
+    deal_source: 'Referral', notes: null, dropbox_link: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
   {
     id: 'p2', name: 'French Truck Coffee — BR', address: null,
     type: 'tenant_rep', status: 'active', tier: 'tracked',
     value: 800000, commission_rate: 0.04, commission_estimated: 32000, commission_collected: 0,
-    deal_source: 'Cold Call', notes: null,
+    deal_source: 'Cold Call', notes: null, dropbox_link: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
 ]
@@ -328,5 +331,45 @@ function PipeIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M3 12h18M3 6h18M3 18h12"/>
     </svg>
+  )
+}
+
+const DROPBOX_FALLBACK = 'https://www.dropbox.com/scl/fo/r9dq6fwfmp81tv1ec02gb/ANqIOI6hM94j-v4jv9czcpo?rlkey=0bd4kas03bfl3vakbcln602tp&st=dc2a5sqy&dl=0'
+
+function DropboxButton({ url }: { url: string | null | undefined }) {
+  const href = url || DROPBOX_FALLBACK
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={url ? 'Open deal folder' : 'Open Active Listings folder'}
+      onClick={e => e.stopPropagation()}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 28,
+        height: 28,
+        borderRadius: 6,
+        background: url ? 'rgba(0,97,255,0.12)' : 'rgba(255,255,255,0.05)',
+        border: `1px solid ${url ? 'rgba(0,97,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+        color: url ? '#4F8EF7' : 'var(--text-dim)',
+        transition: 'all 0.15s',
+        textDecoration: 'none',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = 'rgba(0,97,255,0.22)'
+        e.currentTarget.style.borderColor = 'rgba(0,97,255,0.5)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = url ? 'rgba(0,97,255,0.12)' : 'rgba(255,255,255,0.05)'
+        e.currentTarget.style.borderColor = url ? 'rgba(0,97,255,0.3)' : 'rgba(255,255,255,0.08)'
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2L6 6.5L12 11L18 6.5L12 2ZM6 6.5L0 11L6 15.5L12 11L6 6.5ZM18 6.5L12 11L18 15.5L24 11L18 6.5ZM6 15.5L12 20L18 15.5L12 11L6 15.5Z"/>
+      </svg>
+    </a>
   )
 }

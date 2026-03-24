@@ -95,7 +95,7 @@ export default function UnderContractPanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr>
-                {['Deal', 'Type', 'Value', 'Commission', 'Day', ''].map((h, i) => (
+                {['Deal', 'Type', 'Value', 'Commission', 'Day', '', 'Files'].map((h, i) => (
                   <th key={i} style={{
                     textAlign: i >= 4 ? 'center' : 'left',
                     padding: '5px 10px',
@@ -171,6 +171,10 @@ export default function UnderContractPanel() {
                         <path d={linePath} fill="none" stroke="#4F8EF7" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </td>
+                    {/* Dropbox */}
+                    <td style={{ padding: '6px 8px' }}>
+                      <DropboxButton url={deal.dropbox_link} />
+                    </td>
                   </tr>
                 )
               })}
@@ -187,7 +191,7 @@ const PLACEHOLDER_DEALS: ContractDeal[] = [
     id: 'p1', name: 'Edinburgh Ave. N. 1873', address: 'Edinburgh Ave. N., BR',
     type: 'listing', status: 'under_contract', tier: 'filed',
     value: 1200000, commission_rate: 0.06, commission_estimated: 72000, commission_collected: 0,
-    deal_source: null, notes: null,
+    deal_source: null, notes: null, dropbox_link: null,
     created_at: new Date().toISOString(), updated_at: new Date(Date.now() - 12 * 86400000).toISOString(),
     days_since_contract: 12,
   },
@@ -209,5 +213,45 @@ function DocIcon() {
       <line x1="16" y1="13" x2="8" y2="13"/>
       <line x1="16" y1="17" x2="8" y2="17"/>
     </svg>
+  )
+}
+
+const DROPBOX_FALLBACK = 'https://www.dropbox.com/scl/fo/r9dq6fwfmp81tv1ec02gb/ANqIOI6hM94j-v4jv9czcpo?rlkey=0bd4kas03bfl3vakbcln602tp&st=dc2a5sqy&dl=0'
+
+function DropboxButton({ url }: { url: string | null | undefined }) {
+  const href = url || DROPBOX_FALLBACK
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={url ? 'Open deal folder' : 'Open Active Listings folder'}
+      onClick={e => e.stopPropagation()}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 28,
+        height: 28,
+        borderRadius: 6,
+        background: url ? 'rgba(0,97,255,0.12)' : 'rgba(255,255,255,0.05)',
+        border: `1px solid ${url ? 'rgba(0,97,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+        color: url ? '#4F8EF7' : 'var(--text-dim)',
+        transition: 'all 0.15s',
+        textDecoration: 'none',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = 'rgba(0,97,255,0.22)'
+        e.currentTarget.style.borderColor = 'rgba(0,97,255,0.5)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = url ? 'rgba(0,97,255,0.12)' : 'rgba(255,255,255,0.05)'
+        e.currentTarget.style.borderColor = url ? 'rgba(0,97,255,0.3)' : 'rgba(255,255,255,0.08)'
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2L6 6.5L12 11L18 6.5L12 2ZM6 6.5L0 11L6 15.5L12 11L6 6.5ZM18 6.5L12 11L18 15.5L24 11L18 6.5ZM6 15.5L12 20L18 15.5L12 11L6 15.5Z"/>
+      </svg>
+    </a>
   )
 }

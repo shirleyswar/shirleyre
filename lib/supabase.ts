@@ -27,6 +27,7 @@ export interface Deal {
   commission_collected: number | null
   deal_source: string | null
   notes: string | null
+  dropbox_link: string | null
   created_at: string
   updated_at: string
 }

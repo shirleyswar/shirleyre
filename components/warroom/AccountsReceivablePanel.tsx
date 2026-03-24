@@ -102,7 +102,7 @@ const PLACEHOLDER_AR: Deal[] = [
     id: 'ar1', name: 'Government St. 4950', address: 'Government St. 4950, BR',
     type: 'listing', status: 'pending_payment', tier: 'filed',
     value: 750000, commission_rate: 0.06, commission_estimated: 45000, commission_collected: 0,
-    deal_source: null, notes: null,
+    deal_source: null, notes: null, dropbox_link: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
 ]
