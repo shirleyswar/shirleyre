@@ -7,7 +7,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Types aligned with migration.sql schema
 export type DealStatus = 'pipeline' | 'active' | 'under_contract' | 'pending_payment' | 'closed' | 'dead'
-export type DealType = 'listing' | 'buyer_rep' | 'tenant_rep' | 'landlord_rep' | 'consulting' | 'other'
+export type DealType = 'listing' | 'buyer_rep' | 'tenant_rep' | 'landlord_rep' | 'consulting' | 'other' | 'potential_listing' | 'active_listing' | 'landlord' | 'seller' | 'tenant' | 'buyer' | 'referral' | 'x_develop_serv' | 'x_consulting' | 'in_service' | 'lease'
 export type DealTier = 'tracked' | 'filed'
 export type ContactPriority = 'ehvp' | 'hvp' | 'standard'
 export type TaskStatus = 'open' | 'in_progress' | 'complete' | 'deferred'

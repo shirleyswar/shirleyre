@@ -3,6 +3,18 @@
 import { useState, useEffect } from 'react'
 import { supabase, Deal, DealStatus, DealTier } from '@/lib/supabase'
 
+const DEAL_TYPES: { value: string; label: string }[] = [
+  { value: 'potential_listing',   label: 'Potential Listing' },
+  { value: 'active_listing',      label: 'Active Listing' },
+  { value: 'landlord',            label: 'Landlord' },
+  { value: 'seller',              label: 'Seller' },
+  { value: 'tenant',              label: 'Tenant' },
+  { value: 'buyer',               label: 'Buyer' },
+  { value: 'referral',            label: 'Referral' },
+  { value: 'x_develop_serv',      label: 'X - Develop Serv' },
+  { value: 'x_consulting',        label: 'X - Consulting' },
+]
+
 const STATUS_LABELS: Record<DealStatus, string> = {
   pipeline: 'Pipeline',
   active: 'Active',
@@ -253,7 +265,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete }: { deal: Deal; isLast: boo
         <td style={{ padding: '6px 8px' }}>{inp('name', 'ID / Client')}</td>
         <td style={{ padding: '6px 8px' }}>
           <select value={draft.type} onChange={e => setDraft(p => ({ ...p, type: e.target.value as Deal['type'] }))} style={{ fontSize: 11, padding: '3px 4px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)' }}>
-            {['listing','buyer_rep','lease','tenant_rep','referral','consulting','in_service'].map(t => <option key={t} value={t}>{t === 'in_service' ? 'In Service' : t.replace('_',' ')}</option>)}
+            {DEAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </td>
         <td style={{ padding: '6px 8px' }}>
@@ -293,7 +305,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete }: { deal: Deal; isLast: boo
     >
       <td style={{ padding: '10px 10px', color: 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap' }}>{deal.address || '—'}</td>
       <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{deal.name}</td>
-      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{deal.type.replace('_', ' ')}</td>
+      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type.replace(/_/g, ' ')}</td>
       <td style={{ padding: '10px 10px' }}>
         <span className={`badge ${STATUS_CLASS[deal.status as DealStatus]}`}>{STATUS_LABELS[deal.status as DealStatus]}</span>
       </td>
@@ -351,7 +363,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete }: { deal: Deal; isLast: boo
 
 // Quick add form
 function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
-  const [form, setForm] = useState({ name: '', address: '', type: 'listing', status: 'pipeline', tier: 'tracked', deal_source: '', isPortfolio: false })
+  const [form, setForm] = useState({ name: '', address: '', type: 'potential_listing', status: 'pipeline', tier: 'tracked', deal_source: '', isPortfolio: false })
   const [saving, setSaving] = useState(false)
 
   async function submit() {
@@ -391,13 +403,7 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
         !Portfolio
       </label>
       <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} style={{...selectStyle, flex: '1 1 120px'}}>
-        <option value="listing">Listing</option>
-        <option value="buyer_rep">Buyer Rep</option>
-        <option value="tenant_rep">Tenant Rep</option>
-        <option value="landlord_rep">Landlord Rep</option>
-        <option value="in_service">In Service</option>
-        <option value="consulting">Consulting</option>
-        <option value="other">Other</option>
+        {DEAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
       </select>
       <select value={form.tier} onChange={e => setForm({...form, tier: e.target.value})} style={{...selectStyle, flex: '1 1 100px'}}>
         <option value="tracked">Tracked</option>
@@ -422,14 +428,14 @@ function SkeletonTable() {
 const PLACEHOLDER_DEALS: Deal[] = [
   {
     id: 'p1', name: 'Edinburgh Ave. N. 1873', address: 'Edinburgh Ave. N. 1873, Baton Rouge',
-    type: 'listing', status: 'under_contract', tier: 'filed',
+    type: 'active_listing', status: 'under_contract', tier: 'filed',
     value: 1200000, commission_rate: 0.06, commission_estimated: 72000, commission_collected: 0,
     deal_source: 'Referral', notes: null, dropbox_link: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
   {
     id: 'p2', name: 'French Truck Coffee — BR', address: null,
-    type: 'tenant_rep', status: 'active', tier: 'tracked',
+    type: 'tenant', status: 'active', tier: 'tracked',
     value: 800000, commission_rate: 0.04, commission_estimated: 32000, commission_collected: 0,
     deal_source: 'Cold Call', notes: null, dropbox_link: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
