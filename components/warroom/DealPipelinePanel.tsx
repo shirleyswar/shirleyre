@@ -33,7 +33,7 @@ export default function DealPipelinePanel() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<DealStatus | 'all'>('all')
   const [tierFilter, setTierFilter] = useState<DealTier | 'all'>('all')
-  const [sortBy, setSortBy] = useState<'commission_estimated' | 'created_at' | 'name'>('created_at')
+  const [sortBy, setSortBy] = useState<'commission_estimated' | 'created_at' | 'name' | 'address'>('created_at')
   const [showAddForm, setShowAddForm] = useState(false)
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function DealPipelinePanel() {
       let query = supabase.from('deals').select('*')
       if (filter !== 'all') query = query.eq('status', filter)
       if (tierFilter !== 'all') query = query.eq('tier', tierFilter)
-      query = query.order(sortBy, { ascending: sortBy === 'name' })
+      query = query.order(sortBy, { ascending: sortBy === 'name' || sortBy === 'address' })
       const { data } = await query.limit(50)
       if (data) setDeals(data as Deal[])
     } catch {
@@ -103,7 +103,8 @@ export default function DealPipelinePanel() {
           >
             <option value="created_at">Newest</option>
             <option value="commission_estimated">Commission ↓</option>
-            <option value="name">Name</option>
+            <option value="address">Address A→Z</option>
+            <option value="name">ID / Client A→Z</option>
           </select>
 
           {/* Add deal */}
@@ -252,7 +253,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete }: { deal: Deal; isLast: boo
         <td style={{ padding: '6px 8px' }}>{inp('name', 'ID / Client')}</td>
         <td style={{ padding: '6px 8px' }}>
           <select value={draft.type} onChange={e => setDraft(p => ({ ...p, type: e.target.value as Deal['type'] }))} style={{ fontSize: 11, padding: '3px 4px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)' }}>
-            {['listing','buyer_rep','lease','tenant_rep','referral','consulting'].map(t => <option key={t} value={t}>{t.replace('_',' ')}</option>)}
+            {['listing','buyer_rep','lease','tenant_rep','referral','consulting','in_service'].map(t => <option key={t} value={t}>{t === 'in_service' ? 'In Service' : t.replace('_',' ')}</option>)}
           </select>
         </td>
         <td style={{ padding: '6px 8px' }}>
@@ -394,6 +395,7 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
         <option value="buyer_rep">Buyer Rep</option>
         <option value="tenant_rep">Tenant Rep</option>
         <option value="landlord_rep">Landlord Rep</option>
+        <option value="in_service">In Service</option>
         <option value="consulting">Consulting</option>
         <option value="other">Other</option>
       </select>
