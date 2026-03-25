@@ -303,7 +303,13 @@ function DealRow({ deal, isLast, onUpdate, onDelete }: { deal: Deal; isLast: boo
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
       onMouseLeave={e => (e.currentTarget.style.background = editing ? 'rgba(167,139,250,0.04)' : '')}
     >
-      <td style={{ padding: '10px 10px', color: 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap' }}>{deal.address || '—'}</td>
+      <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+        {deal.address?.startsWith('📁') ? (
+          <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>{deal.address}</span>
+        ) : (
+          <span style={{ color: 'var(--text-primary)' }}>{deal.address || '—'}</span>
+        )}
+      </td>
       <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{deal.name}</td>
       <td style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type.replace(/_/g, ' ')}</td>
       <td style={{ padding: '10px 10px' }}>
@@ -372,7 +378,7 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
     try {
       const { data } = await supabase.from('deals').insert({
         name: form.name.trim(),
-        address: form.isPortfolio ? '!Portfolio' : (form.address || null),
+        address: form.isPortfolio ? `📁 ${form.name.trim() || 'Portfolio'}` : (form.address || null),
         type: form.type,
         status: form.status,
         tier: form.tier,
@@ -389,7 +395,7 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
       {/* Address FIRST — left */}
       {form.isPortfolio ? (
         <div style={{ ...inputStyle, flex: '1 1 180px', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700, fontSize: 12 }}>
-          📁 Portfolio of Properties
+          📁 {form.name.trim() || 'Portfolio — fill in ID / Client →'}
         </div>
       ) : (
         <input placeholder="Address *" value={form.address} onChange={e => setForm({...form, address: e.target.value})} style={{...inputStyle, flex: '1 1 180px'}} />
@@ -400,7 +406,7 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
       <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }}>
         <input type="checkbox" checked={form.isPortfolio} onChange={e => setForm({...form, isPortfolio: e.target.checked, address: ''})}
           style={{ width: 14, height: 14, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
-        !Portfolio
+        Portfolio
       </label>
       <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} style={{...selectStyle, flex: '1 1 120px'}}>
         {DEAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
