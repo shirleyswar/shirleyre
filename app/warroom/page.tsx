@@ -208,34 +208,22 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
         ))}
       </button>
 
-      <h1 style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 20,
-        fontWeight: 800,
-        color: '#F0F2FF',
-        letterSpacing: '-0.04em',
-        lineHeight: 1,
-        margin: 0,
-        flexShrink: 0,
-        textShadow: '0 0 32px rgba(79,142,247,0.28)',
-      }}>
-        WAR ROOM
-      </h1>
+      {/* ShirleyCRE wordmark — stays in top bar */}
       <span style={{
-        fontSize: 9, fontWeight: 600,
+        fontSize: 13, fontWeight: 800,
         color: '#E8B84B',
-        letterSpacing: '0.12em',
+        letterSpacing: '0.08em',
         textTransform: 'uppercase',
         fontFamily: 'var(--font-body)',
-        marginLeft: 8,
         flexShrink: 0,
-        textShadow: '0 0 10px rgba(232,184,75,0.6)',
+        textShadow: '0 0 14px rgba(232,184,75,0.55)',
+        marginLeft: 4,
       }}>
         ShirleyCRE
       </span>
 
       {/* Divider */}
-      <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.07)', marginLeft: 16, marginRight: 16, flexShrink: 0 }} />
+      <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.07)', marginLeft: 14, marginRight: 14, flexShrink: 0 }} />
 
       {/* Stats inline */}
       <StatsRibbon inline />
@@ -335,6 +323,53 @@ function NavRibbon({
         scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
       }}
     >
+      {/* WAR ROOM wordmark — left of nav cards */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        width: 'clamp(80px, 14vw, 120px)',
+        height: 'clamp(100px, 18vw, 120px)',
+        gap: 4,
+        padding: '0 8px',
+        cursor: 'default',
+        userSelect: 'none',
+      }}>
+        <div style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 'clamp(16px, 3.5vw, 26px)',
+          fontWeight: 900,
+          color: '#F0F2FF',
+          letterSpacing: '-0.04em',
+          lineHeight: 1,
+          textShadow: '0 0 28px rgba(79,142,247,0.35)',
+        }}>
+          WAR
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 'clamp(16px, 3.5vw, 26px)',
+          fontWeight: 900,
+          color: '#F0F2FF',
+          letterSpacing: '-0.04em',
+          lineHeight: 1,
+          textShadow: '0 0 28px rgba(79,142,247,0.35)',
+        }}>
+          ROOM
+        </div>
+        <div style={{
+          width: '60%',
+          height: 1,
+          background: 'linear-gradient(to right, transparent, rgba(79,142,247,0.4), transparent)',
+          marginTop: 2,
+        }} />
+      </div>
+
+      {/* Divider between wordmark and cards */}
+      <div style={{ width: 1, height: 60, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+
       {NAV_SECTIONS.map(sec => {
         const isActive = activeSection === sec.id
         return (
