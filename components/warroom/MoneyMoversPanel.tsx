@@ -193,14 +193,14 @@ const PLACEHOLDER_DEALS: Deal[] = [
     id: 'p1', name: 'Edinburgh Ave. N. 1873', address: null,
     type: 'listing', status: 'under_contract', tier: 'filed',
     value: 1200000, commission_rate: 0.06, commission_estimated: 72000, commission_collected: 0,
-    deal_source: null, notes: null, dropbox_link: null,
+    deal_source: null, notes: null, dropbox_link: null, parent_deal_id: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
   {
     id: 'p2', name: 'French Truck Coffee — BR', address: null,
     type: 'tenant_rep', status: 'active', tier: 'tracked',
     value: 800000, commission_rate: 0.04, commission_estimated: 32000, commission_collected: 0,
-    deal_source: null, notes: null, dropbox_link: null,
+    deal_source: null, notes: null, dropbox_link: null, parent_deal_id: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
 ]

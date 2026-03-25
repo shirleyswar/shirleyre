@@ -195,7 +195,7 @@ const PLACEHOLDER_DEALS: ContractDeal[] = [
     id: 'p1', name: 'Edinburgh Ave. N. 1873', address: 'Edinburgh Ave. N., BR',
     type: 'listing', status: 'under_contract', tier: 'filed',
     value: 1200000, commission_rate: 0.06, commission_estimated: 72000, commission_collected: 0,
-    deal_source: null, notes: null, dropbox_link: null,
+    deal_source: null, notes: null, dropbox_link: null, parent_deal_id: null,
     created_at: new Date().toISOString(), updated_at: new Date(Date.now() - 12 * 86400000).toISOString(),
     days_since_contract: 12,
   },

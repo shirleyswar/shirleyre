@@ -16,8 +16,10 @@ const DEAL_TYPES: { value: string; label: string }[] = [
 ]
 
 const STATUS_LABELS: Record<DealStatus, string> = {
-  pipeline: 'Pipeline',
   active: 'Active',
+  in_review: 'In Review',
+  pipeline: 'Pipeline',
+  in_service: 'In Service',
   under_contract: 'Under Contract',
   pending_payment: 'Pending Pmt',
   closed: 'Closed',
@@ -25,13 +27,18 @@ const STATUS_LABELS: Record<DealStatus, string> = {
 }
 
 const STATUS_CLASS: Record<DealStatus, string> = {
-  pipeline: 'badge-pipeline',
   active: 'badge-active',
+  in_review: 'badge-pending',
+  pipeline: 'badge-pipeline',
+  in_service: 'badge-contract',
   under_contract: 'badge-contract',
   pending_payment: 'badge-pending',
   closed: 'badge-closed',
   dead: 'badge-dead',
 }
+
+// The 4 primary statuses shown in UI
+const PRIMARY_STATUSES: DealStatus[] = ['active', 'in_review', 'pipeline', 'in_service']
 
 function formatCurrency(n: number | null) {
   if (!n) return '—'
@@ -45,7 +52,8 @@ export default function DealPipelinePanel() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<DealStatus | 'all'>('all')
   const [tierFilter, setTierFilter] = useState<DealTier | 'all'>('all')
-  const [sortBy, setSortBy] = useState<'commission_estimated' | 'created_at' | 'name' | 'address'>('created_at')
+  const [sortBy, setSortBy] = useState<'commission_estimated' | 'created_at' | 'name' | 'address' | 'type' | 'status'>('created_at')
+  const [expandedPortfolios, setExpandedPortfolios] = useState<Set<string>>(new Set())
   const [showAddForm, setShowAddForm] = useState(false)
 
   useEffect(() => {
@@ -57,7 +65,7 @@ export default function DealPipelinePanel() {
       let query = supabase.from('deals').select('*')
       if (filter !== 'all') query = query.eq('status', filter)
       if (tierFilter !== 'all') query = query.eq('tier', tierFilter)
-      query = query.order(sortBy, { ascending: sortBy === 'name' || sortBy === 'address' })
+      query = query.order(sortBy, { ascending: ['name','address','type','status'].includes(sortBy) })
       const { data } = await query.limit(50)
       if (data) setDeals(data as Deal[])
     } catch {
@@ -117,6 +125,8 @@ export default function DealPipelinePanel() {
             <option value="commission_estimated">Commission ↓</option>
             <option value="address">Address A→Z</option>
             <option value="name">ID / Client A→Z</option>
+            <option value="type">Type A→Z</option>
+            <option value="status">Status A→Z</option>
           </select>
 
           {/* Add deal */}
@@ -171,15 +181,47 @@ export default function DealPipelinePanel() {
                   </td>
                 </tr>
               ) : (
-                deals.map((deal, i) => (
-                  <DealRow
-                    key={deal.id}
-                    deal={deal}
-                    isLast={i === deals.length - 1}
-                    onUpdate={(updated) => setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))}
-                    onDelete={(id) => setDeals(prev => prev.filter(d => d.id !== id))}
-                  />
-                ))
+                deals.filter(d => !d.parent_deal_id).map((deal, i, arr) => {
+                  const isPortfolio = deal.address?.startsWith('📁')
+                  const subDeals = deals.filter(d => d.parent_deal_id === deal.id)
+                  const isExpanded = expandedPortfolios.has(deal.id)
+                  return (
+                    <>
+                      <DealRow
+                        key={deal.id}
+                        deal={deal}
+                        isLast={i === arr.length - 1 && (!isExpanded || subDeals.length === 0)}
+                        isPortfolio={isPortfolio}
+                        isExpanded={isExpanded}
+                        onToggleExpand={isPortfolio ? () => setExpandedPortfolios(prev => {
+                          const next = new Set(prev)
+                          next.has(deal.id) ? next.delete(deal.id) : next.add(deal.id)
+                          return next
+                        }) : undefined}
+                        onUpdate={(updated) => setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))}
+                        onDelete={(id) => setDeals(prev => prev.filter(d => d.id !== id))}
+                        onAddSubDeal={(subDeal) => setDeals(prev => [...prev, subDeal])}
+                      />
+                      {isPortfolio && isExpanded && subDeals.map((sub, si) => (
+                        <DealRow
+                          key={sub.id}
+                          deal={sub}
+                          isLast={si === subDeals.length - 1}
+                          isSubDeal
+                          onUpdate={(updated) => setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))}
+                          onDelete={(id) => setDeals(prev => prev.filter(d => d.id !== id))}
+                        />
+                      ))}
+                      {isPortfolio && isExpanded && (
+                        <AddSubDealRow
+                          key={`add-sub-${deal.id}`}
+                          parentId={deal.id}
+                          onAdd={(sub) => setDeals(prev => [...prev, sub])}
+                        />
+                      )}
+                    </>
+                  )
+                })
               )}
             </tbody>
           </table>
@@ -197,7 +239,10 @@ async function sha256(text: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-function DealRow({ deal, isLast, onUpdate, onDelete }: { deal: Deal; isLast: boolean; onUpdate: (d: Deal) => void; onDelete: (id: string) => void }) {
+function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, onToggleExpand, isSubDeal, onAddSubDeal }: {
+  deal: Deal; isLast: boolean; onUpdate: (d: Deal) => void; onDelete: (id: string) => void
+  isPortfolio?: boolean; isExpanded?: boolean; onToggleExpand?: () => void; isSubDeal?: boolean; onAddSubDeal?: (d: Deal) => void
+}) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(deal)
   const [saving, setSaving] = useState(false)
@@ -270,7 +315,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete }: { deal: Deal; isLast: boo
         </td>
         <td style={{ padding: '6px 8px' }}>
           <select value={draft.status} onChange={e => setDraft(p => ({ ...p, status: e.target.value as Deal['status'] }))} style={{ fontSize: 11, padding: '3px 4px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)' }}>
-            {['pipeline','active','under_contract','pending_payment','closed','dead'].map(s => <option key={s} value={s}>{s.replace('_',' ')}</option>)}
+            {(Object.entries(STATUS_LABELS) as [DealStatus, string][]).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </td>
         <td style={{ padding: '6px 8px' }}>
@@ -304,10 +349,16 @@ function DealRow({ deal, isLast, onUpdate, onDelete }: { deal: Deal; isLast: boo
       onMouseLeave={e => (e.currentTarget.style.background = editing ? 'rgba(167,139,250,0.04)' : '')}
     >
       <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-        {deal.address?.startsWith('📁') ? (
+        {isSubDeal && <span style={{ marginRight: 8, color: 'var(--text-dim)', fontSize: 11 }}>↳</span>}
+        {isPortfolio && onToggleExpand ? (
+          <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700 }}>
+            <span style={{ fontSize: 13, transition: 'transform 0.15s', display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+            {deal.address}
+          </button>
+        ) : deal.address?.startsWith('📁') ? (
           <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>{deal.address}</span>
         ) : (
-          <span style={{ color: 'var(--text-primary)' }}>{deal.address || '—'}</span>
+          <span style={{ color: isSubDeal ? 'var(--text-muted)' : 'var(--text-primary)' }}>{deal.address || '—'}</span>
         )}
       </td>
       <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{deal.name}</td>
@@ -411,6 +462,9 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
       <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} style={{...selectStyle, flex: '1 1 120px'}}>
         {DEAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
       </select>
+      <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} style={{...selectStyle, flex: '1 1 110px'}}>
+        {PRIMARY_STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+      </select>
       <select value={form.tier} onChange={e => setForm({...form, tier: e.target.value})} style={{...selectStyle, flex: '1 1 100px'}}>
         <option value="tracked">Tracked</option>
         <option value="filed">Filed</option>
@@ -420,6 +474,51 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
         {saving ? 'Saving...' : 'Create Deal'}
       </button>
     </div>
+  )
+}
+
+// ─── Add Sub-Deal Row (inside portfolio) ─────────────────────────────────────
+function AddSubDealRow({ parentId, onAdd }: { parentId: string; onAdd: (d: Deal) => void }) {
+  const [open, setOpen] = useState(false)
+  const [address, setAddress] = useState('')
+  const [name, setName] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    if (!address.trim()) return
+    setSaving(true)
+    try {
+      const { data } = await supabase.from('deals').insert({
+        name: name.trim() || address.trim(),
+        address: address.trim(),
+        type: 'listing',
+        status: 'pipeline',
+        tier: 'tracked',
+        parent_deal_id: parentId,
+      }).select().single()
+      if (data) { onAdd(data as Deal); setAddress(''); setName(''); setOpen(false) }
+    } catch (e) { console.error(e) }
+    setSaving(false)
+  }
+
+  return (
+    <tr style={{ background: 'rgba(232,184,75,0.03)', borderBottom: '1px solid var(--border-subtle)' }}>
+      <td colSpan={10} style={{ padding: '6px 20px' }}>
+        {open ? (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: 11, flexShrink: 0 }}>↳</span>
+            <input autoFocus value={address} onChange={e => setAddress(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Address *" style={{ fontSize: 12, padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, color: 'var(--text-primary)', outline: 'none', width: 200 }} />
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="ID / Client (optional)" style={{ fontSize: 12, padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, color: 'var(--text-primary)', outline: 'none', width: 180 }} />
+            <button onClick={save} disabled={saving || !address.trim()} style={{ padding: '4px 12px', background: 'rgba(232,184,75,0.2)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 5, color: '#E8B84B', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{saving ? '…' : '+ Add'}</button>
+            <button onClick={() => setOpen(false)} style={{ padding: '4px 8px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12 }}>✕</button>
+          </div>
+        ) : (
+          <button onClick={() => setOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-gold)', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, opacity: 0.7 }}>
+            <span>↳</span> + Add property to portfolio
+          </button>
+        )}
+      </td>
+    </tr>
   )
 }
 
@@ -436,14 +535,14 @@ const PLACEHOLDER_DEALS: Deal[] = [
     id: 'p1', name: 'Edinburgh Ave. N. 1873', address: 'Edinburgh Ave. N. 1873, Baton Rouge',
     type: 'active_listing', status: 'under_contract', tier: 'filed',
     value: 1200000, commission_rate: 0.06, commission_estimated: 72000, commission_collected: 0,
-    deal_source: 'Referral', notes: null, dropbox_link: null,
+    deal_source: 'Referral', notes: null, dropbox_link: null, parent_deal_id: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
   {
     id: 'p2', name: 'French Truck Coffee — BR', address: null,
     type: 'tenant', status: 'active', tier: 'tracked',
     value: 800000, commission_rate: 0.04, commission_estimated: 32000, commission_collected: 0,
-    deal_source: 'Cold Call', notes: null, dropbox_link: null,
+    deal_source: 'Cold Call', notes: null, dropbox_link: null, parent_deal_id: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
 ]
