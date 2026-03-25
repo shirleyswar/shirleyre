@@ -235,8 +235,8 @@ function NavRibbon({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 10,
-        padding: '8px 12px',
+        gap: 8,
+        padding: '6px 8px',
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(167,139,250,0.08)',
         flexShrink: 0,
@@ -293,11 +293,11 @@ function NavRibbon({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
+              gap: 6,
               flex: '1 0 auto',
-              width: 'clamp(120px, 28vw, 220px)',
+              width: 'clamp(100px, 26vw, 220px)',
               maxWidth: 220,
-              height: 110,
+              height: 'clamp(100px, 18vw, 120px)',
               background: isActive
                 ? 'linear-gradient(135deg, #2A1F50 0%, #221845 40%, #1E1540 100%)'
                 : 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
@@ -340,7 +340,7 @@ function NavRibbon({
             )}
 
             {/* Orbit icon */}
-            <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 'clamp(44px, 10vw, 64px)', height: 'clamp(44px, 10vw, 64px)', flexShrink: 0 }}>
               {/* Outer orbit ring */}
               <motion.div
                 style={{
@@ -382,9 +382,9 @@ function NavRibbon({
             {/* Label */}
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: 10, fontWeight: 800,
+                fontSize: 'clamp(8px, 2vw, 10px)', fontWeight: 800,
                 color: isActive ? '#EEEAF4' : '#9080B0',
-                letterSpacing: '0.18em',
+                letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 fontFamily: 'var(--font-body)',
                 marginBottom: 1,
@@ -392,8 +392,8 @@ function NavRibbon({
                 {sec.label}
               </div>
               <div style={{
-                fontSize: 8, fontWeight: 600,
-                letterSpacing: '0.12em',
+                fontSize: 'clamp(7px, 1.6vw, 8px)', fontWeight: 600,
+                letterSpacing: '0.10em',
                 textTransform: 'uppercase',
                 color: isActive ? '#C8B8E8' : 'rgba(130,90,200,0.55)',
                 fontFamily: 'var(--font-body)',
