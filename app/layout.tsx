@@ -14,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" sizes="180x180" href="/warroom-app-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/warroom-icon-v2.png" />
       </head>
       <body>{children}</body>
     </html>
