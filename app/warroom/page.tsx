@@ -326,45 +326,28 @@ function NavRibbon({
       {/* WAR ROOM wordmark — left of nav cards */}
       <div style={{
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        width: 'clamp(80px, 14vw, 120px)',
         height: 'clamp(100px, 18vw, 120px)',
-        gap: 4,
-        padding: '0 8px',
+        gap: 0,
+        padding: '0 16px',
         cursor: 'default',
         userSelect: 'none',
       }}>
         <div style={{
           fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(16px, 3.5vw, 26px)',
+          fontSize: 'clamp(22px, 4vw, 36px)',
           fontWeight: 900,
           color: '#F0F2FF',
           letterSpacing: '-0.04em',
           lineHeight: 1,
-          textShadow: '0 0 28px rgba(79,142,247,0.35)',
+          whiteSpace: 'nowrap',
+          textShadow: '0 0 28px rgba(79,142,247,0.45)',
         }}>
-          WAR
+          WAR ROOM
         </div>
-        <div style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(16px, 3.5vw, 26px)',
-          fontWeight: 900,
-          color: '#F0F2FF',
-          letterSpacing: '-0.04em',
-          lineHeight: 1,
-          textShadow: '0 0 28px rgba(79,142,247,0.35)',
-        }}>
-          ROOM
-        </div>
-        <div style={{
-          width: '60%',
-          height: 1,
-          background: 'linear-gradient(to right, transparent, rgba(79,142,247,0.4), transparent)',
-          marginTop: 2,
-        }} />
       </div>
 
       {/* Divider between wordmark and cards */}
@@ -432,7 +415,7 @@ function NavRibbon({
             )}
 
             {/* Orbit icon */}
-            <div style={{ position: 'relative', width: 'clamp(44px, 10vw, 64px)', height: 'clamp(44px, 10vw, 64px)', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 'clamp(52px, 11vw, 72px)', height: 'clamp(52px, 11vw, 72px)', flexShrink: 0 }}>
               {/* Outer orbit ring */}
               <motion.div
                 style={{
@@ -472,26 +455,15 @@ function NavRibbon({
             </div>
 
             {/* Label */}
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                fontSize: 'clamp(8px, 2vw, 10px)', fontWeight: 800,
-                color: isActive ? '#EEEAF4' : '#9080B0',
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                fontFamily: 'var(--font-body)',
-                marginBottom: 1,
-              }}>
-                {sec.label}
-              </div>
-              <div style={{
-                fontSize: 'clamp(7px, 1.6vw, 8px)', fontWeight: 600,
-                letterSpacing: '0.10em',
-                textTransform: 'uppercase',
-                color: isActive ? '#C8B8E8' : 'rgba(130,90,200,0.55)',
-                fontFamily: 'var(--font-body)',
-              }}>
-                {isActive ? '● Active' : 'View'}
-              </div>
+            <div style={{
+              fontSize: 'clamp(10px, 2.2vw, 13px)', fontWeight: 800,
+              color: isActive ? '#EEEAF4' : '#9080B0',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              fontFamily: 'var(--font-body)',
+              textAlign: 'center',
+            }}>
+              {sec.label}
             </div>
           </motion.button>
         )
@@ -601,7 +573,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 
 function HeartIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
     </svg>
   )
@@ -609,7 +581,7 @@ function HeartIcon() {
 
 function BuildingIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M2 3h8v18H2zM14 8h8v13h-8zM2 20h20v2H2z"/>
     </svg>
   )
@@ -617,7 +589,7 @@ function BuildingIcon() {
 
 function ChartIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
     </svg>
   )
