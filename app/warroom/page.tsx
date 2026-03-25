@@ -123,7 +123,7 @@ export default function WarRoomPage() {
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minWidth: 0 }}>
 
         {/* ── WAR ROOM HEADER ── */}
-        <WarRoomHeader />
+        <WarRoomHeader onMenuToggle={() => setSidebarOpen(o => !o)} />
 
         {/* ── NAV RIBBON ── */}
         <NavRibbon
@@ -163,7 +163,7 @@ export default function WarRoomPage() {
 
 // ─── WAR ROOM HEADER ────────────────────────────────────────────────────────
 
-function WarRoomHeader() {
+function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
   return (
     <header
       style={{
@@ -172,7 +172,7 @@ function WarRoomHeader() {
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
         alignItems: 'center',
-        paddingLeft: 'max(12px, env(safe-area-inset-left))',
+        paddingLeft: 12,
         paddingRight: 12,
         gap: 0,
         flexShrink: 0,
@@ -182,6 +182,32 @@ function WarRoomHeader() {
       }}
     >
       {/* Title */}
+      {/* Hamburger — mobile only */}
+      <button
+        onClick={onMenuToggle}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4,
+          width: 34,
+          height: 34,
+          borderRadius: 8,
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          cursor: 'pointer',
+          flexShrink: 0,
+          marginRight: 10,
+          padding: 0,
+        }}
+        title="Menu"
+      >
+        {[0,1,2].map(i => (
+          <div key={i} style={{ width: 14, height: 1.5, background: 'rgba(255,255,255,0.7)', borderRadius: 2 }} />
+        ))}
+      </button>
+
       <h1 style={{
         fontFamily: 'var(--font-display)',
         fontSize: 20,

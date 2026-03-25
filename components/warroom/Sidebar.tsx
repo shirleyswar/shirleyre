@@ -38,33 +38,6 @@ export default function Sidebar({ open, onToggle, activePanel, onPanelSelect }: 
   if (isMobile) {
     return (
       <>
-        {/* Hamburger toggle button */}
-        <button
-          onClick={onToggle}
-          style={{
-            position: 'fixed',
-            top: 14,
-            left: 10,
-            zIndex: 200,
-            width: 34,
-            height: 34,
-            borderRadius: 8,
-            background: open ? 'rgba(14,165,160,0.2)' : 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            cursor: 'pointer',
-            padding: 0,
-          }}
-        >
-          {[0,1,2].map(i => (
-            <div key={i} style={{ width: 14, height: 1.5, background: 'rgba(255,255,255,0.7)', borderRadius: 2 }} />
-          ))}
-        </button>
-
         {/* Backdrop */}
         {open && (
           <div
