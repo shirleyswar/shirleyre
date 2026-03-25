@@ -88,6 +88,22 @@ export interface FolderQueue {
   error_message: string | null
 }
 
+// Contract deadline types
+export type DeadlineType = 'inspection' | 'financing' | 'appraisal' | 'title' | 'survey' | 'closing' | 'custom'
+export type DeadlineStatus = 'pending' | 'satisfied' | 'extended' | 'missed'
+
+export interface ContractDeadline {
+  id: string
+  deal_id: string
+  label: string
+  deadline_date: string  // DATE as string YYYY-MM-DD
+  deadline_type: DeadlineType
+  status: DeadlineStatus
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
 // Session 2 types
 export interface Entity {
   id: string

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase, Deal } from '@/lib/supabase'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase, Deal, ContractDeadline, DeadlineType, DeadlineStatus } from '@/lib/supabase'
 
 interface ContractDeal extends Deal {
   days_since_contract?: number
@@ -15,6 +15,18 @@ function formatCurrency(n: number) {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
   if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
   return `$${n.toFixed(0)}`
+}
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function daysUntil(dateStr: string): number {
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const target = new Date(dateStr + 'T00:00:00')
+  return Math.floor((target.getTime() - now.getTime()) / 86400000)
 }
 
 // Sparkline helpers
@@ -42,9 +54,542 @@ function buildSparkPaths(values: number[], w: number, h: number) {
   return { linePath, areaPath }
 }
 
+// Deadline type badge colors
+const TYPE_COLORS: Record<DeadlineType, { bg: string; text: string; label: string }> = {
+  inspection: { bg: 'rgba(251,146,60,0.15)', text: '#fb923c', label: 'Inspection' },
+  financing:  { bg: 'rgba(79,142,247,0.15)', text: '#4F8EF7', label: 'Financing' },
+  appraisal:  { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa', label: 'Appraisal' },
+  title:      { bg: 'rgba(45,212,191,0.15)', text: '#2dd4bf', label: 'Title' },
+  survey:     { bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', label: 'Survey' },
+  closing:    { bg: 'rgba(251,191,36,0.15)', text: '#fbbf24', label: 'Closing' },
+  custom:     { bg: 'rgba(107,114,128,0.12)', text: '#6b7280', label: 'Custom' },
+}
+
+const STATUS_STYLES: Record<DeadlineStatus, { bg: string; text: string; label: string }> = {
+  pending:   { bg: 'rgba(79,142,247,0.15)', text: '#4F8EF7', label: 'Pending' },
+  satisfied: { bg: 'rgba(34,197,94,0.15)', text: '#22c55e', label: 'Satisfied' },
+  extended:  { bg: 'rgba(251,146,60,0.15)', text: '#fb923c', label: 'Extended' },
+  missed:    { bg: 'rgba(239,68,68,0.15)', text: '#ef4444', label: 'Missed' },
+}
+
+function getDaysColor(days: number, status: DeadlineStatus): string {
+  if (status === 'satisfied') return 'var(--text-dim)'
+  if (days <= 1) return '#ef4444'
+  if (days <= 7) return '#fb923c'
+  return '#22c55e'
+}
+
+// ─── Deadline Row ────────────────────────────────────────────────────────────
+
+interface DeadlineRowProps {
+  deadline: ContractDeadline
+  onSatisfy: (id: string) => void
+  onDelete: (id: string) => void
+  onEdit: (deadline: ContractDeadline) => void
+}
+
+function DeadlineRow({ deadline, onSatisfy, onDelete, onEdit }: DeadlineRowProps) {
+  const days = daysUntil(deadline.deadline_date)
+  const satisfied = deadline.status === 'satisfied'
+  const typeInfo = TYPE_COLORS[deadline.deadline_type]
+  const statusInfo = STATUS_STYLES[deadline.status]
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      padding: '7px 12px',
+      borderRadius: 6,
+      background: 'rgba(255,255,255,0.02)',
+      marginBottom: 4,
+      opacity: satisfied ? 0.6 : 1,
+    }}>
+      {/* Label */}
+      <div style={{ flex: '0 0 160px', minWidth: 0 }}>
+        <span style={{
+          fontSize: 12,
+          fontWeight: 500,
+          textDecoration: satisfied ? 'line-through' : 'none',
+          color: satisfied ? 'var(--text-dim)' : 'var(--text-primary)',
+        } as React.CSSProperties}>
+          {deadline.label}
+        </span>
+      </div>
+
+      {/* Type badge */}
+      <div style={{ flex: '0 0 80px' }}>
+        <span style={{
+          display: 'inline-block',
+          padding: '1px 7px',
+          borderRadius: 20,
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          background: typeInfo.bg,
+          color: typeInfo.text,
+        }}>
+          {typeInfo.label}
+        </span>
+      </div>
+
+      {/* Date */}
+      <div style={{ flex: '0 0 60px', fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+        {formatDate(deadline.deadline_date)}
+      </div>
+
+      {/* Days remaining */}
+      <div style={{ flex: '0 0 70px', textAlign: 'right' }}>
+        {satisfied ? (
+          <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>—</span>
+        ) : (
+          <span style={{
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: 'var(--font-mono)',
+            color: getDaysColor(days, deadline.status),
+          }}>
+            {days < 0 ? `${Math.abs(days)}d ago` : days === 0 ? 'Today' : `${days}d`}
+          </span>
+        )}
+      </div>
+
+      {/* Status badge */}
+      <div style={{ flex: '0 0 70px' }}>
+        <span style={{
+          display: 'inline-block',
+          padding: '1px 7px',
+          borderRadius: 20,
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          background: statusInfo.bg,
+          color: statusInfo.text,
+        }}>
+          {statusInfo.label}
+        </span>
+      </div>
+
+      {/* Notes */}
+      {deadline.notes && (
+        <div style={{ flex: 1, fontSize: 10, color: 'var(--text-muted)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {deadline.notes}
+        </div>
+      )}
+      {!deadline.notes && <div style={{ flex: 1 }} />}
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+        {!satisfied && (
+          <button
+            onClick={() => onSatisfy(deadline.id)}
+            title="Mark Satisfied"
+            style={{
+              padding: '3px 8px', fontSize: 11, fontWeight: 700,
+              background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)',
+              borderRadius: 5, color: '#22c55e', cursor: 'pointer',
+            }}>
+            ✓
+          </button>
+        )}
+        <button
+          onClick={() => onEdit(deadline)}
+          title="Edit"
+          style={{
+            padding: '3px 7px', fontSize: 11,
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 5, color: 'var(--text-dim)', cursor: 'pointer',
+          }}>
+          ✎
+        </button>
+        <button
+          onClick={() => onDelete(deadline.id)}
+          title="Delete"
+          style={{
+            padding: '3px 7px', fontSize: 11,
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 5, color: 'var(--text-dim)', cursor: 'pointer',
+          }}>
+          ✕
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Add / Edit Deadline Form ─────────────────────────────────────────────────
+
+interface DeadlineFormProps {
+  dealId: string
+  editing?: ContractDeadline | null
+  onSaved: (deadline: ContractDeadline) => void
+  onCancel: () => void
+}
+
+function DeadlineForm({ dealId, editing, onSaved, onCancel }: DeadlineFormProps) {
+  const [label, setLabel] = useState(editing?.label ?? '')
+  const [type, setType] = useState<DeadlineType>(editing?.deadline_type ?? 'inspection')
+  const [date, setDate] = useState(editing?.deadline_date ?? '')
+  const [notes, setNotes] = useState(editing?.notes ?? '')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function save() {
+    if (!label.trim() || !date) { setErr('Label and date are required'); return }
+    setSaving(true)
+    setErr('')
+
+    const payload = {
+      deal_id: dealId,
+      label: label.trim(),
+      deadline_type: type,
+      deadline_date: date,
+      notes: notes.trim() || null,
+      status: (editing?.status ?? 'pending') as DeadlineStatus,
+    }
+
+    try {
+      if (editing) {
+        const { data, error } = await supabase
+          .from('contract_deadlines')
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', editing.id)
+          .select()
+          .single()
+        if (error) throw error
+        onSaved(data as ContractDeadline)
+      } else {
+        const { data, error } = await supabase
+          .from('contract_deadlines')
+          .insert(payload)
+          .select()
+          .single()
+        if (error) throw error
+        onSaved(data as ContractDeadline)
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Save failed'
+      setErr(msg)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    flex: 1, fontSize: 11, padding: '5px 8px',
+    background: 'var(--bg-elevated)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: 5, color: 'var(--text-primary)', outline: 'none',
+  }
+
+  return (
+    <div style={{
+      padding: '10px 12px',
+      background: 'rgba(45,212,191,0.04)',
+      border: '1px solid rgba(45,212,191,0.15)',
+      borderRadius: 8,
+      marginTop: 8,
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-teal)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+        {editing ? 'Edit Deadline' : 'Add Deadline'}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <input
+          value={label}
+          onChange={e => setLabel(e.target.value)}
+          placeholder="Label (e.g. Inspection Period)"
+          style={{ ...inputStyle, minWidth: 180 }}
+        />
+
+        <select
+          value={type}
+          onChange={e => setType(e.target.value as DeadlineType)}
+          style={{ ...inputStyle, flex: '0 0 120px', minWidth: 120 }}
+        >
+          <option value="inspection">Inspection</option>
+          <option value="financing">Financing</option>
+          <option value="appraisal">Appraisal</option>
+          <option value="title">Title</option>
+          <option value="survey">Survey</option>
+          <option value="closing">Closing</option>
+          <option value="custom">Custom</option>
+        </select>
+
+        <input
+          type="date"
+          value={date}
+          onChange={e => setDate(e.target.value)}
+          style={{ ...inputStyle, flex: '0 0 140px', minWidth: 130 }}
+        />
+
+        <input
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          placeholder="Notes (optional)"
+          style={{ ...inputStyle, minWidth: 140 }}
+        />
+
+        <button
+          onClick={save}
+          disabled={saving}
+          style={{
+            padding: '5px 14px', fontSize: 12, fontWeight: 700,
+            background: saving ? 'rgba(45,212,191,0.08)' : 'rgba(45,212,191,0.18)',
+            border: '1px solid rgba(45,212,191,0.4)',
+            borderRadius: 6, color: '#2dd4bf', cursor: saving ? 'default' : 'pointer',
+            whiteSpace: 'nowrap',
+          }}>
+          {saving ? '…' : (editing ? 'Update' : 'Save')}
+        </button>
+
+        <button
+          onClick={onCancel}
+          style={{
+            padding: '5px 10px', fontSize: 12,
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 6, color: 'var(--text-dim)', cursor: 'pointer',
+          }}>
+          Cancel
+        </button>
+      </div>
+
+      {err && (
+        <div style={{ marginTop: 6, fontSize: 11, color: '#ef4444' }}>{err}</div>
+      )}
+    </div>
+  )
+}
+
+// ─── Expanded Deal Subpanel ───────────────────────────────────────────────────
+
+interface DealSubpanelProps {
+  deal: ContractDeal
+  onDeadlinesChange: (dealId: string, deadlines: ContractDeadline[]) => void
+}
+
+function DealSubpanel({ deal, onDeadlinesChange }: DealSubpanelProps) {
+  const [deadlines, setDeadlines] = useState<ContractDeadline[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [editingDeadline, setEditingDeadline] = useState<ContractDeadline | null>(null)
+
+  const fetchDeadlines = useCallback(async () => {
+    setLoading(true)
+    try {
+      const { data } = await supabase
+        .from('contract_deadlines')
+        .select('*')
+        .eq('deal_id', deal.id)
+        .order('deadline_date')
+      const list = (data as ContractDeadline[]) || []
+      setDeadlines(list)
+      onDeadlinesChange(deal.id, list)
+    } catch {
+      setDeadlines([])
+    } finally {
+      setLoading(false)
+    }
+  }, [deal.id, onDeadlinesChange])
+
+  useEffect(() => {
+    fetchDeadlines()
+  }, [fetchDeadlines])
+
+  async function handleSatisfy(id: string) {
+    try {
+      await supabase
+        .from('contract_deadlines')
+        .update({ status: 'satisfied', updated_at: new Date().toISOString() })
+        .eq('id', id)
+      setDeadlines(prev => prev.map(d => d.id === id ? { ...d, status: 'satisfied' as DeadlineStatus } : d))
+      onDeadlinesChange(deal.id, deadlines.map(d => d.id === id ? { ...d, status: 'satisfied' as DeadlineStatus } : d))
+    } catch {}
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await supabase.from('contract_deadlines').delete().eq('id', id)
+      const updated = deadlines.filter(d => d.id !== id)
+      setDeadlines(updated)
+      onDeadlinesChange(deal.id, updated)
+    } catch {}
+  }
+
+  function handleEdit(deadline: ContractDeadline) {
+    setEditingDeadline(deadline)
+    setShowAddForm(false)
+  }
+
+  function handleSaved(saved: ContractDeadline) {
+    if (editingDeadline) {
+      const updated = deadlines.map(d => d.id === saved.id ? saved : d)
+      setDeadlines(updated)
+      onDeadlinesChange(deal.id, updated)
+      setEditingDeadline(null)
+    } else {
+      const updated = [...deadlines, saved].sort((a, b) => a.deadline_date.localeCompare(b.deadline_date))
+      setDeadlines(updated)
+      onDeadlinesChange(deal.id, updated)
+      setShowAddForm(false)
+    }
+  }
+
+  return (
+    <div style={{
+      padding: '12px 16px 14px',
+      background: 'rgba(255,255,255,0.02)',
+      borderLeft: '2px solid rgba(45,212,191,0.3)',
+      marginLeft: 8,
+      borderRadius: '0 0 6px 6px',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#2dd4bf', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          Contingency Tracker
+        </div>
+        {!showAddForm && !editingDeadline && (
+          <button
+            onClick={() => setShowAddForm(true)}
+            style={{
+              fontSize: 11, padding: '3px 10px', fontWeight: 600,
+              background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.25)',
+              borderRadius: 5, color: '#2dd4bf', cursor: 'pointer',
+            }}>
+            + Add Deadline
+          </button>
+        )}
+      </div>
+
+      {/* Column headers */}
+      {!loading && deadlines.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, padding: '0 12px 4px', marginBottom: 2 }}>
+          <div style={{ flex: '0 0 160px', fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Label</div>
+          <div style={{ flex: '0 0 80px', fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Type</div>
+          <div style={{ flex: '0 0 60px', fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Date</div>
+          <div style={{ flex: '0 0 70px', fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'right' }}>Days</div>
+          <div style={{ flex: '0 0 70px', fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Status</div>
+          <div style={{ flex: 1 }} />
+          <div style={{ flex: '0 0 90px' }} />
+        </div>
+      )}
+
+      {/* Deadline list */}
+      {loading ? (
+        <div style={{ padding: '8px 0', fontSize: 11, color: 'var(--text-dim)' }}>Loading…</div>
+      ) : deadlines.length === 0 && !showAddForm ? (
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', padding: '6px 0' }}>
+          No deadlines tracked yet.{' '}
+          <button
+            onClick={() => setShowAddForm(true)}
+            style={{ background: 'none', border: 'none', color: '#2dd4bf', cursor: 'pointer', fontSize: 11, fontWeight: 600, padding: 0 }}>
+            + Add one
+          </button>
+        </div>
+      ) : (
+        <div>
+          {deadlines.map(d => (
+            editingDeadline?.id === d.id ? (
+              <div key={d.id}>
+                <DeadlineForm
+                  dealId={deal.id}
+                  editing={editingDeadline}
+                  onSaved={handleSaved}
+                  onCancel={() => setEditingDeadline(null)}
+                />
+              </div>
+            ) : (
+              <DeadlineRow
+                key={d.id}
+                deadline={d}
+                onSatisfy={handleSatisfy}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+              />
+            )
+          ))}
+        </div>
+      )}
+
+      {/* Add form */}
+      {showAddForm && (
+        <DeadlineForm
+          dealId={deal.id}
+          editing={null}
+          onSaved={handleSaved}
+          onCancel={() => setShowAddForm(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+// ─── Deadlines Summary Cell ───────────────────────────────────────────────────
+
+interface DeadlinesSummaryProps {
+  deadlines: ContractDeadline[]
+  onExpand: () => void
+  isExpanded: boolean
+}
+
+function DeadlinesSummary({ deadlines, onExpand, isExpanded }: DeadlinesSummaryProps) {
+  const pending = deadlines.filter(d => d.status === 'pending')
+  
+  if (deadlines.length === 0) {
+    return (
+      <button
+        onClick={onExpand}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontSize: 11, color: '#2dd4bf', padding: '2px 4px', fontWeight: 600,
+        }}>
+        + Add
+      </button>
+    )
+  }
+
+  const nearest = pending
+    .map(d => ({ d, days: daysUntil(d.deadline_date) }))
+    .sort((a, b) => a.days - b.days)[0]
+
+  const urgentColor = nearest && nearest.days <= 7
+    ? (nearest.days <= 1 ? '#ef4444' : '#fb923c')
+    : 'var(--text-muted)'
+
+  return (
+    <button
+      onClick={onExpand}
+      style={{
+        background: 'none', border: 'none', cursor: 'pointer',
+        padding: '2px 4px', textAlign: 'center',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+      }}>
+      <span style={{ fontSize: 12, fontWeight: 700, color: pending.length > 0 ? '#4F8EF7' : 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+        {pending.length}
+      </span>
+      {nearest && nearest.days <= 7 && (
+        <span style={{ fontSize: 9, color: urgentColor, fontWeight: 700, whiteSpace: 'nowrap' }}>
+          {nearest.days <= 0 ? 'PAST' : `${nearest.days}d`} {isExpanded ? '▲' : '▼'}
+        </span>
+      )}
+      {!(nearest && nearest.days <= 7) && (
+        <span style={{ fontSize: 9, color: 'var(--text-dim)' }}>
+          {isExpanded ? '▲' : '▼'}
+        </span>
+      )}
+    </button>
+  )
+}
+
+// ─── Main Panel ───────────────────────────────────────────────────────────────
+
 export default function UnderContractPanel() {
   const [deals, setDeals] = useState<ContractDeal[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedDeal, setExpandedDeal] = useState<string | null>(null)
+  const [dealDeadlines, setDealDeadlines] = useState<Record<string, ContractDeadline[]>>({})
 
   useEffect(() => {
     async function fetchDeals() {
@@ -69,9 +614,17 @@ export default function UnderContractPanel() {
     fetchDeals()
   }, [])
 
+  function handleToggleExpand(dealId: string) {
+    setExpandedDeal(prev => prev === dealId ? null : dealId)
+  }
+
+  const handleDeadlinesChange = useCallback((dealId: string, deadlines: ContractDeadline[]) => {
+    setDealDeadlines(prev => ({ ...prev, [dealId]: deadlines }))
+  }, [])
+
   return (
     <div className="wr-card h-full min-h-[280px]">
-      {/* Chapter-heading panel header */}
+      {/* Panel header */}
       <div className="wr-card-header">
         <span style={{ color: 'var(--accent-blue)', display: 'flex' }}>
           <DocIcon />
@@ -95,10 +648,10 @@ export default function UnderContractPanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr>
-                {['Deal', 'Type', 'Value', 'Commission', 'Day', '', 'Files'].map((h, i) => (
+                {['', 'Deal', 'Type', 'Value', 'Commission', 'Day', '', 'Deadlines', 'Files'].map((h, i) => (
                   <th key={i} style={{
-                    textAlign: i >= 4 ? 'center' : 'left',
-                    padding: '5px 10px',
+                    textAlign: i === 0 ? 'center' : i >= 5 ? 'center' : 'left',
+                    padding: '5px 8px',
                     fontSize: 9,
                     fontWeight: 700,
                     color: 'var(--text-dim)',
@@ -116,70 +669,116 @@ export default function UnderContractPanel() {
                 const sparkId = `spark-uc-${deal.id}`
                 const W = 56, H = 24
                 const { linePath, areaPath } = buildSparkPaths(generateSparkline(seed), W, H)
+                const isExpanded = expandedDeal === deal.id
+                const deadlines = dealDeadlines[deal.id] || []
 
                 return (
-                  <tr
-                    key={deal.id}
-                    style={{ borderBottom: i < deals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', transition: 'background 0.1s' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.015)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                  >
-                    {/* Deal name */}
-                    <td style={{ padding: '10px 10px', color: 'var(--text-primary)', fontWeight: 500, maxWidth: 200 }}>
-                      <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12 }}>{deal.name}</div>
-                      {deal.address && (
-                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {deal.address}
-                        </div>
-                      )}
-                    </td>
+                  <>
+                    <tr
+                      key={deal.id}
+                      style={{
+                        borderBottom: isExpanded
+                          ? 'none'
+                          : i < deals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                        transition: 'background 0.1s',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => handleToggleExpand(deal.id)}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.015)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                    >
+                      {/* Expand chevron */}
+                      <td style={{ padding: '10px 6px 10px 10px', width: 20, textAlign: 'center' }}>
+                        <span style={{
+                          fontSize: 10,
+                          color: isExpanded ? '#2dd4bf' : 'var(--text-dim)',
+                          transition: 'transform 0.2s',
+                          display: 'inline-block',
+                          transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                        }}>
+                          ▶
+                        </span>
+                      </td>
 
-                    {/* Type */}
-                    <td style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 11, textTransform: 'capitalize' }}>
-                      {deal.type.replace(/_/g, ' ')}
-                    </td>
+                      {/* Deal name */}
+                      <td style={{ padding: '10px 8px', color: 'var(--text-primary)', fontWeight: 500, maxWidth: 200 }}>
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12 }}>{deal.name}</div>
+                        {deal.address && (
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {deal.address}
+                          </div>
+                        )}
+                      </td>
 
-                    {/* Value */}
-                    <td style={{ padding: '10px 10px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                      {deal.value ? formatCurrency(deal.value) : '—'}
-                    </td>
+                      {/* Type */}
+                      <td style={{ padding: '10px 8px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 11, textTransform: 'capitalize' }}>
+                        {deal.type.replace(/_/g, ' ')}
+                      </td>
 
-                    {/* Commission */}
-                    <td style={{ padding: '10px 10px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                      <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>
-                        {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
-                      </span>
-                    </td>
+                      {/* Value */}
+                      <td style={{ padding: '10px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                        {deal.value ? formatCurrency(deal.value) : '—'}
+                      </td>
 
-                    {/* Day counter */}
-                    <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'center', fontSize: 12 }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                        {deal.days_since_contract ?? '—'}
-                      </span>
-                    </td>
+                      {/* Commission */}
+                      <td style={{ padding: '10px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                        <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>
+                          {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
+                        </span>
+                      </td>
 
-                    {/* Sparkline */}
-                    <td style={{ padding: '6px 10px 6px 4px', width: 64 }}>
-                      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }} aria-hidden="true">
-                        <defs>
-                          <linearGradient id={sparkId} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#4F8EF7" stopOpacity="0.15" />
-                            <stop offset="100%" stopColor="#4F8EF7" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <path d={areaPath} fill={`url(#${sparkId})`} />
-                        <path d={linePath} fill="none" stroke="#4F8EF7" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </td>
-                    {/* Dropbox */}
-                    <td style={{ padding: '6px 8px' }}>
-                      <DropboxCell
-                        dealId={deal.id}
-                        url={deal.dropbox_link}
-                        onSaved={(id, url) => setDeals(prev => prev.map(d => d.id === id ? { ...d, dropbox_link: url } : d))}
-                      />
-                    </td>
-                  </tr>
+                      {/* Day counter */}
+                      <td style={{ padding: '10px 8px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'center', fontSize: 12 }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                          {deal.days_since_contract ?? '—'}
+                        </span>
+                      </td>
+
+                      {/* Sparkline */}
+                      <td style={{ padding: '6px 8px 6px 4px', width: 64 }} onClick={e => e.stopPropagation()}>
+                        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }} aria-hidden="true">
+                          <defs>
+                            <linearGradient id={sparkId} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#4F8EF7" stopOpacity="0.15" />
+                              <stop offset="100%" stopColor="#4F8EF7" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          <path d={areaPath} fill={`url(#${sparkId})`} />
+                          <path d={linePath} fill="none" stroke="#4F8EF7" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </td>
+
+                      {/* Deadlines summary */}
+                      <td style={{ padding: '6px 8px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                        <DeadlinesSummary
+                          deadlines={deadlines}
+                          onExpand={() => handleToggleExpand(deal.id)}
+                          isExpanded={isExpanded}
+                        />
+                      </td>
+
+                      {/* Dropbox */}
+                      <td style={{ padding: '6px 8px' }} onClick={e => e.stopPropagation()}>
+                        <DropboxCell
+                          dealId={deal.id}
+                          url={deal.dropbox_link}
+                          onSaved={(id, url) => setDeals(prev => prev.map(d => d.id === id ? { ...d, dropbox_link: url } : d))}
+                        />
+                      </td>
+                    </tr>
+
+                    {/* Expanded subpanel */}
+                    {isExpanded && (
+                      <tr key={`${deal.id}-expand`} style={{ borderBottom: i < deals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                        <td colSpan={9} style={{ padding: '0 10px 10px' }}>
+                          <DealSubpanel
+                            deal={deal}
+                            onDeadlinesChange={handleDeadlinesChange}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 )
               })}
             </tbody>
@@ -219,7 +818,6 @@ function DocIcon() {
     </svg>
   )
 }
-
 
 const DROPBOX_FALLBACK = 'https://www.dropbox.com/scl/fo/r9dq6fwfmp81tv1ec02gb/ANqIOI6hM94j-v4jv9czcpo?rlkey=0bd4kas03bfl3vakbcln602tp&st=dc2a5sqy&dl=0'
 
