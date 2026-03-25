@@ -280,6 +280,12 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
   const [killError, setKillError] = useState(false)
   const [killing, setKilling] = useState(false)
 
+  // Under Contract action state
+  const [confirmUC, setConfirmUC] = useState(false)
+  const [ucPin, setUcPin] = useState('')
+  const [ucError, setUcError] = useState(false)
+  const [ucLoading, setUcLoading] = useState(false)
+
   function openKillModal() {
     const options = getKillOptions(deal)
     setSelectedKill(options.length === 1 ? options[0] : null)
@@ -312,6 +318,23 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
     } catch {}
     setKilling(false)
     setConfirmKill(false)
+  }
+
+  async function handleUC() {
+    setUcLoading(true)
+    setUcError(false)
+    const hash = await sha256(ucPin)
+    if (hash !== DELETE_PIN_HASH) {
+      setUcError(true)
+      setUcLoading(false)
+      return
+    }
+    try {
+      await supabase.from('deals').update({ status: 'under_contract' }).eq('id', deal.id)
+      onUpdate({ ...deal, status: 'under_contract' })
+    } catch {}
+    setUcLoading(false)
+    setConfirmUC(false)
   }
 
   async function handleDelete() {
@@ -442,6 +465,12 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       </td>
       <td style={{ padding: '10px 8px', whiteSpace: 'nowrap' }}>
         <button onClick={() => setEditing(true)} title="Edit row" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12, marginRight: 4 }}>✎</button>
+        {deal.status === 'active' && deal.tier === 'filed' && (
+          <button onClick={() => { setConfirmUC(true); setUcPin(''); setUcError(false) }} title="Move to Under Contract" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 24, padding: '0 7px', borderRadius: 5, background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.4)', color: '#2DD4BF', cursor: 'pointer', fontSize: 10, fontWeight: 700, marginRight: 4, whiteSpace: 'nowrap', gap: 3 }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            → UC
+          </button>
+        )}
         {killOptions.length > 0 && (
           <button onClick={openKillModal} title="End deal" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'rgba(251,146,60,0.15)', border: '1px solid rgba(251,146,60,0.4)', color: '#FB923C', cursor: 'pointer', fontSize: 13, marginRight: 4 }}>☠</button>
         )}
@@ -474,6 +503,55 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
                 <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#888', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
                 <button onClick={handleDelete} disabled={deletePin.length !== 4 || deleting} style={{ flex: 1, padding: '8px', background: deletePin.length === 4 ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${deletePin.length === 4 ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 7, color: deletePin.length === 4 ? '#ef4444' : '#555', cursor: deletePin.length === 4 ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: 700 }}>
                   {deleting ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </td>
+      )}
+
+      {/* Under Contract confirmation modal */}
+      {confirmUC && (
+        <td colSpan={10} style={{ padding: 0 }}>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setConfirmUC(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(20,184,166,0.4)', borderRadius: 14, padding: 28, minWidth: 320, maxWidth: 400 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#2DD4BF', marginBottom: 12 }}>Move to Under Contract?</div>
+              <div style={{ fontSize: 12, color: '#aaa', marginBottom: 16, lineHeight: 1.6 }}>
+                <div><span style={{ color: '#ccc', fontWeight: 600 }}>{deal.address || '—'}</span></div>
+                <div style={{ color: '#888' }}>{deal.name} · {DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type}</div>
+              </div>
+              <div style={{ fontSize: 12, color: '#2DD4BF', marginBottom: 16, padding: '8px 12px', background: 'rgba(20,184,166,0.08)', borderRadius: 6, border: '1px solid rgba(20,184,166,0.2)' }}>
+                This will move the deal to Under Contract status and add it to the UC tracking panel.
+              </div>
+              <input
+                autoFocus
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={ucPin}
+                onChange={e => { setUcPin(e.target.value); setUcError(false) }}
+                onKeyDown={e => e.key === 'Enter' && ucPin.length === 4 && handleUC()}
+                placeholder="Enter PIN"
+                style={{ width: '100%', fontSize: 20, textAlign: 'center', letterSpacing: '0.3em', padding: '10px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${ucError ? '#2DD4BF' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', marginBottom: 6, boxSizing: 'border-box' as const }}
+              />
+              {ucError && <div style={{ color: '#2DD4BF', fontSize: 11, marginBottom: 10, textAlign: 'center' }}>Incorrect PIN</div>}
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button onClick={() => setConfirmUC(false)} style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#888', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+                <button
+                  onClick={handleUC}
+                  disabled={ucPin.length !== 4 || ucLoading}
+                  style={{
+                    flex: 1, padding: '8px',
+                    background: ucPin.length === 4 ? 'rgba(20,184,166,0.2)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${ucPin.length === 4 ? 'rgba(20,184,166,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 7,
+                    color: ucPin.length === 4 ? '#2DD4BF' : '#555',
+                    cursor: ucPin.length === 4 ? 'pointer' : 'not-allowed',
+                    fontSize: 13, fontWeight: 700,
+                  }}
+                >
+                  {ucLoading ? 'Moving…' : 'Move to Under Contract'}
                 </button>
               </div>
             </div>
