@@ -172,7 +172,7 @@ function WarRoomHeader() {
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
         alignItems: 'center',
-        paddingLeft: 12,
+        paddingLeft: 'max(12px, env(safe-area-inset-left))',
         paddingRight: 12,
         gap: 0,
         flexShrink: 0,

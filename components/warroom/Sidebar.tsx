@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 
 const NAV_MAIN = [
@@ -24,6 +25,76 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ open, onToggle, activePanel, onPanelSelect }: SidebarProps) {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    function check() { setIsMobile(window.innerWidth < 640) }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  // On mobile: hidden by default, slides in when open
+  if (isMobile) {
+    return (
+      <>
+        {/* Hamburger toggle button */}
+        <button
+          onClick={onToggle}
+          style={{
+            position: 'fixed',
+            top: 14,
+            left: 10,
+            zIndex: 200,
+            width: 34,
+            height: 34,
+            borderRadius: 8,
+            background: open ? 'rgba(14,165,160,0.2)' : 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          {[0,1,2].map(i => (
+            <div key={i} style={{ width: 14, height: 1.5, background: 'rgba(255,255,255,0.7)', borderRadius: 2 }} />
+          ))}
+        </button>
+
+        {/* Backdrop */}
+        {open && (
+          <div
+            onClick={onToggle}
+            style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.5)' }}
+          />
+        )}
+
+        {/* Slide-in sidebar */}
+        <nav
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, bottom: 0,
+            width: 52,
+            background: 'var(--bg-sidebar)',
+            borderRight: '1px solid rgba(255,255,255,0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            zIndex: 160,
+            transform: open ? 'translateX(0)' : 'translateX(-100%)',
+            transition: 'transform 0.22s ease',
+            overflow: 'hidden',
+          }}
+        >
+          <SidebarContent activePanel={activePanel} onPanelSelect={(id) => { onPanelSelect(id); onToggle() }} />
+        </nav>
+      </>
+    )
+  }
+
   return (
     <nav
       style={{
@@ -38,29 +109,17 @@ export default function Sidebar({ open, onToggle, activePanel, onPanelSelect }: 
         zIndex: 10,
       }}
     >
+      <SidebarContent activePanel={activePanel} onPanelSelect={onPanelSelect} />
+    </nav>
+  )
+}
+
+function SidebarContent({ activePanel, onPanelSelect }: { activePanel: string; onPanelSelect: (id: string) => void }) {
+  return (
+    <>
       {/* Logo mark */}
-      <div
-        style={{
-          height: 56,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: 6,
-            background: 'rgba(14,165,160,0.10)',
-            border: '1px solid rgba(14,165,160,0.22)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
+      <div style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.04)', flexShrink: 0 }}>
+        <div style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(14,165,160,0.10)', border: '1px solid rgba(14,165,160,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(14,165,160,0.9)" strokeWidth="2.5">
             <path d="M12 2L2 7l10 5 10-5-10-5z"/>
             <path d="M2 17l10 5 10-5"/>
@@ -73,47 +132,24 @@ export default function Sidebar({ open, onToggle, activePanel, onPanelSelect }: 
       <div style={{ paddingTop: 4 }}>
         <div className="wr-sidebar-section-label">MENU</div>
         {NAV_MAIN.map(item => (
-          <NavBtn
-            key={item.id}
-            item={item}
-            isActive={activePanel === item.id}
-            onClick={() => onPanelSelect(item.id)}
-          />
+          <NavBtn key={item.id} item={item} isActive={activePanel === item.id} onClick={() => onPanelSelect(item.id)} />
         ))}
       </div>
 
-      {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* ACCOUNT section */}
+      {/* MORE section */}
       <div style={{ paddingBottom: 4 }}>
-        <div
-          style={{
-            height: 1,
-            background: 'rgba(255,255,255,0.04)',
-            margin: '6px 10px 2px',
-          }}
-        />
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '6px 10px 2px' }} />
         <div className="wr-sidebar-section-label">MORE</div>
         {NAV_SECONDARY.map(item => (
-          <NavBtn
-            key={item.id}
-            item={item}
-            isActive={activePanel === item.id}
-            onClick={() => onPanelSelect(item.id)}
-          />
+          <NavBtn key={item.id} item={item} isActive={activePanel === item.id} onClick={() => onPanelSelect(item.id)} />
         ))}
-        {/* Settings */}
         <div style={{ marginTop: 4, paddingBottom: 12 }}>
-          <button
-            title="Settings"
-            className="wr-sidebar-btn"
-          >
-            <SettingsIcon />
-          </button>
+          <button title="Settings" className="wr-sidebar-btn"><SettingsIcon /></button>
         </div>
       </div>
-    </nav>
+    </>
   )
 }
 
