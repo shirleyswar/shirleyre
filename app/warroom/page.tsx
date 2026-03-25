@@ -255,6 +255,70 @@ function NavRibbon({
   activeSection: NavSection | 'operations'
   onSectionChange: (s: NavSection | 'operations') => void
 }) {
+  const insideSection = activeSection !== 'operations'
+  const activeNav = NAV_SECTIONS.find(s => s.id === activeSection)
+
+  // When inside a section, show a slim single-row bar instead of full cards
+  if (insideSection && activeNav) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '6px 12px',
+        background: 'var(--bg-sidebar)',
+        borderBottom: '1px solid rgba(167,139,250,0.12)',
+        flexShrink: 0,
+      }}>
+        {/* Gold home pill */}
+        <motion.button
+          onClick={() => onSectionChange('operations')}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '6px 14px',
+            background: 'linear-gradient(135deg, #C9933A 0%, #E8B84B 100%)',
+            border: '1px solid rgba(232,184,75,0.6)',
+            borderRadius: 999, cursor: 'pointer', color: '#000',
+            fontSize: 10, fontWeight: 800, letterSpacing: '0.12em',
+            textTransform: 'uppercase', flexShrink: 0,
+            boxShadow: '0 0 14px rgba(201,147,58,0.4)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          Home
+        </motion.button>
+
+        {/* Active section indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+          <div style={{
+            width: 1, height: 20,
+            background: 'rgba(167,139,250,0.2)',
+            flexShrink: 0,
+          }} />
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '5px 12px',
+            background: 'linear-gradient(135deg, #1A1040 0%, #1E1545 100%)',
+            border: '1px solid rgba(140,100,220,0.45)',
+            borderRadius: 10,
+            color: '#C4B5FD',
+          }}>
+            <span style={{ color: '#A78BFA', display: 'flex' }}><activeNav.icon /></span>
+            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+              {activeNav.label}
+            </span>
+            <span style={{ fontSize: 8, color: 'rgba(167,139,250,0.6)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>● Active</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       style={{
@@ -271,39 +335,6 @@ function NavRibbon({
         scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
       }}
     >
-      {/* Gold home pill — only when inside a section */}
-      {activeSection !== 'operations' && (
-        <motion.button
-          onClick={() => onSectionChange('operations')}
-          whileHover={{ scale: 1.06, y: -2 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 14 }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '8px 16px',
-            background: 'linear-gradient(135deg, #C9933A 0%, #E8B84B 100%)',
-            border: '1px solid rgba(232,184,75,0.6)',
-            borderRadius: 999,
-            cursor: 'pointer',
-            color: '#000',
-            fontSize: 10,
-            fontWeight: 800,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            flexShrink: 0,
-            boxShadow: '0 0 14px rgba(201,147,58,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 5l-7 7 7 7"/>
-          </svg>
-          Home
-        </motion.button>
-      )}
-
       {NAV_SECTIONS.map(sec => {
         const isActive = activeSection === sec.id
         return (
