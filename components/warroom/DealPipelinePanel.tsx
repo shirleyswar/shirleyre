@@ -23,7 +23,9 @@ const STATUS_LABELS: Record<DealStatus, string> = {
   under_contract: 'Under Contract',
   pending_payment: 'Pending Pmt',
   closed: 'Closed',
-  dead: 'Dead',
+  expired: 'Expired',
+  dormant: 'Dormant',
+  terminated: 'Terminated',
 }
 
 const STATUS_CLASS: Record<DealStatus, string> = {
@@ -34,7 +36,9 @@ const STATUS_CLASS: Record<DealStatus, string> = {
   under_contract: 'badge-contract',
   pending_payment: 'badge-pending',
   closed: 'badge-closed',
-  dead: 'badge-dead',
+  expired: 'badge-dead',
+  dormant: 'badge-dead',
+  terminated: 'badge-dead',
 }
 
 // The 4 primary statuses shown in UI
@@ -231,6 +235,23 @@ export default function DealPipelinePanel() {
   )
 }
 
+// ─── Kill action helpers ─────────────────────────────────────────────────────
+type KillAction = { status: 'expired' | 'dormant' | 'terminated'; label: string; folderPath: string }
+
+function getKillOptions(deal: Deal): KillAction[] {
+  const options: KillAction[] = []
+  if (deal.tier === 'filed' && deal.type === 'active_listing') {
+    options.push({ status: 'expired', label: 'Expire → X - Expired Listings', folderPath: 'X - Expired Listings' })
+  }
+  if (deal.tier === 'filed' && deal.type !== 'active_listing') {
+    options.push({ status: 'dormant', label: 'Dormant → X - Dormant Projects', folderPath: 'X - Dormant Projects' })
+  }
+  if (deal.tier === 'filed' && deal.dropbox_link) {
+    options.push({ status: 'terminated', label: 'Terminate → X - Terminated', folderPath: 'X - Terminated' })
+  }
+  return options
+}
+
 // ─── Editable Deal Row ───────────────────────────────────────────────────────
 const DELETE_PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e' // SHA-256 of "1887"
 
@@ -250,6 +271,48 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
   const [deletePin, setDeletePin] = useState('')
   const [deleteError, setDeleteError] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  // Kill action state
+  const killOptions = getKillOptions(deal)
+  const [confirmKill, setConfirmKill] = useState(false)
+  const [selectedKill, setSelectedKill] = useState<KillAction | null>(null)
+  const [killPin, setKillPin] = useState('')
+  const [killError, setKillError] = useState(false)
+  const [killing, setKilling] = useState(false)
+
+  function openKillModal() {
+    const options = getKillOptions(deal)
+    setSelectedKill(options.length === 1 ? options[0] : null)
+    setKillPin('')
+    setKillError(false)
+    setConfirmKill(true)
+  }
+
+  async function handleKill() {
+    if (!selectedKill) return
+    setKilling(true)
+    setKillError(false)
+    const hash = await sha256(killPin)
+    if (hash !== DELETE_PIN_HASH) {
+      setKillError(true)
+      setKilling(false)
+      return
+    }
+    try {
+      await supabase.from('deals').update({ status: selectedKill.status }).eq('id', deal.id)
+      await supabase.from('folder_queue').insert({
+        deal_id: deal.id,
+        action: 'move',
+        folder_name: deal.address || deal.name,
+        folder_path: selectedKill.folderPath,
+        subfolder_template: null,
+        status: 'pending',
+      })
+      onUpdate({ ...deal, status: selectedKill.status })
+    } catch {}
+    setKilling(false)
+    setConfirmKill(false)
+  }
 
   async function handleDelete() {
     setDeleting(true)
@@ -377,8 +440,11 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       <td style={{ padding: '10px 8px' }}>
         <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
       </td>
-      <td style={{ padding: '10px 8px' }}>
+      <td style={{ padding: '10px 8px', whiteSpace: 'nowrap' }}>
         <button onClick={() => setEditing(true)} title="Edit row" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12, marginRight: 4 }}>✎</button>
+        {killOptions.length > 0 && (
+          <button onClick={openKillModal} title="End deal" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'rgba(251,146,60,0.15)', border: '1px solid rgba(251,146,60,0.4)', color: '#FB923C', cursor: 'pointer', fontSize: 13, marginRight: 4 }}>☠</button>
+        )}
         <button onClick={() => { setConfirmDelete(true); setDeletePin(''); setDeleteError(false) }} title="Delete deal" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(239,68,68,0.2)', color: 'rgba(239,68,68,0.5)', cursor: 'pointer', fontSize: 12 }}>✕</button>
       </td>
 
@@ -408,6 +474,76 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
                 <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#888', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
                 <button onClick={handleDelete} disabled={deletePin.length !== 4 || deleting} style={{ flex: 1, padding: '8px', background: deletePin.length === 4 ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${deletePin.length === 4 ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 7, color: deletePin.length === 4 ? '#ef4444' : '#555', cursor: deletePin.length === 4 ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: 700 }}>
                   {deleting ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </td>
+      )}
+
+      {/* Kill confirmation modal */}
+      {confirmKill && (
+        <td colSpan={10} style={{ padding: 0 }}>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setConfirmKill(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 14, padding: 28, minWidth: 320, maxWidth: 400 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#F59E0B', marginBottom: 12 }}>End Deal?</div>
+              {/* Deal summary */}
+              <div style={{ fontSize: 12, color: '#aaa', marginBottom: 16, lineHeight: 1.6 }}>
+                <div><span style={{ color: '#ccc', fontWeight: 600 }}>{deal.address || '—'}</span></div>
+                <div style={{ color: '#888' }}>{deal.name} · {DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type} · <span style={{ textTransform: 'capitalize' }}>{deal.tier}</span></div>
+              </div>
+              {/* Kill type selector — only show if multiple options */}
+              {killOptions.length > 1 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Action</div>
+                  {killOptions.map(opt => (
+                    <label key={opt.status} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer', fontSize: 13, color: selectedKill?.status === opt.status ? '#F59E0B' : '#aaa' }}>
+                      <input
+                        type="radio"
+                        name="killAction"
+                        checked={selectedKill?.status === opt.status}
+                        onChange={() => setSelectedKill(opt)}
+                        style={{ accentColor: '#F59E0B' }}
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              )}
+              {killOptions.length === 1 && (
+                <div style={{ fontSize: 12, color: '#F59E0B', marginBottom: 16, padding: '8px 12px', background: 'rgba(245,158,11,0.08)', borderRadius: 6, border: '1px solid rgba(245,158,11,0.2)' }}>
+                  {killOptions[0].label}
+                </div>
+              )}
+              <input
+                autoFocus
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={killPin}
+                onChange={e => { setKillPin(e.target.value); setKillError(false) }}
+                onKeyDown={e => e.key === 'Enter' && killPin.length === 4 && selectedKill && handleKill()}
+                placeholder="Enter PIN"
+                style={{ width: '100%', fontSize: 20, textAlign: 'center', letterSpacing: '0.3em', padding: '10px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${killError ? '#F59E0B' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', marginBottom: 6, boxSizing: 'border-box' as const }}
+              />
+              {killError && <div style={{ color: '#F59E0B', fontSize: 11, marginBottom: 10, textAlign: 'center' }}>Incorrect PIN</div>}
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button onClick={() => setConfirmKill(false)} style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#888', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+                <button
+                  onClick={handleKill}
+                  disabled={killPin.length !== 4 || !selectedKill || killing}
+                  style={{
+                    flex: 1, padding: '8px',
+                    background: (killPin.length === 4 && selectedKill) ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${(killPin.length === 4 && selectedKill) ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 7,
+                    color: (killPin.length === 4 && selectedKill) ? '#F59E0B' : '#555',
+                    cursor: (killPin.length === 4 && selectedKill) ? 'pointer' : 'not-allowed',
+                    fontSize: 13, fontWeight: 700,
+                  }}
+                >
+                  {killing ? 'Processing…' : 'End Deal'}
                 </button>
               </div>
             </div>
