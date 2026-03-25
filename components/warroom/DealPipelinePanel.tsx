@@ -514,25 +514,42 @@ function DropboxCell({ dealId, url, onSaved }: { dealId: string; url: string | n
 
   return (
     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-      <a
-        href={url || DROPBOX_FALLBACK}
-        target="_blank"
-        rel="noopener noreferrer"
-        title={url ? 'Open deal folder' : 'Open Active Listings folder (no deal link set)'}
-        onClick={e => e.stopPropagation()}
-        style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 28, height: 28, borderRadius: 6,
-          background: url ? 'rgba(0,97,255,0.12)' : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${url ? 'rgba(0,97,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
-          color: url ? '#4F8EF7' : 'var(--text-dim)',
-          textDecoration: 'none', transition: 'all 0.15s',
-        }}
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2L6 6.5L12 11L18 6.5L12 2ZM6 6.5L0 11L6 15.5L12 11L6 6.5ZM18 6.5L12 11L18 15.5L24 11L18 6.5ZM6 15.5L12 20L18 15.5L12 11L6 15.5Z"/>
-        </svg>
-      </a>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open deal folder"
+          onClick={e => e.stopPropagation()}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 28, height: 28, borderRadius: 6,
+            background: 'rgba(0,97,255,0.12)',
+            border: '1px solid rgba(0,97,255,0.3)',
+            color: '#4F8EF7',
+            textDecoration: 'none', transition: 'all 0.15s',
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L6 6.5L12 11L18 6.5L12 2ZM6 6.5L0 11L6 15.5L12 11L6 6.5ZM18 6.5L12 11L18 15.5L24 11L18 6.5ZM6 15.5L12 20L18 15.5L12 11L6 15.5Z"/>
+          </svg>
+        </a>
+      ) : (
+        <div
+          title="No folder link — click ✎ to add"
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 28, height: 28, borderRadius: 6,
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.06)',
+            color: 'rgba(255,255,255,0.15)',
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L6 6.5L12 11L18 6.5L12 2ZM6 6.5L0 11L6 15.5L12 11L6 6.5ZM18 6.5L12 11L18 15.5L24 11L18 6.5ZM6 15.5L12 20L18 15.5L12 11L6 15.5Z"/>
+          </svg>
+        </div>
+      )}
       <button
         onClick={() => { setDraft(url || ''); setEditing(true) }}
         title="Edit Dropbox link"
