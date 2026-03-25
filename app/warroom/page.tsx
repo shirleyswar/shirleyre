@@ -468,6 +468,100 @@ function NavRibbon({
           </motion.button>
         )
       })}
+
+      {/* Spacer — pushes link orbits to the right */}
+      <div style={{ flex: 1, minWidth: 24 }} />
+
+      {/* Teal link orbits — LACDB & CREXI */}
+      {[
+        { label: 'LACDB', url: 'https://roam.clareityiam.net/idp/login/lacdb' },
+        { label: 'CREXI', url: 'https://www.crexi.com/' },
+      ].map(link => (
+        <motion.a
+          key={link.label}
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          whileHover={{ scale: 1.10, y: -6 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 14 }}
+          style={{
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 5,
+            flex: '0 0 auto',
+            width: 'clamp(90px, 20vw, 160px)',
+            maxWidth: 160,
+            height: 'clamp(80px, 14vw, 96px)',
+            background: 'linear-gradient(135deg, #0a1e1e 0%, #0d2222 50%, #091a1a 100%)',
+            border: '1px solid rgba(14,165,160,0.22)',
+            borderRadius: 16,
+            cursor: 'pointer',
+            overflow: 'hidden',
+            textDecoration: 'none',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 12px rgba(14,165,160,0.08), inset 0 1px 0 rgba(14,165,160,0.06)',
+            userSelect: 'none',
+          }}
+        >
+          {/* Atmospheric glow orb */}
+          <div style={{
+            position: 'absolute', top: -30, right: -30,
+            width: 100, height: 100, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(14,165,160,0.12) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+
+          {/* Orbit icon zone */}
+          <div style={{ position: 'relative', width: 'clamp(40px, 8vw, 54px)', height: 'clamp(40px, 8vw, 54px)', flexShrink: 0 }}>
+            {/* Outer ring */}
+            <motion.div
+              style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(14,165,160,0.22)' }}
+              animate={{ scale: [1, 1.45, 1], opacity: [0.45, 0, 0.45] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            {/* Inner ring */}
+            <motion.div
+              style={{ position: 'absolute', inset: 7, borderRadius: '50%', border: '1px solid rgba(14,165,160,0.4)' }}
+              animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.08, 0.6] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.55 }}
+            />
+            {/* Core */}
+            <motion.div
+              animate={{ boxShadow: ['0 0 6px rgba(14,165,160,0.2)', '0 0 16px rgba(14,165,160,0.5)', '0 0 6px rgba(14,165,160,0.2)'] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute', inset: 10, borderRadius: '50%',
+                background: 'rgba(14,165,160,0.15)',
+                border: '1px solid rgba(14,165,160,0.5)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#0ea5a0',
+              }}
+            >
+              {/* External link icon */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </motion.div>
+          </div>
+
+          {/* Label */}
+          <div style={{
+            fontSize: 'clamp(10px, 2.2vw, 13px)', fontWeight: 800,
+            color: 'rgba(14,165,160,0.85)',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            fontFamily: 'var(--font-body)',
+            textAlign: 'center',
+          }}>
+            {link.label}
+          </div>
+        </motion.a>
+      ))}
     </div>
   )
 }
