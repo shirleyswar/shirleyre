@@ -136,7 +136,7 @@ export default function DealPipelinePanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                {['Deal Name', 'Address', 'Type', 'Status', 'Tier', 'Value', 'Commission', 'Source', 'Files'].map(h => (
+                {['Address', 'ID / Client', 'Type', 'Status', 'Tier', 'Value', 'Commission', 'Source', 'Files', ''].map(h => (
                   <th key={h} style={{
                     textAlign: 'left',
                     padding: '7px 10px',
@@ -153,67 +153,18 @@ export default function DealPipelinePanel() {
             <tbody>
               {deals.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
                     No deals match this filter. Add one above ↑
                   </td>
                 </tr>
               ) : (
                 deals.map((deal, i) => (
-                  <tr
+                  <DealRow
                     key={deal.id}
-                    style={{
-                      borderBottom: i < deals.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-                      transition: 'background 0.1s',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                  >
-                    <td style={{ padding: '10px 10px', color: 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                      {deal.name}
-                    </td>
-                    <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>
-                      {deal.address || '—'}
-                    </td>
-                    <td style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                      {deal.type.replace('_', ' ')}
-                    </td>
-                    <td style={{ padding: '10px 10px' }}>
-                      <span className={`badge ${STATUS_CLASS[deal.status as DealStatus]}`}>
-                        {STATUS_LABELS[deal.status as DealStatus]}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 10px' }}>
-                      <span style={{
-                        fontSize: 10,
-                        padding: '2px 6px',
-                        borderRadius: 3,
-                        background: deal.tier === 'filed' ? 'rgba(96,165,250,0.1)' : 'rgba(255,255,255,0.05)',
-                        color: deal.tier === 'filed' ? '#60A5FA' : 'var(--text-muted)',
-                        fontWeight: 500,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                      }}>
-                        {deal.tier}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 10px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                      {formatCurrency(deal.value)}
-                    </td>
-                    <td style={{ padding: '10px 10px', color: 'var(--accent-gold)', fontVariantNumeric: 'tabular-nums', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      {formatCurrency(deal.commission_estimated)}
-                    </td>
-                    <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>
-                      {deal.deal_source || '—'}
-                    </td>
-                    <td style={{ padding: '10px 8px' }}>
-                      <DropboxCell
-                        dealId={deal.id}
-                        url={deal.dropbox_link}
-                        onSaved={(id, url) => setDeals(prev => prev.map(d => d.id === id ? { ...d, dropbox_link: url } : d))}
-                      />
-                    </td>
-                  </tr>
+                    deal={deal}
+                    isLast={i === deals.length - 1}
+                    onUpdate={(updated) => setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))}
+                  />
                 ))
               )}
             </tbody>
@@ -221,6 +172,116 @@ export default function DealPipelinePanel() {
         </div>
       )}
     </div>
+  )
+}
+
+// ─── Editable Deal Row ───────────────────────────────────────────────────────
+function DealRow({ deal, isLast, onUpdate }: { deal: Deal; isLast: boolean; onUpdate: (d: Deal) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(deal)
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    setSaving(true)
+    try {
+      await supabase.from('deals').update({
+        name: draft.name,
+        address: draft.address,
+        type: draft.type,
+        status: draft.status,
+        tier: draft.tier,
+        value: draft.value,
+        commission_estimated: draft.commission_estimated,
+        deal_source: draft.deal_source,
+        dropbox_link: draft.dropbox_link,
+      }).eq('id', deal.id)
+      onUpdate(draft)
+    } catch {}
+    setSaving(false)
+    setEditing(false)
+  }
+
+  const inp = (field: keyof Deal, placeholder?: string) => (
+    <input
+      value={(draft[field] as string) ?? ''}
+      onChange={e => setDraft(prev => ({ ...prev, [field]: e.target.value }))}
+      placeholder={placeholder}
+      style={{ width: '100%', fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }}
+    />
+  )
+
+  const rowStyle: React.CSSProperties = {
+    borderBottom: isLast ? 'none' : '1px solid var(--border-subtle)',
+    background: editing ? 'rgba(167,139,250,0.04)' : undefined,
+    transition: 'background 0.1s',
+  }
+
+  if (editing) {
+    return (
+      <tr style={rowStyle}>
+        <td style={{ padding: '6px 8px' }}>{inp('address', 'Address')}</td>
+        <td style={{ padding: '6px 8px' }}>{inp('name', 'ID / Client')}</td>
+        <td style={{ padding: '6px 8px' }}>
+          <select value={draft.type} onChange={e => setDraft(p => ({ ...p, type: e.target.value as Deal['type'] }))} style={{ fontSize: 11, padding: '3px 4px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)' }}>
+            {['listing','buyer_rep','lease','tenant_rep','referral','consulting'].map(t => <option key={t} value={t}>{t.replace('_',' ')}</option>)}
+          </select>
+        </td>
+        <td style={{ padding: '6px 8px' }}>
+          <select value={draft.status} onChange={e => setDraft(p => ({ ...p, status: e.target.value as Deal['status'] }))} style={{ fontSize: 11, padding: '3px 4px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)' }}>
+            {['pipeline','active','under_contract','pending_payment','closed','dead'].map(s => <option key={s} value={s}>{s.replace('_',' ')}</option>)}
+          </select>
+        </td>
+        <td style={{ padding: '6px 8px' }}>
+          <select value={draft.tier} onChange={e => setDraft(p => ({ ...p, tier: e.target.value as Deal['tier'] }))} style={{ fontSize: 11, padding: '3px 4px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)' }}>
+            {['tracked','filed'].map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </td>
+        <td style={{ padding: '6px 8px' }}>
+          <input type="number" value={draft.value ?? ''} onChange={e => setDraft(p => ({ ...p, value: Number(e.target.value) || null }))} placeholder="Value" style={{ width: 80, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
+        </td>
+        <td style={{ padding: '6px 8px' }}>
+          <input type="number" value={draft.commission_estimated ?? ''} onChange={e => setDraft(p => ({ ...p, commission_estimated: Number(e.target.value) || null }))} placeholder="Commission" style={{ width: 90, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
+        </td>
+        <td style={{ padding: '6px 8px' }}>{inp('deal_source', 'Source')}</td>
+        <td style={{ padding: '6px 8px' }}>
+          <input value={draft.dropbox_link ?? ''} onChange={e => setDraft(p => ({ ...p, dropbox_link: e.target.value || null }))} placeholder="Dropbox URL" style={{ width: 100, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
+        </td>
+        <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>
+          <button onClick={save} disabled={saving} style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 5, color: '#A78BFA', cursor: 'pointer', marginRight: 4 }}>
+            {saving ? '…' : '✓ Save'}
+          </button>
+          <button onClick={() => { setDraft(deal); setEditing(false) }} style={{ padding: '4px 8px', fontSize: 11, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
+        </td>
+      </tr>
+    )
+  }
+
+  return (
+    <tr style={rowStyle}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+      onMouseLeave={e => (e.currentTarget.style.background = editing ? 'rgba(167,139,250,0.04)' : '')}
+    >
+      <td style={{ padding: '10px 10px', color: 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap' }}>{deal.address || '—'}</td>
+      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{deal.name}</td>
+      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{deal.type.replace('_', ' ')}</td>
+      <td style={{ padding: '10px 10px' }}>
+        <span className={`badge ${STATUS_CLASS[deal.status as DealStatus]}`}>{STATUS_LABELS[deal.status as DealStatus]}</span>
+      </td>
+      <td style={{ padding: '10px 10px' }}>
+        <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: deal.tier === 'filed' ? 'rgba(96,165,250,0.1)' : 'rgba(255,255,255,0.05)', color: deal.tier === 'filed' ? '#60A5FA' : 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          {deal.tier}
+        </span>
+      </td>
+      <td style={{ padding: '10px 10px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{formatCurrency(deal.value)}</td>
+      <td style={{ padding: '10px 10px', color: 'var(--accent-gold)', fontVariantNumeric: 'tabular-nums', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatCurrency(deal.commission_estimated)}</td>
+      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{deal.deal_source || '—'}</td>
+      <td style={{ padding: '10px 8px' }}>
+        <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
+      </td>
+      <td style={{ padding: '10px 8px' }}>
+        <button onClick={() => setEditing(true)} title="Edit row" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12 }}>✎</button>
+      </td>
+    </tr>
   )
 }
 

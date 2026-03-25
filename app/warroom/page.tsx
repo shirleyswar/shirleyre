@@ -312,9 +312,9 @@ function NavRibbon({
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         gap: 8,
-        padding: '6px 8px',
+        padding: '6px 12px',
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(167,139,250,0.08)',
         flexShrink: 0,
@@ -330,9 +330,9 @@ function NavRibbon({
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        height: 'clamp(100px, 18vw, 120px)',
+        height: 'clamp(80px, 14vw, 96px)',
         gap: 0,
-        padding: '0 16px',
+        padding: '0 12px',
         cursor: 'default',
         userSelect: 'none',
       }}>
@@ -368,11 +368,11 @@ function NavRibbon({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              flex: '1 0 auto',
-              width: 'clamp(100px, 26vw, 220px)',
-              maxWidth: 220,
-              height: 'clamp(100px, 18vw, 120px)',
+              gap: 5,
+              flex: '0 0 auto',
+              width: 'clamp(90px, 20vw, 160px)',
+              maxWidth: 160,
+              height: 'clamp(80px, 14vw, 96px)',
               background: isActive
                 ? 'linear-gradient(135deg, #2A1F50 0%, #221845 40%, #1E1540 100%)'
                 : 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
@@ -415,7 +415,7 @@ function NavRibbon({
             )}
 
             {/* Orbit icon */}
-            <div style={{ position: 'relative', width: 'clamp(52px, 11vw, 72px)', height: 'clamp(52px, 11vw, 72px)', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 'clamp(40px, 8vw, 54px)', height: 'clamp(40px, 8vw, 54px)', flexShrink: 0 }}>
               {/* Outer orbit ring */}
               <motion.div
                 style={{
@@ -573,7 +573,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 
 function HeartIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
     </svg>
   )
@@ -581,7 +581,7 @@ function HeartIcon() {
 
 function BuildingIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M2 3h8v18H2zM14 8h8v13h-8zM2 20h20v2H2z"/>
     </svg>
   )
@@ -589,7 +589,7 @@ function BuildingIcon() {
 
 function ChartIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
     </svg>
   )
