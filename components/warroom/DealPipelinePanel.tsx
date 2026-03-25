@@ -164,6 +164,7 @@ export default function DealPipelinePanel() {
                     deal={deal}
                     isLast={i === deals.length - 1}
                     onUpdate={(updated) => setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))}
+                    onDelete={(id) => setDeals(prev => prev.filter(d => d.id !== id))}
                   />
                 ))
               )}
@@ -176,10 +177,38 @@ export default function DealPipelinePanel() {
 }
 
 // ─── Editable Deal Row ───────────────────────────────────────────────────────
-function DealRow({ deal, isLast, onUpdate }: { deal: Deal; isLast: boolean; onUpdate: (d: Deal) => void }) {
+const DELETE_PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e' // SHA-256 of "1887"
+
+async function sha256(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+function DealRow({ deal, isLast, onUpdate, onDelete }: { deal: Deal; isLast: boolean; onUpdate: (d: Deal) => void; onDelete: (id: string) => void }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(deal)
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deletePin, setDeletePin] = useState('')
+  const [deleteError, setDeleteError] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete() {
+    setDeleting(true)
+    setDeleteError(false)
+    const hash = await sha256(deletePin)
+    if (hash !== DELETE_PIN_HASH) {
+      setDeleteError(true)
+      setDeleting(false)
+      return
+    }
+    try {
+      await supabase.from('deals').delete().eq('id', deal.id)
+      onDelete(deal.id)
+    } catch {}
+    setDeleting(false)
+    setConfirmDelete(false)
+  }
 
   async function save() {
     setSaving(true)
@@ -279,15 +308,49 @@ function DealRow({ deal, isLast, onUpdate }: { deal: Deal; isLast: boolean; onUp
         <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
       </td>
       <td style={{ padding: '10px 8px' }}>
-        <button onClick={() => setEditing(true)} title="Edit row" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12 }}>✎</button>
+        <button onClick={() => setEditing(true)} title="Edit row" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12, marginRight: 4 }}>✎</button>
+        <button onClick={() => { setConfirmDelete(true); setDeletePin(''); setDeleteError(false) }} title="Delete deal" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(239,68,68,0.2)', color: 'rgba(239,68,68,0.5)', cursor: 'pointer', fontSize: 12 }}>✕</button>
       </td>
+
+      {/* Delete confirmation modal */}
+      {confirmDelete && (
+        <td colSpan={10} style={{ padding: 0 }}>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setConfirmDelete(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 14, padding: 28, minWidth: 300, maxWidth: 380 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#f0f0f0', marginBottom: 6 }}>Delete Deal?</div>
+              <div style={{ fontSize: 12, color: '#888', marginBottom: 16 }}>
+                <strong style={{ color: '#ccc' }}>{deal.address || deal.name}</strong> will be permanently deleted. Enter your PIN to confirm.
+              </div>
+              <input
+                autoFocus
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={deletePin}
+                onChange={e => { setDeletePin(e.target.value); setDeleteError(false) }}
+                onKeyDown={e => e.key === 'Enter' && deletePin.length === 4 && handleDelete()}
+                placeholder="Enter PIN"
+                style={{ width: '100%', fontSize: 20, textAlign: 'center', letterSpacing: '0.3em', padding: '10px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${deleteError ? '#ef4444' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', marginBottom: 6, boxSizing: 'border-box' as const }}
+              />
+              {deleteError && <div style={{ color: '#ef4444', fontSize: 11, marginBottom: 10, textAlign: 'center' }}>Incorrect PIN</div>}
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#888', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+                <button onClick={handleDelete} disabled={deletePin.length !== 4 || deleting} style={{ flex: 1, padding: '8px', background: deletePin.length === 4 ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${deletePin.length === 4 ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 7, color: deletePin.length === 4 ? '#ef4444' : '#555', cursor: deletePin.length === 4 ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: 700 }}>
+                  {deleting ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </td>
+      )}
     </tr>
   )
 }
 
 // Quick add form
 function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
-  const [form, setForm] = useState({ name: '', address: '', type: 'listing', status: 'pipeline', tier: 'tracked', deal_source: '' })
+  const [form, setForm] = useState({ name: '', address: '', type: 'listing', status: 'pipeline', tier: 'tracked', deal_source: '', isPortfolio: false })
   const [saving, setSaving] = useState(false)
 
   async function submit() {
@@ -296,32 +359,36 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
     try {
       const { data } = await supabase.from('deals').insert({
         name: form.name.trim(),
-        address: form.address || null,
+        address: form.isPortfolio ? '!Portfolio' : (form.address || null),
         type: form.type,
         status: form.status,
         tier: form.tier,
         deal_source: form.deal_source || null,
+        dropbox_link: null,
       }).select().single()
       if (data) onAdd(data as Deal)
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
     setSaving(false)
   }
 
   return (
-    <div style={{
-      background: 'var(--bg-elevated)',
-      border: '1px solid rgba(201,147,58,0.2)',
-      borderRadius: 8,
-      padding: 16,
-      marginBottom: 16,
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: 8,
-    }}>
-      <input placeholder="Deal name *" value={form.name} onChange={e => setForm({...form, name: e.target.value})} style={{...inputStyle, flex: '1 1 180px'}} />
-      <input placeholder="Address" value={form.address} onChange={e => setForm({...form, address: e.target.value})} style={{...inputStyle, flex: '1 1 180px'}} />
+    <div style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(201,147,58,0.2)', borderRadius: 8, padding: 16, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      {/* Address FIRST — left */}
+      {form.isPortfolio ? (
+        <div style={{ ...inputStyle, flex: '1 1 180px', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700, fontSize: 12 }}>
+          📁 Portfolio of Properties
+        </div>
+      ) : (
+        <input placeholder="Address *" value={form.address} onChange={e => setForm({...form, address: e.target.value})} style={{...inputStyle, flex: '1 1 180px'}} />
+      )}
+      {/* ID / Client */}
+      <input placeholder="ID / Client *" value={form.name} onChange={e => setForm({...form, name: e.target.value})} style={{...inputStyle, flex: '1 1 180px'}} />
+      {/* Portfolio toggle */}
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }}>
+        <input type="checkbox" checked={form.isPortfolio} onChange={e => setForm({...form, isPortfolio: e.target.checked, address: ''})}
+          style={{ width: 14, height: 14, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
+        !Portfolio
+      </label>
       <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} style={{...selectStyle, flex: '1 1 120px'}}>
         <option value="listing">Listing</option>
         <option value="buyer_rep">Buyer Rep</option>
@@ -335,10 +402,7 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
         <option value="filed">Filed</option>
       </select>
       <input placeholder="Source (referral, cold call...)" value={form.deal_source} onChange={e => setForm({...form, deal_source: e.target.value})} style={{...inputStyle, flex: '1 1 160px'}} />
-      <button onClick={submit} disabled={saving || !form.name.trim()} style={{
-        padding: '7px 16px', background: 'var(--accent-gold)', color: '#0D0F14', border: 'none', borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-        opacity: (!form.name.trim() || saving) ? 0.5 : 1,
-      }}>
+      <button onClick={submit} disabled={saving || !form.name.trim()} style={{ padding: '7px 16px', background: 'var(--accent-gold)', color: '#0D0F14', border: 'none', borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: (!form.name.trim() || saving) ? 0.5 : 1 }}>
         {saving ? 'Saving...' : 'Create Deal'}
       </button>
     </div>

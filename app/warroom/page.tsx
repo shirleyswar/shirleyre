@@ -17,11 +17,11 @@ import LifePanel from '@/components/warroom/LifePanel'
 import EntitiesPanel from '@/components/warroom/EntitiesPanel'
 import PortfolioPanel from '@/components/warroom/PortfolioPanel'
 
-const SESSION_KEY = 'wr_session_exp'
+const SESSION_KEY = 'wr_session_exp_v2'
 const SESSION_HOURS = 8
 
-// SHA-256 hash of "1234"
-const DEFAULT_PIN_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'
+// SHA-256 hash of "1887"
+const DEFAULT_PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
 
 async function sha256(text: string): Promise<string> {
   const encoder = new TextEncoder()
