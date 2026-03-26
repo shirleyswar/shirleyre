@@ -1,3 +1,9 @@
+-- ─── PENDING MANUAL MIGRATION ───────────────────────────────────────────────
+-- Run this in Supabase SQL editor to add deal star ratings:
+-- https://supabase.com/dashboard/project/mtkyyaorvensylrfbhxv/sql/new
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS rating smallint CHECK (rating >= 1 AND rating <= 5);
+-- ──────────────────────────────────────────────────────────────────────────────
+
 -- ShirleyCRE War Room — Database Migration
 -- Run this ONCE in the Supabase SQL editor:
 -- https://supabase.com/dashboard/project/mtkyyaorvensylrfbhxv/sql/new
