@@ -67,27 +67,64 @@ export default function DealPipelinePanel() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<DealStatus | 'all'>('all')
   const [tierFilter, setTierFilter] = useState<DealTier | 'all'>('all')
-  const [sortBy, setSortBy] = useState<'commission_estimated' | 'created_at' | 'name' | 'address' | 'type' | 'status' | 'tier'>('created_at')
+  type SortField = 'address' | 'name' | 'type' | 'status' | 'tier' | 'rating' | 'created_at'
+  const [sortBy, setSortBy] = useState<SortField | null>(null)  // null = default portfolio-first
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [expandedPortfolios, setExpandedPortfolios] = useState<Set<string>>(new Set())
   const [showAddForm, setShowAddForm] = useState(false)
 
   useEffect(() => {
     fetchDeals()
-  }, [filter, tierFilter, sortBy])
+  }, [filter, tierFilter])
 
   async function fetchDeals() {
     try {
       let query = supabase.from('deals').select('*')
       if (filter !== 'all') query = query.eq('status', filter)
       if (tierFilter !== 'all') query = query.eq('tier', tierFilter)
-      query = query.order(sortBy, { ascending: ['name','address','type','status','tier'].includes(sortBy) })
-      const { data } = await query.limit(50)
+      // Always fetch all, sort client-side for portfolio-first logic
+      const { data } = await query.limit(200)
       if (data) setDeals(data as Deal[])
     } catch {
       setDeals(PLACEHOLDER_DEALS)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Sort handler — toggle asc/desc when same column, reset dir when changing
+  function handleSort(field: SortField) {
+    if (sortBy === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortDir('asc')
+    }
+  }
+
+  // Sort deals: default = portfolio first (alphabetical), then single addresses alphabetical
+  // User sort overrides default
+  function sortedDeals(list: Deal[]): Deal[] {
+    const topLevel = list.filter(d => !d.parent_deal_id)
+    if (sortBy === null) {
+      // Default: portfolios first (alphabetical by name), then singles alphabetical by address
+      const portfolios = topLevel.filter(d => d.address?.startsWith('📁')).sort((a,b) => (a.address||'').localeCompare(b.address||''))
+      const singles = topLevel.filter(d => !d.address?.startsWith('📁')).sort((a,b) => (a.address||a.name||'').localeCompare(b.address||b.name||''))
+      return [...portfolios, ...singles]
+    }
+    return [...topLevel].sort((a, b) => {
+      let aVal: string | number = ''
+      let bVal: string | number = ''
+      if (sortBy === 'rating') { aVal = (a as any).rating ?? 0; bVal = (b as any).rating ?? 0 }
+      else if (sortBy === 'address') { aVal = a.address || a.name || ''; bVal = b.address || b.name || '' }
+      else if (sortBy === 'name') { aVal = a.name || ''; bVal = b.name || '' }
+      else if (sortBy === 'type') { aVal = a.type || ''; bVal = b.type || '' }
+      else if (sortBy === 'status') { aVal = a.status || ''; bVal = b.status || '' }
+      else if (sortBy === 'tier') { aVal = a.tier || ''; bVal = b.tier || '' }
+      else if (sortBy === 'created_at') { aVal = a.created_at || ''; bVal = b.created_at || '' }
+      if (typeof aVal === 'number') return sortDir === 'asc' ? aVal - bVal : bVal - aVal
+      return sortDir === 'asc' ? aVal.localeCompare(bVal as string) : (bVal as string).localeCompare(aVal)
+    })
   }
 
   const filteredCount = deals.length
@@ -101,7 +138,7 @@ export default function DealPipelinePanel() {
           <PipeIcon />
         </span>
         <span className="wr-card-title">Deal Pipeline</span>
-        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           {filteredCount} deals · {formatCurrency(totalComm)} commission
         </span>
 
@@ -128,21 +165,6 @@ export default function DealPipelinePanel() {
             <option value="all">All Tiers</option>
             <option value="tracked">Tracked</option>
             <option value="filed">Filed</option>
-          </select>
-
-          {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as typeof sortBy)}
-            style={selectStyle}
-          >
-            <option value="created_at">Newest</option>
-            <option value="commission_estimated">Commission ↓</option>
-            <option value="address">Address A→Z</option>
-            <option value="name">ID / Client A→Z</option>
-            <option value="type">Type A→Z</option>
-            <option value="status">Status A→Z</option>
-            <option value="tier">Tier A→Z</option>
           </select>
 
           {/* Add deal */}
@@ -172,10 +194,10 @@ export default function DealPipelinePanel() {
         <SkeletonTable />
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 15 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                {['', 'More', 'Address', 'ID / Client', 'Type', 'Status', 'Tier', 'Value', 'Commission', 'Source', ''].map(h => (
+                {['LINKS', 'More', 'Address', 'ID / Client', 'Type', 'Status', 'Tier', 'Rating', 'LINKS'].map(h => (
                   <th key={h} style={{
                     textAlign: 'left',
                     padding: '7px 10px',
@@ -192,12 +214,12 @@ export default function DealPipelinePanel() {
             <tbody>
               {deals.length === 0 ? (
                 <tr>
-                  <td colSpan={11} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
                     No deals match this filter. Add one above ↑
                   </td>
                 </tr>
               ) : (
-                deals.filter(d => !d.parent_deal_id).map((deal, i, arr) => {
+                sortedDeals(deals).map((deal, i, arr) => {
                   const isPortfolio = deal.address?.startsWith('📁')
                   const subDeals = deals.filter(d => d.parent_deal_id === deal.id)
                   const isExpanded = expandedPortfolios.has(deal.id)
@@ -422,16 +444,13 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         </td>
         <td style={{ padding: '6px 8px' }}>
           <select value={draft.tier} onChange={e => setDraft(p => ({ ...p, tier: e.target.value as Deal['tier'] }))} style={{ fontSize: 11, padding: '3px 4px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)' }}>
-            {['tracked','filed'].map(t => <option key={t} value={t}>{t}</option>)}
+            {['tracked','filed'].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
           </select>
         </td>
         <td style={{ padding: '6px 8px' }}>
-          <input type="number" value={draft.value ?? ''} onChange={e => setDraft(p => ({ ...p, value: Number(e.target.value) || null }))} placeholder="Value" style={{ width: 80, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
+          {/* Rating — not editable inline, use star widget */}
+          <StarRating dealId={deal.id} value={draft.rating ?? null} onSave={(v) => setDraft(p => ({ ...p, rating: v }))} />
         </td>
-        <td style={{ padding: '6px 8px' }}>
-          <input type="number" value={draft.commission_estimated ?? ''} onChange={e => setDraft(p => ({ ...p, commission_estimated: Number(e.target.value) || null }))} placeholder="Commission" style={{ width: 90, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
-        </td>
-        <td style={{ padding: '6px 8px' }}>{inp('deal_source', 'Source')}</td>
         <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>
           <button onClick={save} disabled={saving} style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 5, color: '#A78BFA', cursor: 'pointer', marginRight: 4 }}>
             {saving ? '…' : '✓ Save'}
@@ -488,12 +507,12 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       </td>
       <td style={{ padding: '10px 10px' }}>
         <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: deal.tier === 'filed' ? 'rgba(96,165,250,0.1)' : 'rgba(255,255,255,0.05)', color: deal.tier === 'filed' ? '#60A5FA' : 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-          {deal.tier}
+          {deal.tier ? deal.tier.charAt(0).toUpperCase() + deal.tier.slice(1) : '—'}
         </span>
       </td>
-      <td style={{ padding: '10px 10px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{formatCurrency(deal.value)}</td>
-      <td style={{ padding: '10px 10px', color: 'var(--accent-gold)', fontVariantNumeric: 'tabular-nums', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatCurrency(deal.commission_estimated)}</td>
-      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{deal.deal_source || '—'}</td>
+      <td style={{ padding: '6px 10px' }}>
+        <StarRating dealId={deal.id} value={deal.rating ?? null} onSave={(v) => onUpdate({ ...deal, rating: v })} />
+      </td>
       <td style={{ padding: '10px 8px', whiteSpace: 'nowrap' }}>
         <button onClick={() => setEditing(true)} title="Edit row" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12, marginRight: 4 }}>✎</button>
         {deal.status === 'active' && deal.tier === 'filed' && (
@@ -510,7 +529,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
 
       {/* Delete confirmation modal */}
       {confirmDelete && (
-        <td colSpan={11} style={{ padding: 0 }}>
+        <td colSpan={9} style={{ padding: 0 }}>
           <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={() => setConfirmDelete(false)}>
             <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 14, padding: 28, minWidth: 300, maxWidth: 380 }}>
@@ -543,7 +562,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
 
       {/* Under Contract confirmation modal */}
       {confirmUC && (
-        <td colSpan={11} style={{ padding: 0 }}>
+        <td colSpan={9} style={{ padding: 0 }}>
           <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={() => setConfirmUC(false)}>
             <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(20,184,166,0.4)', borderRadius: 14, padding: 28, minWidth: 320, maxWidth: 400 }}>
@@ -592,7 +611,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
 
       {/* Kill confirmation modal */}
       {confirmKill && (
-        <td colSpan={11} style={{ padding: 0 }}>
+        <td colSpan={9} style={{ padding: 0 }}>
           <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={() => setConfirmKill(false)}>
             <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 14, padding: 28, minWidth: 320, maxWidth: 400 }}>
@@ -600,7 +619,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
               {/* Deal summary */}
               <div style={{ fontSize: 12, color: '#aaa', marginBottom: 16, lineHeight: 1.6 }}>
                 <div><span style={{ color: '#ccc', fontWeight: 600 }}>{deal.address || '—'}</span></div>
-                <div style={{ color: '#888' }}>{deal.name} · {DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type} · <span style={{ textTransform: 'capitalize' }}>{deal.tier}</span></div>
+                <div style={{ color: '#888' }}>{deal.name} · {DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type} · <span style={{ textTransform: 'capitalize' }}>{deal.tier ? deal.tier.charAt(0).toUpperCase() + deal.tier.slice(1) : '—'}</span></div>
               </div>
               {/* Kill type selector — only show if multiple options */}
               {killOptions.length > 1 && (
@@ -875,7 +894,7 @@ function AddSubDealRow({ parentId, onAdd }: { parentId: string; onAdd: (d: Deal)
 
   return (
     <tr style={{ background: 'rgba(232,184,75,0.03)', borderBottom: '1px solid var(--border-subtle)' }}>
-      <td colSpan={11} style={{ padding: '6px 20px' }}>
+      <td colSpan={9} style={{ padding: '6px 20px' }}>
         {open ? (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 11, flexShrink: 0 }}>↳</span>
@@ -955,6 +974,45 @@ function PipeIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M3 12h18M3 6h18M3 18h12"/>
     </svg>
+  )
+}
+
+
+// ─── Star Rating ─────────────────────────────────────────────────────────────
+function StarRating({ dealId, value, onSave }: { dealId: string; value: number | null; onSave: (v: number | null) => void }) {
+  const [hover, setHover] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  async function setRating(v: number) {
+    setSaving(true)
+    const newVal = value === v ? null : v  // click same star = clear rating
+    try {
+      await supabase.from('deals').update({ rating: newVal, updated_at: new Date().toISOString() } as any).eq('id', dealId)
+      onSave(newVal)
+    } catch {}
+    setSaving(false)
+  }
+
+  const display = hover ?? value ?? 0
+  return (
+    <div style={{ display: 'flex', gap: 2, alignItems: 'center', opacity: saving ? 0.5 : 1 }}>
+      {[1,2,3,4,5].map(i => (
+        <span
+          key={i}
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(null)}
+          onClick={() => setRating(i)}
+          style={{
+            fontSize: 16,
+            cursor: 'pointer',
+            color: i <= display ? '#E8B84B' : 'rgba(255,255,255,0.15)',
+            lineHeight: 1,
+            transition: 'color 0.1s',
+            userSelect: 'none',
+          }}
+        >★</span>
+      ))}
+    </div>
   )
 }
 
