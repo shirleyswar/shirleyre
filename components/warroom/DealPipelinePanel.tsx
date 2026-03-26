@@ -56,7 +56,7 @@ export default function DealPipelinePanel() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<DealStatus | 'all'>('all')
   const [tierFilter, setTierFilter] = useState<DealTier | 'all'>('all')
-  const [sortBy, setSortBy] = useState<'commission_estimated' | 'created_at' | 'name' | 'address' | 'type' | 'status'>('created_at')
+  const [sortBy, setSortBy] = useState<'commission_estimated' | 'created_at' | 'name' | 'address' | 'type' | 'status' | 'tier'>('created_at')
   const [expandedPortfolios, setExpandedPortfolios] = useState<Set<string>>(new Set())
   const [showAddForm, setShowAddForm] = useState(false)
 
@@ -69,7 +69,7 @@ export default function DealPipelinePanel() {
       let query = supabase.from('deals').select('*')
       if (filter !== 'all') query = query.eq('status', filter)
       if (tierFilter !== 'all') query = query.eq('tier', tierFilter)
-      query = query.order(sortBy, { ascending: ['name','address','type','status'].includes(sortBy) })
+      query = query.order(sortBy, { ascending: ['name','address','type','status','tier'].includes(sortBy) })
       const { data } = await query.limit(50)
       if (data) setDeals(data as Deal[])
     } catch {
@@ -131,6 +131,7 @@ export default function DealPipelinePanel() {
             <option value="name">ID / Client A→Z</option>
             <option value="type">Type A→Z</option>
             <option value="status">Status A→Z</option>
+            <option value="tier">Tier A→Z</option>
           </select>
 
           {/* Add deal */}
@@ -163,7 +164,7 @@ export default function DealPipelinePanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                {['Address', 'ID / Client', 'Type', 'Status', 'Tier', 'Value', 'Commission', 'Source', 'Files', ''].map(h => (
+                {['', 'Files', 'Address', 'ID / Client', 'Type', 'Status', 'Tier', 'Value', 'Commission', 'Source', ''].map(h => (
                   <th key={h} style={{
                     textAlign: 'left',
                     padding: '7px 10px',
@@ -180,7 +181,7 @@ export default function DealPipelinePanel() {
             <tbody>
               {deals.length === 0 ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+                  <td colSpan={11} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
                     No deals match this filter. Add one above ↑
                   </td>
                 </tr>
@@ -392,6 +393,10 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
   if (editing) {
     return (
       <tr style={rowStyle}>
+        <td style={{ padding: '6px 8px' }}>{/* deal page btn — no edit needed */}</td>
+        <td style={{ padding: '6px 8px' }}>
+          <input value={draft.dropbox_link ?? ''} onChange={e => setDraft(p => ({ ...p, dropbox_link: e.target.value || null }))} placeholder="Dropbox URL" style={{ width: 100, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
+        </td>
         <td style={{ padding: '6px 8px' }}>{inp('address', 'Address')}</td>
         <td style={{ padding: '6px 8px' }}>{inp('name', 'ID / Client')}</td>
         <td style={{ padding: '6px 8px' }}>
@@ -416,9 +421,6 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
           <input type="number" value={draft.commission_estimated ?? ''} onChange={e => setDraft(p => ({ ...p, commission_estimated: Number(e.target.value) || null }))} placeholder="Commission" style={{ width: 90, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
         </td>
         <td style={{ padding: '6px 8px' }}>{inp('deal_source', 'Source')}</td>
-        <td style={{ padding: '6px 8px' }}>
-          <input value={draft.dropbox_link ?? ''} onChange={e => setDraft(p => ({ ...p, dropbox_link: e.target.value || null }))} placeholder="Dropbox URL" style={{ width: 100, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
-        </td>
         <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>
           <button onClick={save} disabled={saving} style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 5, color: '#A78BFA', cursor: 'pointer', marginRight: 4 }}>
             {saving ? '…' : '✓ Save'}
@@ -434,6 +436,27 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
       onMouseLeave={e => (e.currentTarget.style.background = editing ? 'rgba(167,139,250,0.04)' : '')}
     >
+      {/* Col 1: Deal page button */}
+      <td style={{ padding: '8px 6px', textAlign: 'center' }}>
+        <a
+          href={`/warroom/deal/${deal.id}`}
+          title="Open Deal Dashboard"
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 28, height: 28, borderRadius: 6,
+            background: 'rgba(139,92,246,0.12)',
+            border: '1px solid rgba(139,92,246,0.35)',
+            color: '#A78BFA',
+            textDecoration: 'none', fontSize: 14, lineHeight: 1,
+            transition: 'all 0.15s',
+          }}
+        >↗</a>
+      </td>
+      {/* Col 2: Files */}
+      <td style={{ padding: '10px 8px' }}>
+        <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
+      </td>
+      {/* Col 3: Address */}
       <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>
         {isSubDeal && <span style={{ marginRight: 8, color: 'var(--text-dim)', fontSize: 11 }}>↳</span>}
         {isPortfolio && onToggleExpand ? (
@@ -460,9 +483,6 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       <td style={{ padding: '10px 10px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{formatCurrency(deal.value)}</td>
       <td style={{ padding: '10px 10px', color: 'var(--accent-gold)', fontVariantNumeric: 'tabular-nums', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatCurrency(deal.commission_estimated)}</td>
       <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{deal.deal_source || '—'}</td>
-      <td style={{ padding: '10px 8px' }}>
-        <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
-      </td>
       <td style={{ padding: '10px 8px', whiteSpace: 'nowrap' }}>
         <button onClick={() => setEditing(true)} title="Edit row" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12, marginRight: 4 }}>✎</button>
         {deal.status === 'active' && deal.tier === 'filed' && (
@@ -479,7 +499,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
 
       {/* Delete confirmation modal */}
       {confirmDelete && (
-        <td colSpan={10} style={{ padding: 0 }}>
+        <td colSpan={11} style={{ padding: 0 }}>
           <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={() => setConfirmDelete(false)}>
             <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 14, padding: 28, minWidth: 300, maxWidth: 380 }}>
@@ -512,7 +532,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
 
       {/* Under Contract confirmation modal */}
       {confirmUC && (
-        <td colSpan={10} style={{ padding: 0 }}>
+        <td colSpan={11} style={{ padding: 0 }}>
           <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={() => setConfirmUC(false)}>
             <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(20,184,166,0.4)', borderRadius: 14, padding: 28, minWidth: 320, maxWidth: 400 }}>
@@ -561,7 +581,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
 
       {/* Kill confirmation modal */}
       {confirmKill && (
-        <td colSpan={10} style={{ padding: 0 }}>
+        <td colSpan={11} style={{ padding: 0 }}>
           <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={() => setConfirmKill(false)}>
             <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 14, padding: 28, minWidth: 320, maxWidth: 400 }}>
@@ -655,38 +675,69 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
     setSaving(false)
   }
 
+  const labelStyle: React.CSSProperties = { fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }
+
   return (
-    <div style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(201,147,58,0.2)', borderRadius: 8, padding: 16, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-      {/* Address FIRST — left */}
-      {form.isPortfolio ? (
-        <div style={{ ...inputStyle, flex: '1 1 180px', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700, fontSize: 12 }}>
-          📁 {form.name.trim() || 'Portfolio — fill in ID / Client →'}
-        </div>
-      ) : (
-        <input placeholder="Address *" value={form.address} onChange={e => setForm({...form, address: e.target.value})} style={{...inputStyle, flex: '1 1 180px'}} />
-      )}
+    <div style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(201,147,58,0.2)', borderRadius: 8, padding: 16, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
+      {/* Address */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 180px' }}>
+        <label style={labelStyle}>Address</label>
+        {form.isPortfolio ? (
+          <div style={{ ...inputStyle, flex: '1 1 180px', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700, fontSize: 12 }}>
+            📁 {form.name.trim() || 'Portfolio — fill in ID / Client →'}
+          </div>
+        ) : (
+          <input placeholder="Address *" value={form.address} onChange={e => setForm({...form, address: e.target.value})} style={{...inputStyle}} />
+        )}
+      </div>
       {/* ID / Client */}
-      <input placeholder="ID / Client *" value={form.name} onChange={e => setForm({...form, name: e.target.value})} style={{...inputStyle, flex: '1 1 180px'}} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 180px' }}>
+        <label style={labelStyle}>ID / Client</label>
+        <input placeholder="ID / Client *" value={form.name} onChange={e => setForm({...form, name: e.target.value})} style={{...inputStyle}} />
+      </div>
       {/* Portfolio toggle */}
-      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }}>
-        <input type="checkbox" checked={form.isPortfolio} onChange={e => setForm({...form, isPortfolio: e.target.checked, address: ''})}
-          style={{ width: 14, height: 14, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
-        Portfolio
-      </label>
-      <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} style={{...selectStyle, flex: '1 1 120px'}}>
-        {DEAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-      </select>
-      <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} style={{...selectStyle, flex: '1 1 110px'}}>
-        {PRIMARY_STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-      </select>
-      <select value={form.tier} onChange={e => setForm({...form, tier: e.target.value})} style={{...selectStyle, flex: '1 1 100px'}}>
-        <option value="tracked">Tracked</option>
-        <option value="filed">Filed</option>
-      </select>
-      <input placeholder="Source (referral, cold call...)" value={form.deal_source} onChange={e => setForm({...form, deal_source: e.target.value})} style={{...inputStyle, flex: '1 1 160px'}} />
-      <button onClick={submit} disabled={saving || !form.name.trim()} style={{ padding: '7px 16px', background: 'var(--accent-gold)', color: '#0D0F14', border: 'none', borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: (!form.name.trim() || saving) ? 0.5 : 1 }}>
-        {saving ? 'Saving...' : 'Create Deal'}
-      </button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
+        <label style={labelStyle}>Portfolio</label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', height: 32, paddingTop: 2 }}>
+          <input type="checkbox" checked={form.isPortfolio} onChange={e => setForm({...form, isPortfolio: e.target.checked, address: ''})}
+            style={{ width: 14, height: 14, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
+          Portfolio
+        </label>
+      </div>
+      {/* Type */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 120px' }}>
+        <label style={labelStyle}>Type</label>
+        <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} style={{...selectStyle}}>
+          {DEAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+      </div>
+      {/* Status */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 110px' }}>
+        <label style={labelStyle}>Status</label>
+        <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} style={{...selectStyle}}>
+          {PRIMARY_STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+        </select>
+      </div>
+      {/* Tier */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 100px' }}>
+        <label style={labelStyle}>Tier</label>
+        <select value={form.tier} onChange={e => setForm({...form, tier: e.target.value})} style={{...selectStyle}}>
+          <option value="tracked">Tracked</option>
+          <option value="filed">Filed</option>
+        </select>
+      </div>
+      {/* Source */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 160px' }}>
+        <label style={labelStyle}>Source</label>
+        <input placeholder="Referral, cold call..." value={form.deal_source} onChange={e => setForm({...form, deal_source: e.target.value})} style={{...inputStyle}} />
+      </div>
+      {/* Create button */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
+        <label style={{ ...labelStyle, visibility: 'hidden' }}>Create</label>
+        <button onClick={submit} disabled={saving || !form.name.trim()} style={{ padding: '7px 16px', background: 'var(--accent-gold)', color: '#0D0F14', border: 'none', borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: (!form.name.trim() || saving) ? 0.5 : 1 }}>
+          {saving ? 'Saving...' : 'Create Deal'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -696,7 +747,12 @@ function AddSubDealRow({ parentId, onAdd }: { parentId: string; onAdd: (d: Deal)
   const [open, setOpen] = useState(false)
   const [address, setAddress] = useState('')
   const [name, setName] = useState('')
+  const [type, setType] = useState('active_listing')
+  const [status, setStatus] = useState<DealStatus>('pipeline')
+  const [tier, setTier] = useState('tracked')
   const [saving, setSaving] = useState(false)
+
+  const subInputStyle: React.CSSProperties = { fontSize: 12, padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, color: 'var(--text-primary)', outline: 'none' }
 
   async function save() {
     if (!address.trim()) return
@@ -705,24 +761,34 @@ function AddSubDealRow({ parentId, onAdd }: { parentId: string; onAdd: (d: Deal)
       const { data } = await supabase.from('deals').insert({
         name: name.trim() || address.trim(),
         address: address.trim(),
-        type: 'listing',
-        status: 'pipeline',
-        tier: 'tracked',
+        type,
+        status,
+        tier,
         parent_deal_id: parentId,
       }).select().single()
-      if (data) { onAdd(data as Deal); setAddress(''); setName(''); setOpen(false) }
+      if (data) { onAdd(data as Deal); setAddress(''); setName(''); setType('active_listing'); setStatus('pipeline'); setTier('tracked'); setOpen(false) }
     } catch (e) { console.error(e) }
     setSaving(false)
   }
 
   return (
     <tr style={{ background: 'rgba(232,184,75,0.03)', borderBottom: '1px solid var(--border-subtle)' }}>
-      <td colSpan={10} style={{ padding: '6px 20px' }}>
+      <td colSpan={11} style={{ padding: '6px 20px' }}>
         {open ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 11, flexShrink: 0 }}>↳</span>
-            <input autoFocus value={address} onChange={e => setAddress(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Address *" style={{ fontSize: 12, padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, color: 'var(--text-primary)', outline: 'none', width: 200 }} />
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="ID / Client (optional)" style={{ fontSize: 12, padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, color: 'var(--text-primary)', outline: 'none', width: 180 }} />
+            <input autoFocus value={address} onChange={e => setAddress(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Address *" style={{ ...subInputStyle, width: 200 }} />
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="ID / Client (optional)" style={{ ...subInputStyle, width: 160 }} />
+            <select value={type} onChange={e => setType(e.target.value)} style={{ ...subInputStyle, cursor: 'pointer' }}>
+              {DEAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <select value={status} onChange={e => setStatus(e.target.value as DealStatus)} style={{ ...subInputStyle, cursor: 'pointer' }}>
+              {PRIMARY_STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+            </select>
+            <select value={tier} onChange={e => setTier(e.target.value)} style={{ ...subInputStyle, cursor: 'pointer' }}>
+              <option value="tracked">Tracked</option>
+              <option value="filed">Filed</option>
+            </select>
             <button onClick={save} disabled={saving || !address.trim()} style={{ padding: '4px 12px', background: 'rgba(232,184,75,0.2)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 5, color: '#E8B84B', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{saving ? '…' : '+ Add'}</button>
             <button onClick={() => setOpen(false)} style={{ padding: '4px 8px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12 }}>✕</button>
           </div>
