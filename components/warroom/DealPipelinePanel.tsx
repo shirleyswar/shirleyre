@@ -173,7 +173,7 @@ export default function DealPipelinePanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                {['', 'Files', 'Address', 'ID / Client', 'Type', 'Status', 'Tier', 'Value', 'Commission', 'Source', ''].map(h => (
+                {['', 'More', 'Address', 'ID / Client', 'Type', 'Status', 'Tier', 'Value', 'Commission', 'Source', ''].map(h => (
                   <th key={h} style={{
                     textAlign: 'left',
                     padding: '7px 10px',
@@ -402,10 +402,10 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
   if (editing) {
     return (
       <tr style={rowStyle}>
-        <td style={{ padding: '6px 8px' }}>{/* deal page btn — no edit needed */}</td>
         <td style={{ padding: '6px 8px' }}>
           <input value={draft.dropbox_link ?? ''} onChange={e => setDraft(p => ({ ...p, dropbox_link: e.target.value || null }))} placeholder="Dropbox URL" style={{ width: 100, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
         </td>
+        <td style={{ padding: '6px 8px' }}>{/* MORE — no edit needed */}</td>
         <td style={{ padding: '6px 8px' }}>{inp('address', 'Address')}</td>
         <td style={{ padding: '6px 8px' }}>{inp('name', 'ID / Client')}</td>
         <td style={{ padding: '6px 8px' }}>
@@ -445,10 +445,14 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
       onMouseLeave={e => (e.currentTarget.style.background = editing ? 'rgba(167,139,250,0.04)' : '')}
     >
-      {/* Col 1: Deal page button */}
+      {/* Col 1: Files */}
+      <td style={{ padding: '10px 8px' }}>
+        <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
+      </td>
+      {/* Col 2: Deal page button — MORE */}
       <td style={{ padding: '8px 6px', textAlign: 'center' }}>
         <a
-          href={`/warroom/deal/${deal.id}`}
+          href={`/warroom/deal?id=${deal.id}`}
           title="Open Deal Dashboard"
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -460,10 +464,6 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
             transition: 'all 0.15s',
           }}
         >↗</a>
-      </td>
-      {/* Col 2: Files */}
-      <td style={{ padding: '10px 8px' }}>
-        <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
       </td>
       {/* Col 3: Address */}
       <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>
