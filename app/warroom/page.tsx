@@ -305,6 +305,7 @@ function NavRibbon({
 
   return (
     <div
+      className="wr-nav-ribbon"
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -354,6 +355,7 @@ function NavRibbon({
         return (
           <motion.button
             key={sec.id}
+            className="wr-nav-card"
             onClick={() => onSectionChange(isActive ? 'operations' : sec.id)}
             whileHover={{ scale: 1.10, y: -6 }}
             whileTap={{ scale: 0.95 }}
@@ -468,8 +470,8 @@ function NavRibbon({
       {/* Spacer — pushes link orbits to the right */}
       <div style={{ flex: 1, minWidth: 24 }} />
 
-      {/* Stats card — hidden on mobile, visible sm+ */}
-      <div className="hidden sm:block"><StatsNavCard /></div>
+      {/* Stats card — lives between orbit nav and LACDB/CREXI */}
+      <StatsNavCard />
 
       {/* Teal link orbits — LACDB & CREXI — hidden on mobile */}
       {[
