@@ -191,6 +191,7 @@ html, body {
 
 .badge-pipeline  { background: rgba(232,184,75,0.12);  color: var(--accent-gold);   }
 .badge-active    { background: rgba(34,197,94,0.12);   color: #22C55E;              }
+.badge-hot       { background: rgba(251,146,60,0.15);  color: #fb923c;              }
 .badge-contract  { background: rgba(79,142,247,0.12);  color: var(--accent-blue);   }
 .badge-pending   { background: rgba(167,139,250,0.12); color: var(--accent-violet); }
 .badge-closed    { background: rgba(100,116,139,0.12); color: #94A3B8;              }

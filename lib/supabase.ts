@@ -6,7 +6,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publish
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Types aligned with migration.sql schema
-export type DealStatus = 'pipeline' | 'active' | 'under_contract' | 'pending_payment' | 'closed' | 'expired' | 'dormant' | 'terminated' | 'in_review' | 'in_service'
+export type DealStatus = 'pipeline' | 'active' | 'under_contract' | 'pending_payment' | 'closed' | 'expired' | 'dormant' | 'terminated' | 'in_review' | 'in_service' | 'hot'
 export type DealType = 'listing' | 'buyer_rep' | 'tenant_rep' | 'landlord_rep' | 'consulting' | 'other' | 'potential_listing' | 'active_listing' | 'landlord' | 'seller' | 'tenant' | 'buyer' | 'referral' | 'x_develop_serv' | 'x_consulting' | 'in_service' | 'lease'
 export type DealTier = 'tracked' | 'filed'
 export type ContactPriority = 'ehvp' | 'hvp' | 'standard'
@@ -102,6 +102,38 @@ export interface ContractDeadline {
   notes: string | null
   created_at: string
   updated_at: string
+}
+
+export interface LacdbListing {
+  id: string
+  lacdb_id: string
+  lacdb_slug: string | null
+  name: string | null
+  status: string | null
+  listing_type: string | null
+  property_types: string[]
+  address: string | null
+  city: string | null
+  state: string | null
+  zip: string | null
+  county: string | null
+  lat: number | null
+  lng: number | null
+  price: number | null
+  price_label: string | null
+  price_per_sf: number | null
+  lease_rate: number | null
+  rate_label: string | null
+  sqft: number | null
+  acres: number | null
+  year_built: number | null
+  description: string | null
+  images: { url: string; thumb: string }[]
+  lacdb_url: string | null
+  list_date: string | null
+  expiration_date: string | null
+  synced_at: string
+  created_at: string
 }
 
 // Session 2 types

@@ -8,6 +8,7 @@ import Sidebar from '@/components/warroom/Sidebar'
 import StatsRibbon from '@/components/warroom/StatsRibbon'
 import BattlePlanPanel from '@/components/warroom/BattlePlanPanel'
 import SchedulePanel from '@/components/warroom/SchedulePanel'
+import HotPanel from '@/components/warroom/HotPanel'
 import UnderContractPanel from '@/components/warroom/UnderContractPanel'
 import MoneyMoversPanel from '@/components/warroom/MoneyMoversPanel'
 import DealPipelinePanel from '@/components/warroom/DealPipelinePanel'
@@ -638,7 +639,12 @@ function OperationsView({ activePanel }: { activePanel: string }) {
           <SchedulePanel />
         </div>
 
-        {/* Row 2: Under Contract (2-col) + Money Movers (1-col) */}
+        {/* Row 2: Hot Panel (full width) */}
+        <div className="lg:col-span-3 card-reveal card-reveal-3">
+          <HotPanel />
+        </div>
+
+        {/* Row 3: Under Contract (2-col) + Money Movers (1-col) */}
         <div className="lg:col-span-2 card-reveal card-reveal-3">
           <UnderContractPanel />
         </div>
