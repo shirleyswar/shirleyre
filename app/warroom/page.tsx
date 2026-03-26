@@ -467,8 +467,8 @@ function NavRibbon({
         )
       })}
 
-      {/* Spacer — pushes link orbits to the right */}
-      <div style={{ flex: 1, minWidth: 24 }} />
+      {/* Spacer — pushes link orbits to the right, hidden on mobile */}
+      <div className="hidden sm:block" style={{ flex: 1, minWidth: 24 }} />
 
       {/* Stats card — lives between orbit nav and LACDB/CREXI */}
       <StatsNavCard />
