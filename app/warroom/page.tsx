@@ -367,8 +367,8 @@ function NavRibbon({
               alignItems: 'center',
               justifyContent: 'center',
               gap: 5,
-              flex: '0 0 auto',
-              width: 'clamp(90px, 20vw, 160px)',
+              flex: '1 1 0',
+              width: '100%',
               maxWidth: 160,
               height: 'clamp(80px, 14vw, 96px)',
               background: isActive
