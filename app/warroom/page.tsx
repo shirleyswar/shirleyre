@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useState, useEffect, useCallback } from 'react'
 import type { JSX } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -222,12 +223,6 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
       }}>
         ShirleyCRE
       </span>
-
-      {/* Divider */}
-      <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.07)', marginLeft: 14, marginRight: 14, flexShrink: 0 }} />
-
-      {/* Stats inline */}
-      <StatsRibbon inline />
 
       <div style={{ flex: 1 }} />
       <LiveStatusDot />
@@ -473,6 +468,9 @@ function NavRibbon({
       {/* Spacer — pushes link orbits to the right */}
       <div style={{ flex: 1, minWidth: 24 }} />
 
+      {/* Stats card — lives between orbit nav and LACDB/CREXI */}
+      <StatsNavCard />
+
       {/* Teal link orbits — LACDB & CREXI */}
       {[
         { label: 'LACDB', url: 'https://roam.clareityiam.net/idp/login/lacdb' },
@@ -563,6 +561,81 @@ function NavRibbon({
           </div>
         </motion.a>
       ))}
+    </div>
+  )
+}
+
+
+// ─── STATS NAV CARD ──────────────────────────────────────────────────────────
+// Compact card that sits in the nav ribbon between Portfolio orbit and LACDB/CREXI
+
+function StatsNavCard() {
+  const [stats, setStats] = React.useState({ pipeline: 0, openDeals: 0, ar: 0 })
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        const { data } = await supabase.from('deals').select('status,commission_estimated,commission_collected')
+        if (data) {
+          const active = data.filter((d: any) => !['closed','dead','expired','dormant','terminated'].includes(d.status))
+          const pipeline = active.reduce((s: number, d: any) => s + (d.commission_estimated || 0), 0)
+          const ar = active.filter((d: any) => d.status === 'pending_payment')
+            .reduce((s: number, d: any) => s + ((d.commission_estimated || 0) - (d.commission_collected || 0)), 0)
+          setStats({ pipeline, openDeals: active.length, ar })
+        }
+      } catch {}
+      setLoading(false)
+    }
+    load()
+    const t = setInterval(load, 60000)
+    return () => clearInterval(t)
+  }, [])
+
+  function fmt(n: number) {
+    if (n >= 1_000_000) return `$${(n/1_000_000).toFixed(2)}M`
+    if (n >= 1_000) return `$${(n/1_000).toFixed(0)}K`
+    return `$${n.toFixed(0)}`
+  }
+
+  const items = [
+    { label: 'Pipeline', value: loading ? '—' : fmt(stats.pipeline), color: '#E8B84B' },
+    { label: 'Open', value: loading ? '—' : String(stats.openDeals), color: '#22C55E' },
+    { label: 'A/R', value: loading ? '—' : fmt(stats.ar), color: '#60A5FA' },
+  ]
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: '0 0 auto',
+      height: 'clamp(80px, 14vw, 96px)',
+      padding: '0 16px',
+      background: 'linear-gradient(135deg, #0D1218 0%, #111720 100%)',
+      border: '1px solid rgba(232,184,75,0.18)',
+      borderRadius: 16,
+      gap: 6,
+      minWidth: 'clamp(120px, 20vw, 180px)',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 12px rgba(232,184,75,0.06), inset 0 1px 0 rgba(232,184,75,0.06)',
+    }}>
+      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.4)', fontFamily: 'var(--font-body)' }}>
+        PIPELINE
+      </div>
+      <div style={{ display: 'flex', gap: 12 }}>
+        {items.map(item => (
+          <div key={item.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <div style={{ fontSize: 'clamp(13px, 2.5vw, 16px)', fontWeight: 800, color: item.color, fontFamily: 'var(--font-body)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+              {item.value}
+            </div>
+            <div style={{ fontSize: 8, fontWeight: 600, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              {item.label}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
