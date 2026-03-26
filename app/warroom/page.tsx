@@ -304,6 +304,14 @@ function NavRibbon({
   }
 
   return (
+    <>
+    <style>{`
+      @media (max-width: 640px) {
+        .nav-warroom-wordmark { display: none !important; }
+        .nav-warroom-divider  { display: none !important; }
+        .nav-lacdb-crexi      { display: none !important; }
+      }
+    `}</style>
     <div
       style={{
         display: 'flex',
@@ -320,7 +328,7 @@ function NavRibbon({
       }}
     >
       {/* WAR ROOM wordmark — left of nav cards */}
-      <div style={{
+      <div className="nav-warroom-wordmark" style={{
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
@@ -347,7 +355,7 @@ function NavRibbon({
       </div>
 
       {/* Divider between wordmark and cards */}
-      <div style={{ width: 1, height: 60, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+      <div className="nav-warroom-divider" style={{ width: 1, height: 60, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
 
       {NAV_SECTIONS.map(sec => {
         const isActive = activeSection === sec.id
@@ -477,6 +485,7 @@ function NavRibbon({
         { label: 'CREXI', url: 'https://www.crexi.com/' },
       ].map(link => (
         <motion.a
+          className="nav-lacdb-crexi"
           key={link.label}
           href={link.url}
           target="_blank"
@@ -637,6 +646,7 @@ function StatsNavCard() {
         ))}
       </div>
     </div>
+  </>
   )
 }
 
