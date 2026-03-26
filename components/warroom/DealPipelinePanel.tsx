@@ -750,12 +750,13 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
     setSaving(false)
   }
 
-  const labelStyle: React.CSSProperties = { fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }
+  // centered label style
+  const labelStyle: React.CSSProperties = { fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, textAlign: 'center' }
 
   return (
     <div style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(201,147,58,0.2)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
-      {/* Address */}
+      {/* Address — flexible, takes remaining space */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 200px' }}>
         <label style={labelStyle}>Address</label>
         {form.isPortfolio ? (
@@ -773,13 +774,13 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
           />
         )}
       </div>
-      {/* ID / Client */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 180px' }}>
+      {/* ID / Client — flexible */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 160px' }}>
         <label style={labelStyle}>ID / Client</label>
         <input placeholder="ID / Client *" value={form.name} onChange={e => setForm({...form, name: e.target.value})} style={{...inputStyle}} />
       </div>
-      {/* Portfolio toggle */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
+      {/* Portfolio — fixed width, centered checkbox */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 72, flexShrink: 0 }}>
         <label style={labelStyle}>Portfolio</label>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32 }}>
           <input type="checkbox" checked={form.isPortfolio} onChange={e => {
@@ -789,30 +790,30 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
             style={{ width: 14, height: 14, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
         </div>
       </div>
-      {/* Type */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 120px' }}>
+      {/* Type — sized to fit longest option "Potential Listing" ~148px */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 148, flexShrink: 0 }}>
         <label style={labelStyle}>Type</label>
-        <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} style={{...selectStyle}}>
+        <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} style={{...selectStyle, width: '100%'}}>
           {DEAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </div>
-      {/* Status */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 110px' }}>
+      {/* Status — sized to fit longest option "In Review" ~90px */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 96, flexShrink: 0 }}>
         <label style={labelStyle}>Status</label>
-        <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} style={{...selectStyle}}>
+        <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} style={{...selectStyle, width: '100%'}}>
           {PRIMARY_STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
         </select>
       </div>
-      {/* Tier */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 100px' }}>
+      {/* Tier — sized to fit "Tracked" ~72px */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 72, flexShrink: 0 }}>
         <label style={labelStyle}>Tier</label>
-        <select value={form.tier} onChange={e => setForm({...form, tier: e.target.value})} style={{...selectStyle}}>
+        <select value={form.tier} onChange={e => setForm({...form, tier: e.target.value})} style={{...selectStyle, width: '100%'}}>
           <option value="tracked">Tracked</option>
           <option value="filed">Filed</option>
         </select>
       </div>
-      {/* Source */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 160px' }}>
+      {/* Source — flexible */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 140px' }}>
         <label style={labelStyle}>Source</label>
         <input placeholder="Referral, cold call..." value={form.deal_source} onChange={e => setForm({...form, deal_source: e.target.value})} style={{...inputStyle}} />
       </div>
