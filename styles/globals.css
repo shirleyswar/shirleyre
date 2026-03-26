@@ -551,3 +551,20 @@ html, body {
   background: linear-gradient(135deg, #160E2C 0%, #1A1030 40%, #130E24 100%);
   border: 1px solid rgba(167,139,250,0.15);
 }
+
+
+/* ── War Room Nav Ribbon — Mobile full-width cards ── */
+@media (max-width: 640px) {
+  .wr-nav-ribbon {
+    justify-content: stretch !important;
+    overflow-x: hidden !important;
+    padding: 6px 8px !important;
+    gap: 6px !important;
+  }
+  .wr-nav-card {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+}
