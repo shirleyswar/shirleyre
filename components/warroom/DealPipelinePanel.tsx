@@ -122,7 +122,7 @@ export default function DealPipelinePanel() {
       else if (sortBy === 'status') { aVal = a.status || ''; bVal = b.status || '' }
       else if (sortBy === 'tier') { aVal = a.tier || ''; bVal = b.tier || '' }
       else if (sortBy === 'created_at') { aVal = a.created_at || ''; bVal = b.created_at || '' }
-      if (typeof aVal === 'number') return sortDir === 'asc' ? aVal - bVal : bVal - aVal
+      if (typeof aVal === 'number') return sortDir === 'asc' ? aVal - (bVal as number) : (bVal as number) - aVal
       return sortDir === 'asc' ? aVal.localeCompare(bVal as string) : (bVal as string).localeCompare(aVal)
     })
   }
