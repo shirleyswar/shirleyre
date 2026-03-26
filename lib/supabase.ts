@@ -29,6 +29,7 @@ export interface Deal {
   notes: string | null
   dropbox_link: string | null
   parent_deal_id: string | null
+  rating: number | null
   created_at: string
   updated_at: string
 }
