@@ -753,35 +753,24 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
   const labelStyle: React.CSSProperties = { fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }
 
   return (
-    <div style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(201,147,58,0.2)', borderRadius: 8, padding: 16, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
+    <div style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(201,147,58,0.2)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
       {/* Address */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 200px' }}>
         <label style={labelStyle}>Address</label>
         {form.isPortfolio ? (
-          <div style={{ ...inputStyle, flex: '1 1 180px', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700, fontSize: 12 }}>
+          <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700, fontSize: 12 }}>
             📁 {form.name.trim() || 'Portfolio — fill in ID / Client →'}
           </div>
         ) : (
-          <>
-            <input
-              ref={manualAddress ? undefined : addressInputRef}
-              placeholder="Start typing an address…"
-              value={form.address}
-              onChange={e => setForm({ ...form, address: e.target.value })}
-              style={{ ...inputStyle }}
-              autoComplete="off"
-            />
-            <span
-              onClick={() => {
-                setManualAddress(m => !m)
-                autocompleteRef.current = null
-                setForm(prev => ({ ...prev, address: '' }))
-              }}
-              style={{ fontSize: 10, color: 'var(--text-dim)', cursor: 'pointer', marginTop: 2, userSelect: 'none' }}
-            >
-              {manualAddress ? '← Use autocomplete' : "Can't find it? Enter manually"}
-            </span>
-          </>
+          <input
+            ref={manualAddress ? undefined : addressInputRef}
+            placeholder="Start typing an address…"
+            value={form.address}
+            onChange={e => setForm({ ...form, address: e.target.value })}
+            style={{ ...inputStyle }}
+            autoComplete="off"
+          />
         )}
       </div>
       {/* ID / Client */}
@@ -835,6 +824,20 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
           {saving ? 'Saving...' : 'Create Deal'}
         </button>
       </div>
+      </div>
+      {/* Manual address toggle — below the row so it doesn't affect alignment */}
+      {!form.isPortfolio && (
+        <span
+          onClick={() => {
+            setManualAddress(m => !m)
+            autocompleteRef.current = null
+            setForm(prev => ({ ...prev, address: '' }))
+          }}
+          style={{ fontSize: 10, color: 'var(--text-dim)', cursor: 'pointer', marginTop: 6, display: 'inline-block', userSelect: 'none' }}
+        >
+          {manualAddress ? '← Use autocomplete' : "Can't find it? Enter manually"}
+        </span>
+      )}
     </div>
   )
 }
