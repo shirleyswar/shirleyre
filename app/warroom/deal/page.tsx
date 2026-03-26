@@ -279,12 +279,17 @@ function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: st
       }
 
       if (!found && deal.address) {
-        const { data } = await supabase
-          .from('lacdb_listings')
-          .select('*')
-          .ilike('address', `%${deal.address.split(',')[0]}%`)
-          .limit(1)
-        if (data && data.length > 0) found = data[0] as LacdbListing
+        // Extract street number (3-5 digits) from deal address for fuzzy match
+        const numMatch = deal.address.match(/\b(\d{3,5})\b/)
+        const streetNum = numMatch ? numMatch[1] : null
+        if (streetNum) {
+          const { data } = await supabase
+            .from('lacdb_listings')
+            .select('*')
+            .ilike('address', `${streetNum}%`)
+            .limit(1)
+          if (data && data.length > 0) found = data[0] as LacdbListing
+        }
       }
 
       setListing(found)
