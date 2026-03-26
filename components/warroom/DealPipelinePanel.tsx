@@ -781,14 +781,13 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
       {/* Portfolio toggle */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
         <label style={labelStyle}>Portfolio</label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', height: 32, paddingTop: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32 }}>
           <input type="checkbox" checked={form.isPortfolio} onChange={e => {
             setForm({...form, isPortfolio: e.target.checked, address: ''})
             if (!e.target.checked) { autocompleteRef.current = null; setManualAddress(false) }
           }}
             style={{ width: 14, height: 14, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
-          Portfolio
-        </label>
+        </div>
       </div>
       {/* Type */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 120px' }}>
