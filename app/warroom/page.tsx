@@ -304,14 +304,6 @@ function NavRibbon({
   }
 
   return (
-    <>
-    <style>{`
-      @media (max-width: 640px) {
-        .nav-warroom-wordmark { display: none !important; }
-        .nav-warroom-divider  { display: none !important; }
-        .nav-lacdb-crexi      { display: none !important; }
-      }
-    `}</style>
     <div
       style={{
         display: 'flex',
@@ -328,8 +320,8 @@ function NavRibbon({
       }}
     >
       {/* WAR ROOM wordmark — left of nav cards */}
-      <div className="nav-warroom-wordmark" style={{
-        display: 'flex',
+      <div className="hidden sm:flex" style={{
+        display: undefined,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -355,7 +347,7 @@ function NavRibbon({
       </div>
 
       {/* Divider between wordmark and cards */}
-      <div className="nav-warroom-divider" style={{ width: 1, height: 60, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+      <div className="hidden sm:block" style={{ width: 1, height: 60, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
 
       {NAV_SECTIONS.map(sec => {
         const isActive = activeSection === sec.id
@@ -479,13 +471,13 @@ function NavRibbon({
       {/* Stats card — lives between orbit nav and LACDB/CREXI */}
       <StatsNavCard />
 
-      {/* Teal link orbits — LACDB & CREXI */}
+      {/* Teal link orbits — LACDB & CREXI — hidden on mobile */}
       {[
         { label: 'LACDB', url: 'https://roam.clareityiam.net/idp/login/lacdb' },
         { label: 'CREXI', url: 'https://www.crexi.com/' },
       ].map(link => (
+        <div key={link.label} className="hidden sm:block">
         <motion.a
-          className="nav-lacdb-crexi"
           key={link.label}
           href={link.url}
           target="_blank"
@@ -569,6 +561,7 @@ function NavRibbon({
             {link.label}
           </div>
         </motion.a>
+        </div>
       ))}
     </div>
   )
@@ -646,7 +639,6 @@ function StatsNavCard() {
         ))}
       </div>
     </div>
-  </>
   )
 }
 
