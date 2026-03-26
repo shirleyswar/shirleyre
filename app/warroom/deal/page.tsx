@@ -181,6 +181,33 @@ const btnStyle = (color: string, bg: string, border: string): React.CSSPropertie
   fontFamily: 'inherit',
 })
 
+// Purple orbit button style (Link / Launch)
+const orbitBtnStyle: React.CSSProperties = {
+  padding: '9px 20px',
+  fontSize: 13,
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  background: 'linear-gradient(135deg, rgba(139,92,246,0.25) 0%, rgba(109,40,217,0.35) 100%)',
+  border: '1px solid rgba(167,139,250,0.5)',
+  borderRadius: 10,
+  color: '#c4b5fd',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  boxShadow: '0 0 16px rgba(139,92,246,0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+  animation: 'orbitPulse 2.8s ease-in-out infinite',
+  position: 'relative',
+  overflow: 'hidden',
+}
+
+const orbitBtnFullStyle: React.CSSProperties = {
+  ...orbitBtnStyle,
+  width: '100%',
+  padding: '13px 16px',
+  fontSize: 14,
+  textAlign: 'center',
+  borderRadius: 10,
+}
+
 const sectionHeadStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 700,
@@ -255,8 +282,9 @@ function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: st
   const [listing, setListing] = useState<LacdbListing | null>(null)
   const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(true)
-  const [manualId, setManualId] = useState(deal.notes?.match(/lacdb_id:(\S+)/)?.[1] ?? '')
+  const [manualId, setManualId] = useState('')
   const [savingManual, setSavingManual] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -296,7 +324,7 @@ function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: st
       setLoading(false)
     }
     load()
-  }, [deal.address, deal.deal_source])
+  }, [deal.address, deal.deal_source, reloadKey])
 
   if (loading) return (
     <div style={cardStyle}>
@@ -327,18 +355,37 @@ function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: st
           style={{ ...inputStyle, flex: 1 }}
           value={manualId}
           onChange={e => setManualId(e.target.value)}
-          placeholder="LACDB ID or slug"
+          placeholder="Paste LACDB URL or listing ID"
+          onKeyDown={async e => {
+            if (e.key === 'Enter' && manualId) {
+              setSavingManual(true)
+              // Extract slug/ID from full URL if pasted
+              let id = manualId.trim()
+              const urlMatch = id.match(/\/listings\/([^/?#]+)/)
+              if (urlMatch) id = urlMatch[1]
+              await onLacdbIdSave(id)
+              setManualId('')
+              setReloadKey(k => k + 1)
+              setSavingManual(false)
+            }
+          }}
         />
         <button
           onClick={async () => {
+            if (!manualId) return
             setSavingManual(true)
-            onLacdbIdSave(manualId)
+            let id = manualId.trim()
+            const urlMatch = id.match(/\/listings\/([^/?#]+)/)
+            if (urlMatch) id = urlMatch[1]
+            await onLacdbIdSave(id)
+            setManualId('')
+            setReloadKey(k => k + 1)
             setSavingManual(false)
           }}
           disabled={savingManual || !manualId}
-          style={btnStyle('#000', '#E8B84B', '#E8B84B')}
+          style={orbitBtnStyle}
         >
-          Link
+          {savingManual ? 'Saving…' : 'Link'}
         </button>
       </div>
     </div>
@@ -1008,7 +1055,7 @@ function DealDashboardInner() {
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0D0F14', color: '#F0F2FF' }}>
       <div style={{ padding: 32 }}>
-        <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+        <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} } @keyframes orbitPulse { 0%,100%{box-shadow:0 0 16px rgba(139,92,246,0.3),inset 0 1px 0 rgba(255,255,255,0.06)} 50%{box-shadow:0 0 28px rgba(139,92,246,0.55),0 0 8px rgba(167,139,250,0.25),inset 0 1px 0 rgba(255,255,255,0.1)} }`}</style>
         <div style={{ width: '60%', height: 28, borderRadius: 6, background: 'rgba(255,255,255,0.07)', marginBottom: 10, animation: 'pulse 1.6s ease-in-out infinite' }} />
         <div style={{ width: '35%', height: 18, borderRadius: 6, background: 'rgba(255,255,255,0.07)', animation: 'pulse 1.6s ease-in-out infinite' }} />
       </div>
@@ -1039,6 +1086,7 @@ function DealDashboardInner() {
       color: '#F0F2FF',
       fontFamily: 'var(--font-body, system-ui, sans-serif)',
     }}>
+      <style>{`@keyframes orbitPulse { 0%,100%{box-shadow:0 0 16px rgba(139,92,246,0.3),inset 0 1px 0 rgba(255,255,255,0.06)} 50%{box-shadow:0 0 28px rgba(139,92,246,0.55),0 0 8px rgba(167,139,250,0.25),inset 0 1px 0 rgba(255,255,255,0.1)} }`}</style>
       {/* PIN modal */}
       {pendingAction && (
         <PinModal
@@ -1341,12 +1389,7 @@ function DealDashboardInner() {
               {deal.tier === 'tracked' && (
                 <button
                   onClick={() => pinGate(() => doLaunch())}
-                  style={{
-                    ...btnStyle('#000', '#E8B84B', '#E8B84B'),
-                    width: '100%', padding: '13px 16px', fontSize: 14,
-                    textAlign: 'center', borderRadius: 10,
-                    boxShadow: '0 0 18px rgba(232,184,75,0.25)',
-                  }}
+                  style={orbitBtnFullStyle}
                 >
                   Launch 🚀
                 </button>
@@ -1563,7 +1606,7 @@ export default function DealDashboardPage() {
     <Suspense fallback={
       <div style={{ minHeight: '100vh', background: '#0D0F14', color: '#F0F2FF' }}>
         <div style={{ padding: 32 }}>
-          <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+          <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} } @keyframes orbitPulse { 0%,100%{box-shadow:0 0 16px rgba(139,92,246,0.3),inset 0 1px 0 rgba(255,255,255,0.06)} 50%{box-shadow:0 0 28px rgba(139,92,246,0.55),0 0 8px rgba(167,139,250,0.25),inset 0 1px 0 rgba(255,255,255,0.1)} }`}</style>
           <div style={{ width: '60%', height: 28, borderRadius: 6, background: 'rgba(255,255,255,0.07)', marginBottom: 10, animation: 'pulse 1.6s ease-in-out infinite' }} />
         </div>
       </div>
