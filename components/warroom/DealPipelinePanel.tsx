@@ -1,7 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase, Deal, DealStatus, DealTier } from '@/lib/supabase'
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+declare global {
+  interface Window {
+    google: any
+    _gmapsPlacesLoaded: boolean
+    _gmapsPlacesCallbacks: (() => void)[]
+  }
+}
 
 const DEAL_TYPES: { value: string; label: string }[] = [
   { value: 'potential_listing',   label: 'Potential Listing' },
@@ -652,10 +661,71 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
   )
 }
 
+// ─── Google Maps loader helper ───────────────────────────────────────────────
+function loadGoogleMapsPlaces(cb: () => void) {
+  if (typeof window === 'undefined') return
+  if (window.google?.maps?.places) { cb(); return }
+
+  if (!window._gmapsPlacesCallbacks) window._gmapsPlacesCallbacks = []
+  window._gmapsPlacesCallbacks.push(cb)
+
+  if (window._gmapsPlacesLoaded) return // already loading
+
+  window._gmapsPlacesLoaded = true
+  const script = document.createElement('script')
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
+  script.async = true
+  script.defer = true
+  script.onload = () => {
+    const cbs = window._gmapsPlacesCallbacks || []
+    window._gmapsPlacesCallbacks = []
+    cbs.forEach(fn => fn())
+  }
+  document.head.appendChild(script)
+}
+
 // Quick add form
 function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
   const [form, setForm] = useState({ name: '', address: '', type: 'potential_listing', status: 'pipeline', tier: 'tracked', deal_source: '', isPortfolio: false })
   const [saving, setSaving] = useState(false)
+  const [manualAddress, setManualAddress] = useState(false)
+  const addressInputRef = useRef<HTMLInputElement>(null)
+  const autocompleteRef = useRef<any>(null)
+
+  const attachAutocomplete = useCallback(() => {
+    if (!addressInputRef.current || form.isPortfolio) return
+    if (autocompleteRef.current) return // already attached
+
+    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+      types: ['address'],
+      componentRestrictions: { country: 'us' },
+      bounds: new window.google.maps.LatLngBounds(
+        new window.google.maps.LatLng(29.5, -91.5),
+        new window.google.maps.LatLng(33.0, -89.0)
+      ),
+      strictBounds: false,
+    })
+    ac.addListener('place_changed', () => {
+      const place = ac.getPlace()
+      if (place?.formatted_address) {
+        setForm(prev => ({ ...prev, address: place.formatted_address }))
+      }
+    })
+    autocompleteRef.current = ac
+  }, [form.isPortfolio])
+
+  useEffect(() => {
+    if (form.isPortfolio || manualAddress) return
+    loadGoogleMapsPlaces(attachAutocomplete)
+  }, [form.isPortfolio, manualAddress, attachAutocomplete])
+
+  // When switching back from manual to autocomplete, re-attach
+  useEffect(() => {
+    if (!manualAddress && !form.isPortfolio) {
+      autocompleteRef.current = null
+      loadGoogleMapsPlaces(attachAutocomplete)
+    }
+  }, [manualAddress, form.isPortfolio, attachAutocomplete])
 
   async function submit() {
     if (!form.name.trim()) return
@@ -663,14 +733,19 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
     try {
       const { data } = await supabase.from('deals').insert({
         name: form.name.trim(),
-        address: form.isPortfolio ? `📁 ${form.name.trim() || 'Portfolio'}` : (form.address || null),
+        address: form.isPortfolio ? `📁 ${form.name.trim() || 'Portfolio'}` : (form.address.trim() || null),
         type: form.type,
         status: form.status,
         tier: form.tier,
         deal_source: form.deal_source || null,
         dropbox_link: null,
       }).select().single()
-      if (data) onAdd(data as Deal)
+      if (data) {
+        onAdd(data as Deal)
+        setForm({ name: '', address: '', type: 'potential_listing', status: 'pipeline', tier: 'tracked', deal_source: '', isPortfolio: false })
+        setManualAddress(false)
+        autocompleteRef.current = null
+      }
     } catch (e) { console.error(e) }
     setSaving(false)
   }
@@ -680,14 +755,33 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
   return (
     <div style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(201,147,58,0.2)', borderRadius: 8, padding: 16, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
       {/* Address */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 180px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 200px' }}>
         <label style={labelStyle}>Address</label>
         {form.isPortfolio ? (
           <div style={{ ...inputStyle, flex: '1 1 180px', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700, fontSize: 12 }}>
             📁 {form.name.trim() || 'Portfolio — fill in ID / Client →'}
           </div>
         ) : (
-          <input placeholder="Address *" value={form.address} onChange={e => setForm({...form, address: e.target.value})} style={{...inputStyle}} />
+          <>
+            <input
+              ref={manualAddress ? undefined : addressInputRef}
+              placeholder="Start typing an address…"
+              value={form.address}
+              onChange={e => setForm({ ...form, address: e.target.value })}
+              style={{ ...inputStyle }}
+              autoComplete="off"
+            />
+            <span
+              onClick={() => {
+                setManualAddress(m => !m)
+                autocompleteRef.current = null
+                setForm(prev => ({ ...prev, address: '' }))
+              }}
+              style={{ fontSize: 10, color: 'var(--text-dim)', cursor: 'pointer', marginTop: 2, userSelect: 'none' }}
+            >
+              {manualAddress ? '← Use autocomplete' : "Can't find it? Enter manually"}
+            </span>
+          </>
         )}
       </div>
       {/* ID / Client */}
@@ -699,7 +793,10 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
         <label style={labelStyle}>Portfolio</label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', height: 32, paddingTop: 2 }}>
-          <input type="checkbox" checked={form.isPortfolio} onChange={e => setForm({...form, isPortfolio: e.target.checked, address: ''})}
+          <input type="checkbox" checked={form.isPortfolio} onChange={e => {
+            setForm({...form, isPortfolio: e.target.checked, address: ''})
+            if (!e.target.checked) { autocompleteRef.current = null; setManualAddress(false) }
+          }}
             style={{ width: 14, height: 14, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
           Portfolio
         </label>
