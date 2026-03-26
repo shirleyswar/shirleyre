@@ -285,29 +285,52 @@ function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: st
   const [manualId, setManualId] = useState('')
   const [savingManual, setSavingManual] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+  // linkedSlug: slug/id that was saved but not yet in DB (show fallback link)
+  const [linkedSlug, setLinkedSlug] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
       setLoading(true)
       let found: LacdbListing | null = null
 
-      // Try by lacdb_id field first (stored in deal_source as a hack, or we check notes)
-      // We check if deal has a lacdb_id stored in deal_source field with prefix "lacdb:"
-      const lacdbId = deal.deal_source?.startsWith('lacdb:')
+      // Extract slug saved in deal_source (format: "lacdb:<slug>")
+      const savedSlug = deal.deal_source?.startsWith('lacdb:')
         ? deal.deal_source.slice(6)
         : null
 
-      if (lacdbId) {
-        const { data } = await supabase
+      if (savedSlug) {
+        // 1. Try exact slug match (primary)
+        const { data: bySlug } = await supabase
           .from('lacdb_listings')
           .select('*')
-          .eq('lacdb_id', lacdbId)
+          .eq('lacdb_slug', savedSlug)
           .single()
-        found = data as LacdbListing | null
+        if (bySlug) found = bySlug as LacdbListing
+
+        // 2. Try UUID prefix match on lacdb_id (slug starts with UUID)
+        if (!found) {
+          const uuidPrefix = savedSlug.split('-').slice(0, 5).join('-')
+          const { data: byId } = await supabase
+            .from('lacdb_listings')
+            .select('*')
+            .ilike('lacdb_id', `${uuidPrefix}%`)
+            .single()
+          if (byId) found = byId as LacdbListing
+        }
+
+        // 3. Also try matching by lacdb_id column directly
+        if (!found) {
+          const { data: byLacdbId } = await supabase
+            .from('lacdb_listings')
+            .select('*')
+            .eq('lacdb_id', savedSlug)
+            .single()
+          if (byLacdbId) found = byLacdbId as LacdbListing
+        }
       }
 
-      if (!found && deal.address) {
-        // Extract street number (3-5 digits) from deal address for fuzzy match
+      // 4. Fuzzy match by address (no saved slug)
+      if (!found && !savedSlug && deal.address) {
         const numMatch = deal.address.match(/\b(\d{3,5})\b/)
         const streetNum = numMatch ? numMatch[1] : null
         if (streetNum) {
@@ -320,6 +343,8 @@ function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: st
         }
       }
 
+      // Track linked slug for fallback display when not in DB yet
+      setLinkedSlug(savedSlug && !found ? savedSlug : null)
       setListing(found)
       setLoading(false)
     }
@@ -338,18 +363,51 @@ function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: st
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <span style={sectionHeadStyle}>LACDB Listing</span>
       </div>
-      <div style={{
-        padding: '16px',
-        background: 'rgba(255,255,255,0.02)',
-        borderRadius: 8,
-        border: '1px dashed rgba(255,255,255,0.08)',
-        textAlign: 'center',
-        marginBottom: 12,
-      }}>
-        <div style={{ fontSize: 20, marginBottom: 6, opacity: 0.3 }}>🔗</div>
-        <div style={{ fontSize: 12, color: '#4b5563' }}>No LACDB listing linked</div>
-        <div style={{ fontSize: 11, color: '#374151', marginTop: 2 }}>Link manually below</div>
-      </div>
+      {linkedSlug ? (
+        // Linked but not yet synced into DB — show fallback with direct link
+        <div style={{
+          padding: '14px 16px',
+          background: 'rgba(139,92,246,0.06)',
+          borderRadius: 8,
+          border: '1px solid rgba(139,92,246,0.25)',
+          marginBottom: 12,
+        }}>
+          <div style={{ fontSize: 12, color: '#c4b5fd', fontWeight: 700, marginBottom: 4 }}>✓ Linked</div>
+          <div style={{ fontSize: 11, color: '#7c6fa0', marginBottom: 10, wordBreak: 'break-all' }}>{linkedSlug}</div>
+          <a
+            href={`https://lacdb.resimplifi.com/listings/${linkedSlug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 12px',
+              background: 'rgba(79,142,247,0.1)',
+              border: '1px solid rgba(79,142,247,0.35)',
+              borderRadius: 8,
+              color: '#4F8EF7',
+              fontSize: 12,
+              fontWeight: 700,
+              textDecoration: 'none',
+            }}
+          >
+            View on LACDB ↗
+          </a>
+          <div style={{ fontSize: 10, color: '#4b5563', marginTop: 8 }}>Full listing data will appear after next sync</div>
+        </div>
+      ) : (
+        <div style={{
+          padding: '16px',
+          background: 'rgba(255,255,255,0.02)',
+          borderRadius: 8,
+          border: '1px dashed rgba(255,255,255,0.08)',
+          textAlign: 'center',
+          marginBottom: 12,
+        }}>
+          <div style={{ fontSize: 20, marginBottom: 6, opacity: 0.3 }}>🔗</div>
+          <div style={{ fontSize: 12, color: '#4b5563' }}>No LACDB listing linked</div>
+          <div style={{ fontSize: 11, color: '#374151', marginTop: 2 }}>Link manually below</div>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8 }}>
         <input
           style={{ ...inputStyle, flex: 1 }}
