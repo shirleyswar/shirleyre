@@ -3,6 +3,102 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase, Deal, DealStatus, DealTier } from '@/lib/supabase'
 
+// ─── Address Parser ───────────────────────────────────────────────────────────
+const STREET_TYPES: Record<string, string> = {
+  avenue:'Ave.', ave:'Ave.', boulevard:'Blvd.', blvd:'Blvd.',
+  street:'St.', st:'St.', road:'Rd.', rd:'Rd.', drive:'Dr.', dr:'Dr.',
+  lane:'Ln.', ln:'Ln.', court:'Ct.', ct:'Ct.', place:'Pl.', pl:'Pl.',
+  circle:'Cir.', cir:'Cir.', highway:'Hwy.', hwy:'Hwy.',
+  parkway:'Pkwy.', pkwy:'Pkwy.', trail:'Trl.', trl:'Trl.',
+  way:'Way', terrace:'Ter.', ter:'Ter.', loop:'Loop', plaza:'Plz.',
+}
+const DIRECTIONS_MAP: Record<string, string> = {
+  north:'N', south:'S', east:'E', west:'W',
+  northeast:'NE', northwest:'NW', southeast:'SE', southwest:'SW',
+  n:'N', s:'S', e:'E', w:'W', ne:'NE', nw:'NW', se:'SE', sw:'SW',
+}
+
+function parseAddress(raw: string | null): {
+  addr_number: string | null
+  addr_street_name: string | null
+  addr_street_type: string | null
+  addr_direction: string | null
+  addr_city: string | null
+  addr_display: string | null
+} {
+  const empty = { addr_number:null, addr_street_name:null, addr_street_type:null, addr_direction:null, addr_city:null, addr_display:null }
+  if (!raw || raw.startsWith('📁')) return empty
+
+  let addrPart = raw.trim()
+  let city: string | null = null
+
+  // Google format: "5525 Reitz Ave, Baton Rouge, LA 70809, USA"
+  if (addrPart.includes(',')) {
+    const parts = addrPart.split(',').map(s => s.trim())
+    addrPart = parts[0]
+    if (parts.length >= 3 && !/^[A-Z]{2}$/.test(parts[1])) city = parts[1]
+  } else {
+    // "City - Street..." prefix
+    const m = addrPart.match(/^([A-Za-z][A-Za-z\s]+?)\s*[-–]\s*(.+)$/)
+    if (m) { city = m[1].trim(); addrPart = m[2].trim() }
+  }
+
+  // Normalize extra periods
+  addrPart = addrPart.replace(/\.(?!\s)/g, '. ').trim()
+  const tokens = addrPart.split(/\s+/).filter(Boolean)
+  if (!tokens.length) return { ...empty, addr_city: city }
+
+  let number: string | null = null
+  let direction: string | null = null
+  const streetNameParts: string[] = []
+  let streetType: string | null = null
+  let i = 0
+
+  // Number at start
+  if (/^\d+[A-Za-z]?$/.test(tokens[0])) { number = tokens[0]; i = 1 }
+  // Number at end (FILING convention)
+  else if (/^\d+[A-Za-z]?$/.test(tokens[tokens.length - 1])) {
+    number = tokens[tokens.length - 1]
+    tokens.splice(tokens.length - 1, 1)
+  }
+
+  // Direction after number
+  if (i < tokens.length && DIRECTIONS_MAP[tokens[i].toLowerCase().replace(/\.$/, '')]) {
+    direction = DIRECTIONS_MAP[tokens[i].toLowerCase().replace(/\.$/, '')]
+    i++
+  }
+
+  const remaining = tokens.slice(i)
+  let foundType = false
+  for (let j = 0; j < remaining.length; j++) {
+    const clean = remaining[j].toLowerCase().replace(/\.$/, '')
+    if (STREET_TYPES[clean]) {
+      streetType = STREET_TYPES[clean]
+      streetNameParts.push(...remaining.slice(0, j))
+      foundType = true
+      break
+    }
+  }
+  if (!foundType) streetNameParts.push(...remaining)
+
+  const dispParts: string[] = []
+  if (direction) dispParts.push(direction)
+  if (streetNameParts.length) dispParts.push(streetNameParts.join(' '))
+  if (streetType) dispParts.push(streetType)
+  if (number) dispParts.push(number)
+
+  return {
+    addr_number: number,
+    addr_street_name: streetNameParts.join(' ') || null,
+    addr_street_type: streetType,
+    addr_direction: direction,
+    addr_city: city,
+    addr_display: dispParts.join(' ') || addrPart,
+  }
+}
+
+
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const DEAL_TYPES: { value: string; label: string }[] = [
@@ -399,6 +495,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
   async function save() {
     setSaving(true)
     try {
+      const parsedFields = draft.address ? parseAddress(draft.address) : {}
       await supabase.from('deals').update({
         name: draft.name,
         address: draft.address,
@@ -409,6 +506,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         commission_estimated: draft.commission_estimated,
         deal_source: draft.deal_source,
         dropbox_link: draft.dropbox_link,
+        ...parsedFields,
       }).eq('id', deal.id)
       onUpdate(draft)
     } catch {}
@@ -501,12 +599,14 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         {isPortfolio && onToggleExpand ? (
           <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700 }}>
             <span style={{ fontSize: 13, transition: 'transform 0.15s', display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-            {deal.address}
+            {(deal as any).addr_display || deal.address}
           </button>
         ) : deal.address?.startsWith('📁') ? (
           <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>{deal.address}</span>
         ) : (
-          <span style={{ color: isSubDeal ? 'var(--text-muted)' : 'var(--text-primary)' }}>{deal.address || '—'}</span>
+          <span style={{ color: isSubDeal ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+            {(deal as any).addr_display || deal.address || '—'}
+          </span>
         )}
       </td>
       <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{deal.name}</td>
@@ -759,14 +859,17 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
     if (!form.name.trim()) return
     setSaving(true)
     try {
+      const rawAddr = form.isPortfolio ? `📁 ${form.name.trim()}` : (form.address.trim() || null)
+      const parsed = rawAddr ? parseAddress(rawAddr) : {}
       const { data } = await supabase.from('deals').insert({
         name: form.name.trim(),
-        address: form.isPortfolio ? `📁 ${form.name.trim()}` : (form.address.trim() || null),
+        address: rawAddr,
         type: form.type,
         status: form.status,
         tier: form.tier,
         deal_source: form.deal_source || null,
         dropbox_link: null,
+        ...parsed,
       }).select().single()
       if (data) {
         onAdd(data as Deal)
