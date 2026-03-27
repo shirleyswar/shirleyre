@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase, Deal, DealStatus, DealTier } from '@/lib/supabase'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -675,10 +675,69 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
   )
 }
 
-// Quick add form — plain text input, no Google Maps dependency
+// ─── Google Maps loader ──────────────────────────────────────────────────────
+/* eslint-disable @typescript-eslint/no-explicit-any */
+declare global {
+  interface Window {
+    google: any
+    _gmapsLoaded: boolean
+    _gmapsCallbacks: (() => void)[]
+  }
+}
+
+function loadGooglePlaces(cb: () => void) {
+  if (typeof window === 'undefined') return
+  if (window.google?.maps?.places) { cb(); return }
+  if (!window._gmapsCallbacks) window._gmapsCallbacks = []
+  window._gmapsCallbacks.push(cb)
+  if (window._gmapsLoaded) return
+  window._gmapsLoaded = true
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  if (!key) return
+  const s = document.createElement('script')
+  s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`
+  s.async = true
+  s.defer = true
+  s.onerror = () => { window._gmapsLoaded = false }
+  s.onload = () => {
+    const cbs = window._gmapsCallbacks || []
+    window._gmapsCallbacks = []
+    cbs.forEach(fn => fn())
+  }
+  document.head.appendChild(s)
+}
+
+// Quick add form — Google Places autocomplete with plain-text fallback
 function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
   const [form, setForm] = useState({ name: '', address: '', type: 'potential_listing', status: 'pipeline', tier: 'tracked', deal_source: '', isPortfolio: false })
   const [saving, setSaving] = useState(false)
+  const [autocompleteReady, setAutocompleteReady] = useState(false)
+  const addressInputRef = useRef<HTMLInputElement>(null)
+  const autocompleteRef = useRef<any>(null)
+
+  const attachAutocomplete = useCallback(() => {
+    if (!addressInputRef.current || form.isPortfolio || autocompleteRef.current) return
+    try {
+      const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+      })
+      ac.addListener('place_changed', () => {
+        const place = ac.getPlace()
+        if (place?.formatted_address) {
+          setForm(prev => ({ ...prev, address: place.formatted_address }))
+        }
+      })
+      autocompleteRef.current = ac
+      setAutocompleteReady(true)
+    } catch {}
+  }, [form.isPortfolio])
+
+  useEffect(() => {
+    if (form.isPortfolio) return
+    loadGooglePlaces(attachAutocomplete)
+    return () => { autocompleteRef.current = null }
+  }, [form.isPortfolio, attachAutocomplete])
 
   async function submit() {
     if (!form.name.trim()) return
@@ -696,6 +755,8 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
       if (data) {
         onAdd(data as Deal)
         setForm({ name: '', address: '', type: 'potential_listing', status: 'pipeline', tier: 'tracked', deal_source: '', isPortfolio: false })
+        autocompleteRef.current = null
+        setAutocompleteReady(false)
       }
     } catch (e) { console.error(e) }
     setSaving(false)
@@ -715,9 +776,10 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
             </div>
           ) : (
             <input
+              ref={addressInputRef}
               value={form.address}
               onChange={e => setForm({ ...form, address: e.target.value })}
-              placeholder="Street address"
+              placeholder="Start typing an address…"
               style={{ ...inputStyle }}
               autoComplete="off"
             />
