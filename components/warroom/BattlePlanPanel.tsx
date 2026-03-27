@@ -35,6 +35,8 @@ export default function BattlePlanPanel() {
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set())
   const [showFollowUpFor, setShowFollowUpFor] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+  // Completion modal
+  const [pendingComplete, setPendingComplete] = useState<BattlePlanTask | null>(null)
   const dragIdRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -129,17 +131,21 @@ export default function BattlePlanPanel() {
     setAdding(false)
   }
 
-  async function completeTask(task: BattlePlanTask) {
+  // Show the modal — don't act yet
+  function completeTask(task: BattlePlanTask) {
+    setPendingComplete(task)
+  }
+
+  // Called when user confirms "Log as Complete" in modal
+  async function confirmComplete(task: BattlePlanTask) {
+    setPendingComplete(null)
     setCompletingIds(prev => new Set(prev).add(task.id))
-    setShowFollowUpFor(task.id)
 
     const updateData: Record<string, unknown> = {
       status: 'complete',
       completed_by: 'matthew',
     }
-    try {
-      updateData.completed_at = new Date().toISOString()
-    } catch {}
+    try { updateData.completed_at = new Date().toISOString() } catch {}
 
     try {
       await supabase.from('tasks').update(updateData).eq('id', task.id)
@@ -147,22 +153,36 @@ export default function BattlePlanPanel() {
         action_type: 'task_completed',
         description: task.title,
         created_by: 'matthew',
-      }).then(() => {})  // fire and forget
+      }).then(() => {})
     } catch {}
 
-    // Remove from list after 600ms
     setTimeout(() => {
       setTasks(prev => prev.filter(t => t.id !== task.id))
-      setCompletingIds(prev => {
-        const next = new Set(prev)
-        next.delete(task.id)
-        return next
-      })
-      // Keep follow-up button visible briefly after removal
-      setTimeout(() => {
-        setShowFollowUpFor(id => id === task.id ? null : id)
-      }, 2000)
+      setCompletingIds(prev => { const n = new Set(prev); n.delete(task.id); return n })
     }, 600)
+  }
+
+  // Called when user picks "Create Next Flow" in modal
+  async function confirmCompleteWithFollowUp(task: BattlePlanTask) {
+    setPendingComplete(null)
+    // Mark complete
+    await confirmComplete(task)
+    // Create follow-up immediately
+    const insertData: Record<string, unknown> = {
+      title: `Follow-up: ${task.title}`,
+      status: 'open',
+      deal_id: task.deal_id || null,
+    }
+    try { insertData.follow_up_of = task.id } catch {}
+    try {
+      insertData.sort_order = tasks.length > 0
+        ? Math.max(...tasks.map(t => t.sort_order ?? 0)) + 1
+        : 0
+    } catch {}
+    try {
+      const { data } = await supabase.from('tasks').insert(insertData).select().single()
+      if (data) setTasks(prev => [...prev, data as BattlePlanTask])
+    } catch {}
   }
 
   async function createFollowUp(parentTask: BattlePlanTask) {
@@ -352,6 +372,110 @@ export default function BattlePlanPanel() {
               />
             ))}
         </ul>
+      )}
+
+      {/* ── Completion Modal ── */}
+      {pendingComplete && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.72)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24,
+          }}
+          onClick={() => setPendingComplete(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#13112A',
+              border: '1px solid rgba(232,184,75,0.35)',
+              borderRadius: 14,
+              padding: 28,
+              minWidth: 300,
+              maxWidth: 400,
+              width: '100%',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
+            }}
+          >
+            {/* Title */}
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 8, fontFamily: 'monospace' }}>
+              Battle Plan
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#F0F2FF', marginBottom: 6, lineHeight: 1.4 }}>
+              {pendingComplete.title}
+            </div>
+            {pendingComplete.deal_id && (() => {
+              const d = deals.find(x => x.id === pendingComplete.deal_id)
+              return d ? (
+                <div style={{ fontSize: 11, color: 'var(--accent-gold)', marginBottom: 16, fontFamily: 'monospace' }}>
+                  {d.address || d.name}
+                </div>
+              ) : null
+            })()}
+            {!pendingComplete.deal_id && <div style={{ marginBottom: 16 }} />}
+
+            {/* Actions */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* Log as Complete */}
+              <button
+                onClick={() => confirmComplete(pendingComplete)}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(34,197,94,0.12)',
+                  border: '1px solid rgba(34,197,94,0.35)',
+                  borderRadius: 8,
+                  color: '#22C55E',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                Log as Complete
+              </button>
+
+              {/* Create Next Flow */}
+              <button
+                onClick={() => confirmCompleteWithFollowUp(pendingComplete)}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(20,184,166,0.12)',
+                  border: '1px solid rgba(20,184,166,0.35)',
+                  borderRadius: 8,
+                  color: '#14b8a6',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                Create Next Flow
+              </button>
+
+              {/* Cancel */}
+              <button
+                onClick={() => setPendingComplete(null)}
+                style={{
+                  padding: '10px 16px',
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  color: '#6B7280',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                Cancel — Keep Open
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
