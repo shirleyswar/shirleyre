@@ -268,7 +268,7 @@ export default function BattlePlanPanel() {
         <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
           <SwordIcon />
         </span>
-        <span className="wr-card-title">Battle Plan</span>
+        <span className="wr-card-title" style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.12em', color: 'var(--accent-gold)' }}>BATTLE PLAN</span>
         <span className="wr-panel-line" />
         <span className="wr-panel-stat" style={{ fontSize: 16 }}>
           {openTasks.length > 0 ? openTasks.length : '—'}
@@ -278,6 +278,14 @@ export default function BattlePlanPanel() {
       {/* Add task form */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
         <div style={{ display: 'flex', gap: 8 }}>
+          {/* Add button — LEFT */}
+          <button
+            onClick={addTask}
+            disabled={adding || !newTitle.trim()}
+            className="wr-btn-orbit"
+          >
+            {adding ? '...' : '+ Add'}
+          </button>
           <input
             type="text"
             value={newTitle}
@@ -298,25 +306,6 @@ export default function BattlePlanPanel() {
             onFocus={e => (e.target.style.borderColor = 'rgba(232,184,75,0.4)')}
             onBlur={e => (e.target.style.borderColor = 'var(--border-subtle)')}
           />
-          <button
-            onClick={addTask}
-            disabled={adding || !newTitle.trim()}
-            style={{
-              padding: '7px 14px',
-              background: 'var(--accent-gold)',
-              color: '#0D0F14',
-              border: 'none',
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-              opacity: (!newTitle.trim() || adding) ? 0.45 : 1,
-              fontFamily: 'var(--font-body)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Add
-          </button>
         </div>
         {deals.length > 0 && (
           <select
@@ -350,7 +339,16 @@ export default function BattlePlanPanel() {
       ) : openTasks.length === 0 ? (
         <EmptyState />
       ) : (
-        <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+              <th style={{ width: 28, padding: '4px 6px', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'var(--text-muted)' }}></th>
+              <th style={{ padding: '4px 8px', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'var(--text-muted)', textAlign: 'left' }}>Action Item</th>
+              <th style={{ width: 80, padding: '4px 8px', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'var(--text-muted)', textAlign: 'left' }}>Due</th>
+              <th style={{ width: 60, padding: '4px 6px' }}></th>
+            </tr>
+          </thead>
+          <tbody>
           {tasks
             .filter(t => t.status === 'open' || t.status === 'in_progress')
             .map(task => (
@@ -371,7 +369,8 @@ export default function BattlePlanPanel() {
                 deals={deals}
               />
             ))}
-        </ul>
+          </tbody>
+        </table>
       )}
 
       {/* ── Completion Modal ── */}
@@ -522,7 +521,7 @@ function TaskRow({
   const isOverdue = task.due_date && task.due_date < new Date().toISOString().split('T')[0]
 
   return (
-    <li
+    <tr
       draggable
       onDragStart={onDragStart}
       onDragOver={onDragOver}
@@ -531,66 +530,45 @@ function TaskRow({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 8,
-        padding: '8px 10px',
-        background: isDragTarget ? 'rgba(232,184,75,0.06)' : 'var(--bg-elevated)',
-        borderRadius: 6,
-        border: isDragTarget
-          ? '1px solid rgba(232,184,75,0.3)'
-          : '1px solid var(--border-subtle)',
-        transition: 'all 0.15s',
+        background: isDragTarget ? 'rgba(232,184,75,0.06)' : hovered ? 'rgba(255,255,255,0.02)' : 'transparent',
+        borderBottom: '1px solid var(--border-subtle)',
         opacity: completing ? 0.4 : 1,
-        cursor: 'default',
-        position: 'relative',
+        transition: 'all 0.15s',
       }}
     >
-      {/* Drag handle */}
-      <span
-        style={{
-          fontSize: 14,
-          color: 'var(--text-muted)',
-          cursor: 'grab',
-          opacity: hovered ? 0.6 : 0,
-          transition: 'opacity 0.15s',
-          paddingTop: 1,
-          userSelect: 'none',
-          flexShrink: 0,
-        }}
-      >
-        ⠿
-      </span>
+      {/* Col 1: checkbox + drag handle (28px) */}
+      <td style={{ width: 28, padding: '8px 6px', verticalAlign: 'middle' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {/* Complete checkbox — square */}
+          <button
+            onClick={onComplete}
+            onMouseEnter={() => setCircleHovered(true)}
+            onMouseLeave={() => setCircleHovered(false)}
+            style={{
+              width: 16,
+              height: 16,
+              borderRadius: 3,
+              border: `1.5px solid ${circleHovered ? 'var(--accent-gold)' : 'rgba(232,184,75,0.4)'}`,
+              background: circleHovered ? 'rgba(232,184,75,0.15)' : 'transparent',
+              cursor: 'pointer',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}
+          >
+            {circleHovered && (
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5l2.5 2.5L8 3" stroke="var(--accent-gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </td>
 
-      {/* Complete circle */}
-      <button
-        onClick={onComplete}
-        onMouseEnter={() => setCircleHovered(true)}
-        onMouseLeave={() => setCircleHovered(false)}
-        style={{
-          width: 18,
-          height: 18,
-          borderRadius: '50%',
-          border: `1.5px solid ${circleHovered ? 'var(--accent-gold)' : 'rgba(232,184,75,0.35)'}`,
-          background: circleHovered ? 'rgba(232,184,75,0.18)' : 'transparent',
-          cursor: 'pointer',
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.15s',
-          marginTop: 1,
-        }}
-      >
-        {circleHovered && (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M2 5l2.5 2.5L8 3" stroke="var(--accent-gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-      </button>
-
-      {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Col 2: Title + deal tag (flex) */}
+      <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
         {editing ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <input
@@ -672,7 +650,8 @@ function TaskRow({
             <span
               style={{
                 fontSize: 13,
-                color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
+                fontWeight: 400,
+                color: completing ? 'var(--text-muted)' : '#E8E0D0',
                 lineHeight: 1.4,
                 textDecoration: completing ? 'line-through' : 'none',
                 transition: 'all 0.3s',
@@ -681,8 +660,6 @@ function TaskRow({
             >
               {task.title}
             </span>
-
-            {/* Deal tag */}
             {deal && (
               <span
                 style={{
@@ -705,71 +682,81 @@ function TaskRow({
                 {deal.address || deal.name}
               </span>
             )}
-
-            {/* Due date */}
-            {task.due_date && (
-              <span
-                style={{
-                  display: 'block',
-                  marginTop: 2,
-                  fontSize: 10,
-                  color: isOverdue ? 'var(--danger, #ef4444)' : 'var(--text-muted)',
-                  fontFamily: 'monospace',
-                }}
-              >
-                {task.due_date}
-              </span>
-            )}
           </>
         )}
-      </div>
+      </td>
 
-      {/* Hover actions: edit + follow-up */}
-      {!editing && (hovered || showFollowUp) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          {/* Edit pencil */}
-          {hovered && (
-            <button
-              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditing(true) }}
-              title="Edit"
-              style={{
-                padding: '2px 6px',
-                background: 'transparent',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 4,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                opacity: 0.65,
-              }}
-            >
-              <PencilIcon />
-            </button>
-          )}
+      {/* Col 3: Due date (80px) */}
+      <td style={{ width: 80, padding: '8px 8px', verticalAlign: 'middle' }}>
+        {task.due_date && (
+          <span
+            style={{
+              fontSize: 11,
+              color: isOverdue ? 'var(--danger, #ef4444)' : 'var(--text-muted)',
+              fontFamily: 'monospace',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {task.due_date}
+          </span>
+        )}
+      </td>
 
-          {/* Follow-up */}
-          {showFollowUp && (
-            <button
-              onClick={onFollowUp}
+      {/* Col 4: Actions (60px) */}
+      <td style={{ width: 60, padding: '8px 6px', verticalAlign: 'middle' }}>
+        {!editing && (hovered || showFollowUp) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {hovered && (
+              <button
+                onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditing(true) }}
+                title="Edit"
+                style={{
+                  padding: '2px 6px',
+                  background: 'transparent',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  opacity: 0.65,
+                }}
+              >
+                <PencilIcon />
+              </button>
+            )}
+            <span
+              draggable={false}
               style={{
-                padding: '2px 8px',
-                background: 'rgba(20,184,166,0.12)',
-                border: '1px solid rgba(20,184,166,0.3)',
-                borderRadius: 4,
-                fontSize: 11,
-                color: '#14b8a6',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
+                fontSize: 14,
+                color: 'var(--text-muted)',
+                cursor: 'grab',
+                opacity: 0.6,
+                userSelect: 'none',
               }}
-            >
-              + Follow-up
-            </button>
-          )}
-        </div>
-      )}
-    </li>
+            >⠿</span>
+          </div>
+        )}
+        {showFollowUp && !hovered && (
+          <button
+            onClick={onFollowUp}
+            style={{
+              padding: '2px 6px',
+              background: 'rgba(20,184,166,0.12)',
+              border: '1px solid rgba(20,184,166,0.3)',
+              borderRadius: 4,
+              fontSize: 10,
+              color: '#14b8a6',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-body)',
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            +FU
+          </button>
+        )}
+      </td>
+    </tr>
   )
 }
 
@@ -810,3 +797,4 @@ function PencilIcon() {
     </svg>
   )
 }
+
