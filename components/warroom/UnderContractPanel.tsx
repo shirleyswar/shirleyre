@@ -108,7 +108,7 @@ function DeadlineRow({ deadline, onSatisfy, onDelete, onEdit }: DeadlineRowProps
       {/* Label */}
       <div style={{ flex: '0 0 160px', minWidth: 0 }}>
         <span style={{
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 500,
           textDecoration: satisfied ? 'line-through' : 'none',
           color: satisfied ? 'var(--text-dim)' : 'var(--text-primary)',
@@ -123,7 +123,7 @@ function DeadlineRow({ deadline, onSatisfy, onDelete, onEdit }: DeadlineRowProps
           display: 'inline-block',
           padding: '1px 7px',
           borderRadius: 20,
-          fontSize: 9,
+          fontSize: 11,
           fontWeight: 700,
           letterSpacing: '0.05em',
           textTransform: 'uppercase',
@@ -135,7 +135,7 @@ function DeadlineRow({ deadline, onSatisfy, onDelete, onEdit }: DeadlineRowProps
       </div>
 
       {/* Date */}
-      <div style={{ flex: '0 0 60px', fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+      <div style={{ flex: '0 0 60px', fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
         {formatDate(deadline.deadline_date)}
       </div>
 
@@ -145,7 +145,7 @@ function DeadlineRow({ deadline, onSatisfy, onDelete, onEdit }: DeadlineRowProps
           <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>—</span>
         ) : (
           <span style={{
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 700,
             fontFamily: 'var(--font-mono)',
             color: getDaysColor(days, deadline.status),
@@ -161,7 +161,7 @@ function DeadlineRow({ deadline, onSatisfy, onDelete, onEdit }: DeadlineRowProps
           display: 'inline-block',
           padding: '1px 7px',
           borderRadius: 20,
-          fontSize: 9,
+          fontSize: 11,
           fontWeight: 700,
           letterSpacing: '0.05em',
           textTransform: 'uppercase',
@@ -336,7 +336,7 @@ function DeadlineForm({ dealId, editing, onSaved, onCancel }: DeadlineFormProps)
           onClick={save}
           disabled={saving}
           style={{
-            padding: '5px 14px', fontSize: 12, fontWeight: 700,
+            padding: '5px 14px', fontSize: 13, fontWeight: 700,
             background: saving ? 'rgba(45,212,191,0.08)' : 'rgba(45,212,191,0.18)',
             border: '1px solid rgba(45,212,191,0.4)',
             borderRadius: 6, color: '#2dd4bf', cursor: saving ? 'default' : 'pointer',
@@ -348,7 +348,7 @@ function DeadlineForm({ dealId, editing, onSaved, onCancel }: DeadlineFormProps)
         <button
           onClick={onCancel}
           style={{
-            padding: '5px 10px', fontSize: 12,
+            padding: '5px 10px', fontSize: 13,
             background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: 6, color: 'var(--text-dim)', cursor: 'pointer',
           }}>
@@ -466,11 +466,11 @@ function DealSubpanel({ deal, onDeadlinesChange }: DealSubpanelProps) {
       {/* Column headers */}
       {!loading && deadlines.length > 0 && (
         <div style={{ display: 'flex', gap: 10, padding: '0 12px 4px', marginBottom: 2 }}>
-          <div style={{ flex: '0 0 160px', fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Label</div>
-          <div style={{ flex: '0 0 80px', fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Type</div>
-          <div style={{ flex: '0 0 60px', fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Date</div>
-          <div style={{ flex: '0 0 70px', fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'right' }}>Days</div>
-          <div style={{ flex: '0 0 70px', fontSize: 9, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Status</div>
+          <div style={{ flex: '0 0 160px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Label</div>
+          <div style={{ flex: '0 0 80px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Type</div>
+          <div style={{ flex: '0 0 60px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Date</div>
+          <div style={{ flex: '0 0 70px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'right' }}>Days</div>
+          <div style={{ flex: '0 0 70px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Status</div>
           <div style={{ flex: 1 }} />
           <div style={{ flex: '0 0 90px' }} />
         </div>
@@ -566,16 +566,16 @@ function DeadlinesSummary({ deadlines, onExpand, isExpanded }: DeadlinesSummaryP
         padding: '2px 4px', textAlign: 'center',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
       }}>
-      <span style={{ fontSize: 12, fontWeight: 700, color: pending.length > 0 ? '#4F8EF7' : 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: pending.length > 0 ? '#4F8EF7' : 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
         {pending.length}
       </span>
       {nearest && nearest.days <= 7 && (
-        <span style={{ fontSize: 9, color: urgentColor, fontWeight: 700, whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 11, color: urgentColor, fontWeight: 700, whiteSpace: 'nowrap' }}>
           {nearest.days <= 0 ? 'PAST' : `${nearest.days}d`} {isExpanded ? '▲' : '▼'}
         </span>
       )}
       {!(nearest && nearest.days <= 7) && (
-        <span style={{ fontSize: 9, color: 'var(--text-dim)' }}>
+        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
           {isExpanded ? '▲' : '▼'}
         </span>
       )}
@@ -645,14 +645,14 @@ export default function UnderContractPanel() {
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
                 {['', 'Deal', 'Type', 'Value', 'Commission', 'Day', '', 'Deadlines', 'Files'].map((h, i) => (
                   <th key={i} style={{
                     textAlign: i === 0 ? 'center' : i >= 5 ? 'center' : 'left',
                     padding: '5px 8px',
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 700,
                     color: 'var(--text-dim)',
                     textTransform: 'uppercase',
@@ -702,7 +702,7 @@ export default function UnderContractPanel() {
 
                       {/* Deal name */}
                       <td style={{ padding: '10px 8px', color: 'var(--text-primary)', fontWeight: 500, maxWidth: 200 }}>
-                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12 }}>{deal.name}</div>
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13 }}>{deal.name}</div>
                         {deal.address && (
                           <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {deal.address}
@@ -716,19 +716,19 @@ export default function UnderContractPanel() {
                       </td>
 
                       {/* Value */}
-                      <td style={{ padding: '10px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                      <td style={{ padding: '10px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
                         {deal.value ? formatCurrency(deal.value) : '—'}
                       </td>
 
                       {/* Commission */}
-                      <td style={{ padding: '10px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                      <td style={{ padding: '10px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
                         <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>
                           {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
                         </span>
                       </td>
 
                       {/* Day counter */}
-                      <td style={{ padding: '10px 8px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'center', fontSize: 12 }}>
+                      <td style={{ padding: '10px 8px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'center', fontSize: 13 }}>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
                           {deal.days_since_contract ?? '—'}
                         </span>
