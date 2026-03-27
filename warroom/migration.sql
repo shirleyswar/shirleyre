@@ -121,3 +121,25 @@ ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS sort_order integer;
 ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS completed_at timestamptz;
 ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS follow_up_of uuid REFERENCES public.tasks(id) ON DELETE SET NULL;
 -- ──────────────────────────────────────────────────────────────────────────────
+
+-- Deal Economics table
+CREATE TABLE IF NOT EXISTS public.deal_economics (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  deal_id uuid REFERENCES public.deals(id) ON DELETE CASCADE UNIQUE,
+  property_type text,
+  property_type_custom text,
+  transaction_type text DEFAULT 'sale',
+  sqft numeric,
+  asking_price numeric,
+  sale_commission_pct numeric DEFAULT 3.0,
+  lease_rate_psf numeric,
+  lease_type text,
+  lease_term_years numeric,
+  lease_commission_pct numeric DEFAULT 3.0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE POLICY "Allow all for anon" ON public.deal_economics FOR ALL TO anon USING (true) WITH CHECK (true);
+ALTER TABLE public.deal_economics ENABLE ROW LEVEL SECURITY;
+-- Life tasks column
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS is_life boolean DEFAULT false;
