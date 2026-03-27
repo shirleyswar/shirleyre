@@ -37,6 +37,7 @@ export default function BattlePlanPanel() {
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   // Completion modal
   const [pendingComplete, setPendingComplete] = useState<BattlePlanTask | null>(null)
+  const [addToLife, setAddToLife] = useState(false)
   const dragIdRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -106,14 +107,23 @@ export default function BattlePlanPanel() {
       const insertData: Record<string, unknown> = {
         title: newTitle.trim(),
         status: 'open',
-        deal_id: newDealId || null,
+        deal_id: addToLife ? null : (newDealId || null),
       }
-      // Try to include sort_order
+      // Try to include sort_order and is_life
       try {
-        const maxOrder = tasks.length > 0
-          ? Math.max(...tasks.map(t => t.sort_order ?? 0)) + 1
-          : 0
-        insertData.sort_order = maxOrder
+        if (addToLife) {
+          // Life tasks sort to top
+          const minOrder = tasks.length > 0
+            ? Math.min(...tasks.map(t => t.sort_order ?? 0)) - 1
+            : -1
+          insertData.sort_order = minOrder
+          insertData.is_life = true
+        } else {
+          const maxOrder = tasks.length > 0
+            ? Math.max(...tasks.map(t => t.sort_order ?? 0)) + 1
+            : 0
+          insertData.sort_order = maxOrder
+        }
       } catch {}
 
       const { data, error } = await supabase
@@ -123,9 +133,10 @@ export default function BattlePlanPanel() {
         .single()
 
       if (data && !error) {
-        setTasks(prev => [...prev, data as BattlePlanTask])
+        setTasks(prev => addToLife ? [data as BattlePlanTask, ...prev] : [...prev, data as BattlePlanTask])
         setNewTitle('')
         setNewDealId('')
+        setAddToLife(false)
       }
     } catch {}
     setAdding(false)
@@ -268,7 +279,7 @@ export default function BattlePlanPanel() {
         <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
           <SwordIcon />
         </span>
-        <span className="wr-card-title" style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.12em', color: 'var(--accent-gold)' }}>BATTLE PLAN</span>
+        <span className="wr-rank1">BATTLE PLAN</span>
         <span className="wr-panel-line" />
         <span className="wr-panel-stat" style={{ fontSize: 16 }}>
           {openTasks.length > 0 ? openTasks.length : '—'}
@@ -331,6 +342,18 @@ export default function BattlePlanPanel() {
             ))}
           </select>
         )}
+        {/* Life checkbox */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <input
+              type="checkbox"
+              checked={addToLife}
+              onChange={e => setAddToLife(e.target.checked)}
+              style={{ width: 14, height: 14, accentColor: 'var(--accent-gold)', cursor: 'pointer' }}
+            />
+            Life
+          </label>
+        </div>
       </div>
 
       {/* Task list */}
@@ -342,10 +365,10 @@ export default function BattlePlanPanel() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-              <th style={{ width: 28, padding: '4px 6px', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'var(--text-muted)' }}></th>
-              <th style={{ padding: '4px 8px', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'var(--text-muted)', textAlign: 'left' }}>Action Item</th>
-              <th style={{ width: 80, padding: '4px 8px', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'var(--text-muted)', textAlign: 'left' }}>Due</th>
-              <th style={{ width: 60, padding: '4px 6px' }}></th>
+              <th className="wr-rank2" style={{ width: 28, padding: '4px 6px' }}></th>
+              <th className="wr-rank2" style={{ padding: '4px 8px', textAlign: 'left' }}>Action Item</th>
+              <th className="wr-rank2" style={{ width: 80, padding: '4px 8px', textAlign: 'left' }}>Due</th>
+              <th className="wr-rank2" style={{ width: 60, padding: '4px 6px' }}></th>
             </tr>
           </thead>
           <tbody>
@@ -651,7 +674,7 @@ function TaskRow({
               style={{
                 fontSize: 13,
                 fontWeight: 400,
-                color: completing ? 'var(--text-muted)' : '#E8E0D0',
+                color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
                 lineHeight: 1.4,
                 textDecoration: completing ? 'line-through' : 'none',
                 transition: 'all 0.3s',
