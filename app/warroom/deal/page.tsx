@@ -12,7 +12,7 @@ const STATUS_LABELS: Record<DealStatus, string> = {
   in_review: 'In Review',
   pipeline: 'Pipeline',
   in_service: 'In Service',
-  hot: 'Hot 🔥',
+  hot: 'Hot',
   under_contract: 'Under Contract',
   pending_payment: 'Pending Pmt',
   closed: 'Closed',
@@ -276,6 +276,356 @@ function PinModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: ()
   )
 }
 
+// ─── Revert Status Button ─────────────────────────────────────────────────────
+
+function RevertStatusButton({
+  deal,
+  onRevert,
+  pinGate,
+}: {
+  deal: Deal
+  onRevert: (status: DealStatus) => Promise<void>
+  pinGate: (action: () => void) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const revertableStatuses: DealStatus[] = ['pipeline', 'active', 'in_review', 'in_service', 'hot', 'under_contract']
+
+  async function handleSelect(newStatus: DealStatus) {
+    setOpen(false)
+    pinGate(async () => {
+      await onRevert(newStatus)
+      try {
+        await supabase.from('activity_log').insert({
+          action_type: 'status_reverted',
+          description: `Status reverted from ${deal.status} to ${newStatus}`,
+          created_by: 'matthew',
+        })
+      } catch {}
+    })
+  }
+
+  return (
+    <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          ...btnStyle('#9ca3af', 'transparent', 'rgba(156,163,175,0.2)'),
+          fontSize: 11,
+          padding: '6px 12px',
+          width: '100%',
+          textAlign: 'center',
+          letterSpacing: '0.05em',
+        }}
+      >
+        ↩ Revert Status
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute',
+          bottom: '100%',
+          left: 0,
+          right: 0,
+          background: '#1A1E25',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 8,
+          overflow: 'hidden',
+          zIndex: 50,
+          marginBottom: 4,
+        }}>
+          {revertableStatuses.map(s => (
+            <button
+              key={s}
+              onClick={() => handleSelect(s)}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 12px',
+                fontSize: 12,
+                color: '#9ca3af',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {STATUS_LABELS[s]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Deal Economics Card ──────────────────────────────────────────────────────
+
+function DealEconomicsCard({ deal }: { deal: Deal }) {
+  const [propertyType, setPropertyType] = useState('Office')
+  const [propertyTypeCustom, setPropertyTypeCustom] = useState('')
+  const [transactionType, setTransactionType] = useState<'sale' | 'lease' | 'both'>('sale')
+  const [sqft, setSqft] = useState('')
+  const [askingPrice, setAskingPrice] = useState('')
+  const [saleCommPct, setSaleCommPct] = useState('3.0')
+  const [leaseRatePsf, setLeaseRatePsf] = useState('')
+  const [leaseType, setLeaseType] = useState('NNN')
+  const [leaseTermYears, setLeaseTermYears] = useState('')
+  const [leaseCommPct, setLeaseCommPct] = useState('3.0')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [econId, setEconId] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function loadEcon() {
+      try {
+        const { data, error } = await supabase
+          .from('deal_economics')
+          .select('*')
+          .eq('deal_id', deal.id)
+          .maybeSingle()
+        if (error || !data) return
+        setEconId(data.id)
+        setPropertyType(data.property_type ?? 'Office')
+        setPropertyTypeCustom(data.property_type_custom ?? '')
+        setTransactionType((data.transaction_type ?? 'sale') as 'sale' | 'lease' | 'both')
+        setSqft(data.sqft != null ? String(data.sqft) : '')
+        setAskingPrice(data.asking_price != null ? String(data.asking_price) : '')
+        setSaleCommPct(data.sale_commission_pct != null ? String(data.sale_commission_pct) : '3.0')
+        setLeaseRatePsf(data.lease_rate_psf != null ? String(data.lease_rate_psf) : '')
+        setLeaseType(data.lease_type ?? 'NNN')
+        setLeaseTermYears(data.lease_term_years != null ? String(data.lease_term_years) : '')
+        setLeaseCommPct(data.lease_commission_pct != null ? String(data.lease_commission_pct) : '3.0')
+      } catch {}
+    }
+    loadEcon()
+  }, [deal.id])
+
+  const sqftNum = parseFloat(sqft) || 0
+  const askingPriceNum = parseFloat(askingPrice) || 0
+  const saleCommPctNum = parseFloat(saleCommPct) || 0
+  const leaseRatePsfNum = parseFloat(leaseRatePsf) || 0
+  const leaseTermYearsNum = parseFloat(leaseTermYears) || 0
+  const leaseCommPctNum = parseFloat(leaseCommPct) || 0
+
+  const pricePsf = sqftNum > 0 && askingPriceNum > 0 ? askingPriceNum / sqftNum : null
+  const saleCommission = askingPriceNum > 0 ? askingPriceNum * (saleCommPctNum / 100) * 0.75 : null
+  const leaseGrossValue = leaseRatePsfNum > 0 && sqftNum > 0 && leaseTermYearsNum > 0
+    ? leaseRatePsfNum * sqftNum * leaseTermYearsNum : null
+  const leaseCommission = leaseGrossValue != null ? leaseGrossValue * (leaseCommPctNum / 100) * 0.75 : null
+
+  const formatMoney = (n: number | null) => n != null ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'
+
+  async function saveEconomics() {
+    setSaving(true)
+    try {
+      const payload = {
+        deal_id: deal.id,
+        property_type: propertyType,
+        property_type_custom: propertyType === 'Other' ? propertyTypeCustom : null,
+        transaction_type: transactionType,
+        sqft: sqftNum || null,
+        asking_price: askingPriceNum || null,
+        sale_commission_pct: saleCommPctNum,
+        lease_rate_psf: leaseRatePsfNum || null,
+        lease_type: leaseType,
+        lease_term_years: leaseTermYearsNum || null,
+        lease_commission_pct: leaseCommPctNum,
+        updated_at: new Date().toISOString(),
+      }
+      if (econId) {
+        await supabase.from('deal_economics').update(payload).eq('id', econId)
+      } else {
+        const { data } = await supabase.from('deal_economics').insert(payload).select().single()
+        if (data) setEconId(data.id)
+      }
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {}
+    setSaving(false)
+  }
+
+  const calcInputStyle: React.CSSProperties = {
+    ...inputStyle,
+    background: 'rgba(232,184,75,0.06)',
+    color: '#E8B84B',
+    cursor: 'default',
+  }
+
+  const rowStyle: React.CSSProperties = { display: 'flex', gap: 12, marginBottom: 10 }
+  const colStyle: React.CSSProperties = { flex: 1, minWidth: 0 }
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ ...sectionHeadStyle, marginBottom: 14 }}>Deal Economics</div>
+
+      {/* Row 1: Property Type + Transaction */}
+      <div style={rowStyle}>
+        <div style={colStyle}>
+          <div style={labelStyle}>Property Type</div>
+          <select
+            value={propertyType}
+            onChange={e => setPropertyType(e.target.value)}
+            style={{ ...inputStyle }}
+          >
+            {['Office', 'Industrial', 'Retail', 'Vacant Land', 'Other'].map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div style={colStyle}>
+          <div style={labelStyle}>Transaction</div>
+          <select
+            value={transactionType}
+            onChange={e => setTransactionType(e.target.value as 'sale' | 'lease' | 'both')}
+            style={{ ...inputStyle }}
+          >
+            <option value="sale">For Sale</option>
+            <option value="lease">For Lease</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Custom property type */}
+      {propertyType === 'Other' && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={labelStyle}>Property Type (Custom)</div>
+          <input
+            value={propertyTypeCustom}
+            onChange={e => setPropertyTypeCustom(e.target.value)}
+            placeholder="e.g. Mixed Use"
+            style={inputStyle}
+          />
+        </div>
+      )}
+
+      {/* Square Footage */}
+      <div style={{ marginBottom: 10 }}>
+        <div style={labelStyle}>Square Footage</div>
+        <input
+          type="number"
+          value={sqft}
+          onChange={e => setSqft(e.target.value)}
+          placeholder="e.g. 5000"
+          style={inputStyle}
+        />
+      </div>
+
+      {/* Sale section */}
+      {(transactionType === 'sale' || transactionType === 'both') && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#E8B84B', marginBottom: 8, marginTop: 4 }}>Sale</div>
+          <div style={rowStyle}>
+            <div style={colStyle}>
+              <div style={labelStyle}>Asking Price</div>
+              <input
+                type="number"
+                value={askingPrice}
+                onChange={e => setAskingPrice(e.target.value)}
+                placeholder="$"
+                style={inputStyle}
+              />
+            </div>
+            <div style={colStyle}>
+              <div style={labelStyle}>Commission %</div>
+              <input
+                type="number"
+                value={saleCommPct}
+                onChange={e => setSaleCommPct(e.target.value)}
+                step="0.1"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+          <div style={rowStyle}>
+            <div style={colStyle}>
+              <div style={labelStyle}>Price / SF</div>
+              <input readOnly value={pricePsf != null ? '$' + pricePsf.toFixed(2) : '—'} style={calcInputStyle} />
+            </div>
+            <div style={colStyle}>
+              <div style={labelStyle}>Matthew&apos;s Commission</div>
+              <input readOnly value={formatMoney(saleCommission)} style={calcInputStyle} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lease section */}
+      {(transactionType === 'lease' || transactionType === 'both') && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#E8B84B', marginBottom: 8, marginTop: 4 }}>Lease</div>
+          <div style={rowStyle}>
+            <div style={colStyle}>
+              <div style={labelStyle}>Lease Rate PSF/yr</div>
+              <input
+                type="number"
+                value={leaseRatePsf}
+                onChange={e => setLeaseRatePsf(e.target.value)}
+                placeholder="$"
+                style={inputStyle}
+              />
+            </div>
+            <div style={colStyle}>
+              <div style={labelStyle}>Lease Type</div>
+              <select
+                value={leaseType}
+                onChange={e => setLeaseType(e.target.value)}
+                style={{ ...inputStyle }}
+              >
+                {['NNN', 'Modified Gross', 'Full Service'].map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div style={rowStyle}>
+            <div style={colStyle}>
+              <div style={labelStyle}>Lease Term (years)</div>
+              <input
+                type="number"
+                value={leaseTermYears}
+                onChange={e => setLeaseTermYears(e.target.value)}
+                placeholder="e.g. 5"
+                style={inputStyle}
+              />
+            </div>
+            <div style={colStyle}>
+              <div style={labelStyle}>Commission %</div>
+              <input
+                type="number"
+                value={leaseCommPct}
+                onChange={e => setLeaseCommPct(e.target.value)}
+                step="0.1"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+          <div style={rowStyle}>
+            <div style={colStyle}>
+              <div style={labelStyle}>Gross Lease Value</div>
+              <input readOnly value={formatMoney(leaseGrossValue)} style={calcInputStyle} />
+            </div>
+            <div style={colStyle}>
+              <div style={labelStyle}>Matthew&apos;s Commission</div>
+              <input readOnly value={formatMoney(leaseCommission)} style={calcInputStyle} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={saveEconomics}
+        disabled={saving}
+        style={{ ...btnStyle('#000', '#E8B84B', '#E8B84B'), padding: '9px 20px', fontSize: 12 }}
+      >
+        {saved ? 'Saved ✓' : saving ? 'Saving…' : 'Save Economics'}
+      </button>
+    </div>
+  )
+}
+
 // ─── LACDB Card ───────────────────────────────────────────────────────────────
 
 function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: string) => void }) {
@@ -465,12 +815,12 @@ function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: st
       </div>
 
       {photo && (
-        <div style={{ borderRadius: 8, overflow: 'hidden', marginBottom: 12, maxHeight: 200 }}>
+        <div style={{ borderRadius: 8, overflow: 'hidden', marginBottom: 12, maxHeight: 320 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photo.url}
             alt={listing.name ?? ''}
-            style={{ width: '100%', height: 200, objectFit: 'cover' }}
+            style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: 320 }}
           />
         </div>
       )}
@@ -1258,6 +1608,9 @@ function DealDashboardInner() {
         {/* ── LEFT COLUMN (65%) ── */}
         <div style={{ flex: '0 0 65%', minWidth: 0 }}>
 
+          {/* Deal Economics */}
+          <DealEconomicsCard deal={deal} />
+
           {/* LACDB Card */}
           <LacdbCard
             deal={deal}
@@ -1449,7 +1802,7 @@ function DealDashboardInner() {
                   onClick={() => pinGate(() => doLaunch())}
                   style={orbitBtnFullStyle}
                 >
-                  Launch 🚀
+                  Launch <svg style={{ display: 'inline', marginLeft: 5, verticalAlign: 'middle' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 3A10.5 10.5 0 0 1 21 14.5"/><path d="M3 9.5A10.5 10.5 0 0 1 14.5 21"/><path d="m3 16 5 5"/><path d="M3 16h5v5"/><circle cx="17" cy="7" r="3"/></svg>
                 </button>
               )}
 
@@ -1462,7 +1815,7 @@ function DealDashboardInner() {
                     width: '100%', padding: '11px 16px', fontSize: 13, textAlign: 'center',
                   }}
                 >
-                  → Hot 🔥
+                  → Hot
                 </button>
               )}
 
@@ -1521,6 +1874,15 @@ function DealDashboardInner() {
                     )}
                   </div>
                 </div>
+              )}
+
+              {/* Revert Status */}
+              {deal.tier === 'filed' && (
+                <RevertStatusButton
+                  deal={deal}
+                  onRevert={doStatusChange}
+                  pinGate={pinGate}
+                />
               )}
 
               {/* No actions placeholder */}
