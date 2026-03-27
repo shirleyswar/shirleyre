@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -21,13 +21,266 @@ interface DealOption {
   address: string | null
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function todayCST(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+}
+
+function formatDisplayDate(dateStr: string): string {
+  // dateStr is YYYY-MM-DD
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  const today = todayCST()
+  if (dateStr === today) return 'Today'
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const tomorrowStr = tomorrow.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  if (dateStr === tomorrowStr) return 'Tomorrow'
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+function formatFullDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  return dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+}
+
+// ─── Calendar Picker ──────────────────────────────────────────────────────────
+
+function CalendarPicker({
+  value,
+  onChange,
+  onClose,
+}: {
+  value: string
+  onChange: (v: string) => void
+  onClose: () => void
+}) {
+  const today = todayCST()
+  const [y, m] = value.split('-').map(Number)
+  const [viewYear, setViewYear] = useState(y)
+  const [viewMonth, setViewMonth] = useState(m - 1) // 0-indexed
+
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa']
+
+  // Build calendar grid
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay()
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const cells: (number | null)[] = Array(firstDay).fill(null)
+  for (let i = 1; i <= daysInMonth; i++) cells.push(i)
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1) }
+    else setViewMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
+    else setViewMonth(m => m + 1)
+  }
+
+  function selectDay(day: number) {
+    const mm = String(viewMonth + 1).padStart(2, '0')
+    const dd = String(day).padStart(2, '0')
+    onChange(`${viewYear}-${mm}-${dd}`)
+    onClose()
+  }
+
+  const selectedDay = (() => {
+    const [sy, sm, sd] = value.split('-').map(Number)
+    if (sy === viewYear && sm - 1 === viewMonth) return sd
+    return null
+  })()
+
+  const todayDay = (() => {
+    const [ty, tm, td] = today.split('-').map(Number)
+    if (ty === viewYear && tm - 1 === viewMonth) return td
+    return null
+  })()
+
+  return (
+    <div
+      style={{
+        background: '#0E0C1E',
+        border: '1px solid rgba(232,184,75,0.35)',
+        borderRadius: 12,
+        padding: '14px 12px',
+        width: 260,
+        boxShadow: '0 16px 48px rgba(0,0,0,0.8)',
+        userSelect: 'none',
+      }}
+      onMouseDown={e => e.stopPropagation()}
+    >
+      {/* Month navigation */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <button
+          type="button"
+          onClick={prevMonth}
+          style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 4 }}
+        >‹</button>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#F2EDE4', letterSpacing: '0.05em' }}>
+          {MONTHS[viewMonth]} {viewYear}
+        </span>
+        <button
+          type="button"
+          onClick={nextMonth}
+          style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 4 }}
+        >›</button>
+      </div>
+
+      {/* Day-of-week headers */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
+        {DAYS.map(d => (
+          <div key={d} style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.08em', padding: '2px 0' }}>
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Day grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+        {cells.map((day, i) => {
+          if (day === null) return <div key={i} />
+          const isSelected = day === selectedDay
+          const isToday = day === todayDay
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => selectDay(day)}
+              style={{
+                width: '100%',
+                aspectRatio: '1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: isSelected ? 800 : isToday ? 600 : 400,
+                background: isSelected
+                  ? 'var(--accent-gold)'
+                  : isToday
+                  ? 'rgba(232,184,75,0.15)'
+                  : 'transparent',
+                border: isToday && !isSelected ? '1px solid rgba(232,184,75,0.4)' : '1px solid transparent',
+                borderRadius: 6,
+                color: isSelected ? '#0D0F14' : isToday ? 'var(--accent-gold)' : '#D1D5DB',
+                cursor: 'pointer',
+                transition: 'all 0.1s',
+                padding: 0,
+              }}
+              onMouseEnter={e => {
+                if (!isSelected) e.currentTarget.style.background = 'rgba(232,184,75,0.2)'
+              }}
+              onMouseLeave={e => {
+                if (!isSelected) e.currentTarget.style.background = isToday ? 'rgba(232,184,75,0.15)' : 'transparent'
+              }}
+            >
+              {day}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Today shortcut */}
+      <div style={{ marginTop: 10, textAlign: 'center' }}>
+        <button
+          type="button"
+          onClick={() => { onChange(todayCST()); onClose() }}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: 11,
+            color: 'rgba(232,184,75,0.55)',
+            cursor: 'pointer',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            fontWeight: 600,
+          }}
+        >
+          Today
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Date trigger button (shows calendar popover) ─────────────────────────────
+
+function DateSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '8px 12px',
+          background: 'rgba(255,255,255,0.05)',
+          border: open ? '1px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 8,
+          fontSize: 13,
+          color: '#F2EDE4',
+          cursor: 'pointer',
+          fontFamily: 'var(--font-body)',
+          transition: 'border-color 0.15s',
+          width: '100%',
+        }}
+      >
+        <CalIconSmall />
+        <span>{formatDisplayDate(value)}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(232,184,75,0.5)' }}>▾</span>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            zIndex: 10000,
+          }}
+        >
+          <CalendarPicker
+            value={value}
+            onChange={onChange}
+            onClose={() => setOpen(false)}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Main Panel ───────────────────────────────────────────────────────────────
+
 export default function SchedulePanel() {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
   const [deals, setDeals] = useState<DealOption[]>([])
   const [loading, setLoading] = useState(true)
   const [tableReady, setTableReady] = useState(true)
+  const [viewDate, setViewDate] = useState(todayCST())
 
   // Add form state
+  const [formDate, setFormDate] = useState(todayCST())
   const [formTime, setFormTime] = useState('')
   const [formTitle, setFormTitle] = useState('')
   const [formLocation, setFormLocation] = useState('')
@@ -35,18 +288,13 @@ export default function SchedulePanel() {
   const [adding, setAdding] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
 
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) // YYYY-MM-DD in CST
-  const todayLabel = new Date().toLocaleDateString('en-US', {
-    timeZone: 'America/Chicago',
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  })
-
   useEffect(() => {
     fetchDeals()
-    fetchEvents()
   }, [])
+
+  useEffect(() => {
+    fetchEvents(viewDate)
+  }, [viewDate])
 
   async function fetchDeals() {
     try {
@@ -59,19 +307,20 @@ export default function SchedulePanel() {
     } catch {}
   }
 
-  async function fetchEvents() {
+  async function fetchEvents(date: string) {
+    setLoading(true)
     try {
       const { data, error } = await supabase
         .from('schedule_events')
         .select('*')
-        .eq('date', today)
+        .eq('date', date)
         .order('time', { ascending: true })
 
       if (error) {
-        // Table likely doesn't exist yet — show empty state gracefully
         if (error.code === '42P01' || error.message?.includes('does not exist')) {
           setTableReady(false)
         }
+        setLoading(false)
         return
       }
       if (data) setEvents(data as ScheduleEvent[])
@@ -82,6 +331,33 @@ export default function SchedulePanel() {
     }
   }
 
+  function shiftViewDate(days: number) {
+    const [y, m, d] = viewDate.split('-').map(Number)
+    const dt = new Date(y, m - 1, d)
+    dt.setDate(dt.getDate() + days)
+    setViewDate(dt.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }))
+  }
+
+  function openAddForm() {
+    setFormDate(viewDate)
+    setShowAddForm(true)
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = 'hidden'
+    }
+  }
+
+  const closeModal = useCallback(() => {
+    setShowAddForm(false)
+    setFormTime('')
+    setFormTitle('')
+    setFormLocation('')
+    setFormDealId('')
+    setFormDate(viewDate)
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = ''
+    }
+  }, [viewDate])
+
   async function addEvent() {
     if (!formTitle.trim() || !formTime.trim()) return
     setAdding(true)
@@ -91,7 +367,7 @@ export default function SchedulePanel() {
         .insert({
           title: formTitle.trim(),
           time: formTime.trim(),
-          date: today,
+          date: formDate,
           location: formLocation.trim() || null,
           deal_id: formDealId || null,
         })
@@ -99,19 +375,20 @@ export default function SchedulePanel() {
         .single()
 
       if (error) {
-        // Try to create table if it doesn't exist
         if (error.code === '42P01' || error.message?.includes('does not exist')) {
           setTableReady(false)
         }
+        setAdding(false)
         return
       }
 
       if (data) {
-        setEvents(prev => [...prev, data as ScheduleEvent].sort((a, b) => a.time.localeCompare(b.time)))
-        setFormTime('')
-        setFormTitle('')
-        setFormLocation('')
-        setFormDealId('')
+        // If the added event is for the currently viewed date, add it to the list
+        if (formDate === viewDate) {
+          setEvents(prev =>
+            [...prev, data as ScheduleEvent].sort((a, b) => a.time.localeCompare(b.time))
+          )
+        }
         setTableReady(true)
         closeModal()
       }
@@ -119,28 +396,14 @@ export default function SchedulePanel() {
     setAdding(false)
   }
 
-  // Close modal and snap viewport back on mobile
-  const closeModal = useCallback(() => {
-    setShowAddForm(false)
-    setFormTime('')
-    setFormTitle('')
-    setFormLocation('')
-    setFormDealId('')
-    // Restore scroll position — prevents iOS viewport shift after keyboard dismiss
-    if (typeof window !== 'undefined') {
-      document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.width = ''
-      window.scrollTo(0, 0)
-    }
-  }, [])
-
   async function deleteEvent(id: string) {
     try {
       await supabase.from('schedule_events').delete().eq('id', id)
       setEvents(prev => prev.filter(e => e.id !== id))
     } catch {}
   }
+
+  const isToday = viewDate === todayCST()
 
   return (
     <div className="wr-card h-full min-h-[240px]">
@@ -152,20 +415,75 @@ export default function SchedulePanel() {
           SCHEDULE
         </span>
         <span className="wr-panel-line" />
-        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{todayLabel}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatFullDate(viewDate)}</span>
       </div>
 
-      {/* Add Event button */}
-      <div style={{ marginBottom: 12 }}>
+      {/* Date nav + Add button row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        {/* Prev day */}
         <button
-          onClick={() => {
-            setShowAddForm(true)
-            if (typeof window !== 'undefined') {
-              document.body.style.overflow = 'hidden'
-              document.body.style.position = 'fixed'
-              document.body.style.width = '100%'
-            }
+          onClick={() => shiftViewDate(-1)}
+          style={{
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 6,
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            width: 28,
+            height: 28,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 14,
+            flexShrink: 0,
           }}
+        >‹</button>
+
+        {/* Today pill */}
+        {!isToday && (
+          <button
+            onClick={() => setViewDate(todayCST())}
+            style={{
+              padding: '3px 10px',
+              background: 'rgba(232,184,75,0.1)',
+              border: '1px solid rgba(232,184,75,0.25)',
+              borderRadius: 20,
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--accent-gold)',
+              cursor: 'pointer',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Today
+          </button>
+        )}
+
+        {/* Next day */}
+        <button
+          onClick={() => shiftViewDate(1)}
+          style={{
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 6,
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            width: 28,
+            height: 28,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 14,
+            flexShrink: 0,
+          }}
+        >›</button>
+
+        <div style={{ flex: 1 }} />
+
+        {/* Add Event */}
+        <button
+          onClick={openAddForm}
           className="wr-btn-orbit"
           style={{ fontSize: 12 }}
         >
@@ -176,59 +494,152 @@ export default function SchedulePanel() {
       {/* Add Event Modal */}
       {showAddForm && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.75)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            padding: '80px 16px 24px',
+          }}
           onClick={e => { if (e.target === e.currentTarget) closeModal() }}
         >
-          <div style={{ background: '#13112A', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div
+            style={{
+              background: '#13112A',
+              border: '1px solid rgba(232,184,75,0.3)',
+              borderRadius: 14,
+              padding: 24,
+              width: '100%',
+              maxWidth: 440,
+              boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14,
+            }}
+          >
             {/* Header */}
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', fontFamily: 'monospace' }}>Add Event</div>
-            {/* Time + Title */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <TimeWheel value={formTime} onChange={setFormTime} />
-              <input
-                autoFocus
-                type="text"
-                value={formTitle}
-                onChange={e => setFormTitle(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent(); if (e.key === 'Escape') closeModal() }}
-                placeholder="Event title"
-                style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
-              />
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', fontFamily: 'monospace' }}>
+              Add Event
             </div>
+
+            {/* Date selector */}
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Date</div>
+              <DateSelector value={formDate} onChange={setFormDate} />
+            </div>
+
+            {/* Time + Title */}
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Time &amp; Title</div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <TimeWheel value={formTime} onChange={setFormTime} />
+                <input
+                  autoFocus
+                  type="text"
+                  value={formTitle}
+                  onChange={e => setFormTitle(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent()
+                    if (e.key === 'Escape') closeModal()
+                  }}
+                  placeholder="Event title"
+                  style={{
+                    flex: 1,
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: 8,
+                    padding: '10px 12px',
+                    fontSize: 14,
+                    color: '#F2EDE4',
+                    outline: 'none',
+                    fontFamily: 'var(--font-body)',
+                  }}
+                />
+              </div>
+            </div>
+
             {/* Location */}
             <input
               type="text"
               value={formLocation}
               onChange={e => setFormLocation(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent(); if (e.key === 'Escape') closeModal() }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent()
+                if (e.key === 'Escape') closeModal()
+              }}
               placeholder="Location (optional)"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 8,
+                padding: '10px 12px',
+                fontSize: 14,
+                color: '#F2EDE4',
+                outline: 'none',
+                fontFamily: 'var(--font-body)',
+              }}
             />
-            {/* Deal */}
+
+            {/* Deal link */}
             {deals.length > 0 && (
               <select
                 value={formDealId}
                 onChange={e => setFormDealId(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: formDealId ? 'var(--accent-gold)' : '#6B7280', outline: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  color: formDealId ? 'var(--accent-gold)' : '#6B7280',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-body)',
+                }}
               >
                 <option value="">No deal linked</option>
-                {deals.map(d => <option key={d.id} value={d.id}>{d.address || d.name}</option>)}
+                {deals.map(d => (
+                  <option key={d.id} value={d.id}>{d.address || d.name}</option>
+                ))}
               </select>
             )}
+
             {/* Actions */}
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
               <button
                 onClick={closeModal}
-                style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                style={{
+                  flex: 1, padding: '11px',
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  color: '#6B7280',
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-body)',
+                }}
               >
                 Cancel
               </button>
               <button
                 onClick={addEvent}
                 disabled={adding || !formTitle.trim() || !formTime}
-                style={{ flex: 2, padding: '11px', background: adding || !formTitle.trim() || !formTime ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.5) 100%)', border: '1px solid rgba(167,139,250,0.5)', borderRadius: 8, color: '#c4b5fd', fontSize: 14, fontWeight: 700, cursor: adding || !formTitle.trim() || !formTime ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: adding || !formTitle.trim() || !formTime ? 0.5 : 1 }}
+                style={{
+                  flex: 2, padding: '11px',
+                  background: adding || !formTitle.trim() || !formTime
+                    ? 'rgba(139,92,246,0.2)'
+                    : 'linear-gradient(135deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.5) 100%)',
+                  border: '1px solid rgba(167,139,250,0.5)',
+                  borderRadius: 8,
+                  color: '#c4b5fd',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: adding || !formTitle.trim() || !formTime ? 'not-allowed' : 'pointer',
+                  fontFamily: 'var(--font-body)',
+                  opacity: adding || !formTitle.trim() || !formTime ? 0.5 : 1,
+                  transition: 'all 0.15s',
+                }}
               >
-                {adding ? 'Saving...' : 'Save Event'}
+                {adding ? 'Saving...' : `Save — ${formatDisplayDate(formDate)}`}
               </button>
             </div>
           </div>
@@ -248,7 +659,7 @@ export default function SchedulePanel() {
         </div>
       ) : events.length === 0 ? (
         <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0', fontStyle: 'italic' }}>
-          Nothing scheduled today.
+          Nothing scheduled {isToday ? 'today' : 'this day'}.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -260,6 +671,8 @@ export default function SchedulePanel() {
     </div>
   )
 }
+
+// ─── Event Row ────────────────────────────────────────────────────────────────
 
 function EventRow({ event, onDelete }: { event: ScheduleEvent; onDelete: (id: string) => void }) {
   const [hovered, setHovered] = useState(false)
@@ -320,12 +733,9 @@ function EventRow({ event, onDelete }: { event: ScheduleEvent; onDelete: (id: st
   )
 }
 
-
 // ─── TimeWheel ────────────────────────────────────────────────────────────────
-// 12hr wheel selector: hour wheel + 15-min increments + AM/PM toggle
 
 function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  // Parse current value or default to 9:00 AM
   function parseTime(v: string) {
     const m = v.match(/(\d+):(\d+)\s*(AM|PM)/i)
     if (m) return { hour: parseInt(m[1]), minute: parseInt(m[2]), ampm: m[3].toUpperCase() as 'AM' | 'PM' }
@@ -347,24 +757,22 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
 
   function selectHour(h: number) { setHour(h); emit(h, minute, ampm) }
   function selectMinute(m: number) { setMinute(m); emit(hour, m, ampm) }
-  function toggleAmPm() { const next = ampm === 'AM' ? 'PM' : 'AM'; setAmpm(next); emit(hour, minute, next) }
 
   const displayVal = value || `${hour}:${minute.toString().padStart(2,'0')} ${ampm}`
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
-      {/* Trigger button */}
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
         style={{
           width: 90,
-          padding: '6px 8px',
-          background: 'var(--bg-elevated)',
-          border: open ? '1px solid var(--accent-gold)' : '1px solid var(--border-subtle)',
-          borderRadius: 6,
+          padding: '10px 8px',
+          background: 'rgba(255,255,255,0.05)',
+          border: open ? '1px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 8,
           fontSize: 13,
-          color: value ? 'var(--text-primary)' : 'var(--text-muted)',
+          color: value ? '#F2EDE4' : '#6B7280',
           cursor: 'pointer',
           fontFamily: 'var(--font-body)',
           textAlign: 'left',
@@ -376,130 +784,86 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
         {displayVal}
       </button>
 
-      {/* Dropdown wheel */}
       {open && (
         <div
           style={{
             position: 'absolute',
             top: '100%',
             left: 0,
-            zIndex: 500,
+            zIndex: 10001,
             marginTop: 4,
             background: '#13112A',
             border: '1px solid rgba(232,184,75,0.3)',
             borderRadius: 10,
             padding: '12px 10px',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.8)',
             display: 'flex',
             gap: 8,
             alignItems: 'flex-start',
           }}
         >
-          {/* Hour wheel */}
+          {/* Hour */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'] }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' }}>HR</div>
             {HOURS.map(h => (
-              <button
-                key={h}
-                type="button"
-                onClick={() => selectHour(h)}
+              <button key={h} type="button" onClick={() => selectHour(h)}
                 style={{
-                  width: 36,
-                  padding: '5px 0',
+                  width: 36, padding: '5px 0',
                   background: h === hour ? 'var(--accent-gold)' : 'transparent',
-                  border: 'none',
-                  borderRadius: 5,
+                  border: 'none', borderRadius: 5,
                   color: h === hour ? '#0D0F14' : 'var(--text-primary)',
-                  fontSize: 13,
-                  fontWeight: h === hour ? 700 : 400,
-                  cursor: 'pointer',
-                  fontVariantNumeric: 'tabular-nums',
-                  transition: 'all 0.1s',
+                  fontSize: 13, fontWeight: h === hour ? 700 : 400, cursor: 'pointer',
+                  fontVariantNumeric: 'tabular-nums', transition: 'all 0.1s',
                 }}
                 onMouseEnter={e => { if (h !== hour) e.currentTarget.style.background = 'rgba(232,184,75,0.12)' }}
                 onMouseLeave={e => { if (h !== hour) e.currentTarget.style.background = 'transparent' }}
-              >
-                {h}
-              </button>
+              >{h}</button>
             ))}
           </div>
-
-          {/* Divider */}
           <div style={{ width: 1, height: 200, background: 'rgba(255,255,255,0.08)', flexShrink: 0, marginTop: 22 }} />
-
-          {/* Minute wheel */}
+          {/* Minute */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' }}>MIN</div>
             {MINUTES.map(m => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => selectMinute(m)}
+              <button key={m} type="button" onClick={() => selectMinute(m)}
                 style={{
-                  width: 36,
-                  padding: '5px 0',
+                  width: 36, padding: '5px 0',
                   background: m === minute ? 'var(--accent-gold)' : 'transparent',
-                  border: 'none',
-                  borderRadius: 5,
+                  border: 'none', borderRadius: 5,
                   color: m === minute ? '#0D0F14' : 'var(--text-primary)',
-                  fontSize: 13,
-                  fontWeight: m === minute ? 700 : 400,
-                  cursor: 'pointer',
-                  fontVariantNumeric: 'tabular-nums',
-                  transition: 'all 0.1s',
+                  fontSize: 13, fontWeight: m === minute ? 700 : 400, cursor: 'pointer',
+                  fontVariantNumeric: 'tabular-nums', transition: 'all 0.1s',
                 }}
                 onMouseEnter={e => { if (m !== minute) e.currentTarget.style.background = 'rgba(232,184,75,0.12)' }}
                 onMouseLeave={e => { if (m !== minute) e.currentTarget.style.background = 'transparent' }}
-              >
-                {m.toString().padStart(2,'0')}
-              </button>
+              >{m.toString().padStart(2,'0')}</button>
             ))}
           </div>
-
-          {/* Divider */}
           <div style={{ width: 1, height: 200, background: 'rgba(255,255,255,0.08)', flexShrink: 0, marginTop: 22 }} />
-
-          {/* AM/PM toggle */}
+          {/* AM/PM */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' }}>  </div>
+            <div style={{ fontSize: 10, letterSpacing: '0.1em', color: 'transparent', marginBottom: 4 }}>--</div>
             {(['AM','PM'] as const).map(ap => (
-              <button
-                key={ap}
-                type="button"
-                onClick={() => { setAmpm(ap); emit(hour, minute, ap) }}
+              <button key={ap} type="button" onClick={() => { setAmpm(ap); emit(hour, minute, ap) }}
                 style={{
-                  width: 40,
-                  padding: '7px 0',
+                  width: 40, padding: '7px 0',
                   background: ap === ampm ? 'rgba(139,92,246,0.35)' : 'transparent',
                   border: ap === ampm ? '1px solid rgba(167,139,250,0.5)' : '1px solid transparent',
                   borderRadius: 6,
                   color: ap === ampm ? '#c4b5fd' : 'var(--text-muted)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  letterSpacing: '0.05em',
-                  transition: 'all 0.15s',
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  letterSpacing: '0.05em', transition: 'all 0.15s',
                 }}
-              >
-                {ap}
-              </button>
+              >{ap}</button>
             ))}
           </div>
-
-          {/* Done button */}
           <div style={{ position: 'absolute', bottom: 8, right: 8 }}>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
+            <button type="button" onClick={() => setOpen(false)}
               style={{
                 padding: '3px 10px',
                 background: 'var(--accent-gold)',
-                border: 'none',
-                borderRadius: 5,
-                color: '#0D0F14',
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: 'pointer',
+                border: 'none', borderRadius: 5,
+                color: '#0D0F14', fontSize: 11, fontWeight: 700, cursor: 'pointer',
               }}
             >Done</button>
           </div>
@@ -509,9 +873,22 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
   )
 }
 
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
 function CalIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  )
+}
+
+function CalIconSmall() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ flexShrink: 0, color: 'var(--accent-gold)' }}>
       <rect x="3" y="4" width="18" height="18" rx="2"/>
       <line x1="16" y1="2" x2="16" y2="6"/>
       <line x1="8" y1="2" x2="8" y2="6"/>
