@@ -38,6 +38,7 @@ export default function BattlePlanPanel() {
   // Completion modal
   const [pendingComplete, setPendingComplete] = useState<BattlePlanTask | null>(null)
   const [addToLife, setAddToLife] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
   const dragIdRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -286,77 +287,75 @@ export default function BattlePlanPanel() {
         </span>
       </div>
 
-      {/* Add task form */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {/* Add button — LEFT */}
+      {/* Add task — collapsed by default */}
+      <div style={{ marginBottom: 14 }}>
+        {!showAddForm ? (
           <button
-            onClick={addTask}
-            disabled={adding || !newTitle.trim()}
+            onClick={() => setShowAddForm(true)}
             className="wr-btn-orbit"
+            style={{ fontSize: 12 }}
           >
-            {adding ? '...' : '+ Add'}
+            + Add Item
           </button>
-          <input
-            type="text"
-            value={newTitle}
-            onChange={e => setNewTitle(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addTask()}
-            placeholder="Add action item..."
-            style={{
-              flex: 1,
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 6,
-              padding: '7px 12px',
-              fontSize: 13,
-              color: 'var(--text-primary)',
-              outline: 'none',
-              fontFamily: 'var(--font-body)',
-            }}
-            onFocus={e => (e.target.style.borderColor = 'rgba(232,184,75,0.4)')}
-            onBlur={e => (e.target.style.borderColor = 'var(--border-subtle)')}
-          />
-        </div>
-        {deals.length > 0 && (
-          <select
-            value={newDealId}
-            onChange={e => setNewDealId(e.target.value)}
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 6,
-              padding: '5px 10px',
-              fontSize: 13,
-              color: newDealId ? 'var(--accent-gold)' : 'var(--text-muted)',
-              outline: 'none',
-              fontFamily: 'var(--font-body)',
-              cursor: 'pointer',
-            }}
-          >
-            <option value="">No deal linked</option>
-            {deals.map(d => (
-              <option key={d.id} value={d.id}>
-                {d.address || d.name}
-              </option>
-            ))}
-          </select>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(139,92,246,0.04)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 8, padding: '10px 12px' }}>
+            {/* Title row */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                autoFocus
+                type="text"
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addTask(); if (e.key === 'Escape') setShowAddForm(false) }}
+                placeholder="Action item..."
+                style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 6, padding: '7px 12px', fontSize: 13, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)' }}
+                onFocus={e => (e.target.style.borderColor = 'rgba(232,184,75,0.4)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--border-subtle)')}
+              />
+            </div>
+            {/* Second row: deal + Life + actions */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              {deals.length > 0 && (
+                <select
+                  value={newDealId}
+                  onChange={e => setNewDealId(e.target.value)}
+                  style={{ flex: '0 1 180px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 6, padding: '5px 8px', fontSize: 12, color: newDealId ? 'var(--accent-gold)' : 'var(--text-muted)', outline: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                >
+                  <option value="">No deal linked</option>
+                  {deals.map(d => <option key={d.id} value={d.id}>{(d as any).addr_display || d.address || d.name}</option>)}
+                </select>
+              )}
+              {/* Life checkbox */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                <input
+                  type="checkbox"
+                  checked={addToLife}
+                  onChange={e => setAddToLife(e.target.checked)}
+                  style={{ width: 14, height: 14, accentColor: 'var(--accent-gold)', cursor: 'pointer' }}
+                />
+                Life
+              </label>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => { setShowAddForm(false); setNewTitle(''); setNewDealId(''); setAddToLife(false) }}
+                  style={{ padding: '6px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={addTask}
+                  disabled={adding || !newTitle.trim()}
+                  className="wr-btn-orbit"
+                  style={{ fontSize: 12 }}
+                >
+                  {adding ? '...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
-        {/* Life checkbox */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            <input
-              type="checkbox"
-              checked={addToLife}
-              onChange={e => setAddToLife(e.target.checked)}
-              style={{ width: 14, height: 14, accentColor: 'var(--accent-gold)', cursor: 'pointer' }}
-            />
-            Life
-          </label>
-        </div>
       </div>
-
-      {/* Task list */}
+            {/* Task list */}
       {loading ? (
         <SkeletonList />
       ) : openTasks.length === 0 ? (
