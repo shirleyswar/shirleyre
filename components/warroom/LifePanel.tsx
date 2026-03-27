@@ -1,289 +1,628 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase, PersonalTask } from '@/lib/supabase'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
 
-const EMOJI_OPTIONS = ['📋', '🏠', '🚗', '👨‍👩‍👧‍👦', '💪', '🏥', '🎓', '✈️', '🎉', '💰', '🛒', '📞', '🤝', '🔧', '⚡', '🎯', '📅', '🌱', '❤️', '⭐']
+// LifePanel task type — uses tasks table with is_life: true
+interface LifeTask {
+  id: string
+  title: string
+  status: string
+  due_date: string | null
+  completed_by: string | null
+  created_at: string
+  sort_order?: number | null
+  completed_at?: string | null
+  follow_up_of?: string | null
+  is_life?: boolean | null
+}
 
 export default function LifePanel() {
-  const [tasks, setTasks] = useState<PersonalTask[]>([])
+  const [tasks, setTasks] = useState<LifeTask[]>([])
   const [loading, setLoading] = useState(true)
-  const [newTask, setNewTask] = useState('')
-  const [selectedEmoji, setSelectedEmoji] = useState('📋')
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
   const [adding, setAdding] = useState(false)
+  const [completingIds, setCompletingIds] = useState<Set<string>>(new Set())
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [pendingComplete, setPendingComplete] = useState<LifeTask | null>(null)
+  const dragIdRef = useRef<string | null>(null)
 
   useEffect(() => { fetchTasks() }, [])
 
   async function fetchTasks() {
     try {
-      const { data } = await supabase
-        .from('personal_tasks')
+      const today = new Date().toISOString().split('T')[0]
+      const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+      const { data, error } = await supabase
+        .from('tasks')
         .select('*')
-        .eq('status', 'pending')
+        .eq('is_life', true)
         .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false })
-      if (data) setTasks(data as PersonalTask[])
+        .limit(100)
+
+      if (error) {
+        // is_life column may not exist yet — show empty state
+        setTasks([])
+        setLoading(false)
+        return
+      }
+
+      if (!data) return
+
+      const filtered = (data as LifeTask[]).filter(t => {
+        if (t.status === 'open' || t.status === 'in_progress') {
+          return !t.due_date || t.due_date <= today
+        }
+        if (t.status === 'complete' || t.status === 'done') {
+          const completedTime = t.completed_at || t.created_at
+          return completedTime > cutoff24h
+        }
+        return false
+      })
+
+      filtered.sort((a, b) => {
+        const aOrder = a.sort_order ?? null
+        const bOrder = b.sort_order ?? null
+        if (aOrder !== null && bOrder !== null) return aOrder - bOrder
+        if (aOrder !== null) return -1
+        if (bOrder !== null) return 1
+        return a.created_at.localeCompare(b.created_at)
+      })
+
+      setTasks(filtered)
     } catch {
-      // Table not yet migrated — show empty state, no crash
+      // Graceful degradation
+      setTasks([])
     } finally {
       setLoading(false)
     }
   }
 
   async function addTask() {
-    if (!newTask.trim()) return
+    if (!newTitle.trim()) return
     setAdding(true)
-    const optimistic: PersonalTask = {
-      id: 'tmp-' + Date.now(),
-      title: newTask.trim(),
-      status: 'pending',
-      emoji: selectedEmoji,
-      sort_order: tasks.length,
-      created_at: new Date().toISOString(),
-    }
-    setTasks(prev => [optimistic, ...prev])
-    setNewTask('')
-    setShowEmojiPicker(false)
     try {
-      const { data } = await supabase
-        .from('personal_tasks')
-        .insert({ title: optimistic.title, emoji: optimistic.emoji, sort_order: optimistic.sort_order })
+      const insertData: Record<string, unknown> = {
+        title: newTitle.trim(),
+        status: 'open',
+        deal_id: null,
+        is_life: true,
+      }
+      try {
+        const minOrder = tasks.length > 0
+          ? Math.min(...tasks.map(t => t.sort_order ?? 0)) - 1
+          : 0
+        insertData.sort_order = minOrder
+      } catch {}
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert(insertData)
         .select()
         .single()
-      if (data) {
-        setTasks(prev => prev.map(t => t.id === optimistic.id ? (data as PersonalTask) : t))
+
+      if (data && !error) {
+        setTasks(prev => [data as LifeTask, ...prev])
+        setNewTitle('')
       }
-    } catch {
-      setTasks(prev => prev.filter(t => t.id !== optimistic.id))
-    }
+    } catch {}
     setAdding(false)
   }
 
-  async function completeTask(id: string) {
-    setTasks(prev => prev.filter(t => t.id !== id))
+  function completeTask(task: LifeTask) {
+    setPendingComplete(task)
+  }
+
+  async function confirmComplete(task: LifeTask) {
+    setPendingComplete(null)
+    setCompletingIds(prev => new Set(prev).add(task.id))
+
+    const updateData: Record<string, unknown> = {
+      status: 'complete',
+      completed_by: 'matthew',
+    }
+    try { updateData.completed_at = new Date().toISOString() } catch {}
+
     try {
-      await supabase.from('personal_tasks').update({ status: 'done' }).eq('id', id)
+      await supabase.from('tasks').update(updateData).eq('id', task.id)
+    } catch {}
+
+    setTimeout(() => {
+      setTasks(prev => prev.filter(t => t.id !== task.id))
+      setCompletingIds(prev => { const n = new Set(prev); n.delete(task.id); return n })
+    }, 600)
+  }
+
+  async function confirmCompleteWithFollowUp(task: LifeTask) {
+    setPendingComplete(null)
+    await confirmComplete(task)
+    const insertData: Record<string, unknown> = {
+      title: `Follow-up: ${task.title}`,
+      status: 'open',
+      deal_id: null,
+      is_life: true,
+    }
+    try { insertData.follow_up_of = task.id } catch {}
+    try {
+      insertData.sort_order = tasks.length > 0
+        ? Math.min(...tasks.map(t => t.sort_order ?? 0)) - 1
+        : 0
+    } catch {}
+    try {
+      const { data } = await supabase.from('tasks').insert(insertData).select().single()
+      if (data) setTasks(prev => [data as LifeTask, ...prev])
     } catch {}
   }
 
-  async function deleteTask(id: string) {
-    setTasks(prev => prev.filter(t => t.id !== id))
+  async function updateTask(id: string, updates: Partial<LifeTask>) {
     try {
-      await supabase.from('personal_tasks').delete().eq('id', id)
+      await supabase.from('tasks').update(updates).eq('id', id)
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
     } catch {}
   }
+
+  // Drag handlers
+  const handleDragStart = useCallback((id: string) => {
+    dragIdRef.current = id
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent, id: string) => {
+    e.preventDefault()
+    setDragOverId(id)
+  }, [])
+
+  const handleDrop = useCallback(async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault()
+    setDragOverId(null)
+    const sourceId = dragIdRef.current
+    if (!sourceId || sourceId === targetId) return
+
+    setTasks(prev => {
+      const arr = [...prev]
+      const fromIdx = arr.findIndex(t => t.id === sourceId)
+      const toIdx = arr.findIndex(t => t.id === targetId)
+      if (fromIdx === -1 || toIdx === -1) return prev
+      const [moved] = arr.splice(fromIdx, 1)
+      arr.splice(toIdx, 0, moved)
+      const updates = arr.map((t, i) => ({ id: t.id, sort_order: i }))
+      Promise.all(
+        updates.map(u =>
+          supabase.from('tasks').update({ sort_order: u.sort_order } as Record<string, unknown>).eq('id', u.id).then(() => {})
+        )
+      ).catch(() => {})
+      return arr.map((t, i) => ({ ...t, sort_order: i }))
+    })
+    dragIdRef.current = null
+  }, [])
+
+  const handleDragEnd = useCallback(() => {
+    setDragOverId(null)
+    dragIdRef.current = null
+  }, [])
+
+  const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'in_progress')
 
   return (
-    <div className="wr-card" style={{ minHeight: 400 }}>
-      {/* Header */}
+    <div className="wr-card h-full min-h-[320px]">
       <div className="wr-card-header">
         <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
-          <HeartIcon />
+          <LifeIcon />
         </span>
-        <span className="wr-card-title">Life</span>
-        <span style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(139,92,246,0.15)', color: 'var(--accent-gold)', fontWeight: 600 }}>
-          Personal
-        </span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
-          {tasks.length} items
+        <span className="wr-rank1">LIFE</span>
+        <span className="wr-panel-line" />
+        <span className="wr-panel-stat" style={{ fontSize: 16 }}>
+          {openTasks.length > 0 ? openTasks.length : '—'}
         </span>
       </div>
 
-      {/* Note: separate from business */}
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, borderLeft: '2px solid var(--accent-gold)' }}>
-        Personal — kids, family, house, life admin. Separate from business deals.
-      </div>
-
-      {/* Add task input */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, position: 'relative' }}>
-        {/* Emoji button */}
+      {/* Add task form */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
         <button
-          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          style={{
-            padding: '0 10px',
-            fontSize: 18,
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 6,
-            cursor: 'pointer',
-            flexShrink: 0,
-          }}
-          title="Pick emoji"
+          onClick={addTask}
+          disabled={adding || !newTitle.trim()}
+          className="wr-btn-orbit"
         >
-          {selectedEmoji}
+          {adding ? '...' : '+ Add'}
         </button>
-
-        {/* Emoji picker dropdown */}
-        {showEmojiPicker && (
-          <div style={{
-            position: 'absolute',
-            top: '110%',
-            left: 0,
-            zIndex: 50,
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 8,
-            padding: 10,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            gap: 6,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-          }}>
-            {EMOJI_OPTIONS.map(e => (
-              <button
-                key={e}
-                onClick={() => { setSelectedEmoji(e); setShowEmojiPicker(false) }}
-                style={{
-                  fontSize: 20,
-                  padding: '4px',
-                  background: selectedEmoji === e ? 'rgba(139,92,246,0.2)' : 'transparent',
-                  border: selectedEmoji === e ? '1px solid var(--accent-gold)' : '1px solid transparent',
-                  borderRadius: 4,
-                  cursor: 'pointer',
-                }}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
-        )}
-
         <input
           type="text"
-          value={newTask}
-          onChange={e => setNewTask(e.target.value)}
+          value={newTitle}
+          onChange={e => setNewTitle(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addTask()}
-          placeholder="Add personal item..."
+          placeholder="Add life item..."
           style={{
             flex: 1,
             background: 'var(--bg-elevated)',
             border: '1px solid var(--border-subtle)',
             borderRadius: 6,
-            padding: '8px 12px',
+            padding: '7px 12px',
             fontSize: 13,
             color: 'var(--text-primary)',
             outline: 'none',
+            fontFamily: 'var(--font-body)',
           }}
+          onFocus={e => (e.target.style.borderColor = 'rgba(232,184,75,0.4)')}
+          onBlur={e => (e.target.style.borderColor = 'var(--border-subtle)')}
         />
-        <button
-          onClick={addTask}
-          disabled={adding || !newTask.trim()}
-          style={{
-            padding: '8px 16px',
-            background: 'var(--accent-gold)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: adding || !newTask.trim() ? 'not-allowed' : 'pointer',
-            opacity: adding || !newTask.trim() ? 0.5 : 1,
-            flexShrink: 0,
-          }}
-        >
-          Add
-        </button>
       </div>
 
       {/* Task list */}
       {loading ? (
         <SkeletonList />
-      ) : tasks.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>✨</div>
-          All clear — life is good.
-        </div>
+      ) : openTasks.length === 0 ? (
+        <EmptyState />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {tasks.map(task => (
-            <TaskRow key={task.id} task={task} onComplete={completeTask} onDelete={deleteTask} />
-          ))}
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+              <th className="wr-rank2" style={{ width: 28, padding: '4px 6px' }}></th>
+              <th className="wr-rank2" style={{ padding: '4px 8px', textAlign: 'left' }}>Action Item</th>
+              <th className="wr-rank2" style={{ width: 80, padding: '4px 8px', textAlign: 'left' }}>Due</th>
+              <th className="wr-rank2" style={{ width: 60, padding: '4px 6px' }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {openTasks.map(task => (
+              <LifeTaskRow
+                key={task.id}
+                task={task}
+                completing={completingIds.has(task.id)}
+                dragOverId={dragOverId}
+                onComplete={() => completeTask(task)}
+                onUpdate={(updates) => updateTask(task.id, updates)}
+                onDragStart={() => handleDragStart(task.id)}
+                onDragOver={(e) => handleDragOver(e, task.id)}
+                onDrop={(e) => handleDrop(e, task.id)}
+                onDragEnd={handleDragEnd}
+              />
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Completion Modal */}
+      {pendingComplete && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.72)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24,
+          }}
+          onClick={() => setPendingComplete(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#13112A',
+              border: '1px solid rgba(232,184,75,0.35)',
+              borderRadius: 14,
+              padding: 28,
+              minWidth: 300,
+              maxWidth: 400,
+              width: '100%',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 8, fontFamily: 'monospace' }}>
+              Life
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 20, lineHeight: 1.4 }}>
+              {pendingComplete.title}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => confirmComplete(pendingComplete)}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(34,197,94,0.12)',
+                  border: '1px solid rgba(34,197,94,0.35)',
+                  borderRadius: 8,
+                  color: '#22C55E',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                Log as Complete
+              </button>
+              <button
+                onClick={() => confirmCompleteWithFollowUp(pendingComplete)}
+                style={{
+                  padding: '12px 16px',
+                  background: 'rgba(20,184,166,0.12)',
+                  border: '1px solid rgba(20,184,166,0.35)',
+                  borderRadius: 8,
+                  color: '#14b8a6',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                Create Next Flow
+              </button>
+              <button
+                onClick={() => setPendingComplete(null)}
+                style={{
+                  padding: '10px 16px',
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  color: '#6B7280',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                Cancel — Keep Open
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-function TaskRow({ task, onComplete, onDelete }: {
-  task: PersonalTask
-  onComplete: (id: string) => void
-  onDelete: (id: string) => void
-}) {
+// ─── Life Task Row ────────────────────────────────────────────────────────────
+
+interface LifeTaskRowProps {
+  task: LifeTask
+  completing: boolean
+  dragOverId: string | null
+  onComplete: () => void
+  onUpdate: (updates: Partial<LifeTask>) => void
+  onDragStart: () => void
+  onDragOver: (e: React.DragEvent) => void
+  onDrop: (e: React.DragEvent) => void
+  onDragEnd: () => void
+}
+
+function LifeTaskRow({
+  task, completing, dragOverId,
+  onComplete, onUpdate,
+  onDragStart, onDragOver, onDrop, onDragEnd,
+}: LifeTaskRowProps) {
+  const [hovered, setHovered] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState(task.title)
+  const [editDue, setEditDue] = useState(task.due_date || '')
+  const [circleHovered, setCircleHovered] = useState(false)
+  const isDragTarget = dragOverId === task.id
+
+  function saveEdit() {
+    if (editTitle.trim()) {
+      onUpdate({ title: editTitle.trim(), due_date: editDue || null })
+    }
+    setEditing(false)
+  }
+
+  const isOverdue = task.due_date && task.due_date < new Date().toISOString().split('T')[0]
+
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      padding: '8px 10px',
-      background: 'var(--bg-elevated)',
-      borderRadius: 6,
-      border: '1px solid var(--border-subtle)',
-      transition: 'background 0.15s',
-    }}>
-      {/* Complete checkbox */}
-      <button
-        onClick={() => onComplete(task.id)}
-        style={{
-          width: 20,
-          height: 20,
-          borderRadius: '50%',
-          border: '1.5px solid var(--text-muted)',
-          background: 'transparent',
-          cursor: 'pointer',
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.15s',
-        }}
-        title="Mark done"
-      />
+    <tr
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: isDragTarget ? 'rgba(232,184,75,0.06)' : hovered ? 'rgba(255,255,255,0.02)' : 'transparent',
+        borderBottom: '1px solid var(--border-subtle)',
+        opacity: completing ? 0.4 : 1,
+        transition: 'all 0.15s',
+      }}
+    >
+      {/* Col 1: checkbox */}
+      <td style={{ width: 28, padding: '8px 6px', verticalAlign: 'middle' }}>
+        <button
+          onClick={onComplete}
+          onMouseEnter={() => setCircleHovered(true)}
+          onMouseLeave={() => setCircleHovered(false)}
+          style={{
+            width: 16,
+            height: 16,
+            borderRadius: 3,
+            border: `1.5px solid ${circleHovered ? 'var(--accent-gold)' : 'rgba(232,184,75,0.4)'}`,
+            background: circleHovered ? 'rgba(232,184,75,0.15)' : 'transparent',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.15s',
+          }}
+        >
+          {circleHovered && (
+            <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+              <path d="M2 5l2.5 2.5L8 3" stroke="var(--accent-gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+      </td>
 
-      {/* Emoji */}
-      <span style={{ fontSize: 16, flexShrink: 0 }}>{task.emoji}</span>
+      {/* Col 2: Title */}
+      <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
+        {editing ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <input
+              autoFocus
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') saveEdit()
+                if (e.key === 'Escape') setEditing(false)
+              }}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: '1px solid var(--accent-gold)',
+                borderRadius: 4,
+                padding: '4px 8px',
+                fontSize: 13,
+                color: 'var(--text-primary)',
+                outline: 'none',
+                fontFamily: 'var(--font-body)',
+              }}
+            />
+            <input
+              type="date"
+              value={editDue}
+              onChange={e => setEditDue(e.target.value)}
+              style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--accent-gold)',
+                borderRadius: 4,
+                padding: '4px 8px',
+                fontSize: 12,
+                color: 'var(--text-muted)',
+                outline: 'none',
+                fontFamily: 'var(--font-body)',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={saveEdit}
+                style={{
+                  padding: '3px 10px',
+                  background: 'var(--accent-gold)',
+                  color: '#0D0F14',
+                  border: 'none',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                style={{
+                  padding: '3px 10px',
+                  background: 'transparent',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 400,
+              color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
+              lineHeight: 1.4,
+              textDecoration: completing ? 'line-through' : 'none',
+              transition: 'all 0.3s',
+              display: 'block',
+            }}
+          >
+            {task.title}
+          </span>
+        )}
+      </td>
 
-      {/* Title */}
-      <span style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }}>
-        {task.title}
-      </span>
+      {/* Col 3: Due date */}
+      <td style={{ width: 80, padding: '8px 8px', verticalAlign: 'middle' }}>
+        {task.due_date && (
+          <span
+            style={{
+              fontSize: 11,
+              color: isOverdue ? 'var(--danger, #ef4444)' : 'var(--text-muted)',
+              fontFamily: 'monospace',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {task.due_date}
+          </span>
+        )}
+      </td>
 
-      {/* Delete */}
-      <button
-        onClick={() => onDelete(task.id)}
-        style={{
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          color: 'var(--text-muted)',
-          fontSize: 14,
-          padding: '2px 4px',
-          borderRadius: 4,
-          opacity: 0.6,
-          transition: 'opacity 0.15s',
-        }}
-        title="Delete"
-        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-        onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
-      >
-        ✕
-      </button>
-    </div>
+      {/* Col 4: Actions */}
+      <td style={{ width: 60, padding: '8px 6px', verticalAlign: 'middle' }}>
+        {!editing && hovered && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={() => { setEditTitle(task.title); setEditDue(task.due_date || ''); setEditing(true) }}
+              title="Edit"
+              style={{
+                padding: '2px 6px',
+                background: 'transparent',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 4,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                opacity: 0.65,
+              }}
+            >
+              <PencilIcon />
+            </button>
+            <span
+              draggable={false}
+              style={{
+                fontSize: 14,
+                color: 'var(--text-muted)',
+                cursor: 'grab',
+                opacity: 0.6,
+                userSelect: 'none',
+              }}
+            >⠿</span>
+          </div>
+        )}
+      </td>
+    </tr>
   )
 }
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function SkeletonList() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 40 }} />)}
+      {[65, 80, 50, 72].map((w, i) => (
+        <div key={i} className="skeleton" style={{ height: 38, width: `${w}%`, borderRadius: 6 }} />
+      ))}
     </div>
   )
 }
 
-function HeartIcon() {
+function EmptyState() {
+  return (
+    <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+      No open life items — clear skies.
+    </div>
+  )
+}
+
+function LifeIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/>
+    </svg>
+  )
+}
+
+function PencilIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   )
 }
