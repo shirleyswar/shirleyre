@@ -97,3 +97,10 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER deals_updated_at
   BEFORE UPDATE ON public.deals
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+-- ─── BATTLE PLAN PANEL — New columns (run manually in Supabase SQL editor) ───
+-- https://supabase.com/dashboard/project/mtkyyaorvensylrfbhxv/sql/new
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS sort_order integer;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS completed_at timestamptz;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS follow_up_of uuid REFERENCES public.tasks(id) ON DELETE SET NULL;
+-- ──────────────────────────────────────────────────────────────────────────────

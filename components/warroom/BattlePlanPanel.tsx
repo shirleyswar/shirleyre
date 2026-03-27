@@ -1,62 +1,246 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase, Task } from '@/lib/supabase'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
+
+// Extended Task type with new columns (may not exist in DB yet)
+interface BattlePlanTask {
+  id: string
+  deal_id: string | null
+  title: string
+  status: string
+  due_date: string | null
+  completed_by: string | null
+  parent_task_id: string | null
+  created_at: string
+  // New columns (may be absent)
+  sort_order?: number | null
+  completed_at?: string | null
+  follow_up_of?: string | null
+}
+
+interface DealOption {
+  id: string
+  name: string
+  address: string | null
+}
 
 export default function BattlePlanPanel() {
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [tasks, setTasks] = useState<BattlePlanTask[]>([])
+  const [deals, setDeals] = useState<DealOption[]>([])
   const [loading, setLoading] = useState(true)
-  const [newTask, setNewTask] = useState('')
+  const [newTitle, setNewTitle] = useState('')
+  const [newDealId, setNewDealId] = useState('')
   const [adding, setAdding] = useState(false)
+  const [completingIds, setCompletingIds] = useState<Set<string>>(new Set())
+  const [showFollowUpFor, setShowFollowUpFor] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const dragIdRef = useRef<string | null>(null)
 
   useEffect(() => {
+    fetchDeals()
     fetchTasks()
   }, [])
+
+  async function fetchDeals() {
+    try {
+      const { data } = await supabase
+        .from('deals')
+        .select('id, name, address')
+        .order('name', { ascending: true })
+        .limit(100)
+      if (data) setDeals(data as DealOption[])
+    } catch {}
+  }
 
   async function fetchTasks() {
     try {
       const today = new Date().toISOString().split('T')[0]
+      const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
       const { data } = await supabase
         .from('tasks')
         .select('*')
-        .in('status', ['open', 'in_progress'])
-        .or(`due_date.lte.${today},due_date.is.null`)
-        .order('created_at', { ascending: false })
-        .limit(20)
-      if (data) setTasks(data as Task[])
+        .order('created_at', { ascending: true })
+        .limit(100)
+
+      if (!data) return
+
+      // Daily rollover logic: show open tasks due today or earlier, or no due_date
+      // Hide completed tasks older than 24h (stay in DB, just don't show)
+      const filtered = (data as BattlePlanTask[]).filter(t => {
+        if (t.status === 'open' || t.status === 'in_progress') {
+          return !t.due_date || t.due_date <= today
+        }
+        if (t.status === 'complete' || t.status === 'done') {
+          const completedTime = t.completed_at || t.created_at
+          return completedTime > cutoff24h
+        }
+        return false
+      })
+
+      // Sort: by sort_order if available, fallback to created_at
+      filtered.sort((a, b) => {
+        const aOrder = a.sort_order ?? null
+        const bOrder = b.sort_order ?? null
+        if (aOrder !== null && bOrder !== null) return aOrder - bOrder
+        if (aOrder !== null) return -1
+        if (bOrder !== null) return 1
+        return a.created_at.localeCompare(b.created_at)
+      })
+
+      setTasks(filtered)
     } catch {
-      // DB not yet migrated
+      // DB columns may not exist yet
     } finally {
       setLoading(false)
     }
   }
 
-  async function completeTask(id: string) {
-    setTasks(prev => prev.filter(t => t.id !== id))
-    try {
-      await supabase.from('tasks').update({ status: 'complete', completed_by: 'matthew' }).eq('id', id)
-      await supabase.from('activity_log').insert({
-        action_type: 'task_completed',
-        description: tasks.find(t => t.id === id)?.title || 'Task completed',
-        created_by: 'matthew',
-      })
-    } catch {}
-  }
-
   async function addTask() {
-    if (!newTask.trim()) return
+    if (!newTitle.trim()) return
     setAdding(true)
     try {
-      const { data } = await supabase
+      const insertData: Record<string, unknown> = {
+        title: newTitle.trim(),
+        status: 'open',
+        deal_id: newDealId || null,
+      }
+      // Try to include sort_order
+      try {
+        const maxOrder = tasks.length > 0
+          ? Math.max(...tasks.map(t => t.sort_order ?? 0)) + 1
+          : 0
+        insertData.sort_order = maxOrder
+      } catch {}
+
+      const { data, error } = await supabase
         .from('tasks')
-        .insert({ title: newTask.trim(), status: 'open' })
+        .insert(insertData)
         .select()
         .single()
-      if (data) setTasks(prev => [data as Task, ...prev])
-      setNewTask('')
+
+      if (data && !error) {
+        setTasks(prev => [...prev, data as BattlePlanTask])
+        setNewTitle('')
+        setNewDealId('')
+      }
     } catch {}
     setAdding(false)
   }
+
+  async function completeTask(task: BattlePlanTask) {
+    setCompletingIds(prev => new Set(prev).add(task.id))
+    setShowFollowUpFor(task.id)
+
+    const updateData: Record<string, unknown> = {
+      status: 'complete',
+      completed_by: 'matthew',
+    }
+    try {
+      updateData.completed_at = new Date().toISOString()
+    } catch {}
+
+    try {
+      await supabase.from('tasks').update(updateData).eq('id', task.id)
+      await supabase.from('activity_log').insert({
+        action_type: 'task_completed',
+        description: task.title,
+        created_by: 'matthew',
+      }).then(() => {})  // fire and forget
+    } catch {}
+
+    // Remove from list after 600ms
+    setTimeout(() => {
+      setTasks(prev => prev.filter(t => t.id !== task.id))
+      setCompletingIds(prev => {
+        const next = new Set(prev)
+        next.delete(task.id)
+        return next
+      })
+      // Keep follow-up button visible briefly after removal
+      setTimeout(() => {
+        setShowFollowUpFor(id => id === task.id ? null : id)
+      }, 2000)
+    }, 600)
+  }
+
+  async function createFollowUp(parentTask: BattlePlanTask) {
+    setShowFollowUpFor(null)
+    const insertData: Record<string, unknown> = {
+      title: `Follow-up: ${parentTask.title}`,
+      status: 'open',
+      deal_id: parentTask.deal_id || null,
+    }
+    try {
+      insertData.follow_up_of = parentTask.id
+    } catch {}
+    try {
+      insertData.sort_order = tasks.length > 0
+        ? Math.max(...tasks.map(t => t.sort_order ?? 0)) + 1
+        : 0
+    } catch {}
+
+    try {
+      const { data } = await supabase
+        .from('tasks')
+        .insert(insertData)
+        .select()
+        .single()
+      if (data) {
+        setTasks(prev => [...prev, data as BattlePlanTask])
+      }
+    } catch {}
+  }
+
+  async function updateTask(id: string, updates: Partial<BattlePlanTask>) {
+    try {
+      await supabase.from('tasks').update(updates).eq('id', id)
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
+    } catch {}
+  }
+
+  // Drag handlers
+  const handleDragStart = useCallback((id: string) => {
+    dragIdRef.current = id
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent, id: string) => {
+    e.preventDefault()
+    setDragOverId(id)
+  }, [])
+
+  const handleDrop = useCallback(async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault()
+    setDragOverId(null)
+    const sourceId = dragIdRef.current
+    if (!sourceId || sourceId === targetId) return
+
+    setTasks(prev => {
+      const arr = [...prev]
+      const fromIdx = arr.findIndex(t => t.id === sourceId)
+      const toIdx = arr.findIndex(t => t.id === targetId)
+      if (fromIdx === -1 || toIdx === -1) return prev
+      const [moved] = arr.splice(fromIdx, 1)
+      arr.splice(toIdx, 0, moved)
+      // Save sort_order to DB
+      const updates = arr.map((t, i) => ({ id: t.id, sort_order: i }))
+      Promise.all(
+        updates.map(u =>
+          supabase.from('tasks').update({ sort_order: u.sort_order } as Record<string, unknown>).eq('id', u.id).then(() => {})
+        )
+      ).catch(() => {})
+      return arr.map((t, i) => ({ ...t, sort_order: i }))
+    })
+    dragIdRef.current = null
+  }, [])
+
+  const handleDragEnd = useCallback(() => {
+    setDragOverId(null)
+    dragIdRef.current = null
+  }, [])
+
+  const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'in_progress')
 
   return (
     <div className="wr-card h-full min-h-[320px]">
@@ -67,136 +251,420 @@ export default function BattlePlanPanel() {
         <span className="wr-card-title">Battle Plan</span>
         <span className="wr-panel-line" />
         <span className="wr-panel-stat" style={{ fontSize: 16 }}>
-          {tasks.length > 0 ? tasks.length : '—'}
+          {openTasks.length > 0 ? openTasks.length : '—'}
         </span>
       </div>
 
-      {/* Add task input */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <input
-          type="text"
-          value={newTask}
-          onChange={e => setNewTask(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addTask()}
-          placeholder="Add action item..."
-          style={{
-            flex: 1,
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 6,
-            padding: '7px 12px',
-            fontSize: 13,
-            color: 'var(--text-primary)',
-            outline: 'none',
-          }}
-          onFocus={e => (e.target.style.borderColor = 'rgba(201,147,58,0.4)')}
-          onBlur={e => (e.target.style.borderColor = 'var(--border-subtle)')}
-        />
-        <button
-          onClick={addTask}
-          disabled={adding || !newTask.trim()}
-          style={{
-            padding: '7px 14px',
-            background: 'var(--accent-gold)',
-            color: '#0D0F14',
-            border: 'none',
-            borderRadius: 6,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            opacity: (!newTask.trim() || adding) ? 0.5 : 1,
-          }}
-        >
-          Add
-        </button>
+      {/* Add task form */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            type="text"
+            value={newTitle}
+            onChange={e => setNewTitle(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addTask()}
+            placeholder="Add action item..."
+            style={{
+              flex: 1,
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 6,
+              padding: '7px 12px',
+              fontSize: 13,
+              color: 'var(--text-primary)',
+              outline: 'none',
+              fontFamily: 'var(--font-body)',
+            }}
+            onFocus={e => (e.target.style.borderColor = 'rgba(232,184,75,0.4)')}
+            onBlur={e => (e.target.style.borderColor = 'var(--border-subtle)')}
+          />
+          <button
+            onClick={addTask}
+            disabled={adding || !newTitle.trim()}
+            style={{
+              padding: '7px 14px',
+              background: 'var(--accent-gold)',
+              color: '#0D0F14',
+              border: 'none',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              opacity: (!newTitle.trim() || adding) ? 0.45 : 1,
+              fontFamily: 'var(--font-body)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Add
+          </button>
+        </div>
+        {deals.length > 0 && (
+          <select
+            value={newDealId}
+            onChange={e => setNewDealId(e.target.value)}
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 6,
+              padding: '5px 10px',
+              fontSize: 12,
+              color: newDealId ? 'var(--accent-gold)' : 'var(--text-muted)',
+              outline: 'none',
+              fontFamily: 'var(--font-body)',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="">No deal linked</option>
+            {deals.map(d => (
+              <option key={d.id} value={d.id}>
+                {d.address || d.name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Task list */}
       {loading ? (
         <SkeletonList />
-      ) : tasks.length === 0 ? (
-        <EmptyState message="No open action items — clear skies." />
+      ) : openTasks.length === 0 ? (
+        <EmptyState />
       ) : (
-        <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {tasks.map(task => (
-            <TaskItem key={task.id} task={task} onComplete={completeTask} />
-          ))}
+        <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {tasks
+            .filter(t => t.status === 'open' || t.status === 'in_progress')
+            .map(task => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                deal={deals.find(d => d.id === task.deal_id) || null}
+                completing={completingIds.has(task.id)}
+                showFollowUp={showFollowUpFor === task.id}
+                dragOverId={dragOverId}
+                onComplete={() => completeTask(task)}
+                onFollowUp={() => createFollowUp(task)}
+                onUpdate={(updates) => updateTask(task.id, updates)}
+                onDragStart={() => handleDragStart(task.id)}
+                onDragOver={(e) => handleDragOver(e, task.id)}
+                onDrop={(e) => handleDrop(e, task.id)}
+                onDragEnd={handleDragEnd}
+                deals={deals}
+              />
+            ))}
         </ul>
       )}
     </div>
   )
 }
 
-function TaskItem({ task, onComplete }: { task: Task; onComplete: (id: string) => void }) {
-  const isOverdue = task.due_date && new Date(task.due_date) < new Date()
+// ─── Task Row ────────────────────────────────────────────────────────────────
+
+interface TaskRowProps {
+  task: BattlePlanTask
+  deal: DealOption | null
+  completing: boolean
+  showFollowUp: boolean
+  dragOverId: string | null
+  onComplete: () => void
+  onFollowUp: () => void
+  onUpdate: (updates: Partial<BattlePlanTask>) => void
+  onDragStart: () => void
+  onDragOver: (e: React.DragEvent) => void
+  onDrop: (e: React.DragEvent) => void
+  onDragEnd: () => void
+  deals: DealOption[]
+}
+
+function TaskRow({
+  task, deal, completing, showFollowUp, dragOverId,
+  onComplete, onFollowUp, onUpdate,
+  onDragStart, onDragOver, onDrop, onDragEnd,
+  deals,
+}: TaskRowProps) {
+  const [hovered, setHovered] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState(task.title)
+  const [editDealId, setEditDealId] = useState(task.deal_id || '')
+  const [circleHovered, setCircleHovered] = useState(false)
+  const isDragTarget = dragOverId === task.id
+
+  function saveEdit() {
+    if (editTitle.trim()) {
+      onUpdate({ title: editTitle.trim(), deal_id: editDealId || null })
+    }
+    setEditing(false)
+  }
+
+  const isOverdue = task.due_date && task.due_date < new Date().toISOString().split('T')[0]
 
   return (
     <li
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex',
-        alignItems: 'center',
-        gap: 10,
+        alignItems: 'flex-start',
+        gap: 8,
         padding: '8px 10px',
-        background: 'var(--bg-elevated)',
+        background: isDragTarget ? 'rgba(232,184,75,0.06)' : 'var(--bg-elevated)',
         borderRadius: 6,
-        border: '1px solid var(--border-subtle)',
-        transition: 'background 0.15s',
+        border: isDragTarget
+          ? '1px solid rgba(232,184,75,0.3)'
+          : '1px solid var(--border-subtle)',
+        transition: 'all 0.15s',
+        opacity: completing ? 0.4 : 1,
+        cursor: 'default',
+        position: 'relative',
       }}
     >
+      {/* Drag handle */}
+      <span
+        style={{
+          fontSize: 14,
+          color: 'var(--text-muted)',
+          cursor: 'grab',
+          opacity: hovered ? 0.6 : 0,
+          transition: 'opacity 0.15s',
+          paddingTop: 1,
+          userSelect: 'none',
+          flexShrink: 0,
+        }}
+      >
+        ⠿
+      </span>
+
+      {/* Complete circle */}
       <button
-        onClick={() => onComplete(task.id)}
+        onClick={onComplete}
+        onMouseEnter={() => setCircleHovered(true)}
+        onMouseLeave={() => setCircleHovered(false)}
         style={{
           width: 18,
           height: 18,
           borderRadius: '50%',
-          border: '1.5px solid rgba(201,147,58,0.4)',
-          background: 'none',
+          border: `1.5px solid ${circleHovered ? 'var(--accent-gold)' : 'rgba(232,184,75,0.35)'}`,
+          background: circleHovered ? 'rgba(232,184,75,0.18)' : 'transparent',
           cursor: 'pointer',
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           transition: 'all 0.15s',
+          marginTop: 1,
         }}
-        onMouseEnter={e => {
-          e.currentTarget.style.background = 'rgba(201,147,58,0.2)'
-          e.currentTarget.style.borderColor = 'var(--accent-gold)'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = 'none'
-          e.currentTarget.style.borderColor = 'rgba(201,147,58,0.4)'
-        }}
-      />
-      <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1, lineHeight: 1.4 }}>
-        {task.title}
-      </span>
-      {task.due_date && (
-        <span style={{
-          fontSize: 10,
-          color: isOverdue ? 'var(--danger)' : 'var(--text-muted)',
-          flexShrink: 0,
-        }}>
-          {task.due_date}
-        </span>
+      >
+        {circleHovered && (
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 5l2.5 2.5L8 3" stroke="var(--accent-gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </button>
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {editing ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <input
+              autoFocus
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') saveEdit()
+                if (e.key === 'Escape') setEditing(false)
+              }}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: '1px solid var(--accent-gold)',
+                borderRadius: 4,
+                padding: '4px 8px',
+                fontSize: 13,
+                color: 'var(--text-primary)',
+                outline: 'none',
+                fontFamily: 'var(--font-body)',
+              }}
+            />
+            <select
+              value={editDealId}
+              onChange={e => setEditDealId(e.target.value)}
+              style={{
+                background: '#1a1e24',
+                border: '1px solid var(--accent-gold)',
+                borderRadius: 4,
+                padding: '4px 8px',
+                fontSize: 12,
+                color: editDealId ? 'var(--accent-gold)' : 'var(--text-muted)',
+                outline: 'none',
+                fontFamily: 'var(--font-body)',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="">No deal</option>
+              {deals.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.address || d.name}
+                </option>
+              ))}
+            </select>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={saveEdit}
+                style={{
+                  padding: '3px 10px',
+                  background: 'var(--accent-gold)',
+                  color: '#0D0F14',
+                  border: 'none',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                style={{
+                  padding: '3px 10px',
+                  background: 'transparent',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <span
+              style={{
+                fontSize: 13,
+                color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
+                lineHeight: 1.4,
+                textDecoration: completing ? 'line-through' : 'none',
+                transition: 'all 0.3s',
+                display: 'block',
+              }}
+            >
+              {task.title}
+            </span>
+
+            {/* Deal tag */}
+            {deal && (
+              <span
+                style={{
+                  display: 'inline-block',
+                  marginTop: 3,
+                  padding: '1px 7px',
+                  background: 'rgba(232,184,75,0.1)',
+                  border: '1px solid rgba(232,184,75,0.2)',
+                  borderRadius: 10,
+                  fontSize: 10,
+                  color: 'var(--accent-gold)',
+                  fontFamily: 'monospace',
+                  letterSpacing: '0.02em',
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {deal.address || deal.name}
+              </span>
+            )}
+
+            {/* Due date */}
+            {task.due_date && (
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: 2,
+                  fontSize: 10,
+                  color: isOverdue ? 'var(--danger, #ef4444)' : 'var(--text-muted)',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {task.due_date}
+              </span>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Hover actions: edit + follow-up */}
+      {!editing && (hovered || showFollowUp) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          {/* Edit pencil */}
+          {hovered && (
+            <button
+              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditing(true) }}
+              title="Edit"
+              style={{
+                padding: '2px 6px',
+                background: 'transparent',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 4,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                opacity: 0.65,
+              }}
+            >
+              <PencilIcon />
+            </button>
+          )}
+
+          {/* Follow-up */}
+          {showFollowUp && (
+            <button
+              onClick={onFollowUp}
+              style={{
+                padding: '2px 8px',
+                background: 'rgba(20,184,166,0.12)',
+                border: '1px solid rgba(20,184,166,0.3)',
+                borderRadius: 4,
+                fontSize: 11,
+                color: '#14b8a6',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-body)',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              + Follow-up
+            </button>
+          )}
+        </div>
       )}
     </li>
   )
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function SkeletonList() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {[60, 80, 50, 70].map((w, i) => (
-        <div key={i} className="skeleton" style={{ height: 36, width: `${w}%` }} />
+      {[65, 80, 50, 72].map((w, i) => (
+        <div key={i} className="skeleton" style={{ height: 38, width: `${w}%`, borderRadius: 6 }} />
       ))}
     </div>
   )
 }
 
-function EmptyState({ message }: { message: string }) {
+function EmptyState() {
   return (
-    <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
-      {message}
+    <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+      No open action items — clear skies.
     </div>
   )
 }
@@ -204,8 +672,17 @@ function EmptyState({ message }: { message: string }) {
 function SwordIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M14.5 17.5L3 6V3h3l11.5 11.5"/>
-      <path d="M13 19l6-6"/>
+      <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
+      <path d="M13 19l6-6" />
+    </svg>
+  )
+}
+
+function PencilIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   )
 }
