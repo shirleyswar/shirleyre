@@ -86,12 +86,19 @@ export default function DealPipelinePanel() {
   }
 
   // Sort handler — toggle asc/desc when same column, reset dir when changing
+  // For rating: default → desc (most stars) → asc (fewest) → default (null)
   function handleSort(field: SortField) {
     if (sortBy === field) {
-      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+      if (field === 'rating') {
+        // cycle: desc → asc → null
+        if (sortDir === 'desc') setSortDir('asc')
+        else { setSortBy(null); setSortDir('asc') }
+      } else {
+        setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+      }
     } else {
       setSortBy(field)
-      setSortDir('asc')
+      setSortDir(field === 'rating' ? 'desc' : 'asc')  // rating starts desc (most stars first)
     }
   }
 
@@ -130,18 +137,27 @@ export default function DealPipelinePanel() {
         <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
           <PipeIcon />
         </span>
-        <span className="wr-card-title">Deal Pipeline</span>
+        <span className="wr-card-title">Deals</span>
         <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           {filteredCount} deals · {formatCurrency(totalComm)} commission
         </span>
 
-        {/* Filters */}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {/* +Deal button — LEFT */}
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="wr-btn-orbit"
+          style={{ marginLeft: 'auto' }}
+        >
+          + Deal
+        </button>
+
+        {/* Filters — centered */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Status filter */}
           <select
             value={filter}
             onChange={e => setFilter(e.target.value as DealStatus | 'all')}
-            style={selectStyle}
+            style={{ padding: '8px 14px', fontSize: 13, background: 'rgba(14,165,160,0.06)', border: '1px solid rgba(14,165,160,0.3)', color: 'rgba(14,165,160,0.85)', borderRadius: 8, outline: 'none', cursor: 'pointer' }}
           >
             <option value="all">All Status</option>
             {Object.entries(STATUS_LABELS).map(([k, v]) => (
@@ -153,29 +169,28 @@ export default function DealPipelinePanel() {
           <select
             value={tierFilter}
             onChange={e => setTierFilter(e.target.value as DealTier | 'all')}
-            style={selectStyle}
+            style={{ padding: '8px 14px', fontSize: 13, background: 'rgba(14,165,160,0.06)', border: '1px solid rgba(14,165,160,0.3)', color: 'rgba(14,165,160,0.85)', borderRadius: 8, outline: 'none', cursor: 'pointer' }}
           >
             <option value="all">All Tiers</option>
             <option value="tracked">Tracked</option>
             <option value="filed">Filed</option>
           </select>
 
-          {/* Add deal */}
+          {/* Reset sort */}
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
+            onClick={() => { setSortBy(null); setSortDir('asc') }}
+            title="Reset sort"
             style={{
-              padding: '5px 12px',
-              background: 'var(--accent-gold)',
-              color: '#0D0F14',
-              border: 'none',
-              borderRadius: 5,
-              fontSize: 12,
-              fontWeight: 600,
+              padding: '4px 8px',
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 6,
+              color: 'var(--text-muted)',
               cursor: 'pointer',
+              fontSize: 14,
+              lineHeight: 1,
             }}
-          >
-            + Deal
-          </button>
+          >↺</button>
         </div>
       </div>
 
@@ -214,7 +229,7 @@ export default function DealPipelinePanel() {
               ) : (
                 sortedDeals(deals).map((deal, i, arr) => {
                   const isPortfolio = deal.address?.startsWith('📁')
-                  const subDeals = deals.filter(d => d.parent_deal_id === deal.id)
+                  const subDeals = deals.filter(d => d.parent_deal_id === deal.id).sort((a,b) => (a.address||'').localeCompare(b.address||''))
                   const isExpanded = expandedPortfolios.has(deal.id)
                   return (
                     <>
@@ -405,6 +420,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
     <input
       value={(draft[field] as string) ?? ''}
       onChange={e => setDraft(prev => ({ ...prev, [field]: e.target.value }))}
+      onKeyDown={e => { if (e.key === 'Enter') save() }}
       placeholder={placeholder}
       style={{ width: '100%', fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }}
     />
@@ -420,7 +436,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
     return (
       <tr style={rowStyle}>
         <td style={{ padding: '6px 8px' }}>
-          <input value={draft.dropbox_link ?? ''} onChange={e => setDraft(p => ({ ...p, dropbox_link: e.target.value || null }))} placeholder="Dropbox URL" style={{ width: 100, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
+          <input value={draft.dropbox_link ?? ''} onChange={e => setDraft(p => ({ ...p, dropbox_link: e.target.value || null }))} onKeyDown={e => { if (e.key === 'Enter') save() }} placeholder="Dropbox URL" style={{ width: 100, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
         </td>
         <td style={{ padding: '6px 8px' }}>{/* MORE — no edit needed */}</td>
         <td style={{ padding: '6px 8px' }}>{inp('address', 'Address')}</td>
@@ -1087,3 +1103,4 @@ function DropboxCell({ dealId, url, onSaved }: { dealId: string; url: string | n
     </div>
   )
 }
+
