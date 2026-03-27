@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -113,11 +113,27 @@ export default function SchedulePanel() {
         setFormLocation('')
         setFormDealId('')
         setTableReady(true)
-        setShowAddForm(false)
+        closeModal()
       }
     } catch {}
     setAdding(false)
   }
+
+  // Close modal and snap viewport back on mobile
+  const closeModal = useCallback(() => {
+    setShowAddForm(false)
+    setFormTime('')
+    setFormTitle('')
+    setFormLocation('')
+    setFormDealId('')
+    // Restore scroll position — prevents iOS viewport shift after keyboard dismiss
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+      window.scrollTo(0, 0)
+    }
+  }, [])
 
   async function deleteEvent(id: string) {
     try {
@@ -142,7 +158,14 @@ export default function SchedulePanel() {
       {/* Add Event button */}
       <div style={{ marginBottom: 12 }}>
         <button
-          onClick={() => setShowAddForm(true)}
+          onClick={() => {
+            setShowAddForm(true)
+            if (typeof window !== 'undefined') {
+              document.body.style.overflow = 'hidden'
+              document.body.style.position = 'fixed'
+              document.body.style.width = '100%'
+            }
+          }}
           className="wr-btn-orbit"
           style={{ fontSize: 12 }}
         >
@@ -154,7 +177,7 @@ export default function SchedulePanel() {
       {showAddForm && (
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
-          onClick={e => { if (e.target === e.currentTarget) setShowAddForm(false) }}
+          onClick={e => { if (e.target === e.currentTarget) closeModal() }}
         >
           <div style={{ background: '#13112A', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* Header */}
@@ -167,7 +190,7 @@ export default function SchedulePanel() {
                 type="text"
                 value={formTitle}
                 onChange={e => setFormTitle(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent(); if (e.key === 'Escape') setShowAddForm(false) }}
+                onKeyDown={e => { if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent(); if (e.key === 'Escape') closeModal() }}
                 placeholder="Event title"
                 style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
               />
@@ -177,7 +200,7 @@ export default function SchedulePanel() {
               type="text"
               value={formLocation}
               onChange={e => setFormLocation(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent(); if (e.key === 'Escape') setShowAddForm(false) }}
+              onKeyDown={e => { if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent(); if (e.key === 'Escape') closeModal() }}
               placeholder="Location (optional)"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
             />
@@ -195,7 +218,7 @@ export default function SchedulePanel() {
             {/* Actions */}
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
               <button
-                onClick={() => setShowAddForm(false)}
+                onClick={closeModal}
                 style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
               >
                 Cancel
