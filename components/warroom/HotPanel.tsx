@@ -39,7 +39,7 @@ const inputStyle: React.CSSProperties = {
 
 const btnStyle = (color: string, bg: string, border: string): React.CSSProperties => ({
   padding: '6px 14px',
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: 700,
   letterSpacing: '0.06em',
   background: bg,
@@ -86,7 +86,7 @@ function PinModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: ()
         <div style={{ fontSize: 13, fontWeight: 700, color: '#E8B84B', marginBottom: 6, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
           Authorization Required
         </div>
-        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 20 }}>Enter PIN to continue</div>
+        <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 20 }}>Enter PIN to continue</div>
         <input
           type="password"
           value={pin}
@@ -162,7 +162,7 @@ export default function HotPanel() {
           border: '1px solid rgba(251,146,60,0.3)',
         }}>0</span>
       </div>
-      <div style={{ fontSize: 12, color: '#4b5563', textAlign: 'center', padding: '24px 0' }}>
+      <div style={{ fontSize: 13, color: '#4b5563', textAlign: 'center', padding: '24px 0' }}>
         No active offer negotiations.
       </div>
     </div>
@@ -196,13 +196,13 @@ export default function HotPanel() {
 
       {/* Table */}
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               {['Deal', 'Type', 'Value', 'Commission', 'Days Hot', 'Files', 'Actions'].map(h => (
                 <th key={h} style={{
                   textAlign: 'left', padding: '6px 10px',
-                  fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+                  fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
                   color: '#4b5563',
                 }}>
                   {h}
@@ -220,7 +220,7 @@ export default function HotPanel() {
                   <td style={{ padding: '10px 10px' }}>
                     <a
                       href={`/warroom/deal?id=${deal.id}`}
-                      style={{ color: '#F0F2FF', textDecoration: 'none', fontWeight: 600, fontSize: 12 }}
+                      style={{ color: '#F0F2FF', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
                     >
                       {deal.address || deal.name}
                     </a>
