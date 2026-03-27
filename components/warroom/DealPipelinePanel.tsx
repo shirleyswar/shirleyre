@@ -234,20 +234,16 @@ export default function DealPipelinePanel() {
           <PipeIcon />
         </span>
         <span className="wr-card-title">Deals</span>
-        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          {filteredCount} deals · {formatCurrency(totalComm)} commission
-        </span>
-
         {/* +Deal button — LEFT */}
         <button
           onClick={() => setShowAddForm(!showAddForm)}
           className="wr-btn-orbit"
-          style={{ marginLeft: 'auto' }}
         >
           + Deal
         </button>
+        <div style={{ flex: 1 }} />
 
-        {/* Filters — centered */}
+        {/* Filters — right */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Status filter */}
           <select
@@ -594,23 +590,23 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         >↗</a>
       </td>
       {/* Col 3: Address */}
-      <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+      <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap', fontSize: 13 }}>
         {isSubDeal && <span style={{ marginRight: 8, color: 'var(--text-dim)', fontSize: 11 }}>↳</span>}
         {isPortfolio && onToggleExpand ? (
           <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700 }}>
             <span style={{ fontSize: 13, transition: 'transform 0.15s', display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-            {(deal as any).addr_display || deal.address}
+            {(deal as any).addr_display || deal.address?.replace(/^📁\s*/, '')}
           </button>
         ) : deal.address?.startsWith('📁') ? (
-          <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>{deal.address}</span>
+          <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>{deal.address?.replace(/^📁\s*/, '')}</span>
         ) : (
           <span style={{ color: isSubDeal ? 'var(--text-muted)' : 'var(--text-primary)' }}>
             {(deal as any).addr_display || deal.address || '—'}
           </span>
         )}
       </td>
-      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{deal.name}</td>
-      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type.replace(/_/g, ' ')}</td>
+      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 13 }}>{deal.name}</td>
+      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 13 }}>{DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type.replace(/_/g, ' ')}</td>
       <td style={{ padding: '10px 10px' }}>
         <span className={`badge ${STATUS_CLASS[deal.status as DealStatus]}`}>{STATUS_LABELS[deal.status as DealStatus]}</span>
       </td>
