@@ -297,8 +297,18 @@ export default function DealPipelinePanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 15 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                {['LINKS', 'More', 'Address', 'ID / Client', 'Type', 'Status', 'Tier', 'Rating', 'LINKS'].map(h => (
-                  <th key={h} style={{
+                {([
+                  { label: 'FILES',      cls: 'hidden sm:table-cell' },
+                  { label: 'More',       cls: '' },
+                  { label: 'Address',    cls: '' },
+                  { label: 'ID / Client',cls: 'hidden sm:table-cell' },
+                  { label: 'Type',       cls: 'hidden sm:table-cell' },
+                  { label: 'Status',     cls: '' },
+                  { label: 'Tier',       cls: 'hidden sm:table-cell' },
+                  { label: 'Rating',     cls: '' },
+                  { label: 'Actions',    cls: 'hidden sm:table-cell' },
+                ] as { label: string; cls: string }[]).map(h => (
+                  <th key={h.label} className={h.cls} style={{
                     textAlign: 'left',
                     padding: '7px 10px',
                     fontSize: 10,
@@ -307,7 +317,7 @@ export default function DealPipelinePanel() {
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     whiteSpace: 'nowrap',
-                  }}>{h}</th>
+                  }}>{h.label}</th>
                 ))}
               </tr>
             </thead>
@@ -529,13 +539,16 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
   if (editing) {
     return (
       <tr style={rowStyle}>
-        <td style={{ padding: '6px 8px' }}>
+        {/* Col 1: Dropbox — hidden on mobile */}
+        <td className="hidden sm:table-cell" style={{ padding: '6px 8px' }}>
           <input value={draft.dropbox_link ?? ''} onChange={e => setDraft(p => ({ ...p, dropbox_link: e.target.value || null }))} onKeyDown={e => { if (e.key === 'Enter') save() }} placeholder="Dropbox URL" style={{ width: 100, fontSize: 11, padding: '3px 6px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)', outline: 'none' }} />
         </td>
         <td style={{ padding: '6px 8px' }}>{/* MORE — no edit needed */}</td>
         <td style={{ padding: '6px 8px' }}>{inp('address', 'Address')}</td>
-        <td style={{ padding: '6px 8px' }}>{inp('name', 'ID / Client')}</td>
-        <td style={{ padding: '6px 8px' }}>
+        {/* Col 4: ID/Client — hidden on mobile */}
+        <td className="hidden sm:table-cell" style={{ padding: '6px 8px' }}>{inp('name', 'ID / Client')}</td>
+        {/* Col 5: Type — hidden on mobile */}
+        <td className="hidden sm:table-cell" style={{ padding: '6px 8px' }}>
           <select value={draft.type} onChange={e => setDraft(p => ({ ...p, type: e.target.value as Deal['type'] }))} style={{ fontSize: 11, padding: '3px 4px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)' }}>
             {DEAL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
@@ -545,16 +558,17 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
             {(Object.entries(STATUS_LABELS) as [DealStatus, string][]).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </td>
-        <td style={{ padding: '6px 8px' }}>
+        {/* Col 7: Tier — hidden on mobile */}
+        <td className="hidden sm:table-cell" style={{ padding: '6px 8px' }}>
           <select value={draft.tier} onChange={e => setDraft(p => ({ ...p, tier: e.target.value as Deal['tier'] }))} style={{ fontSize: 11, padding: '3px 4px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)' }}>
             {['tracked','filed'].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
           </select>
         </td>
         <td style={{ padding: '6px 8px' }}>
-          {/* Rating — not editable inline, use star widget */}
           <StarRating dealId={deal.id} value={draft.rating ?? null} onSave={(v) => setDraft(p => ({ ...p, rating: v }))} />
         </td>
-        <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>
+        {/* Col 9: Save/Cancel — hidden on mobile */}
+        <td className="hidden sm:table-cell" style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>
           <button onClick={save} disabled={saving} style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 5, color: '#A78BFA', cursor: 'pointer', marginRight: 4 }}>
             {saving ? '…' : '✓ Save'}
           </button>
@@ -569,8 +583,8 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
       onMouseLeave={e => (e.currentTarget.style.background = editing ? 'rgba(167,139,250,0.04)' : '')}
     >
-      {/* Col 1: Files */}
-      <td style={{ padding: '10px 8px' }}>
+      {/* Col 1: Files — hidden on mobile */}
+      <td className="hidden sm:table-cell" style={{ padding: '10px 8px' }}>
         <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
       </td>
       {/* Col 2: Deal page button — MORE */}
@@ -605,12 +619,15 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
           </span>
         )}
       </td>
-      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 13 }}>{deal.name}</td>
-      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 13 }}>{DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type.replace(/_/g, ' ')}</td>
+      {/* Col 4: ID/Client — hidden on mobile */}
+      <td className="hidden sm:table-cell" style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 13 }}>{deal.name}</td>
+      {/* Col 5: Type — hidden on mobile */}
+      <td className="hidden sm:table-cell" style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 13 }}>{DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type.replace(/_/g, ' ')}</td>
       <td style={{ padding: '10px 10px' }}>
         <span className={`badge ${STATUS_CLASS[deal.status as DealStatus]}`}>{STATUS_LABELS[deal.status as DealStatus]}</span>
       </td>
-      <td style={{ padding: '10px 10px' }}>
+      {/* Col 7: Tier — hidden on mobile */}
+      <td className="hidden sm:table-cell" style={{ padding: '10px 10px' }}>
         <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: deal.tier === 'filed' ? 'rgba(96,165,250,0.1)' : 'rgba(255,255,255,0.05)', color: deal.tier === 'filed' ? '#60A5FA' : 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           {deal.tier ? deal.tier.charAt(0).toUpperCase() + deal.tier.slice(1) : '—'}
         </span>
@@ -618,7 +635,8 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       <td style={{ padding: '6px 10px' }}>
         <StarRating dealId={deal.id} value={deal.rating ?? null} onSave={(v) => onUpdate({ ...deal, rating: v })} />
       </td>
-      <td style={{ padding: '10px 8px', whiteSpace: 'nowrap' }}>
+      {/* Col 9: Actions — hidden on mobile */}
+      <td className="hidden sm:table-cell" style={{ padding: '10px 8px', whiteSpace: 'nowrap' }}>
         <button onClick={() => setEditing(true)} title="Edit row" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12, marginRight: 4 }}>✎</button>
         {deal.status === 'active' && deal.tier === 'filed' && (
           <button onClick={() => { setConfirmUC(true); setUcPin(''); setUcError(false) }} title="Move to Under Contract" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 24, padding: '0 7px', borderRadius: 5, background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.4)', color: '#2DD4BF', cursor: 'pointer', fontSize: 10, fontWeight: 700, marginRight: 4, whiteSpace: 'nowrap', gap: 3 }}>
