@@ -709,36 +709,36 @@ function OperationsView({ activePanel }: { activePanel: string }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 max-w-[1640px] mx-auto">
 
         {/* Row 1: Battle Plan (2-col) + Schedule (1-col) */}
-        <div className="lg:col-span-2 card-reveal card-reveal-1">
+        <div className="lg:col-span-2 card-reveal card-reveal-1" style={{ position: 'relative', zIndex: 50 }}>
           <BattlePlanPanel />
         </div>
-        <div className="card-reveal card-reveal-2">
+        <div className="card-reveal card-reveal-2" style={{ position: 'relative', zIndex: 50 }}>
           <SchedulePanel />
         </div>
 
         {/* Row 2: Hot Panel (full width) */}
-        <div className="lg:col-span-3 card-reveal card-reveal-3">
+        <div className="lg:col-span-3 card-reveal card-reveal-3" style={{ position: 'relative', zIndex: 40 }}>
           <HotPanel />
         </div>
 
         {/* Row 3: Under Contract (2-col) + Money Movers (1-col) */}
-        <div className="lg:col-span-2 card-reveal card-reveal-3">
+        <div className="lg:col-span-2 card-reveal card-reveal-3" style={{ position: 'relative', zIndex: 30 }}>
           <UnderContractPanel />
         </div>
-        <div className="card-reveal card-reveal-4">
+        <div className="card-reveal card-reveal-4" style={{ position: 'relative', zIndex: 30 }}>
           <MoneyMoversPanel />
         </div>
 
         {/* Row 3: Deal Pipeline (full width) */}
-        <div className="lg:col-span-3 card-reveal card-reveal-5">
+        <div className="lg:col-span-3 card-reveal card-reveal-5" style={{ position: 'relative', zIndex: 20 }}>
           <DealPipelinePanel />
         </div>
 
         {/* Row 4: AR + ShirleyCRE Agent Card */}
-        <div className="card-reveal card-reveal-6">
+        <div className="card-reveal card-reveal-6" style={{ position: 'relative', zIndex: 10 }}>
           <AccountsReceivablePanel />
         </div>
-        <div className="card-reveal card-reveal-7">
+        <div className="card-reveal card-reveal-7" style={{ position: 'relative', zIndex: 10 }}>
           <ShirleyCREAgentCard />
         </div>
       </div>
