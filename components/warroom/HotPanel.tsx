@@ -153,7 +153,6 @@ export default function HotPanel() {
       padding: '18px 20px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        <span style={{ fontSize: 16 }}>🔥</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: '#fb923c', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
           Hot
         </span>
@@ -185,7 +184,6 @@ export default function HotPanel() {
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <span style={{ fontSize: 16 }}>🔥</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: '#fb923c', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
           Hot
         </span>
