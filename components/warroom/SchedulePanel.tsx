@@ -139,73 +139,78 @@ export default function SchedulePanel() {
         <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{todayLabel}</span>
       </div>
 
-      {/* Add Event — collapsed by default, expands on click */}
+      {/* Add Event button */}
       <div style={{ marginBottom: 12 }}>
-        {!showAddForm ? (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="wr-btn-orbit"
-            style={{ fontSize: 12 }}
-          >
-            + Add Event
-          </button>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(139,92,246,0.04)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 8, padding: '10px 12px' }}>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-              {/* Time wheel */}
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="wr-btn-orbit"
+          style={{ fontSize: 12 }}
+        >
+          + Add Event
+        </button>
+      </div>
+
+      {/* Add Event Modal */}
+      {showAddForm && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowAddForm(false) }}
+        >
+          <div style={{ background: '#13112A', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Header */}
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', fontFamily: 'monospace' }}>Add Event</div>
+            {/* Time + Title */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <TimeWheel value={formTime} onChange={setFormTime} />
-              {/* Title */}
               <input
                 autoFocus
                 type="text"
                 value={formTitle}
                 onChange={e => setFormTitle(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') addEvent(); if (e.key === 'Escape') setShowAddForm(false) }}
+                onKeyDown={e => { if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent(); if (e.key === 'Escape') setShowAddForm(false) }}
                 placeholder="Event title"
-                style={{ flex: '1 1 160px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 6, padding: '6px 10px', fontSize: 13, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)' }}
-              />
-              {/* Location */}
-              <input
-                type="text"
-                value={formLocation}
-                onChange={e => setFormLocation(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') addEvent(); if (e.key === 'Escape') setShowAddForm(false) }}
-                placeholder="Location (optional)"
-                style={{ flex: '1 1 120px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 6, padding: '6px 10px', fontSize: 13, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)' }}
+                style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
               />
             </div>
-            {/* Second row: deal + actions */}
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              {deals.length > 0 && (
-                <select
-                  value={formDealId}
-                  onChange={e => setFormDealId(e.target.value)}
-                  style={{ flex: '0 1 180px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 6, padding: '6px 8px', fontSize: 13, color: formDealId ? 'var(--accent-gold)' : 'var(--text-muted)', outline: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
-                >
-                  <option value="">No deal linked</option>
-                  {deals.map(d => <option key={d.id} value={d.id}>{d.address || d.name}</option>)}
-                </select>
-              )}
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                <button
-                  onClick={() => setShowAddForm(false)}
-                  style={{ padding: '6px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={addEvent}
-                  disabled={adding || !formTitle.trim() || !formTime}
-                  className="wr-btn-orbit"
-                  style={{ fontSize: 12 }}
-                >
-                  {adding ? '...' : 'Save'}
-                </button>
-              </div>
+            {/* Location */}
+            <input
+              type="text"
+              value={formLocation}
+              onChange={e => setFormLocation(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent(); if (e.key === 'Escape') setShowAddForm(false) }}
+              placeholder="Location (optional)"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+            />
+            {/* Deal */}
+            {deals.length > 0 && (
+              <select
+                value={formDealId}
+                onChange={e => setFormDealId(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: formDealId ? 'var(--accent-gold)' : '#6B7280', outline: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+              >
+                <option value="">No deal linked</option>
+                {deals.map(d => <option key={d.id} value={d.id}>{d.address || d.name}</option>)}
+              </select>
+            )}
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+              <button
+                onClick={() => setShowAddForm(false)}
+                style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addEvent}
+                disabled={adding || !formTitle.trim() || !formTime}
+                style={{ flex: 2, padding: '11px', background: adding || !formTitle.trim() || !formTime ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.5) 100%)', border: '1px solid rgba(167,139,250,0.5)', borderRadius: 8, color: '#c4b5fd', fontSize: 14, fontWeight: 700, cursor: adding || !formTitle.trim() || !formTime ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: adding || !formTitle.trim() || !formTime ? 0.5 : 1 }}
+              >
+                {adding ? 'Saving...' : 'Save Event'}
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Event List */}
       {loading ? (
