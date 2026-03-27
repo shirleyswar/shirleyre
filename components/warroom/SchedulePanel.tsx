@@ -148,25 +148,8 @@ export default function SchedulePanel() {
           {adding ? '...' : '+ Add'}
         </button>
 
-        {/* Time input */}
-        <input
-          type="text"
-          value={formTime}
-          onChange={e => setFormTime(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addEvent()}
-          placeholder="9:00 AM"
-          style={{
-            width: 80,
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 6,
-            padding: '6px 8px',
-            fontSize: 13,
-            color: 'var(--text-primary)',
-            outline: 'none',
-            fontFamily: 'var(--font-body)',
-          }}
-        />
+        {/* Time wheel selector */}
+        <TimeWheel value={formTime} onChange={setFormTime} />
 
         {/* Title input */}
         <input
@@ -314,6 +297,195 @@ function EventRow({ event, onDelete }: { event: ScheduleEvent; onDelete: (id: st
         >
           ✕
         </button>
+      )}
+    </div>
+  )
+}
+
+
+// ─── TimeWheel ────────────────────────────────────────────────────────────────
+// 12hr wheel selector: hour wheel + 15-min increments + AM/PM toggle
+
+function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  // Parse current value or default to 9:00 AM
+  function parseTime(v: string) {
+    const m = v.match(/(\d+):(\d+)\s*(AM|PM)/i)
+    if (m) return { hour: parseInt(m[1]), minute: parseInt(m[2]), ampm: m[3].toUpperCase() as 'AM' | 'PM' }
+    return { hour: 9, minute: 0, ampm: 'AM' as 'AM' | 'PM' }
+  }
+
+  const parsed = parseTime(value || '9:00 AM')
+  const [hour, setHour] = useState(parsed.hour)
+  const [minute, setMinute] = useState(parsed.minute)
+  const [ampm, setAmpm] = useState<'AM' | 'PM'>(parsed.ampm)
+  const [open, setOpen] = useState(false)
+
+  const HOURS = [1,2,3,4,5,6,7,8,9,10,11,12]
+  const MINUTES = [0,15,30,45]
+
+  function emit(h: number, m: number, ap: string) {
+    onChange(`${h}:${m.toString().padStart(2,'0')} ${ap}`)
+  }
+
+  function selectHour(h: number) { setHour(h); emit(h, minute, ampm) }
+  function selectMinute(m: number) { setMinute(m); emit(hour, m, ampm) }
+  function toggleAmPm() { const next = ampm === 'AM' ? 'PM' : 'AM'; setAmpm(next); emit(hour, minute, next) }
+
+  const displayVal = value || `${hour}:${minute.toString().padStart(2,'0')} ${ampm}`
+
+  return (
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      {/* Trigger button */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: 90,
+          padding: '6px 8px',
+          background: 'var(--bg-elevated)',
+          border: open ? '1px solid var(--accent-gold)' : '1px solid var(--border-subtle)',
+          borderRadius: 6,
+          fontSize: 13,
+          color: value ? 'var(--text-primary)' : 'var(--text-muted)',
+          cursor: 'pointer',
+          fontFamily: 'var(--font-body)',
+          textAlign: 'left',
+          letterSpacing: '0.02em',
+          fontVariantNumeric: 'tabular-nums',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        {displayVal}
+      </button>
+
+      {/* Dropdown wheel */}
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            zIndex: 500,
+            marginTop: 4,
+            background: '#13112A',
+            border: '1px solid rgba(232,184,75,0.3)',
+            borderRadius: 10,
+            padding: '12px 10px',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+            display: 'flex',
+            gap: 8,
+            alignItems: 'flex-start',
+          }}
+        >
+          {/* Hour wheel */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'] }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' }}>HR</div>
+            {HOURS.map(h => (
+              <button
+                key={h}
+                type="button"
+                onClick={() => selectHour(h)}
+                style={{
+                  width: 36,
+                  padding: '5px 0',
+                  background: h === hour ? 'var(--accent-gold)' : 'transparent',
+                  border: 'none',
+                  borderRadius: 5,
+                  color: h === hour ? '#0D0F14' : 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: h === hour ? 700 : 400,
+                  cursor: 'pointer',
+                  fontVariantNumeric: 'tabular-nums',
+                  transition: 'all 0.1s',
+                }}
+                onMouseEnter={e => { if (h !== hour) e.currentTarget.style.background = 'rgba(232,184,75,0.12)' }}
+                onMouseLeave={e => { if (h !== hour) e.currentTarget.style.background = 'transparent' }}
+              >
+                {h}
+              </button>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 200, background: 'rgba(255,255,255,0.08)', flexShrink: 0, marginTop: 22 }} />
+
+          {/* Minute wheel */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' }}>MIN</div>
+            {MINUTES.map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => selectMinute(m)}
+                style={{
+                  width: 36,
+                  padding: '5px 0',
+                  background: m === minute ? 'var(--accent-gold)' : 'transparent',
+                  border: 'none',
+                  borderRadius: 5,
+                  color: m === minute ? '#0D0F14' : 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: m === minute ? 700 : 400,
+                  cursor: 'pointer',
+                  fontVariantNumeric: 'tabular-nums',
+                  transition: 'all 0.1s',
+                }}
+                onMouseEnter={e => { if (m !== minute) e.currentTarget.style.background = 'rgba(232,184,75,0.12)' }}
+                onMouseLeave={e => { if (m !== minute) e.currentTarget.style.background = 'transparent' }}
+              >
+                {m.toString().padStart(2,'0')}
+              </button>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 200, background: 'rgba(255,255,255,0.08)', flexShrink: 0, marginTop: 22 }} />
+
+          {/* AM/PM toggle */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' }}>  </div>
+            {(['AM','PM'] as const).map(ap => (
+              <button
+                key={ap}
+                type="button"
+                onClick={() => { setAmpm(ap); emit(hour, minute, ap) }}
+                style={{
+                  width: 40,
+                  padding: '7px 0',
+                  background: ap === ampm ? 'rgba(139,92,246,0.35)' : 'transparent',
+                  border: ap === ampm ? '1px solid rgba(167,139,250,0.5)' : '1px solid transparent',
+                  borderRadius: 6,
+                  color: ap === ampm ? '#c4b5fd' : 'var(--text-muted)',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  letterSpacing: '0.05em',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {ap}
+              </button>
+            ))}
+          </div>
+
+          {/* Done button */}
+          <div style={{ position: 'absolute', bottom: 8, right: 8 }}>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              style={{
+                padding: '3px 10px',
+                background: 'var(--accent-gold)',
+                border: 'none',
+                borderRadius: 5,
+                color: '#0D0F14',
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >Done</button>
+          </div>
+        </div>
       )}
     </div>
   )
