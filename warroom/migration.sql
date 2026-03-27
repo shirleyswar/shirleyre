@@ -1,3 +1,20 @@
+
+-- ─── ADDRESS PARSING COLUMNS ──────────────────────────────────────────────────
+-- Run in Supabase SQL editor: https://supabase.com/dashboard/project/mtkyyaorvensylrfbhxv/sql/new
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS addr_number text;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS addr_street_name text;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS addr_street_type text;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS addr_direction text;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS addr_city text;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS addr_display text;
+-- addr_display = FILING.md formatted address (e.g. "Reitz Ave. 5525")
+-- addr_number = street number only (e.g. "5525")
+-- addr_street_name = street name only (e.g. "Reitz")
+-- addr_street_type = abbreviated type with period (e.g. "Ave.")
+-- addr_direction = cardinal (e.g. "N", "SW") or null
+-- addr_city = city if parseable (e.g. "Baton Rouge") or null
+-- ──────────────────────────────────────────────────────────────────────────────
+
 -- ─── PENDING MANUAL MIGRATION ───────────────────────────────────────────────
 -- Run this in Supabase SQL editor to add deal star ratings:
 -- https://supabase.com/dashboard/project/mtkyyaorvensylrfbhxv/sql/new
