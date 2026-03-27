@@ -327,7 +327,7 @@ export default function BattlePlanPanel() {
               border: '1px solid var(--border-subtle)',
               borderRadius: 6,
               padding: '5px 10px',
-              fontSize: 12,
+              fontSize: 13,
               color: newDealId ? 'var(--accent-gold)' : 'var(--text-muted)',
               outline: 'none',
               fontFamily: 'var(--font-body)',
@@ -344,7 +344,7 @@ export default function BattlePlanPanel() {
         )}
         {/* Life checkbox */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
             <input
               type="checkbox"
               checked={addToLife}
@@ -622,7 +622,7 @@ function TaskRow({
                 border: '1px solid var(--accent-gold)',
                 borderRadius: 4,
                 padding: '4px 8px',
-                fontSize: 12,
+                fontSize: 13,
                 color: editDealId ? 'var(--accent-gold)' : 'var(--text-muted)',
                 outline: 'none',
                 fontFamily: 'var(--font-body)',
