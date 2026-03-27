@@ -30,6 +30,12 @@ export interface Deal {
   dropbox_link: string | null
   parent_deal_id: string | null
   rating?: number | null
+  addr_number?: string | null
+  addr_street_name?: string | null
+  addr_street_type?: string | null
+  addr_direction?: string | null
+  addr_city?: string | null
+  addr_display?: string | null
   created_at: string
   updated_at: string
 }
