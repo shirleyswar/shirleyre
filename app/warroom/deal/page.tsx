@@ -587,6 +587,100 @@ function DealGlanceCard({ deal }: { deal: Deal }) {
   )
 }
 
+// ─── Lease Type Dropdown (custom — native select can't be styled when open) ───
+
+const LEASE_TYPES = ['NNN', 'Modified Gross', 'Full Service', 'Gross', 'Absolute Net']
+
+function LeaseTypeDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%',
+          background: 'rgba(255,255,255,0.05)',
+          border: `1px solid ${open ? 'rgba(232,184,75,0.5)' : 'rgba(255,255,255,0.12)'}`,
+          borderRadius: 6,
+          padding: '7px 10px',
+          fontSize: 13,
+          color: '#F0F2FF',
+          outline: 'none',
+          fontFamily: 'inherit',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        <span>{value}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s', color: 'rgba(232,184,75,0.6)' }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {/* Menu */}
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 4px)',
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          background: '#1A1E25',
+          border: '1px solid rgba(232,184,75,0.25)',
+          borderRadius: 8,
+          overflow: 'hidden',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+        }}>
+          {LEASE_TYPES.map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => { onChange(t); setOpen(false) }}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '9px 12px',
+                fontSize: 13,
+                color: t === value ? '#E8B84B' : '#F0F2FF',
+                background: t === value ? 'rgba(232,184,75,0.08)' : 'transparent',
+                border: 'none',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                fontWeight: t === value ? 700 : 400,
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => { if (t !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+              onMouseLeave={e => { if (t !== value) e.currentTarget.style.background = 'transparent' }}
+            >
+              {t === value && <span style={{ marginRight: 8, fontSize: 10 }}>✓</span>}
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Deal Economics Card ──────────────────────────────────────────────────────
 
 function DealEconomicsCard({ deal }: { deal: Deal }) {
@@ -814,19 +908,9 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
                 <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtLeaseRate(leaseRatePsfNum)}</div>
               )}
             </div>
-            <div style={colStyle}>
+            <div style={{ ...colStyle, position: 'relative' }}>
               <div style={labelStyle}>Lease Type</div>
-              <select
-                value={leaseType}
-                onChange={e => setLeaseType(e.target.value)}
-                style={{ ...inputStyle, fontSize: 12 }}
-              >
-                {['NNN', 'Modified Gross', 'Full Service', 'Gross', 'Absolute Net'].map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              {/* Show full selected value below — prevents mobile truncation */}
-              <div style={{ fontSize: 11, color: 'var(--accent-gold, #E8B84B)', marginTop: 3, fontWeight: 600 }}>{leaseType}</div>
+              <LeaseTypeDropdown value={leaseType} onChange={setLeaseType} />
             </div>
           </div>
           {/* NNN costs — only show when NNN is selected */}
