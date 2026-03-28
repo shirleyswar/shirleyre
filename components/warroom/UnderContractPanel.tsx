@@ -612,6 +612,9 @@ export default function UnderContractPanel() {
       }
     }
     fetchDeals()
+    // Poll every 30s so newly-UC'd deals appear without manual refresh
+    const interval = setInterval(fetchDeals, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   function handleToggleExpand(dealId: string) {
@@ -623,7 +626,7 @@ export default function UnderContractPanel() {
   }, [])
 
   return (
-    <div className="wr-card h-full min-h-[280px]">
+    <div className="wr-card">
       {/* Panel header */}
       <div className="wr-card-header">
         <span style={{ color: 'var(--accent-blue)', display: 'flex' }}>

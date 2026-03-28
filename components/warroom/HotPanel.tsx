@@ -126,7 +126,11 @@ export default function HotPanel() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    const interval = setInterval(load, 30000)
+    return () => clearInterval(interval)
+  }, [load])
 
   async function moveToUC(deal: Deal) {
     const { data, error } = await supabase
@@ -162,7 +166,7 @@ export default function HotPanel() {
           border: '1px solid rgba(251,146,60,0.3)',
         }}>0</span>
       </div>
-      <div style={{ fontSize: 13, color: '#4b5563', textAlign: 'center', padding: '24px 0' }}>
+      <div style={{ fontSize: 12, color: '#4b5563', padding: '8px 0' }}>
         No active offer negotiations.
       </div>
     </div>
