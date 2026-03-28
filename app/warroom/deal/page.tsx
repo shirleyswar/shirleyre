@@ -415,7 +415,12 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
     ? leaseRatePsfNum * sqftNum * leaseTermYearsNum : null
   const leaseCommission = leaseGrossValue != null ? leaseGrossValue * (leaseCommPctNum / 100) * 0.75 : null
 
+  // Format helpers for display fields
   const formatMoney = (n: number | null) => n != null ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'
+  const fmtSqft = (n: number) => n > 0 ? n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' SF' : '—'
+  const fmtSalePrice = (n: number) => n > 0 ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'
+  const fmtLeaseRate = (n: number) => n > 0 ? '$' + n.toFixed(2) + ' PSF/yr' : '—'
+  const fmtCommPct = (n: number) => n.toFixed(2) + '%'
 
   async function saveEconomics() {
     setSaving(true)
@@ -511,6 +516,9 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
           placeholder="e.g. 5000"
           style={inputStyle}
         />
+        {sqftNum > 0 && (
+          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{fmtSqft(sqftNum)}</div>
+        )}
       </div>
 
       {/* Sale section */}
@@ -527,6 +535,9 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
                 placeholder="$"
                 style={inputStyle}
               />
+              {askingPriceNum > 0 && (
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{fmtSalePrice(askingPriceNum)}</div>
+              )}
             </div>
             <div style={colStyle}>
               <div style={labelStyle}>Commission %</div>
@@ -534,9 +545,12 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
                 type="number"
                 value={saleCommPct}
                 onChange={e => setSaleCommPct(e.target.value)}
-                step="0.1"
+                step="0.01"
                 style={inputStyle}
               />
+              {saleCommPctNum > 0 && (
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{fmtCommPct(saleCommPctNum)}</div>
+              )}
             </div>
           </div>
           <div style={rowStyle}>
@@ -566,18 +580,22 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
                 placeholder="$"
                 style={inputStyle}
               />
+              {leaseRatePsfNum > 0 && (
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{fmtLeaseRate(leaseRatePsfNum)}</div>
+              )}
             </div>
             <div style={colStyle}>
               <div style={labelStyle}>Lease Type</div>
               <select
                 value={leaseType}
                 onChange={e => setLeaseType(e.target.value)}
-                style={{ ...inputStyle }}
+                style={{ ...inputStyle, whiteSpace: 'normal', wordBreak: 'break-word' }}
               >
-                {['NNN', 'Modified Gross', 'Full Service'].map(t => (
+                {['NNN', 'Modified Gross', 'Full Service', 'Gross', 'Absolute Net'].map(t => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
+              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{leaseType}</div>
             </div>
           </div>
           <div style={rowStyle}>
@@ -597,9 +615,12 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
                 type="number"
                 value={leaseCommPct}
                 onChange={e => setLeaseCommPct(e.target.value)}
-                step="0.1"
+                step="0.01"
                 style={inputStyle}
               />
+              {leaseCommPctNum > 0 && (
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{fmtCommPct(leaseCommPctNum)}</div>
+              )}
             </div>
           </div>
           <div style={rowStyle}>
@@ -1791,8 +1812,8 @@ function DealDashboardInner() {
         {/* ── RIGHT COLUMN (35%) ── */}
         <div style={{ flex: '0 0 35%', minWidth: 0 }}>
 
-          {/* Deal Actions Card */}
-          <div style={cardStyle}>
+          {/* Deal Actions Card — hidden on mobile */}
+          <div className="hidden sm:block" style={cardStyle}>
             <div style={{ ...sectionHeadStyle, marginBottom: 16 }}>Deal Actions</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
