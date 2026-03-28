@@ -398,6 +398,23 @@ export default function SchedulePanel() {
     } catch {}
   }
 
+  async function saveEvent(id: string, updates: Partial<ScheduleEvent>) {
+    try {
+      const { data, error } = await supabase
+        .from('schedule_events')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+      if (!error && data) {
+        setUpcomingEvents(prev =>
+          prev.map(e => e.id === id ? { ...e, ...data } : e)
+            .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+        )
+      }
+    } catch {}
+  }
+
   // Group events by date for display
   const grouped: { date: string; events: ScheduleEvent[] }[] = []
   for (const ev of upcomingEvents) {
@@ -569,7 +586,7 @@ export default function SchedulePanel() {
               {/* Events under this date */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 4 }}>
                 {group.events.map(event => (
-                  <EventRow key={event.id} event={event} onDelete={deleteEvent} />
+                  <EventRow key={event.id} event={event} onDelete={deleteEvent} onSave={saveEvent} deals={deals} />
                 ))}
               </div>
             </div>
@@ -582,13 +599,80 @@ export default function SchedulePanel() {
 
 // ─── Event Row ────────────────────────────────────────────────────────────────
 
-function EventRow({ event, onDelete }: { event: ScheduleEvent; onDelete: (id: string) => void }) {
+function EventRow({
+  event,
+  onDelete,
+  onSave,
+  deals,
+}: {
+  event: ScheduleEvent
+  onDelete: (id: string) => void
+  onSave: (id: string, updates: Partial<ScheduleEvent>) => void
+  deals: DealOption[]
+}) {
   const [hovered, setHovered] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editTime, setEditTime] = useState(event.time)
+  const [editTitle, setEditTitle] = useState(event.title)
+  const [editLocation, setEditLocation] = useState(event.location ?? '')
+
+  function save() {
+    if (!editTitle.trim()) return
+    onSave(event.id, {
+      time: editTime,
+      title: editTitle.trim(),
+      location: editLocation.trim() || null,
+    })
+    setEditing(false)
+  }
+
+  function cancel() {
+    setEditTime(event.time)
+    setEditTitle(event.title)
+    setEditLocation(event.location ?? '')
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', gap: 8,
+        padding: '10px 10px',
+        background: 'rgba(232,184,75,0.05)',
+        borderRadius: 6,
+        border: '1px solid rgba(232,184,75,0.25)',
+      }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <TimeWheel value={editTime} onChange={setEditTime} />
+          <input
+            autoFocus
+            value={editTitle}
+            onChange={e => setEditTitle(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel() }}
+            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(232,184,75,0.35)', borderRadius: 6, padding: '8px 10px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+          />
+        </div>
+        <input
+          value={editLocation}
+          onChange={e => setEditLocation(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel() }}
+          placeholder="Location (optional)"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '7px 10px', fontSize: 12, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+        />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={cancel} style={{ flex: 1, padding: '7px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#6B7280', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Cancel</button>
+          <button onClick={save} style={{ flex: 2, padding: '7px', background: 'rgba(232,184,75,0.15)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 6, color: '#E8B84B', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Save</button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onDoubleClick={() => setEditing(true)}
+      title="Double-click to edit"
       style={{
         display: 'flex',
         gap: 10,
@@ -597,18 +681,13 @@ function EventRow({ event, onDelete }: { event: ScheduleEvent; onDelete: (id: st
         borderRadius: 6,
         border: '1px solid var(--border-subtle)',
         alignItems: 'center',
+        cursor: 'default',
+        transition: 'border-color 0.15s',
+        ...(hovered ? { borderColor: 'rgba(232,184,75,0.2)' } : {}),
       }}
     >
       {/* Time */}
-      <div style={{
-        width: 68,
-        fontSize: 12,
-        fontWeight: 700,
-        color: 'var(--accent-gold)',
-        flexShrink: 0,
-        fontVariantNumeric: 'tabular-nums',
-        whiteSpace: 'nowrap',
-      }}>
+      <div style={{ width: 68, fontSize: 12, fontWeight: 700, color: 'var(--accent-gold)', flexShrink: 0, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
         {event.time}
       </div>
       {/* Title + location */}
@@ -622,15 +701,22 @@ function EventRow({ event, onDelete }: { event: ScheduleEvent; onDelete: (id: st
           </div>
         )}
       </div>
-      {/* Delete on hover */}
+      {/* Hover actions */}
       {hovered && (
-        <button
-          onClick={() => onDelete(event.id)}
-          title="Delete"
-          style={{ background: 'transparent', border: 'none', color: 'rgba(239,68,68,0.6)', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: '2px 4px', borderRadius: 4, flexShrink: 0 }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(239,68,68,0.6)')}
-        >✕</button>
+        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+          <button
+            onClick={() => setEditing(true)}
+            title="Edit"
+            style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, padding: '2px 6px' }}
+          >✎</button>
+          <button
+            onClick={() => onDelete(event.id)}
+            title="Delete"
+            style={{ background: 'transparent', border: 'none', color: 'rgba(239,68,68,0.6)', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(239,68,68,0.6)')}
+          >✕</button>
+        </div>
       )}
     </div>
   )
@@ -650,9 +736,22 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
   const [minute, setMinute] = useState(parsed.minute)
   const [ampm, setAmpm] = useState<'AM' | 'PM'>(parsed.ampm)
   const [open, setOpen] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const HOURS = [1,2,3,4,5,6,7,8,9,10,11,12]
   const MINUTES = [0,15,30,45]
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return
+    function handler(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
 
   function emit(h: number, m: number, ap: string) {
     onChange(`${h}:${m.toString().padStart(2,'0')} ${ap}`)
@@ -664,7 +763,7 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
   const displayVal = value || `${hour}:${minute.toString().padStart(2,'0')} ${ampm}`
 
   return (
-    <div style={{ position: 'relative', flexShrink: 0 }}>
+    <div ref={wrapperRef} style={{ position: 'relative', flexShrink: 0 }}>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
@@ -698,7 +797,7 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
             background: '#13112A',
             border: '1px solid rgba(232,184,75,0.3)',
             borderRadius: 10,
-            padding: '12px 10px',
+            padding: '12px 10px 12px 10px',
             boxShadow: '0 12px 40px rgba(0,0,0,0.8)',
             display: 'flex',
             gap: 8,
@@ -759,16 +858,6 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
                 }}
               >{ap}</button>
             ))}
-          </div>
-          <div style={{ position: 'absolute', bottom: 8, right: 8 }}>
-            <button type="button" onClick={() => setOpen(false)}
-              style={{
-                padding: '3px 10px',
-                background: 'var(--accent-gold)',
-                border: 'none', borderRadius: 5,
-                color: '#0D0F14', fontSize: 11, fontWeight: 700, cursor: 'pointer',
-              }}
-            >Done</button>
           </div>
         </div>
       )}
