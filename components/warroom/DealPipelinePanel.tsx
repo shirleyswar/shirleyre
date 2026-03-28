@@ -832,11 +832,11 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
               </div>
               <input
                 autoFocus
-                type="password"
+                type="tel"
                 inputMode="numeric"
                 maxLength={4}
                 value={deletePin}
-                onChange={e => { setDeletePin(e.target.value); setDeleteError(false) }}
+                onChange={e => { const v = e.target.value.replace(/\D/g,'').slice(0,4); setDeletePin(v); setDeleteError(false); if (v.length === 4) handleDelete() }}
                 onKeyDown={e => e.key === 'Enter' && deletePin.length === 4 && handleDelete()}
                 placeholder="Enter PIN"
                 style={{ width: '100%', fontSize: 20, textAlign: 'center', letterSpacing: '0.3em', padding: '10px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${deleteError ? '#ef4444' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', marginBottom: 6, boxSizing: 'border-box' as const }}
@@ -869,11 +869,11 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
               </div>
               <input
                 autoFocus
-                type="password"
+                type="tel"
                 inputMode="numeric"
                 maxLength={4}
                 value={ucPin}
-                onChange={e => { setUcPin(e.target.value); setUcError(false) }}
+                onChange={e => { const v = e.target.value.replace(/\D/g,'').slice(0,4); setUcPin(v); setUcError(false); if (v.length === 4) handleUC() }}
                 onKeyDown={e => e.key === 'Enter' && ucPin.length === 4 && handleUC()}
                 placeholder="Enter PIN"
                 style={{ width: '100%', fontSize: 20, textAlign: 'center', letterSpacing: '0.3em', padding: '10px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${ucError ? '#2DD4BF' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', marginBottom: 6, boxSizing: 'border-box' as const }}
@@ -939,11 +939,11 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
               )}
               <input
                 autoFocus
-                type="password"
+                type="tel"
                 inputMode="numeric"
                 maxLength={4}
                 value={killPin}
-                onChange={e => { setKillPin(e.target.value); setKillError(false) }}
+                onChange={e => { const v = e.target.value.replace(/\D/g,'').slice(0,4); setKillPin(v); setKillError(false); if (v.length === 4 && selectedKill) handleKill() }}
                 onKeyDown={e => e.key === 'Enter' && killPin.length === 4 && selectedKill && handleKill()}
                 placeholder="Enter PIN"
                 style={{ width: '100%', fontSize: 20, textAlign: 'center', letterSpacing: '0.3em', padding: '10px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${killError ? '#F59E0B' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', marginBottom: 6, boxSizing: 'border-box' as const }}

@@ -223,9 +223,10 @@ function PinModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: ()
   const [err, setErr] = useState(false)
   const [checking, setChecking] = useState(false)
 
-  async function check() {
+  async function checkPin(value: string) {
+    if (value.length !== 4) return
     setChecking(true)
-    const hash = await sha256(pin)
+    const hash = await sha256(value)
     if (hash === PIN_HASH) {
       onConfirm()
     } else {
@@ -235,10 +236,20 @@ function PinModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: ()
     setChecking(false)
   }
 
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 4)
+    setPin(raw)
+    setErr(false)
+    if (raw.length === 4) checkPin(raw)
+  }
+
+  // Dot indicators
+  const dots = [0, 1, 2, 3]
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
-      background: 'rgba(0,0,0,0.75)',
+      background: 'rgba(0,0,0,0.8)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{
@@ -252,25 +263,61 @@ function PinModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: ()
         <div style={{ fontSize: 13, fontWeight: 700, color: '#E8B84B', marginBottom: 6, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
           Authorization Required
         </div>
-        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 20 }}>Enter PIN to continue</div>
-        <input
-          type="password"
-          value={pin}
-          onChange={e => { setPin(e.target.value); setErr(false) }}
-          onKeyDown={e => e.key === 'Enter' && check()}
-          placeholder="PIN"
-          autoFocus
-          style={{ ...inputStyle, textAlign: 'center', fontSize: 20, letterSpacing: '0.3em', marginBottom: 12 }}
-        />
-        {err && <div style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>Incorrect PIN</div>}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <button onClick={onCancel} style={btnStyle('#9ca3af', 'transparent', 'rgba(156,163,175,0.3)')}>
-            Cancel
-          </button>
-          <button onClick={check} disabled={checking || pin.length === 0} style={btnStyle('#000', '#E8B84B', '#E8B84B')}>
-            Confirm
-          </button>
+        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 24 }}>Enter 4-digit PIN</div>
+
+        {/* Dot indicators */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 20 }}>
+          {dots.map(i => (
+            <div key={i} style={{
+              width: 14, height: 14, borderRadius: '50%',
+              background: i < pin.length ? '#E8B84B' : 'transparent',
+              border: `2px solid ${i < pin.length ? '#E8B84B' : 'rgba(232,184,75,0.3)'}`,
+              transition: 'all 0.15s',
+            }} />
+          ))}
         </div>
+
+        {/* Hidden input — numeric keyboard on iOS */}
+        <input
+          type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={pin}
+          onChange={handleChange}
+          autoFocus
+          maxLength={4}
+          style={{
+            position: 'absolute',
+            opacity: 0,
+            width: 1,
+            height: 1,
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Tap area to focus the hidden input */}
+        <div
+          onClick={() => {
+            const inp = document.querySelector('input[type="tel"]') as HTMLInputElement | null
+            inp?.focus()
+          }}
+          style={{
+            fontSize: 11, color: '#4b5563', marginBottom: 16, cursor: 'pointer',
+            letterSpacing: '0.06em',
+          }}
+        >
+          {err ? (
+            <span style={{ color: '#ef4444', fontWeight: 700 }}>Incorrect PIN — try again</span>
+          ) : checking ? (
+            <span style={{ color: '#E8B84B' }}>Checking…</span>
+          ) : (
+            'Tap here if keyboard doesn\'t appear'
+          )}
+        </div>
+
+        <button onClick={onCancel} style={{ ...btnStyle('#9ca3af', 'transparent', 'rgba(156,163,175,0.3)'), width: '100%' }}>
+          Cancel
+        </button>
       </div>
     </div>
   )
