@@ -360,27 +360,32 @@ export default function DealPipelinePanel() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 15 }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+              <tr style={{
+                borderBottom: '1px solid rgba(139,92,246,0.35)',
+                background: 'rgba(139,92,246,0.06)',
+                boxShadow: 'inset 0 -1px 0 rgba(139,92,246,0.3)',
+              }}>
                 {([
-                  { label: 'FILES',      cls: 'hidden sm:table-cell' },
-                  { label: 'More',       cls: '' },
-                  { label: 'Address',    cls: '' },
-                  { label: 'ID / Client',cls: 'hidden sm:table-cell' },
-                  { label: 'Type',       cls: 'hidden sm:table-cell' },
-                  { label: 'Status',     cls: '' },
-                  { label: 'Tier',       cls: 'hidden sm:table-cell' },
-                  { label: 'Rating',     cls: '' },
-                  { label: 'Actions',    cls: 'hidden sm:table-cell' },
-                ] as { label: string; cls: string }[]).map(h => (
+                  { label: 'FILES', cls: 'hidden sm:table-cell', align: 'center' },
+                  { label: 'More',  cls: '',                      align: 'center' },
+                  { label: 'Address',     cls: '',                      align: 'left'   },
+                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'left'   },
+                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'left'   },
+                  { label: 'Status',      cls: '',                      align: 'left'   },
+                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'left'   },
+                  { label: 'Rating',      cls: '',                      align: 'left'   },
+                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'left'   },
+                ] as { label: string; cls: string; align: string }[]).map(h => (
                   <th key={h.label} className={h.cls} style={{
-                    textAlign: 'left',
-                    padding: '7px 10px',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: 'var(--text-muted)',
+                    textAlign: h.align as React.CSSProperties['textAlign'],
+                    padding: '8px 6px',
+                    fontSize: 9,
+                    fontWeight: 800,
+                    color: 'rgba(167,139,250,0.8)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
+                    letterSpacing: '0.1em',
                     whiteSpace: 'nowrap',
+                    borderRight: h.label === 'FILES' ? '1px solid rgba(139,92,246,0.15)' : undefined,
                   }}>{h.label}</th>
                 ))}
               </tr>
@@ -652,7 +657,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       onMouseLeave={e => (e.currentTarget.style.background = editing ? 'rgba(167,139,250,0.04)' : '')}
     >
       {/* Col 1: Files — hidden on mobile */}
-      <td className="hidden sm:table-cell" style={{ padding: '10px 8px' }}>
+      <td className="hidden sm:table-cell" style={{ padding: '8px 6px', textAlign: 'center', borderRight: '1px solid rgba(139,92,246,0.1)' }}>
         <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
       </td>
       {/* Col 2: Deal page button — MORE */}
