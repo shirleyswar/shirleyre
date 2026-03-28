@@ -28,7 +28,6 @@ function todayCST(): string {
 }
 
 function formatDisplayDate(dateStr: string): string {
-  // dateStr is YYYY-MM-DD
   const [y, m, d] = dateStr.split('-').map(Number)
   const dt = new Date(y, m - 1, d)
   const today = todayCST()
@@ -38,6 +37,20 @@ function formatDisplayDate(dateStr: string): string {
   const tomorrowStr = tomorrow.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
   if (dateStr === tomorrowStr) return 'Tomorrow'
   return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+// Smart date label for group headers: Today / Tomorrow / "Wednesday, April 2"
+function formatGroupHeader(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  const today = todayCST()
+  if (dateStr === today) return 'Today'
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const tomorrowStr = tomorrow.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  if (dateStr === tomorrowStr) return 'Tomorrow'
+  // e.g. "Wednesday, April 2"
+  return dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 }
 
 function formatFullDate(dateStr: string): string {
@@ -273,11 +286,11 @@ function DateSelector({ value, onChange }: { value: string; onChange: (v: string
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
 export default function SchedulePanel() {
-  const [events, setEvents] = useState<ScheduleEvent[]>([])
+  // "upcoming" = next 5 events from today onward, grouped by date
+  const [upcomingEvents, setUpcomingEvents] = useState<ScheduleEvent[]>([])
   const [deals, setDeals] = useState<DealOption[]>([])
   const [loading, setLoading] = useState(true)
   const [tableReady, setTableReady] = useState(true)
-  const [viewDate, setViewDate] = useState(todayCST())
 
   // Add form state
   const [formDate, setFormDate] = useState(todayCST())
@@ -290,11 +303,8 @@ export default function SchedulePanel() {
 
   useEffect(() => {
     fetchDeals()
+    fetchUpcoming()
   }, [])
-
-  useEffect(() => {
-    fetchEvents(viewDate)
-  }, [viewDate])
 
   async function fetchDeals() {
     try {
@@ -307,14 +317,17 @@ export default function SchedulePanel() {
     } catch {}
   }
 
-  async function fetchEvents(date: string) {
+  async function fetchUpcoming() {
     setLoading(true)
     try {
+      const today = todayCST()
       const { data, error } = await supabase
         .from('schedule_events')
         .select('*')
-        .eq('date', date)
+        .gte('date', today)
+        .order('date', { ascending: true })
         .order('time', { ascending: true })
+        .limit(5)
 
       if (error) {
         if (error.code === '42P01' || error.message?.includes('does not exist')) {
@@ -323,7 +336,7 @@ export default function SchedulePanel() {
         setLoading(false)
         return
       }
-      if (data) setEvents(data as ScheduleEvent[])
+      setUpcomingEvents((data ?? []) as ScheduleEvent[])
     } catch {
       setTableReady(false)
     } finally {
@@ -331,19 +344,10 @@ export default function SchedulePanel() {
     }
   }
 
-  function shiftViewDate(days: number) {
-    const [y, m, d] = viewDate.split('-').map(Number)
-    const dt = new Date(y, m - 1, d)
-    dt.setDate(dt.getDate() + days)
-    setViewDate(dt.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }))
-  }
-
   function openAddForm() {
-    setFormDate(viewDate)
+    setFormDate(todayCST())
     setShowAddForm(true)
-    if (typeof window !== 'undefined') {
-      document.body.style.overflow = 'hidden'
-    }
+    if (typeof window !== 'undefined') document.body.style.overflow = 'hidden'
   }
 
   const closeModal = useCallback(() => {
@@ -352,11 +356,9 @@ export default function SchedulePanel() {
     setFormTitle('')
     setFormLocation('')
     setFormDealId('')
-    setFormDate(viewDate)
-    if (typeof window !== 'undefined') {
-      document.body.style.overflow = ''
-    }
-  }, [viewDate])
+    setFormDate(todayCST())
+    if (typeof window !== 'undefined') document.body.style.overflow = ''
+  }, [])
 
   async function addEvent() {
     if (!formTitle.trim() || !formTime.trim()) return
@@ -375,22 +377,15 @@ export default function SchedulePanel() {
         .single()
 
       if (error) {
-        if (error.code === '42P01' || error.message?.includes('does not exist')) {
-          setTableReady(false)
-        }
+        if (error.code === '42P01' || error.message?.includes('does not exist')) setTableReady(false)
         setAdding(false)
         return
       }
-
       if (data) {
-        // If the added event is for the currently viewed date, add it to the list
-        if (formDate === viewDate) {
-          setEvents(prev =>
-            [...prev, data as ScheduleEvent].sort((a, b) => a.time.localeCompare(b.time))
-          )
-        }
         setTableReady(true)
         closeModal()
+        // Refresh the upcoming list
+        await fetchUpcoming()
       }
     } catch {}
     setAdding(false)
@@ -399,135 +394,90 @@ export default function SchedulePanel() {
   async function deleteEvent(id: string) {
     try {
       await supabase.from('schedule_events').delete().eq('id', id)
-      setEvents(prev => prev.filter(e => e.id !== id))
+      setUpcomingEvents(prev => prev.filter(e => e.id !== id))
     } catch {}
   }
 
-  const isToday = viewDate === todayCST()
+  // Group events by date for display
+  const grouped: { date: string; events: ScheduleEvent[] }[] = []
+  for (const ev of upcomingEvents) {
+    const last = grouped[grouped.length - 1]
+    if (last && last.date === ev.date) {
+      last.events.push(ev)
+    } else {
+      grouped.push({ date: ev.date, events: [ev] })
+    }
+  }
 
   return (
     <div className="wr-card h-full min-h-[240px]">
       <div className="wr-card-header">
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
-          <CalIcon />
-        </span>
+        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}><CalIcon /></span>
         <span className="wr-card-title" style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.12em', color: 'var(--accent-gold)' }}>
           SCHEDULE
         </span>
         <span className="wr-panel-line" />
-        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatFullDate(viewDate)}</span>
-      </div>
-
-      {/* Date nav + Add button row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        {/* Prev day */}
-        <button
-          onClick={() => shiftViewDate(-1)}
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 6,
-            color: 'var(--text-muted)',
-            cursor: 'pointer',
-            width: 28,
-            height: 28,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 14,
-            flexShrink: 0,
-          }}
-        >‹</button>
-
-        {/* Today pill */}
-        {!isToday && (
-          <button
-            onClick={() => setViewDate(todayCST())}
-            style={{
-              padding: '3px 10px',
-              background: 'rgba(232,184,75,0.1)',
-              border: '1px solid rgba(232,184,75,0.25)',
-              borderRadius: 20,
-              fontSize: 10,
-              fontWeight: 700,
-              color: 'var(--accent-gold)',
-              cursor: 'pointer',
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Today
-          </button>
-        )}
-
-        {/* Next day */}
-        <button
-          onClick={() => shiftViewDate(1)}
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 6,
-            color: 'var(--text-muted)',
-            cursor: 'pointer',
-            width: 28,
-            height: 28,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 14,
-            flexShrink: 0,
-          }}
-        >›</button>
-
-        <div style={{ flex: 1 }} />
-
-        {/* Add Event */}
+        {/* TODAY button — purple */}
         <button
           onClick={openAddForm}
-          className="wr-btn-orbit"
-          style={{ fontSize: 12 }}
+          style={{
+            padding: '4px 12px',
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.35) 0%, rgba(109,40,217,0.45) 100%)',
+            border: '1px solid rgba(167,139,250,0.5)',
+            borderRadius: 20,
+            color: '#c4b5fd',
+            fontSize: 10,
+            fontWeight: 800,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-body)',
+            boxShadow: '0 0 10px rgba(139,92,246,0.25)',
+          }}
         >
           + Add Event
+        </button>
+      </div>
+
+      {/* TODAY purple pill below header */}
+      <div style={{ marginBottom: 14 }}>
+        <button
+          onClick={openAddForm}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 16px',
+            background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
+            border: '1px solid rgba(167,139,250,0.6)',
+            borderRadius: 20,
+            color: '#EDE9FE',
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-body)',
+            boxShadow: '0 0 18px rgba(124,58,237,0.4)',
+          }}
+        >
+          <span style={{ fontSize: 14 }}>📅</span>
+          TODAY — {new Date().toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' })}
         </button>
       </div>
 
       {/* Add Event Modal */}
       {showAddForm && (
         <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.75)',
-            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-            padding: '80px 16px 24px',
-          }}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
           onClick={e => { if (e.target === e.currentTarget) closeModal() }}
         >
-          <div
-            style={{
-              background: '#13112A',
-              border: '1px solid rgba(232,184,75,0.3)',
-              borderRadius: 14,
-              padding: 24,
-              width: '100%',
-              maxWidth: 440,
-              boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-            }}
-          >
-            {/* Header */}
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', fontFamily: 'monospace' }}>
-              Add Event
-            </div>
-
-            {/* Date selector */}
+          <div style={{ background: '#13112A', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', fontFamily: 'monospace' }}>Add Event</div>
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Date</div>
               <DateSelector value={formDate} onChange={setFormDate} />
             </div>
-
-            {/* Time + Title */}
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Time &amp; Title</div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -537,107 +487,38 @@ export default function SchedulePanel() {
                   type="text"
                   value={formTitle}
                   onChange={e => setFormTitle(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent()
-                    if (e.key === 'Escape') closeModal()
-                  }}
+                  onKeyDown={e => { if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent(); if (e.key === 'Escape') closeModal() }}
                   placeholder="Event title"
-                  style={{
-                    flex: 1,
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: 8,
-                    padding: '10px 12px',
-                    fontSize: 14,
-                    color: '#F2EDE4',
-                    outline: 'none',
-                    fontFamily: 'var(--font-body)',
-                  }}
+                  style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
                 />
               </div>
             </div>
-
-            {/* Location */}
             <input
               type="text"
               value={formLocation}
               onChange={e => setFormLocation(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent()
-                if (e.key === 'Escape') closeModal()
-              }}
+              onKeyDown={e => { if (e.key === 'Enter' && formTitle.trim() && formTime) addEvent(); if (e.key === 'Escape') closeModal() }}
               placeholder="Location (optional)"
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 8,
-                padding: '10px 12px',
-                fontSize: 14,
-                color: '#F2EDE4',
-                outline: 'none',
-                fontFamily: 'var(--font-body)',
-              }}
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
             />
-
-            {/* Deal link */}
             {deals.length > 0 && (
               <select
                 value={formDealId}
                 onChange={e => setFormDealId(e.target.value)}
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: 8,
-                  padding: '10px 12px',
-                  fontSize: 14,
-                  color: formDealId ? 'var(--accent-gold)' : '#6B7280',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                }}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: formDealId ? 'var(--accent-gold)' : '#6B7280', outline: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
               >
                 <option value="">No deal linked</option>
-                {deals.map(d => (
-                  <option key={d.id} value={d.id}>{d.address || d.name}</option>
-                ))}
+                {deals.map(d => <option key={d.id} value={d.id}>{d.address || d.name}</option>)}
               </select>
             )}
-
-            {/* Actions */}
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              <button
-                onClick={closeModal}
-                style={{
-                  flex: 1, padding: '11px',
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 8,
-                  color: '#6B7280',
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                }}
-              >
+              <button onClick={closeModal} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
                 Cancel
               </button>
               <button
                 onClick={addEvent}
                 disabled={adding || !formTitle.trim() || !formTime}
-                style={{
-                  flex: 2, padding: '11px',
-                  background: adding || !formTitle.trim() || !formTime
-                    ? 'rgba(139,92,246,0.2)'
-                    : 'linear-gradient(135deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.5) 100%)',
-                  border: '1px solid rgba(167,139,250,0.5)',
-                  borderRadius: 8,
-                  color: '#c4b5fd',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: adding || !formTitle.trim() || !formTime ? 'not-allowed' : 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  opacity: adding || !formTitle.trim() || !formTime ? 0.5 : 1,
-                  transition: 'all 0.15s',
-                }}
+                style={{ flex: 2, padding: '11px', background: adding || !formTitle.trim() || !formTime ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.5) 100%)', border: '1px solid rgba(167,139,250,0.5)', borderRadius: 8, color: '#c4b5fd', fontSize: 14, fontWeight: 700, cursor: adding || !formTitle.trim() || !formTime ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: adding || !formTitle.trim() || !formTime ? 0.5 : 1 }}
               >
                 {adding ? 'Saving...' : `Save — ${formatDisplayDate(formDate)}`}
               </button>
@@ -646,25 +527,52 @@ export default function SchedulePanel() {
         </div>
       )}
 
-      {/* Event List */}
+      {/* ── Upcoming Events List ── */}
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[1, 2, 3].map(i => (
-            <div key={i} className="skeleton" style={{ height: 44, borderRadius: 6 }} />
-          ))}
+          {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 44, borderRadius: 6 }} />)}
         </div>
       ) : !tableReady ? (
         <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0', fontStyle: 'italic' }}>
-          Schedule table not yet created. Add your first event to initialize.
+          Schedule table not yet created. Add your first event above.
         </div>
-      ) : events.length === 0 ? (
+      ) : grouped.length === 0 ? (
         <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0', fontStyle: 'italic' }}>
-          Nothing scheduled {isToday ? 'today' : 'this day'}.
+          No upcoming events. Tap + Add Event to schedule one.
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {events.map(event => (
-            <EventRow key={event.id} event={event} onDelete={deleteEvent} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {grouped.map(group => (
+            <div key={group.date}>
+              {/* Date group header */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 6,
+                marginTop: 8,
+              }}>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: group.date === todayCST()
+                    ? '#A78BFA'   // purple for today
+                    : 'var(--text-muted)',
+                  fontFamily: 'var(--font-body)',
+                }}>
+                  {formatGroupHeader(group.date)}
+                </span>
+                <div style={{ flex: 1, height: 1, background: group.date === todayCST() ? 'rgba(167,139,250,0.2)' : 'var(--border-subtle)' }} />
+              </div>
+              {/* Events under this date */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 4 }}>
+                {group.events.map(event => (
+                  <EventRow key={event.id} event={event} onDelete={deleteEvent} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -684,50 +592,45 @@ function EventRow({ event, onDelete }: { event: ScheduleEvent; onDelete: (id: st
       style={{
         display: 'flex',
         gap: 10,
-        padding: '8px 10px',
+        padding: '7px 10px',
         background: 'var(--bg-elevated)',
         borderRadius: 6,
         border: '1px solid var(--border-subtle)',
         alignItems: 'center',
-        position: 'relative',
       }}
     >
+      {/* Time */}
       <div style={{
-        width: 64,
-        fontSize: 13,
-        fontWeight: 600,
+        width: 68,
+        fontSize: 12,
+        fontWeight: 700,
         color: 'var(--accent-gold)',
         flexShrink: 0,
         fontVariantNumeric: 'tabular-nums',
+        whiteSpace: 'nowrap',
       }}>
         {event.time}
       </div>
+      {/* Title + location */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.4 }}>{event.title}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {event.title}
+        </div>
         {event.location && (
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{event.location}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {event.location}
+          </div>
         )}
       </div>
+      {/* Delete on hover */}
       {hovered && (
         <button
           onClick={() => onDelete(event.id)}
-          title="Delete event"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'rgba(239,68,68,0.6)',
-            cursor: 'pointer',
-            fontSize: 14,
-            lineHeight: 1,
-            padding: '2px 4px',
-            borderRadius: 4,
-            flexShrink: 0,
-          }}
+          title="Delete"
+          style={{ background: 'transparent', border: 'none', color: 'rgba(239,68,68,0.6)', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: '2px 4px', borderRadius: 4, flexShrink: 0 }}
           onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
           onMouseLeave={e => (e.currentTarget.style.color = 'rgba(239,68,68,0.6)')}
-        >
-          ✕
-        </button>
+        >✕</button>
       )}
     </div>
   )
