@@ -323,7 +323,7 @@ export default function BattlePlanPanel() {
             <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
               <th className="wr-rank2" style={{ width: 28, padding: '4px 6px' }}></th>
               <th className="wr-rank2" style={{ padding: '4px 8px', textAlign: 'left' }}>Action Item</th>
-              <th className="wr-rank2" style={{ width: 100, padding: '4px 8px', textAlign: 'left' }}>Deal</th>
+              <th className="wr-rank2 hidden sm:table-cell" style={{ width: 100, padding: '4px 8px', textAlign: 'left' }}>Deal</th>
               <th className="wr-rank2" style={{ width: 32, padding: '4px 6px' }}></th>
             </tr>
           </thead>
@@ -526,7 +526,7 @@ function TaskRow({
       </td>
 
       {/* Col 2: Title */}
-      <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
+      <td style={{ padding: '8px 8px', verticalAlign: 'top' }}>
         {editing ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <input
@@ -550,19 +550,30 @@ function TaskRow({
             </div>
           </div>
         ) : (
-          <span style={{
-            fontSize: 13, color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
-            textDecoration: completing ? 'line-through' : 'none',
-            transition: 'all 0.3s', display: 'block', lineHeight: 1.4,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {task.title}
-          </span>
+          <div>
+            <span style={{
+              fontSize: 13, color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
+              textDecoration: completing ? 'line-through' : 'none',
+              transition: 'all 0.3s',
+              lineHeight: 1.4,
+              wordBreak: 'break-word',
+            }}>
+              {task.title}
+            </span>
+            {/* Deal tag inline under title on mobile (Deal col hidden on mobile) */}
+            {deal && (
+              <div className="sm:hidden" style={{ marginTop: 3 }}>
+                <span style={{ fontSize: 10, color: 'var(--accent-gold)', fontFamily: 'monospace' }}>
+                  {dealShort}
+                </span>
+              </div>
+            )}
+          </div>
         )}
       </td>
 
-      {/* Col 3: Deal (replaces Due) */}
-      <td style={{ width: 100, padding: '8px 8px', verticalAlign: 'middle' }}>
+      {/* Col 3: Deal — hidden on mobile, shown on desktop */}
+      <td className="hidden sm:table-cell" style={{ width: 100, padding: '8px 8px', verticalAlign: 'top' }}>
         {deal ? (
           <span style={{
             fontSize: 10, color: 'var(--accent-gold)',
