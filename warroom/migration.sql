@@ -143,3 +143,8 @@ CREATE POLICY "Allow all for anon" ON public.deal_economics FOR ALL TO anon USIN
 ALTER TABLE public.deal_economics ENABLE ROW LEVEL SECURITY;
 -- Life tasks column
 ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS is_life boolean DEFAULT false;
+
+-- ─── NNN rate per square foot ─────────────────────────────────────────────────
+-- Run in Supabase SQL editor
+ALTER TABLE public.deal_economics ADD COLUMN IF NOT EXISTS nnn_psf numeric;
+-- ──────────────────────────────────────────────────────────────────────────────

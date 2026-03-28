@@ -426,6 +426,167 @@ function RevertStatusButton({
   )
 }
 
+// ─── Deal Glance Card (mobile quick-view) ────────────────────────────────────
+
+function DealGlanceCard({ deal }: { deal: Deal }) {
+  const [econ, setEcon] = useState<{
+    transaction_type: string | null
+    sqft: number | null
+    asking_price: number | null
+    lease_rate_psf: number | null
+    lease_type: string | null
+    nnn_psf: number | null
+  } | null>(null)
+
+  useEffect(() => {
+    supabase
+      .from('deal_economics')
+      .select('transaction_type,sqft,asking_price,lease_rate_psf,lease_type,nnn_psf')
+      .eq('deal_id', deal.id)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setEcon(data as any) })
+  }, [deal.id])
+
+  if (!econ) return null
+
+  const sqft = econ.sqft ?? 0
+  const isLease = econ.transaction_type === 'lease' || econ.transaction_type === 'both'
+  const isSale  = econ.transaction_type === 'sale'  || econ.transaction_type === 'both'
+  const isNNN   = econ.lease_type === 'NNN'
+
+  // Lease calcs
+  const baseMonthly  = sqft > 0 && econ.lease_rate_psf ? (econ.lease_rate_psf * sqft) / 12 : null
+  const nnnMonthly   = sqft > 0 && econ.nnn_psf        ? (econ.nnn_psf * sqft) / 12 : null
+  const totalMonthly = baseMonthly != null && nnnMonthly != null ? baseMonthly + nnnMonthly : baseMonthly
+
+  // Sale calcs
+  const pricePsf = sqft > 0 && econ.asking_price ? econ.asking_price / sqft : null
+
+  const $ = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  const $2 = (n: number) => '$' + n.toFixed(2)
+  const fmtSqft = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' SF'
+
+  const statStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    minWidth: 0,
+  }
+  const statLabel: React.CSSProperties = {
+    fontSize: 8,
+    fontWeight: 800,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase',
+    color: '#4b5563',
+    whiteSpace: 'nowrap',
+  }
+  const statVal: React.CSSProperties = {
+    fontSize: 16,
+    fontWeight: 800,
+    color: '#E8B84B',
+    fontFamily: 'var(--font-body)',
+    fontVariantNumeric: 'tabular-nums',
+    lineHeight: 1.1,
+  }
+  const divider = (
+    <div style={{ width: 1, background: 'rgba(255,255,255,0.06)', alignSelf: 'stretch', flexShrink: 0 }} />
+  )
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, #111418 0%, #161B22 100%)',
+      border: '1px solid rgba(232,184,75,0.15)',
+      borderRadius: 12,
+      padding: '14px 16px',
+      marginBottom: 16,
+      boxShadow: '0 0 0 1px rgba(232,184,75,0.06), 0 4px 24px rgba(0,0,0,0.4)',
+    }}>
+      {/* Label */}
+      <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.4)', marginBottom: 12 }}>
+        Quick Glance
+      </div>
+
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+
+        {/* SqFt — always */}
+        {sqft > 0 && (
+          <>
+            <div style={statStyle}>
+              <span style={statLabel}>SqFt</span>
+              <span style={statVal}>{fmtSqft(sqft)}</span>
+            </div>
+            {divider}
+          </>
+        )}
+
+        {/* ── LEASE ── */}
+        {isLease && econ.lease_rate_psf && (
+          <>
+            <div style={statStyle}>
+              <span style={statLabel}>Rent PSF / yr</span>
+              <span style={statVal}>{$2(econ.lease_rate_psf)}</span>
+            </div>
+            {divider}
+          </>
+        )}
+
+        {isLease && baseMonthly != null && (
+          <>
+            <div style={statStyle}>
+              <span style={statLabel}>Base Rent / mo</span>
+              <span style={statVal}>{$(baseMonthly)}</span>
+            </div>
+            {divider}
+          </>
+        )}
+
+        {/* NNN only */}
+        {isLease && isNNN && econ.nnn_psf && (
+          <>
+            <div style={statStyle}>
+              <span style={statLabel}>NNN / SF / yr</span>
+              <span style={statVal}>{$2(econ.nnn_psf)}</span>
+            </div>
+            {divider}
+            <div style={statStyle}>
+              <span style={statLabel}>NNN / mo</span>
+              <span style={statVal}>{nnnMonthly != null ? $(nnnMonthly) : '—'}</span>
+            </div>
+            {divider}
+            {totalMonthly != null && (
+              <>
+                <div style={statStyle}>
+                  <span style={statLabel}>Total NNN / mo</span>
+                  <span style={{ ...statVal, color: '#22c55e' }}>{$(totalMonthly)}</span>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── SALE ── */}
+        {isSale && econ.asking_price && (
+          <>
+            <div style={statStyle}>
+              <span style={statLabel}>Asking Price</span>
+              <span style={statVal}>{$(econ.asking_price)}</span>
+            </div>
+            {pricePsf != null && (
+              <>
+                {divider}
+                <div style={statStyle}>
+                  <span style={statLabel}>Price / SF</span>
+                  <span style={statVal}>{$2(pricePsf)}</span>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Deal Economics Card ──────────────────────────────────────────────────────
 
 function DealEconomicsCard({ deal }: { deal: Deal }) {
@@ -439,6 +600,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
   const [leaseType, setLeaseType] = useState('NNN')
   const [leaseTermYears, setLeaseTermYears] = useState('')
   const [leaseCommPct, setLeaseCommPct] = useState('3.0')
+  const [nnnPsf, setNnnPsf] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [econId, setEconId] = useState<string | null>(null)
@@ -461,6 +623,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
         setSaleCommPct(data.sale_commission_pct != null ? String(data.sale_commission_pct) : '3.0')
         setLeaseRatePsf(data.lease_rate_psf != null ? String(data.lease_rate_psf) : '')
         setLeaseType(data.lease_type ?? 'NNN')
+        setNnnPsf(data.nnn_psf != null ? String(data.nnn_psf) : '')
         setLeaseTermYears(data.lease_term_years != null ? String(data.lease_term_years) : '')
         setLeaseCommPct(data.lease_commission_pct != null ? String(data.lease_commission_pct) : '3.0')
       } catch {}
@@ -503,6 +666,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
         lease_type: leaseType,
         lease_term_years: leaseTermYearsNum || null,
         lease_commission_pct: leaseCommPctNum,
+        nnn_psf: (leaseType === 'NNN' && parseFloat(nnnPsf)) ? parseFloat(nnnPsf) : null,
         updated_at: new Date().toISOString(),
       }
       if (econId) {
@@ -665,6 +829,34 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
               <div style={{ fontSize: 11, color: 'var(--accent-gold, #E8B84B)', marginTop: 3, fontWeight: 600 }}>{leaseType}</div>
             </div>
           </div>
+          {/* NNN costs — only show when NNN is selected */}
+          {leaseType === 'NNN' && (
+            <div style={{ ...rowStyle, marginBottom: 10 }}>
+              <div style={colStyle}>
+                <div style={labelStyle}>NNN / SF / yr</div>
+                <input
+                  type="number"
+                  value={nnnPsf}
+                  onChange={e => setNnnPsf(e.target.value)}
+                  placeholder="e.g. 4.50"
+                  step="0.01"
+                  style={inputStyle}
+                />
+                {parseFloat(nnnPsf) > 0 && (
+                  <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>${parseFloat(nnnPsf).toFixed(2)} / SF</div>
+                )}
+              </div>
+              <div style={colStyle}>
+                <div style={labelStyle}>NNN / mo</div>
+                <input
+                  readOnly
+                  value={sqftNum > 0 && parseFloat(nnnPsf) > 0 ? '$' + ((parseFloat(nnnPsf) * sqftNum) / 12).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—'}
+                  style={calcInputStyle}
+                />
+              </div>
+            </div>
+          )}
+
           <div style={rowStyle}>
             <div style={colStyle}>
               <div style={labelStyle}>Lease Term (years)</div>
@@ -1683,10 +1875,15 @@ function DealDashboardInner() {
         </div>
       </header>
 
+      {/* ── Quick Glance — full width, top of page ── */}
+      <div style={{ padding: '0 24px', maxWidth: 1400, margin: '0 auto' }}>
+        <DealGlanceCard deal={deal} />
+      </div>
+
       {/* ── Body ── */}
       <div className="flex flex-col sm:flex-row sm:items-start" style={{
         gap: 20,
-        padding: '24px',
+        padding: '0 24px 24px',
         maxWidth: 1400,
         margin: '0 auto',
       }}>
