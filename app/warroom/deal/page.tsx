@@ -698,6 +698,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
   const [nnnMonthlyInput, setNnnMonthlyInput] = useState('') // per month (editable)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const [econId, setEconId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -720,10 +721,11 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
         setLeaseType(data.lease_type ?? 'NNN')
         if (data.nnn_psf != null) {
           setNnnPsf(String(data.nnn_psf))
-          // Pre-calc monthly if sqft is known
           const sq = data.sqft ?? 0
           if (sq > 0) setNnnMonthlyInput(((data.nnn_psf * sq) / 12).toFixed(2))
         }
+        // Auto-collapse if data already saved
+        setCollapsed(true)
         setLeaseTermYears(data.lease_term_years != null ? String(data.lease_term_years) : '')
         setLeaseCommPct(data.lease_commission_pct != null ? String(data.lease_commission_pct) : '3.0')
       } catch {}
@@ -776,7 +778,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
         if (data) setEconId(data.id)
       }
       setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      setTimeout(() => { setSaved(false); setCollapsed(true) }, 1000)
     } catch {}
     setSaving(false)
   }
@@ -791,9 +793,69 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
   const rowStyle: React.CSSProperties = { display: 'flex', gap: 12, marginBottom: 10 }
   const colStyle: React.CSSProperties = { flex: 1, minWidth: 0 }
 
+  // ── Collapsed summary view ──
+  if (collapsed && econId) {
+    const isLease = transactionType === 'lease' || transactionType === 'both'
+    const isSale  = transactionType === 'sale'  || transactionType === 'both'
+    const isNNN   = leaseType === 'NNN'
+    const baseMonthly = sqftNum > 0 && leaseRatePsfNum > 0 ? (leaseRatePsfNum * sqftNum) / 12 : null
+    const nnnMo = sqftNum > 0 && parseFloat(nnnPsf) > 0 ? (parseFloat(nnnPsf) * sqftNum) / 12 : null
+    const $ = (n: number) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 })
+    const $2 = (n: number) => '$' + n.toFixed(2)
+
+    const rows: { label: string; value: string; highlight?: boolean }[] = []
+    if (sqftNum > 0) rows.push({ label: 'SqFt', value: sqftNum.toLocaleString('en-US') + ' SF' })
+    if (isSale && askingPriceNum > 0) {
+      rows.push({ label: 'Asking Price', value: $(askingPriceNum) })
+      if (pricePsf) rows.push({ label: 'Price / SF', value: $2(pricePsf) })
+    }
+    if (isLease && leaseRatePsfNum > 0) {
+      rows.push({ label: 'Lease Rate', value: $2(leaseRatePsfNum) + ' PSF/yr' })
+      rows.push({ label: 'Lease Type', value: leaseType })
+      if (baseMonthly) rows.push({ label: 'Base Rent / mo', value: $(baseMonthly) })
+      if (isNNN && nnnMo) {
+        rows.push({ label: 'NNN / mo', value: $(nnnMo) })
+        rows.push({ label: 'Total / mo', value: $(baseMonthly! + nnnMo), highlight: true })
+      }
+      if (leaseTermYearsNum > 0) rows.push({ label: 'Term', value: leaseTermYearsNum + ' yrs' })
+    }
+
+    return (
+      <div style={{ ...cardStyle, padding: '14px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <span style={{ ...sectionHeadStyle }}>Deal Economics</span>
+          <button
+            onClick={() => setCollapsed(false)}
+            style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '3px 10px', color: '#6b7280', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Edit
+          </button>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 24px' }}>
+          {rows.map(r => (
+            <div key={r.label} style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 80 }}>
+              <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#4b5563' }}>{r.label}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: r.highlight ? '#22c55e' : '#E8B84B', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>{r.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={cardStyle}>
-      <div style={{ ...sectionHeadStyle, marginBottom: 14 }}>Deal Economics</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <span style={{ ...sectionHeadStyle }}>Deal Economics</span>
+        {econId && (
+          <button
+            onClick={() => setCollapsed(true)}
+            style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '3px 10px', color: '#6b7280', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Collapse
+          </button>
+        )}
+      </div>
 
       {/* Row 1: Property Type + Transaction */}
       <div style={rowStyle}>
