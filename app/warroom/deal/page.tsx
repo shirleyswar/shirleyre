@@ -426,6 +426,112 @@ function RevertStatusButton({
   )
 }
 
+// ─── Commission Panel (right column, below Deal Actions) ─────────────────────
+
+function CommissionPanel({ dealId }: { dealId: string }) {
+  const [data, setData] = useState<{
+    transaction_type: string | null
+    sqft: number | null
+    asking_price: number | null
+    lease_rate_psf: number | null
+    lease_term_years: number | null
+    lease_commission_pct: number | null
+    sale_commission_pct: number | null
+    nnn_psf: number | null
+  } | null>(null)
+
+  useEffect(() => {
+    supabase
+      .from('deal_economics')
+      .select('transaction_type,sqft,asking_price,lease_rate_psf,lease_term_years,lease_commission_pct,sale_commission_pct,nnn_psf')
+      .eq('deal_id', dealId)
+      .maybeSingle()
+      .then(({ data: d }) => { if (d) setData(d as any) })
+  }, [dealId])
+
+  if (!data) return null
+
+  const sqft = data.sqft ?? 0
+  const isLease = data.transaction_type === 'lease' || data.transaction_type === 'both'
+  const isSale  = data.transaction_type === 'sale'  || data.transaction_type === 'both'
+
+  // Lease commission
+  const leaseGross = sqft > 0 && data.lease_rate_psf && data.lease_term_years
+    ? data.lease_rate_psf * sqft * data.lease_term_years : null
+  const leaseComm = leaseGross && data.lease_commission_pct
+    ? leaseGross * (data.lease_commission_pct / 100) * 0.75 : null
+
+  // Sale commission
+  const saleComm = data.asking_price && data.sale_commission_pct
+    ? data.asking_price * (data.sale_commission_pct / 100) * 0.75 : null
+
+  const $$ = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  const pct = (n: number) => n.toFixed(2) + '%'
+
+  const rows: { label: string; value: string; highlight?: boolean }[] = []
+
+  if (isLease) {
+    if (data.lease_term_years) rows.push({ label: 'Lease Term', value: data.lease_term_years + ' yrs' })
+    if (leaseGross) rows.push({ label: 'Total Lease Value', value: $$(leaseGross) })
+    if (data.lease_commission_pct) rows.push({ label: 'Commission %', value: pct(data.lease_commission_pct) })
+    if (leaseComm) rows.push({ label: "Matthew's Commission", value: $$(leaseComm), highlight: true })
+  }
+
+  if (isSale) {
+    if (data.asking_price) rows.push({ label: 'Sale Price', value: $$(data.asking_price) })
+    if (data.sale_commission_pct) rows.push({ label: 'Commission %', value: pct(data.sale_commission_pct) })
+    if (saleComm) rows.push({ label: "Matthew's Commission", value: $$(saleComm), highlight: true })
+  }
+
+  if (rows.length === 0) return null
+
+  return (
+    <div style={{
+      background: '#1A1E25',
+      border: '1px solid rgba(255,255,255,0.06)',
+      borderRadius: 12,
+      padding: '14px 16px',
+      marginBottom: 16,
+    }}>
+      <div style={{
+        fontSize: 9, fontWeight: 800, letterSpacing: '0.18em',
+        textTransform: 'uppercase', color: 'rgba(212,168,71,0.55)',
+        marginBottom: 14, fontFamily: 'var(--font-body)',
+      }}>
+        Commission
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {rows.map((row, i) => (
+          <div key={row.label} style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '8px 0',
+            borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+          }}>
+            <span style={{
+              fontSize: 10, fontWeight: 600,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              color: '#7E9AB0',
+            }}>
+              {row.label}
+            </span>
+            <span style={{
+              fontSize: row.highlight ? 16 : 13,
+              fontWeight: row.highlight ? 800 : 600,
+              color: row.highlight ? '#22c55e' : '#F2EDE4',
+              fontVariantNumeric: 'tabular-nums',
+              letterSpacing: row.highlight ? '-0.01em' : '0.02em',
+            }}>
+              {row.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Deal Glance Card (mobile quick-view) ────────────────────────────────────
 
 function DealGlanceCard({ deal }: { deal: Deal }) {
@@ -2072,10 +2178,7 @@ function DealDashboardInner() {
         {/* ── LEFT COLUMN ── */}
         <div className="w-full sm:w-[65%]" style={{ minWidth: 0 }}>
 
-          {/* Deal Economics */}
-          <DealEconomicsCard deal={deal} />
-
-          {/* LACDB Card */}
+          {/* LACDB Card — first */}
           <LacdbCard
             deal={deal}
             onLacdbIdSave={async (lacdbId) => {
@@ -2088,6 +2191,9 @@ function DealDashboardInner() {
               if (!error && data) setDeal(data as Deal)
             }}
           />
+
+          {/* Deal Economics — below LACDB */}
+          <DealEconomicsCard deal={deal} />
 
           {/* Deal Info Card */}
           <div style={cardStyle}>
@@ -2373,6 +2479,9 @@ function DealDashboardInner() {
               )}
             </div>
           </div>
+
+          {/* Commission Panel */}
+          <CommissionPanel dealId={deal.id} />
 
           {/* Contacts */}
           <ContactsCard deal={deal} />
