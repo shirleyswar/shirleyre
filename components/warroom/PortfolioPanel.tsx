@@ -470,6 +470,8 @@ export default function PortfolioPanel() {
                 {([
                   { label: 'Symbol',    field: 'symbol' },
                   { label: 'Name',      field: 'name',    cls: 'hidden sm:table-cell' },
+                  { label: 'Acquired',  field: 'acquired', cls: 'hidden sm:table-cell' },
+                  { label: 'Yrs Held',  field: 'years_held', cls: 'hidden sm:table-cell' },
                   { label: 'Period',    field: 'period',  cls: 'hidden sm:table-cell' },
                   { label: 'Qty',       field: 'qty',     cls: 'hidden sm:table-cell' },
                   { label: 'Mkt Value', field: 'market_value' },
@@ -515,6 +517,14 @@ export default function PortfolioPanel() {
                         {isMultiLot && <span style={{ marginLeft: 5, fontSize: 9, padding: '1px 5px', background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 3, color: P.purpleDim }}>{row.lots.length}</span>}
                       </td>
                       <td className="hidden sm:table-cell" style={{ padding: '9px 8px', color: P.muted, fontSize: 12, textAlign: 'center', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</td>
+                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 12, whiteSpace: 'nowrap' }}>
+                        {row.lots.length === 1 && row.lots[0].acquired
+                          ? new Date(row.lots[0].acquired).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : row.lots.length > 1 ? <span style={{ color: P.purpleDim, fontSize: 10 }}>{row.lots.length} lots</span> : '—'}
+                      </td>
+                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 12 }}>
+                        {row.lots.length === 1 ? fmtNum(row.lots[0].years_held, 1) : '—'}
+                      </td>
                       <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center' }}>
                         <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, background: row.period === 'Long' ? 'rgba(139,92,246,0.12)' : 'rgba(251,191,36,0.1)', border: `1px solid ${row.period === 'Long' ? P.purpleBorder : 'rgba(251,191,36,0.3)'}`, color: row.period === 'Long' ? P.purple : '#fbbf24', fontWeight: 600 }}>
                           {row.period}
@@ -537,11 +547,11 @@ export default function PortfolioPanel() {
                         <td style={{ padding: '7px 8px', textAlign: 'center', paddingLeft: 24 }}>
                           <span style={{ fontSize: 9, color: P.purpleDim }}>Lot {li + 1}</span>
                         </td>
-                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', color: P.muted, fontSize: 11, textAlign: 'center' }}>
+                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', color: P.muted, fontSize: 11, textAlign: 'center', whiteSpace: 'nowrap' }}>
                           {lot.acquired ? new Date(lot.acquired).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                         </td>
-                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center' }}>
-                          <span style={{ fontSize: 9, color: P.muted }}>{fmtNum(lot.years_held, 1)} yrs</span>
+                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 11 }}>
+                          {fmtNum(lot.years_held, 1)}
                         </td>
                         <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 11 }}>{fmtNum(lot.qty)}</td>
                         <td style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: P.muted }}>{fmt$(lot.market_value)}</td>
