@@ -26,8 +26,8 @@
   --accent-blue-lt: #7AABFF;
   --accent-teal:    #0EA5A0;    /* Active nav pill signature color        */
   --accent-violet:  #A78BFA;    /* Sparingly — special elements           */
-  --accent-gold:    #F5C842;    /* Commission / money values ONLY         */
-  --accent-gold-lt: #F5CE7A;
+  --accent-gold:    #D4A847;    /* Warm amber — easier on eyes            */
+  --accent-gold-lt: #E8C068;
 
   /* Legacy aliases */
   --accent-gold-light: #F5CE7A;
@@ -36,7 +36,7 @@
   --text-primary:   #F2EDE4;   /* Warm white for readability             */
   --text-primary-bright: #F2EDE4; /* Row data — same warm white           */
   --text-secondary: #9BA3AF;
-  --text-muted:     #8A9199;
+  --text-muted:     #9BA8B5;
   --text-dim:       #484C58;   /* Near-invisible section labels          */
 
   /* ── State ── */
@@ -115,7 +115,7 @@ html, body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--text-muted);
+  color: #C8D8E8;
   font-family: var(--font-body);
 }
 
@@ -308,7 +308,7 @@ html, body {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent-gold);
+  color: #C8D8E8;   /* Cool blue-white — readable, not yellow */
 }
 /* Rank 2: Column headers */
 .wr-rank2 {
@@ -316,7 +316,7 @@ html, body {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: #7E9AB0;   /* Slate blue — visible but subordinate */
 }
 /* Rank 3: Row data — ALL columns same size */
 .wr-rank3 {
