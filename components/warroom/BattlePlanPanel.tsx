@@ -15,6 +15,8 @@ interface BattlePlanTask {
   sort_order?: number | null
   completed_at?: string | null
   follow_up_of?: string | null
+  contact_name?: string | null
+  bp_priority?: number | null
 }
 
 interface DealOption {
@@ -35,6 +37,9 @@ export default function BattlePlanPanel() {
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addToLife, setAddToLife] = useState(false)
+  const [newContactName, setNewContactName] = useState('')
+  const [newBpPriority, setNewBpPriority] = useState<number | null>(null)
+  const [prioritySortDir, setPrioritySortDir] = useState<'desc' | 'asc'>('desc')
 
   // Completion modal state
   const [pendingComplete, setPendingComplete] = useState<BattlePlanTask | null>(null)
@@ -106,6 +111,8 @@ export default function BattlePlanPanel() {
         title: newTitle.trim(),
         status: 'open',
         deal_id: addToLife ? null : (newDealId || null),
+        contact_name: newContactName.trim() || null,
+        bp_priority: newBpPriority || null,
       }
       try {
         if (addToLife) {
@@ -124,6 +131,8 @@ export default function BattlePlanPanel() {
         setTasks(prev => addToLife ? [data as BattlePlanTask, ...prev] : [...prev, data as BattlePlanTask])
         setNewTitle('')
         setNewDealId('')
+        setNewContactName('')
+        setNewBpPriority(null)
         setAddToLife(false)
         // Auto-dismiss the modal after save ✓
         setShowAddForm(false)
@@ -136,6 +145,8 @@ export default function BattlePlanPanel() {
     setShowAddForm(false)
     setNewTitle('')
     setNewDealId('')
+    setNewContactName('')
+    setNewBpPriority(null)
     setAddToLife(false)
   }
 
@@ -282,16 +293,28 @@ export default function BattlePlanPanel() {
               placeholder="Action item..."
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
             />
-            {deals.length > 0 && (
-              <select
-                value={newDealId}
-                onChange={e => setNewDealId(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: newDealId ? 'var(--accent-gold)' : '#6B7280', outline: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
-              >
-                <option value="">No deal linked</option>
-                {deals.map(d => <option key={d.id} value={d.id}>{(d as any).addr_display || d.address || d.name}</option>)}
-              </select>
-            )}
+            {/* ID / Contact — autofill from existing deal names */}
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>ID / Contact</div>
+              <input
+                type="text"
+                value={newContactName}
+                onChange={e => setNewContactName(e.target.value)}
+                list="bp-contact-list"
+                placeholder="Type name or pick from list..."
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
+              />
+              <datalist id="bp-contact-list">
+                {Array.from(new Set(deals.map(d => d.name).filter(Boolean))).map(n => (
+                  <option key={n} value={n} />
+                ))}
+              </datalist>
+            </div>
+            {/* Priority stars */}
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Priority</div>
+              <BpStarPicker value={newBpPriority} onChange={setNewBpPriority} />
+            </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer' }}>
               <input type="checkbox" checked={addToLife} onChange={e => setAddToLife(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
               Add to Life tab
@@ -325,14 +348,22 @@ export default function BattlePlanPanel() {
               background: 'rgba(139,92,246,0.06)',
             }}>
               <th style={{ width: 28, padding: '7px 6px' }}></th>
-              <th style={{ padding: '7px 8px', textAlign: 'left', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
-              <th className="hidden sm:table-cell" style={{ width: 110, padding: '7px 8px', textAlign: 'left', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Deal</th>
+              <th style={{ padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
+              <th className="hidden sm:table-cell" style={{ width: 120, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ID / Contact</th>
+              <th style={{ width: 90, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                onClick={() => setPrioritySortDir(d => d === 'desc' ? 'asc' : 'desc')}>
+                Priority {prioritySortDir === 'desc' ? '↓' : '↑'}
+              </th>
               <th style={{ width: 36, padding: '7px 6px' }}></th>
             </tr>
           </thead>
           <tbody>
-            {tasks
-              .filter(t => t.status === 'open' || t.status === 'in_progress')
+            {[...tasks.filter(t => t.status === 'open' || t.status === 'in_progress')]
+              .sort((a, b) => {
+                const ap = a.bp_priority ?? 0
+                const bp = b.bp_priority ?? 0
+                return prioritySortDir === 'desc' ? bp - ap : ap - bp
+              })
               .map(task => (
                 <TaskRow
                   key={task.id}
@@ -480,12 +511,13 @@ function TaskRow({
   const [expanded, setExpanded] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDealId, setEditDealId] = useState(task.deal_id || '')
+  const [editContactName, setEditContactName] = useState(task.contact_name || '')
   const [circleHovered, setCircleHovered] = useState(false)
   const isDragTarget = dragOverId === task.id
   const isLong = task.title.length > 48
 
   function saveEdit() {
-    if (editTitle.trim()) onUpdate({ title: editTitle.trim(), deal_id: editDealId || null })
+    if (editTitle.trim()) onUpdate({ title: editTitle.trim(), deal_id: editDealId || null, contact_name: editContactName.trim() || null })
     setEditing(false)
   }
 
@@ -549,14 +581,18 @@ function TaskRow({
               onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false) }}
               style={{ width: '100%', background: 'transparent', border: '1px solid var(--accent-gold)', borderRadius: 4, padding: '4px 8px', fontSize: 13, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)' }}
             />
-            <select
-              value={editDealId}
-              onChange={e => setEditDealId(e.target.value)}
-              style={{ background: '#1a1e24', border: '1px solid var(--accent-gold)', borderRadius: 4, padding: '4px 8px', fontSize: 13, color: editDealId ? 'var(--accent-gold)' : 'var(--text-muted)', outline: 'none', fontFamily: 'var(--font-body)', cursor: 'pointer' }}
-            >
-              <option value="">No deal</option>
-              {deals.map(d => <option key={d.id} value={d.id}>{d.address || d.name}</option>)}
-            </select>
+            <input
+              value={editContactName}
+              onChange={e => setEditContactName(e.target.value)}
+              list="bp-contact-list-edit"
+              placeholder="ID / Contact..."
+              style={{ width: '100%', background: 'transparent', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 4, padding: '4px 8px', fontSize: 13, color: 'var(--accent-gold)', outline: 'none', fontFamily: 'var(--font-body)' }}
+            />
+            <datalist id="bp-contact-list-edit">
+              {Array.from(new Set(deals.map(d => d.name).filter(Boolean))).map(n => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
             <div style={{ display: 'flex', gap: 6 }}>
               <button onClick={saveEdit} style={{ padding: '3px 10px', background: 'var(--accent-gold)', color: '#0D0F14', border: 'none', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
               <button onClick={() => setEditing(false)} style={{ padding: '3px 10px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', borderRadius: 4, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
@@ -603,11 +639,11 @@ function TaskRow({
                 {expanded ? '▲ less' : '▼ more'}
               </button>
             )}
-            {/* Deal tag inline under title on mobile */}
-            {deal && (
+            {/* Contact tag inline under title on mobile */}
+            {task.contact_name && (
               <div className="sm:hidden" style={{ marginTop: 3 }}>
                 <span style={{ fontSize: 10, color: 'var(--accent-gold)', fontFamily: 'monospace' }}>
-                  {dealShort}
+                  {task.contact_name}
                 </span>
               </div>
             )}
@@ -615,37 +651,28 @@ function TaskRow({
         )}
       </td>
 
-      {/* Col 3: Deal badge — hidden on mobile */}
-      <td className="hidden sm:table-cell" style={{ width: 110, padding: '10px 8px', verticalAlign: 'middle' }}>
-        {deal ? (
-          <span style={{
-            display: 'inline-block',
-            padding: '2px 8px',
-            background: 'rgba(232,184,75,0.08)',
-            border: '1px solid rgba(232,184,75,0.2)',
-            borderRadius: 4,
-            fontSize: 10,
-            fontWeight: 600,
-            color: 'var(--accent-gold)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxWidth: 106,
-            letterSpacing: '0.02em',
-          }} title={dealLabel}>
-            {dealShort}
-          </span>
-        ) : (
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.1)' }}>—</span>
-        )}
+      {/* Col 3: ID / Contact badge — hidden on mobile */}
+      <td className="hidden sm:table-cell" style={{ width: 120, padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
+        <ContactBadge contactName={task.contact_name ?? null} deal={deal} />
       </td>
 
-      {/* Col 4: Edit + drag handle */}
+      {/* Col 4: Priority stars */}
+      <td style={{ width: 90, padding: '6px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
+        <BpStarPicker
+          value={task.bp_priority ?? null}
+          onChange={async (v) => {
+            await supabase.from('tasks').update({ bp_priority: v } as Record<string, unknown>).eq('id', task.id)
+            onUpdate({ bp_priority: v })
+          }}
+        />
+      </td>
+
+      {/* Col 5: Edit + drag handle */}
       <td style={{ width: 36, padding: '10px 6px', verticalAlign: 'middle' }}>
         {!editing && hovered && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
-              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditing(true) }}
+              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditing(true) }}
               title="Edit"
               style={{ padding: '2px 5px', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.65 }}
             >
@@ -656,6 +683,66 @@ function TaskRow({
         )}
       </td>
     </tr>
+  )
+}
+
+// ─── BP Star Picker ──────────────────────────────────────────────────────────
+function BpStarPicker({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
+  const [hover, setHover] = useState<number | null>(null)
+  const display = hover ?? value ?? 0
+  return (
+    <div style={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <span
+          key={i}
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(null)}
+          onClick={() => onChange(value === i ? null : i)}
+          style={{
+            fontSize: 14, cursor: 'pointer',
+            color: i <= display ? '#E8B84B' : 'rgba(255,255,255,0.15)',
+            lineHeight: 1, transition: 'color 0.1s', userSelect: 'none',
+          }}
+        >★</span>
+      ))}
+    </div>
+  )
+}
+
+// ─── Contact Badge — colored by matched deal status ───────────────────────────
+const BP_STATUS_BADGE_COLORS: Record<string, { bg: string; border: string; color: string }> = {
+  active:          { bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.35)',   color: '#22c55e' },
+  hot:             { bg: 'rgba(251,146,60,0.1)',   border: 'rgba(251,146,60,0.35)',  color: '#fb923c' },
+  in_review:       { bg: 'rgba(251,191,36,0.1)',   border: 'rgba(251,191,36,0.35)',  color: '#fbbf24' },
+  in_service:      { bg: 'rgba(45,212,191,0.1)',   border: 'rgba(45,212,191,0.35)', color: '#2dd4bf' },
+  under_contract:  { bg: 'rgba(45,212,191,0.1)',   border: 'rgba(45,212,191,0.35)', color: '#2dd4bf' },
+  pending_payment: { bg: 'rgba(251,191,36,0.1)',   border: 'rgba(251,191,36,0.35)', color: '#fbbf24' },
+  pipeline:        { bg: 'rgba(79,142,247,0.1)',   border: 'rgba(79,142,247,0.35)', color: '#4F8EF7' },
+  closed:          { bg: 'rgba(107,114,128,0.1)',  border: 'rgba(107,114,128,0.3)', color: '#9ca3af' },
+}
+const BP_NEUTRAL_BADGE = { bg: 'rgba(232,184,75,0.08)', border: 'rgba(232,184,75,0.25)', color: 'rgba(232,184,75,0.8)' }
+
+function ContactBadge({ contactName, deal }: { contactName: string | null; deal: DealOption | null }) {
+  if (!contactName) return <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.1)' }}>—</span>
+  const style = (deal as any)?.status ? (BP_STATUS_BADGE_COLORS[(deal as any).status] ?? BP_NEUTRAL_BADGE) : BP_NEUTRAL_BADGE
+  return (
+    <span style={{
+      display: 'inline-block',
+      padding: '2px 8px',
+      background: style.bg,
+      border: `1px solid ${style.border}`,
+      borderRadius: 4,
+      fontSize: 10,
+      fontWeight: 600,
+      color: style.color,
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      maxWidth: 116,
+      letterSpacing: '0.02em',
+    }} title={contactName}>
+      {contactName.length > 16 ? contactName.slice(0, 15) + '…' : contactName}
+    </span>
   )
 }
 
