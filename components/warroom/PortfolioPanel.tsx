@@ -117,7 +117,7 @@ export default function PortfolioPanel() {
     setRefreshMsg(null)
     try {
       const SUPABASE_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
-      const ANON_KEY = 'sb_publishable_qGuGE-6ExwYvFC01eBvV_g_ewDYx77M'
+      const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
       const res = await fetch(`${SUPABASE_URL}/functions/v1/refresh-portfolio-prices`, {
         method: 'POST',
         headers: {
