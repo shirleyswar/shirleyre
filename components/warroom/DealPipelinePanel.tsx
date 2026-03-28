@@ -1223,31 +1223,40 @@ function DropboxCell({ dealId, url, onSaved }: { dealId: string; url: string | n
     setEditing(false)
   }
 
-  if (editing) {
-    return (
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 200 }} onClick={e => e.stopPropagation()}>
-        <input
-          autoFocus
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
-          placeholder="Paste Dropbox link..."
-          style={{
-            flex: 1, fontSize: 11, padding: '4px 8px',
-            background: 'var(--bg-elevated)', border: '1px solid rgba(0,97,255,0.4)',
-            borderRadius: 5, color: 'var(--text-primary)', outline: 'none', minWidth: 0,
-          }}
-        />
-        <button onClick={save} disabled={saving} style={{ padding: '4px 8px', fontSize: 11, fontWeight: 700, background: 'rgba(0,97,255,0.2)', border: '1px solid rgba(0,97,255,0.4)', borderRadius: 5, color: '#4F8EF7', cursor: 'pointer' }}>
-          {saving ? '…' : '✓'}
-        </button>
-        <button onClick={() => setEditing(false)} style={{ padding: '4px 6px', fontSize: 11, background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
-      </div>
-    )
-  }
-
   return (
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'center', position: 'relative' }} onClick={e => e.stopPropagation()}>
+
+      {/* Dropbox link edit — fixed modal so it doesn't blow out the table cell */}
+      {editing && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={e => { e.stopPropagation(); setEditing(false) }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#1A1E25', border: '1px solid rgba(79,142,247,0.4)', borderRadius: 12, padding: '20px 24px', width: '90%', maxWidth: 480, boxShadow: '0 16px 48px rgba(0,0,0,0.7)', display: 'flex', flexDirection: 'column', gap: 12 }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(79,142,247,0.6)', fontFamily: 'monospace' }}>
+              Dropbox Folder Link
+            </div>
+            <input
+              autoFocus
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
+              placeholder="https://www.dropbox.com/sh/..."
+              style={{ width: '100%', fontSize: 13, padding: '9px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(79,142,247,0.35)', borderRadius: 7, color: '#F0F2FF', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setEditing(false)} style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, color: '#6b7280', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+              <button onClick={save} disabled={saving} style={{ flex: 2, padding: '8px', background: 'rgba(79,142,247,0.15)', border: '1px solid rgba(79,142,247,0.4)', borderRadius: 7, color: '#4F8EF7', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {saving ? 'Saving…' : 'Save Link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {url ? (
         <a
           href={url}
