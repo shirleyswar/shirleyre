@@ -460,13 +460,13 @@ export default function DealPipelinePanel() {
                 {([
                   { label: 'FILES', cls: 'hidden sm:table-cell', align: 'center', width: 58  },
                   { label: 'MORE',  cls: '',                      align: 'center', width: 38  },
-                  { label: 'Address',     cls: '',                      align: 'left',   width: undefined },
-                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
-                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
-                  { label: 'Status',      cls: '',                      align: 'left',   width: undefined },
-                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
-                  { label: 'Rating',      cls: 'deal-rating-col hidden sm:table-cell',  align: 'left',   width: undefined },
-                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
+                  { label: 'Address',     cls: '',                      align: 'center', width: undefined },
+                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'center', width: undefined },
+                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined },
+                  { label: 'Status',      cls: '',                      align: 'center', width: undefined },
+                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined },
+                  { label: 'Priority',    cls: 'deal-rating-col hidden sm:table-cell',  align: 'center', width: undefined },
+                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'center', width: undefined },
                 ] as { label: string; cls: string; align: string; width: number | undefined }[]).map(h => (
                   <th key={h.label} className={h.cls} style={{
                     textAlign: h.align as React.CSSProperties['textAlign'],
@@ -774,7 +774,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         >↗</a>
       </td>
       {/* Col 3: Address */}
-      <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap', fontSize: 13 }}>
+      <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap', fontSize: 13, textAlign: 'center' }}>
         {isSubDeal && <span style={{ marginRight: 8, color: 'var(--text-dim)', fontSize: 11 }}>↳</span>}
         {isPortfolio && onToggleExpand ? (
           <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700 }}>
@@ -790,23 +790,23 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         )}
       </td>
       {/* Col 4: ID/Client — hidden on mobile */}
-      <td className="hidden sm:table-cell" style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 13 }}>{deal.name}</td>
+      <td className="hidden sm:table-cell" style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 13, textAlign: 'center' }}>{deal.name}</td>
       {/* Col 5: Type — hidden on mobile */}
-      <td className="hidden sm:table-cell" style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 13 }}>{DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type.replace(/_/g, ' ')}</td>
-      <td style={{ padding: '10px 10px' }}>
+      <td className="hidden sm:table-cell" style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 13, textAlign: 'center' }}>{DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type.replace(/_/g, ' ')}</td>
+      <td style={{ padding: '10px 10px', textAlign: 'center' }}>
         <span className={`badge ${STATUS_CLASS[deal.status as DealStatus]}`}>{STATUS_LABELS[deal.status as DealStatus]}</span>
       </td>
       {/* Col 7: Tier — hidden on mobile */}
-      <td className="hidden sm:table-cell" style={{ padding: '10px 10px' }}>
+      <td className="hidden sm:table-cell" style={{ padding: '10px 10px', textAlign: 'center' }}>
         <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: deal.tier === 'filed' ? 'rgba(96,165,250,0.1)' : 'rgba(255,255,255,0.05)', color: deal.tier === 'filed' ? '#60A5FA' : 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           {deal.tier ? deal.tier.charAt(0).toUpperCase() + deal.tier.slice(1) : '—'}
         </span>
       </td>
-      <td className="deal-rating-col hidden sm:table-cell" style={{ padding: '6px 10px' }}>
+      <td className="deal-rating-col hidden sm:table-cell" style={{ padding: '6px 10px', textAlign: 'center' }}>
         <StarRating dealId={deal.id} value={deal.rating ?? null} onSave={(v) => onUpdate({ ...deal, rating: v })} />
       </td>
       {/* Col 9: Actions — hidden on mobile */}
-      <td className="hidden sm:table-cell" style={{ padding: '10px 8px', whiteSpace: 'nowrap' }}>
+      <td className="hidden sm:table-cell" style={{ padding: '10px 8px', whiteSpace: 'nowrap', textAlign: 'center' }}>
         <button onClick={() => setEditing(true)} title="Edit row" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12, marginRight: 4 }}>✎</button>
         {deal.status === 'active' && deal.tier === 'filed' && (
           <button onClick={() => { setConfirmUC(true); setUcPin(''); setUcError(false) }} title="Move to Under Contract" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 24, padding: '0 7px', borderRadius: 5, background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.4)', color: '#2DD4BF', cursor: 'pointer', fontSize: 10, fontWeight: 700, marginRight: 4, whiteSpace: 'nowrap', gap: 3 }}>
