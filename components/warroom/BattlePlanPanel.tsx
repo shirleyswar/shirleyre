@@ -474,10 +474,12 @@ function TaskRow({
 }: TaskRowProps) {
   const [hovered, setHovered] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDealId, setEditDealId] = useState(task.deal_id || '')
   const [circleHovered, setCircleHovered] = useState(false)
   const isDragTarget = dragOverId === task.id
+  const isLong = task.title.length > 48
 
   function saveEdit() {
     if (editTitle.trim()) onUpdate({ title: editTitle.trim(), deal_id: editDealId || null })
@@ -551,16 +553,46 @@ function TaskRow({
           </div>
         ) : (
           <div>
-            <span style={{
-              fontSize: 13, color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
-              textDecoration: completing ? 'line-through' : 'none',
-              transition: 'all 0.3s',
-              lineHeight: 1.4,
-              wordBreak: 'break-word',
-            }}>
+            {/* Title — clamp to 2 lines unless expanded */}
+            <span
+              onClick={() => isLong && setExpanded(e => !e)}
+              style={{
+                fontSize: 13,
+                color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
+                textDecoration: completing ? 'line-through' : 'none',
+                transition: 'all 0.3s',
+                lineHeight: 1.4,
+                display: '-webkit-box',
+                WebkitLineClamp: expanded ? undefined : 2,
+                WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+                overflow: expanded ? 'visible' : 'hidden',
+                cursor: isLong ? 'pointer' : 'default',
+                wordBreak: 'break-word',
+              } as React.CSSProperties}
+            >
               {task.title}
             </span>
-            {/* Deal tag inline under title on mobile (Deal col hidden on mobile) */}
+            {/* Expand/collapse hint for long items */}
+            {isLong && (
+              <button
+                onClick={() => setExpanded(e => !e)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  fontSize: 10,
+                  color: 'rgba(232,184,75,0.55)',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-body)',
+                  letterSpacing: '0.04em',
+                  marginTop: 2,
+                  display: 'block',
+                }}
+              >
+                {expanded ? '▲ less' : '▼ more'}
+              </button>
+            )}
+            {/* Deal tag inline under title on mobile */}
             {deal && (
               <div className="sm:hidden" style={{ marginTop: 3 }}>
                 <span style={{ fontSize: 10, color: 'var(--accent-gold)', fontFamily: 'monospace' }}>
