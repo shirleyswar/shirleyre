@@ -88,6 +88,9 @@ export default function PortfolioPanel() {
   const [uploadMsg, setUploadMsg] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [tableExists, setTableExists] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null)
+  const [lastRefreshed, setLastRefreshed] = useState<string | null>(null)
   const [periodFilter, setPeriodFilter] = useState<'All' | 'Long' | 'Short'>('All')
   const [sortField, setSortField] = useState<SortField>('market_value')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -95,7 +98,59 @@ export default function PortfolioPanel() {
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { fetchPositions() }, [])
+  useEffect(() => {
+    fetchPositions()
+  }, [])
+
+  // ─── Derive last refresh time from loaded positions ────────────────────────
+  useEffect(() => {
+    const dates = positions.map(p => p.price_updated_at).filter(Boolean) as string[]
+    if (dates.length > 0) {
+      const latest = dates.sort().reverse()[0]
+      setLastRefreshed(latest)
+    }
+  }, [positions])
+
+  // ─── Refresh prices via Supabase Edge Function ─────────────────────────────
+  async function refreshPrices() {
+    setRefreshing(true)
+    setRefreshMsg(null)
+    try {
+      const SUPABASE_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
+      const ANON_KEY = 'sb_publishable_qGuGE-6ExwYvFC01eBvV_g_ewDYx77M'
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/refresh-portfolio-prices`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setRefreshMsg(`Error: ${json.error || res.statusText}`)
+      } else if (json.cached) {
+        const next = json.nextRefreshIn ? ` Next refresh in ${json.nextRefreshIn}.` : ''
+        setRefreshMsg(`Prices current as of ${json.lastUpdated}.${next}`)
+      } else {
+        setRefreshMsg(`✓ Updated ${json.updated} tickers${json.errors?.length ? ` (${json.errors.length} skipped)` : ''}`)
+        await fetchPositions()
+      }
+    } catch (e: unknown) {
+      setRefreshMsg('Error: ' + (e instanceof Error ? e.message : String(e)))
+    }
+    setRefreshing(false)
+  }
+
+  function refreshCacheAge(): { fresh: boolean; label: string } {
+    if (!lastRefreshed) return { fresh: false, label: '' }
+    const ms = Date.now() - new Date(lastRefreshed).getTime()
+    const hrs = ms / (1000 * 60 * 60)
+    if (hrs < 24) {
+      const remaining = Math.ceil(24 - hrs)
+      return { fresh: true, label: `Prices updated ${hrs < 1 ? 'recently' : Math.floor(hrs) + 'h ago'} — next refresh in ${remaining}h` }
+    }
+    return { fresh: false, label: '' }
+  }
 
   async function fetchPositions() {
     try {
@@ -334,6 +389,17 @@ export default function PortfolioPanel() {
               }}>{p}</button>
             ))}
           </div>
+          {/* Refresh Prices button */}
+          {positions.length > 0 && (() => {
+            const cache = refreshCacheAge()
+            return (
+              <button onClick={refreshPrices} disabled={refreshing || cache.fresh}
+                title={cache.fresh ? cache.label : 'Fetch latest prices from Yahoo Finance'}
+                style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', background: 'rgba(34,197,94,0.08)', border: `1px solid ${cache.fresh ? 'rgba(255,255,255,0.08)' : 'rgba(34,197,94,0.35)'}`, borderRadius: 8, color: cache.fresh ? P.muted : P.green, cursor: cache.fresh ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: refreshing ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+                {refreshing ? '⟳ Refreshing…' : cache.fresh ? '✓ Prices Current' : '⟳ Refresh Prices'}
+              </button>
+            )
+          })()}
           {/* Upload button */}
           <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
             style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', fontFamily: 'var(--font-body)', opacity: uploading ? 0.5 : 1 }}>
@@ -342,7 +408,8 @@ export default function PortfolioPanel() {
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={onFileInput} style={{ display: 'none' }} />
         </div>
 
-        {/* Upload status */}
+        {/* Status messages */}
+        {refreshMsg && <div style={{ marginTop: 8, fontSize: 12, color: refreshMsg.startsWith('Error') ? P.red : P.green, fontFamily: 'monospace' }}>{refreshMsg}</div>}
         {uploadMsg && <div style={{ marginTop: 8, fontSize: 12, color: P.green, fontFamily: 'monospace' }}>{uploadMsg}</div>}
         {uploadError && <div style={{ marginTop: 8, fontSize: 12, color: P.red, fontFamily: 'monospace' }}>{uploadError}</div>}
       </div>
@@ -407,6 +474,9 @@ export default function PortfolioPanel() {
                   { label: 'G/L $',     field: 'unrealized_gl_dollar' },
                   { label: 'G/L %',     field: 'unrealized_gl_pct' },
                   { label: 'Ann. Ret',  field: 'annualized_return_pct', cls: 'hidden sm:table-cell' },
+                  { label: 'YTD',       field: 'ytd_pct',               cls: 'hidden sm:table-cell' },
+                  { label: '12mo',      field: 'rolling_12mo_pct',      cls: 'hidden sm:table-cell' },
+                  { label: '36mo',      field: 'rolling_36mo_pct',      cls: 'hidden sm:table-cell' },
                 ] as { label: string; field: SortField; cls?: string }[]).map(col => (
                   <th key={col.label} className={col.cls ?? ''} onClick={() => handleSort(col.field)}
                     style={{ padding: '8px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
@@ -453,6 +523,9 @@ export default function PortfolioPanel() {
                       <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.unrealized_gl_dollar), fontWeight: 600 }}>{fmt$(row.unrealized_gl_dollar)}</td>
                       <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.unrealized_gl_pct), fontWeight: 600 }}>{fmtPct(row.unrealized_gl_pct)}</td>
                       <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.annualized_return_pct) }}>{fmtPct(row.annualized_return_pct)}</td>
+                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.lots[0]?.ytd_pct ?? null) }}>{fmtPct(row.lots[0]?.ytd_pct ?? null)}</td>
+                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.lots[0]?.rolling_12mo_pct ?? null) }}>{fmtPct(row.lots[0]?.rolling_12mo_pct ?? null)}</td>
+                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.lots[0]?.rolling_36mo_pct ?? null) }}>{fmtPct(row.lots[0]?.rolling_36mo_pct ?? null)}</td>
                     </tr>
                     {/* Individual lots when expanded */}
                     {isMultiLot && expanded && row.lots.map((lot, li) => (
@@ -473,6 +546,9 @@ export default function PortfolioPanel() {
                         <td style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.unrealized_gl_dollar) }}>{fmt$(lot.unrealized_gl_dollar)}</td>
                         <td style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.unrealized_gl_pct) }}>{fmtPct(lot.unrealized_gl_pct)}</td>
                         <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.annualized_return_pct) }}>{fmtPct(lot.annualized_return_pct)}</td>
+                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.ytd_pct) }}>{fmtPct(lot.ytd_pct)}</td>
+                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.rolling_12mo_pct) }}>{fmtPct(lot.rolling_12mo_pct)}</td>
+                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.rolling_36mo_pct) }}>{fmtPct(lot.rolling_36mo_pct)}</td>
                       </tr>
                     ))}
                   </>
