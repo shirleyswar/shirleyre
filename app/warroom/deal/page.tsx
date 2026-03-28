@@ -276,6 +276,51 @@ function PinModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: ()
   )
 }
 
+// ─── Action Button ────────────────────────────────────────────────────────────
+
+function ActionBtn({
+  label, color, bg, border, onClick, icon, dim,
+}: {
+  label: string
+  color: string
+  bg: string
+  border: string
+  onClick: () => void
+  icon?: React.ReactNode
+  dim?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%',
+        padding: '8px 12px',
+        fontSize: 10,
+        fontWeight: 800,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+        background: bg,
+        border: `1px solid ${border}`,
+        borderRadius: 8,
+        color,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        opacity: dim ? 0.8 : 1,
+        transition: 'opacity 0.15s, background 0.15s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.background = bg.replace(/[\d.]+\)$/, '0.18)') }}
+      onMouseLeave={e => { e.currentTarget.style.opacity = dim ? '0.8' : '1'; e.currentTarget.style.background = bg }}
+    >
+      {icon}
+      {label}
+    </button>
+  )
+}
+
 // ─── Revert Status Button ─────────────────────────────────────────────────────
 
 function RevertStatusButton({
@@ -305,32 +350,49 @@ function RevertStatusButton({
   }
 
   return (
-    <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(v => !v)}
         style={{
-          ...btnStyle('#9ca3af', 'transparent', 'rgba(156,163,175,0.2)'),
-          fontSize: 11,
-          padding: '6px 12px',
           width: '100%',
-          textAlign: 'center',
-          letterSpacing: '0.05em',
+          padding: '7px 12px',
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          background: 'transparent',
+          border: '1px solid rgba(156,163,175,0.18)',
+          borderRadius: 8,
+          color: '#6b7280',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          transition: 'all 0.15s',
         }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(156,163,175,0.35)'; e.currentTarget.style.color = '#9ca3af' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(156,163,175,0.18)'; e.currentTarget.style.color = '#6b7280' }}
       >
-        ↩ Revert Status
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+        Revert Status
       </button>
       {open && (
         <div style={{
           position: 'absolute',
-          bottom: '100%',
+          bottom: 'calc(100% + 4px)',
           left: 0,
           right: 0,
-          background: '#1A1E25',
+          background: '#13171D',
           border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: 8,
           overflow: 'hidden',
           zIndex: 50,
-          marginBottom: 4,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}>
           {revertableStatuses.map(s => (
             <button
@@ -340,16 +402,20 @@ function RevertStatusButton({
                 display: 'block',
                 width: '100%',
                 textAlign: 'left',
-                padding: '8px 12px',
-                fontSize: 12,
-                color: '#9ca3af',
+                padding: '7px 12px',
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: '#6b7280',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 fontFamily: 'inherit',
+                transition: 'all 0.1s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#9ca3af' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6b7280' }}
             >
               {STATUS_LABELS[s]}
             </button>
@@ -1812,108 +1878,119 @@ function DealDashboardInner() {
         <div className="hidden sm:block sm:w-[35%]" style={{ minWidth: 0 }}>
 
           {/* Deal Actions Card */}
-          <div style={cardStyle}>
-            <div style={{ ...sectionHeadStyle, marginBottom: 16 }}>Deal Actions</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{
+            background: '#1A1E25',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 12,
+            padding: '14px 16px',
+            marginBottom: 16,
+          }}>
+            {/* Header */}
+            <div style={{
+              fontSize: 9,
+              fontWeight: 800,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              color: 'rgba(232,184,75,0.5)',
+              marginBottom: 12,
+              fontFamily: 'var(--font-body)',
+            }}>
+              Deal Actions
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
 
               {/* Launch */}
               {deal.tier === 'tracked' && (
-                <button
+                <ActionBtn
+                  label="Launch"
+                  color="#A78BFA"
+                  bg="rgba(139,92,246,0.12)"
+                  border="rgba(139,92,246,0.4)"
                   onClick={() => pinGate(() => doLaunch())}
-                  style={orbitBtnFullStyle}
-                >
-                  Launch <svg style={{ display: 'inline', marginLeft: 5, verticalAlign: 'middle' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 3A10.5 10.5 0 0 1 21 14.5"/><path d="M3 9.5A10.5 10.5 0 0 1 14.5 21"/><path d="m3 16 5 5"/><path d="M3 16h5v5"/><circle cx="17" cy="7" r="3"/></svg>
-                </button>
+                  icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 3A10.5 10.5 0 0 1 21 14.5"/><path d="M3 9.5A10.5 10.5 0 0 1 14.5 21"/><path d="m3 16 5 5"/><path d="M3 16h5v5"/><circle cx="17" cy="7" r="3"/></svg>}
+                />
               )}
 
               {/* → Hot */}
               {deal.tier === 'filed' && deal.status === 'active' && (
-                <button
+                <ActionBtn
+                  label="→ Hot"
+                  color="#fb923c"
+                  bg="rgba(251,146,60,0.08)"
+                  border="rgba(251,146,60,0.35)"
                   onClick={() => pinGate(() => doStatusChange('hot'))}
-                  style={{
-                    ...btnStyle('#fb923c', 'rgba(251,146,60,0.12)', 'rgba(251,146,60,0.45)'),
-                    width: '100%', padding: '11px 16px', fontSize: 13, textAlign: 'center',
-                  }}
-                >
-                  → Hot
-                </button>
+                />
               )}
 
-              {/* → UC */}
+              {/* → Under Contract */}
               {deal.tier === 'filed' && (deal.status === 'active' || deal.status === 'hot') && (
-                <button
+                <ActionBtn
+                  label="→ Under Contract"
+                  color="#2dd4bf"
+                  bg="rgba(45,212,191,0.08)"
+                  border="rgba(45,212,191,0.35)"
                   onClick={() => pinGate(() => doStatusChange('under_contract'))}
-                  style={{
-                    ...btnStyle('#2dd4bf', 'rgba(45,212,191,0.1)', 'rgba(45,212,191,0.4)'),
-                    width: '100%', padding: '11px 16px', fontSize: 13, textAlign: 'center',
-                  }}
-                >
-                  → Under Contract
-                </button>
+                />
               )}
 
-              {/* Kill section */}
-              {deal.tier === 'filed' && (
-                <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4b5563', marginBottom: 8 }}>
-                    Kill
+              {/* Kill zone */}
+              {deal.tier === 'filed' && (deal.type === 'active_listing' || deal.type === 'listing' || deal.dropbox_link) && (
+                <div style={{
+                  marginTop: 4,
+                  paddingTop: 10,
+                  borderTop: '1px solid rgba(255,255,255,0.04)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 5,
+                }}>
+                  <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#374151', marginBottom: 2 }}>
+                    End Deal
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {deal.type === 'active_listing' && (
-                      <button
-                        onClick={() => pinGate(() => doKillAction('expired', 'X - Expired Listings'))}
-                        style={{
-                          ...btnStyle('#fb923c', 'rgba(251,146,60,0.07)', 'rgba(251,146,60,0.3)'),
-                          width: '100%', padding: '9px 16px', fontSize: 12, textAlign: 'center',
-                        }}
-                      >
-                        Expire
-                      </button>
-                    )}
-                    {deal.type !== 'active_listing' && (
-                      <button
-                        onClick={() => pinGate(() => doKillAction('dormant', 'X - Dormant Projects'))}
-                        style={{
-                          ...btnStyle('#fb923c', 'rgba(251,146,60,0.07)', 'rgba(251,146,60,0.3)'),
-                          width: '100%', padding: '9px 16px', fontSize: 12, textAlign: 'center',
-                        }}
-                      >
-                        Dormant
-                      </button>
-                    )}
-                    {deal.dropbox_link && (
-                      <button
-                        onClick={() => pinGate(() => doKillAction('terminated', 'X - Terminated'))}
-                        style={{
-                          ...btnStyle('#ef4444', 'rgba(239,68,68,0.07)', 'rgba(239,68,68,0.3)'),
-                          width: '100%', padding: '9px 16px', fontSize: 12, textAlign: 'center',
-                        }}
-                      >
-                        Terminate
-                      </button>
-                    )}
-                  </div>
+                  {(deal.type === 'active_listing' || deal.type === 'listing') && (
+                    <ActionBtn
+                      label="Expire"
+                      color="#fb923c"
+                      bg="rgba(251,146,60,0.05)"
+                      border="rgba(251,146,60,0.2)"
+                      onClick={() => pinGate(() => doKillAction('expired', 'X - Expired Listings'))}
+                      dim
+                    />
+                  )}
+                  {deal.type !== 'active_listing' && deal.type !== 'listing' && (
+                    <ActionBtn
+                      label="Dormant"
+                      color="#fb923c"
+                      bg="rgba(251,146,60,0.05)"
+                      border="rgba(251,146,60,0.2)"
+                      onClick={() => pinGate(() => doKillAction('dormant', 'X - Dormant Projects'))}
+                      dim
+                    />
+                  )}
+                  {deal.dropbox_link && (
+                    <ActionBtn
+                      label="Terminate"
+                      color="#ef4444"
+                      bg="rgba(239,68,68,0.05)"
+                      border="rgba(239,68,68,0.2)"
+                      onClick={() => pinGate(() => doKillAction('terminated', 'X - Terminated'))}
+                      dim
+                    />
+                  )}
                 </div>
               )}
 
               {/* Revert Status */}
               {deal.tier === 'filed' && (
-                <RevertStatusButton
-                  deal={deal}
-                  onRevert={doStatusChange}
-                  pinGate={pinGate}
-                />
-              )}
-
-              {/* No actions placeholder */}
-              {deal.tier !== 'tracked' && deal.tier !== 'filed' && (
-                <div style={{ fontSize: 12, color: '#4b5563', textAlign: 'center', padding: '16px 0' }}>
-                  No actions available
+                <div style={{ marginTop: 4, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  <RevertStatusButton deal={deal} onRevert={doStatusChange} pinGate={pinGate} />
                 </div>
               )}
-              {deal.tier === 'filed' && !['active', 'hot', 'under_contract'].includes(deal.status) && deal.type === 'active_listing' && deal.status === 'expired' && (
-                <div style={{ fontSize: 12, color: '#4b5563', textAlign: 'center', padding: '8px 0' }}>
-                  Deal is {deal.status}
+
+              {/* No actions */}
+              {deal.tier !== 'tracked' && deal.tier !== 'filed' && (
+                <div style={{ fontSize: 11, color: '#374151', textAlign: 'center', padding: '12px 0', fontStyle: 'italic' }}>
+                  No actions available
                 </div>
               )}
             </div>
