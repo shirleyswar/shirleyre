@@ -694,7 +694,8 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
   const [leaseType, setLeaseType] = useState('NNN')
   const [leaseTermYears, setLeaseTermYears] = useState('')
   const [leaseCommPct, setLeaseCommPct] = useState('3.0')
-  const [nnnPsf, setNnnPsf] = useState('')
+  const [nnnPsf, setNnnPsf] = useState('')       // per SF per year
+  const [nnnMonthlyInput, setNnnMonthlyInput] = useState('') // per month (editable)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [econId, setEconId] = useState<string | null>(null)
@@ -717,7 +718,12 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
         setSaleCommPct(data.sale_commission_pct != null ? String(data.sale_commission_pct) : '3.0')
         setLeaseRatePsf(data.lease_rate_psf != null ? String(data.lease_rate_psf) : '')
         setLeaseType(data.lease_type ?? 'NNN')
-        setNnnPsf(data.nnn_psf != null ? String(data.nnn_psf) : '')
+        if (data.nnn_psf != null) {
+          setNnnPsf(String(data.nnn_psf))
+          // Pre-calc monthly if sqft is known
+          const sq = data.sqft ?? 0
+          if (sq > 0) setNnnMonthlyInput(((data.nnn_psf * sq) / 12).toFixed(2))
+        }
         setLeaseTermYears(data.lease_term_years != null ? String(data.lease_term_years) : '')
         setLeaseCommPct(data.lease_commission_pct != null ? String(data.lease_commission_pct) : '3.0')
       } catch {}
@@ -760,7 +766,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
         lease_type: leaseType,
         lease_term_years: leaseTermYearsNum || null,
         lease_commission_pct: leaseCommPctNum,
-        nnn_psf: (leaseType === 'NNN' && parseFloat(nnnPsf)) ? parseFloat(nnnPsf) : null,
+        nnn_psf: leaseType === 'NNN' ? (parseFloat(nnnPsf) || null) : null,
         updated_at: new Date().toISOString(),
       }
       if (econId) {
@@ -913,30 +919,59 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
               <LeaseTypeDropdown value={leaseType} onChange={setLeaseType} />
             </div>
           </div>
-          {/* NNN costs — only show when NNN is selected */}
+          {/* NNN costs — two-way: type either PSF/yr OR monthly, other auto-fills */}
           {leaseType === 'NNN' && (
             <div style={{ ...rowStyle, marginBottom: 10 }}>
               <div style={colStyle}>
-                <div style={labelStyle}>NNN / SF / yr</div>
+                <div style={labelStyle}>NNN / SF / YR</div>
                 <input
                   type="number"
                   value={nnnPsf}
-                  onChange={e => setNnnPsf(e.target.value)}
+                  onChange={e => {
+                    const v = e.target.value
+                    setNnnPsf(v)
+                    const psf = parseFloat(v)
+                    if (psf > 0 && sqftNum > 0) {
+                      setNnnMonthlyInput(((psf * sqftNum) / 12).toFixed(2))
+                    } else if (!v) {
+                      setNnnMonthlyInput('')
+                    }
+                  }}
                   placeholder="e.g. 4.50"
                   step="0.01"
                   style={inputStyle}
                 />
                 {parseFloat(nnnPsf) > 0 && (
-                  <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>${parseFloat(nnnPsf).toFixed(2)} / SF</div>
+                  <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                    ${parseFloat(nnnPsf).toFixed(2)} / SF / yr
+                  </div>
                 )}
               </div>
               <div style={colStyle}>
-                <div style={labelStyle}>NNN / mo</div>
+                <div style={labelStyle}>NNN / MO</div>
                 <input
-                  readOnly
-                  value={sqftNum > 0 && parseFloat(nnnPsf) > 0 ? '$' + ((parseFloat(nnnPsf) * sqftNum) / 12).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—'}
-                  style={calcInputStyle}
+                  type="number"
+                  value={nnnMonthlyInput}
+                  onChange={e => {
+                    const v = e.target.value
+                    setNnnMonthlyInput(v)
+                    const mo = parseFloat(v)
+                    if (mo > 0 && sqftNum > 0) {
+                      // back-calc PSF: monthly / sqft * 12
+                      setNnnPsf(((mo / sqftNum) * 12).toFixed(4))
+                    } else if (!v) {
+                      setNnnPsf('')
+                    }
+                  }}
+                  placeholder="e.g. 910"
+                  step="0.01"
+                  style={inputStyle}
                 />
+                {parseFloat(nnnMonthlyInput) > 0 && (
+                  <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                    ${parseFloat(nnnMonthlyInput).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} / mo
+                  </div>
+                )}
               </div>
             </div>
           )}
