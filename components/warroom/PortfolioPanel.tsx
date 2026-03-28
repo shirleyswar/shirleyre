@@ -225,6 +225,9 @@ export default function PortfolioPanel() {
         return isNaN(n) ? null : n
       }
 
+      // Excel stores percentages as decimals (e.g. 0.4042 = 40.42%) — multiply by 100
+      const pct = (v: unknown) => { const n = parseNum(v); return n !== null ? n * 100 : null }
+
       const inserts = rows.map(r => ({
         upload_batch: batch,
         name: String(r['Name'] ?? ''),
@@ -234,10 +237,10 @@ export default function PortfolioPanel() {
         qty: parseNum(r['Qty']),
         market_value: parseNum(r['Market Value']),
         total_cost: parseNum(r['Total Cost']),
-        unrealized_gl_pct: parseNum(r['Unrealized G/L %']),
+        unrealized_gl_pct: pct(r['Unrealized G/L %']),
         unrealized_gl_dollar: parseNum(r['Unrealized G/L $']),
         years_held: parseNum(r['Years Held']),
-        annualized_return_pct: parseNum(r['Annualized Return %']),
+        annualized_return_pct: pct(r['Annualized Return %']),
         ytd_pct: null,
         rolling_12mo_pct: null,
         rolling_36mo_pct: null,
