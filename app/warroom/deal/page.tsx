@@ -747,7 +747,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
           style={inputStyle}
         />
         {sqftNum > 0 && (
-          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{fmtSqft(sqftNum)}</div>
+          <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtSqft(sqftNum)}</div>
         )}
       </div>
 
@@ -766,7 +766,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
                 style={inputStyle}
               />
               {askingPriceNum > 0 && (
-                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{fmtSalePrice(askingPriceNum)}</div>
+                <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtSalePrice(askingPriceNum)}</div>
               )}
             </div>
             <div style={colStyle}>
@@ -779,7 +779,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
                 style={inputStyle}
               />
               {saleCommPctNum > 0 && (
-                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{fmtCommPct(saleCommPctNum)}</div>
+                <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtCommPct(saleCommPctNum)}</div>
               )}
             </div>
           </div>
@@ -811,7 +811,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
                 style={inputStyle}
               />
               {leaseRatePsfNum > 0 && (
-                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{fmtLeaseRate(leaseRatePsfNum)}</div>
+                <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtLeaseRate(leaseRatePsfNum)}</div>
               )}
             </div>
             <div style={colStyle}>
@@ -843,7 +843,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
                   style={inputStyle}
                 />
                 {parseFloat(nnnPsf) > 0 && (
-                  <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>${parseFloat(nnnPsf).toFixed(2)} / SF</div>
+                  <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>${parseFloat(nnnPsf).toFixed(2)} / SF</div>
                 )}
               </div>
               <div style={colStyle}>
@@ -878,7 +878,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
                 style={inputStyle}
               />
               {leaseCommPctNum > 0 && (
-                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{fmtCommPct(leaseCommPctNum)}</div>
+                <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtCommPct(leaseCommPctNum)}</div>
               )}
             </div>
           </div>
