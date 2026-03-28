@@ -320,11 +320,14 @@ export default function BattlePlanPanel() {
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-              <th className="wr-rank2" style={{ width: 28, padding: '4px 6px' }}></th>
-              <th className="wr-rank2" style={{ padding: '4px 8px', textAlign: 'left' }}>Action Item</th>
-              <th className="wr-rank2 hidden sm:table-cell" style={{ width: 100, padding: '4px 8px', textAlign: 'left' }}>Deal</th>
-              <th className="wr-rank2" style={{ width: 32, padding: '4px 6px' }}></th>
+            <tr style={{
+              borderBottom: '1px solid rgba(139,92,246,0.35)',
+              background: 'rgba(139,92,246,0.06)',
+            }}>
+              <th style={{ width: 28, padding: '7px 6px' }}></th>
+              <th style={{ padding: '7px 8px', textAlign: 'left', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
+              <th className="hidden sm:table-cell" style={{ width: 110, padding: '7px 8px', textAlign: 'left', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Deal</th>
+              <th style={{ width: 36, padding: '7px 6px' }}></th>
             </tr>
           </thead>
           <tbody>
@@ -490,6 +493,9 @@ function TaskRow({
   const dealLabel = deal ? (deal.address || deal.name || '') : ''
   const dealShort = dealLabel.length > 18 ? dealLabel.slice(0, 16) + '…' : dealLabel
 
+  // Row index for alternating tint — use sort_order or fallback
+  const isEven = (task.sort_order ?? 0) % 2 === 0
+
   return (
     <tr
       draggable
@@ -500,14 +506,19 @@ function TaskRow({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: isDragTarget ? 'rgba(232,184,75,0.06)' : hovered ? 'rgba(255,255,255,0.02)' : 'transparent',
-        borderBottom: '1px solid var(--border-subtle)',
-        opacity: completing ? 0.4 : 1,
-        transition: 'all 0.15s',
+        background: isDragTarget
+          ? 'rgba(232,184,75,0.07)'
+          : hovered
+          ? 'rgba(139,92,246,0.07)'
+          : isEven ? 'rgba(255,255,255,0.015)' : 'transparent',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderLeft: hovered ? '2px solid rgba(139,92,246,0.6)' : '2px solid transparent',
+        opacity: completing ? 0.35 : 1,
+        transition: 'all 0.12s',
       }}
     >
       {/* Col 1: Checkbox */}
-      <td style={{ width: 28, padding: '8px 6px', verticalAlign: 'middle' }}>
+      <td style={{ width: 28, padding: '10px 6px', verticalAlign: 'middle' }}>
         <button
           onClick={onComplete}
           onMouseEnter={() => setCircleHovered(true)}
@@ -528,7 +539,7 @@ function TaskRow({
       </td>
 
       {/* Col 2: Title */}
-      <td style={{ padding: '8px 8px', verticalAlign: 'top' }}>
+      <td style={{ padding: '10px 8px', verticalAlign: 'middle' }}>
         {editing ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <input
@@ -604,23 +615,33 @@ function TaskRow({
         )}
       </td>
 
-      {/* Col 3: Deal — hidden on mobile, shown on desktop */}
-      <td className="hidden sm:table-cell" style={{ width: 100, padding: '8px 8px', verticalAlign: 'top' }}>
+      {/* Col 3: Deal badge — hidden on mobile */}
+      <td className="hidden sm:table-cell" style={{ width: 110, padding: '10px 8px', verticalAlign: 'middle' }}>
         {deal ? (
           <span style={{
-            fontSize: 10, color: 'var(--accent-gold)',
-            fontFamily: 'monospace', whiteSpace: 'nowrap',
-            overflow: 'hidden', textOverflow: 'ellipsis', display: 'block',
+            display: 'inline-block',
+            padding: '2px 8px',
+            background: 'rgba(232,184,75,0.08)',
+            border: '1px solid rgba(232,184,75,0.2)',
+            borderRadius: 4,
+            fontSize: 10,
+            fontWeight: 600,
+            color: 'var(--accent-gold)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: 106,
+            letterSpacing: '0.02em',
           }} title={dealLabel}>
             {dealShort}
           </span>
         ) : (
-          <span style={{ fontSize: 10, color: 'var(--border-subtle)' }}>—</span>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.1)' }}>—</span>
         )}
       </td>
 
       {/* Col 4: Edit + drag handle */}
-      <td style={{ width: 32, padding: '8px 6px', verticalAlign: 'middle' }}>
+      <td style={{ width: 36, padding: '10px 6px', verticalAlign: 'middle' }}>
         {!editing && hovered && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
