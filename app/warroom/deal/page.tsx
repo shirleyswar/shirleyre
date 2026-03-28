@@ -2167,6 +2167,60 @@ function DealDashboardInner() {
         <DealGlanceCard deal={deal} />
       </div>
 
+      {/* ── Mobile-only action strip — deal actions hidden on desktop right col ── */}
+      <div className="sm:hidden" style={{ padding: '0 24px 16px', maxWidth: 1400, margin: '0 auto' }}>
+        {/* Launch — tracked deals */}
+        {deal.tier === 'tracked' && (
+          <button
+            onClick={() => pinGate(() => doLaunch())}
+            style={{
+              width: '100%',
+              padding: '13px 16px',
+              fontSize: 13,
+              fontWeight: 800,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.35) 0%, rgba(109,40,217,0.48) 100%)',
+              border: '1px solid rgba(167,139,250,0.55)',
+              borderRadius: 10,
+              color: '#c4b5fd',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              boxShadow: '0 0 24px rgba(139,92,246,0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9.5 3A10.5 10.5 0 0 1 21 14.5"/><path d="M3 9.5A10.5 10.5 0 0 1 14.5 21"/>
+              <path d="m3 16 5 5"/><path d="M3 16h5v5"/><circle cx="17" cy="7" r="3"/>
+            </svg>
+            Launch Deal
+          </button>
+        )}
+        {/* → Hot */}
+        {deal.tier === 'filed' && deal.status === 'active' && (
+          <button
+            onClick={() => pinGate(() => doStatusChange('hot'))}
+            style={{ width: '100%', padding: '11px', fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.4)', borderRadius: 10, color: '#fb923c', cursor: 'pointer', fontFamily: 'inherit', marginBottom: 8 }}
+          >
+            → Hot
+          </button>
+        )}
+        {/* → Under Contract */}
+        {deal.tier === 'filed' && (deal.status === 'active' || deal.status === 'hot') && (
+          <button
+            onClick={() => pinGate(() => doStatusChange('under_contract'))}
+            style={{ width: '100%', padding: '11px', fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.4)', borderRadius: 10, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit', marginBottom: 8 }}
+          >
+            → Under Contract
+          </button>
+        )}
+      </div>
+
       {/* ── Body ── */}
       <div className="flex flex-col sm:flex-row sm:items-start" style={{
         gap: 20,
