@@ -205,7 +205,7 @@ function MobileFilterPill({
     : 'ALL'
 
   return (
-    <div ref={ref} className="sm:hidden" style={{ position: 'relative' }}>
+    <div ref={ref} className="deal-mobile-filter sm:hidden" style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{
@@ -348,6 +348,16 @@ export default function DealPipelinePanel() {
 
   return (
     <div className="wr-card">
+      {/* Force-hide on mobile regardless of scroll container context */}
+      <style>{`
+        @media (max-width: 639px) {
+          .deal-rating-col { display: none !important; }
+          .deal-desktop-filters { display: none !important; }
+        }
+        @media (min-width: 640px) {
+          .deal-mobile-filter { display: none !important; }
+        }
+      `}</style>
       {/* Header */}
       <div style={{ marginBottom: 16 }}>
         {/* Top row: +Deal left | ShirleyCRE center | filters right */}
@@ -391,7 +401,7 @@ export default function DealPipelinePanel() {
           </div>
 
           {/* ── Desktop filters (sm+): full pills ── */}
-          <div className="hidden sm:flex" style={{ gap: 6, alignItems: 'center', flexShrink: 0 }}>
+          <div className="deal-desktop-filters hidden sm:flex" style={{ gap: 6, alignItems: 'center', flexShrink: 0 }}>
             <div style={{ display: 'flex', gap: 4 }}>
               {[
                 { value: 'all', label: 'All' },
@@ -455,7 +465,7 @@ export default function DealPipelinePanel() {
                   { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
                   { label: 'Status',      cls: '',                      align: 'left',   width: undefined },
                   { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
-                  { label: 'Rating',      cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
+                  { label: 'Rating',      cls: 'deal-rating-col hidden sm:table-cell',  align: 'left',   width: undefined },
                   { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
                 ] as { label: string; cls: string; align: string; width: number | undefined }[]).map(h => (
                   <th key={h.label} className={h.cls} style={{
@@ -722,7 +732,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
             {['tracked','filed'].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
           </select>
         </td>
-        <td className="hidden sm:table-cell" style={{ padding: '6px 8px' }}>
+        <td className="deal-rating-col hidden sm:table-cell" style={{ padding: '6px 8px' }}>
           <StarRating dealId={deal.id} value={draft.rating ?? null} onSave={(v) => setDraft(p => ({ ...p, rating: v }))} />
         </td>
         {/* Col 9: Save/Cancel — hidden on mobile */}
@@ -792,7 +802,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
           {deal.tier ? deal.tier.charAt(0).toUpperCase() + deal.tier.slice(1) : '—'}
         </span>
       </td>
-      <td className="hidden sm:table-cell" style={{ padding: '6px 10px' }}>
+      <td className="deal-rating-col hidden sm:table-cell" style={{ padding: '6px 10px' }}>
         <StarRating dealId={deal.id} value={deal.rating ?? null} onSave={(v) => onUpdate({ ...deal, rating: v })} />
       </td>
       {/* Col 9: Actions — hidden on mobile */}
