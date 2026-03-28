@@ -125,9 +125,11 @@ export default function PortfolioPanel() {
           'Content-Type': 'application/json',
         },
       })
-      const json = await res.json()
+      const text = await res.text()
+      let json: Record<string, unknown> = {}
+      try { json = JSON.parse(text) } catch { setRefreshMsg(`Error: ${res.status} — ${text.slice(0, 200)}`); setRefreshing(false); return }
       if (!res.ok) {
-        setRefreshMsg(`Error: ${json.error || res.statusText}`)
+        setRefreshMsg(`Error ${res.status}: ${json.error || json.message || text.slice(0, 200)}`)
       } else if (json.cached) {
         const next = json.nextRefreshIn ? ` Next refresh in ${json.nextRefreshIn}.` : ''
         setRefreshMsg(`Prices current as of ${json.lastUpdated}.${next}`)
