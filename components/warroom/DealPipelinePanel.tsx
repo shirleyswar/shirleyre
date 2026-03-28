@@ -158,6 +158,119 @@ function formatCurrency(n: number | null) {
   return `$${n.toFixed(0)}`
 }
 
+// ─── Mobile Filter Pill ───────────────────────────────────────────────────────
+
+const STATUS_OPTS = [
+  { value: 'all',            label: 'All Status' },
+  { value: 'active',         label: 'Active' },
+  { value: 'hot',            label: 'Hot' },
+  { value: 'under_contract', label: 'Under Contract' },
+  { value: 'pipeline',       label: 'Pipeline' },
+  { value: 'in_review',      label: 'In Review' },
+  { value: 'closed',         label: 'Closed' },
+]
+
+const TIER_OPTS = [
+  { value: 'all',     label: 'All Tiers' },
+  { value: 'filed',   label: 'Filed' },
+  { value: 'tracked', label: 'Tracked' },
+]
+
+function MobileFilterPill({
+  filter, tierFilter, onFilterChange, onTierChange,
+}: {
+  filter: string
+  tierFilter: string
+  onFilterChange: (v: any) => void
+  onTierChange: (v: any) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const isFiltered = filter !== 'all' || tierFilter !== 'all'
+  const pillLabel = isFiltered
+    ? [
+        filter !== 'all' ? STATUS_OPTS.find(o => o.value === filter)?.label : null,
+        tierFilter !== 'all' ? TIER_OPTS.find(o => o.value === tierFilter)?.label : null,
+      ].filter(Boolean).join(' · ')
+    : 'ALL'
+
+  return (
+    <div ref={ref} className="sm:hidden" style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '5px 12px',
+          fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const,
+          background: isFiltered ? 'rgba(14,165,160,0.15)' : 'transparent',
+          border: `1px solid ${isFiltered ? 'rgba(14,165,160,0.5)' : 'rgba(255,255,255,0.12)'}`,
+          borderRadius: 8,
+          color: isFiltered ? '#2dd4bf' : 'var(--text-muted)',
+          cursor: 'pointer', fontFamily: 'var(--font-body)',
+        }}
+      >
+        {pillLabel}
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
+          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 9999,
+          background: '#1A1E25', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 10, padding: 12, minWidth: 200,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+          display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          {/* Status */}
+          <div>
+            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: '#4b5563', marginBottom: 6 }}>Status</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {STATUS_OPTS.map(opt => (
+                <button key={opt.value} onClick={() => { onFilterChange(opt.value); if (opt.value === 'all' && tierFilter === 'all') setOpen(false) }}
+                  style={{ padding: '4px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: filter === opt.value ? 'rgba(14,165,160,0.2)' : 'transparent', border: `1px solid ${filter === opt.value ? 'rgba(14,165,160,0.6)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, color: filter === opt.value ? '#2dd4bf' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                >{opt.label}</button>
+              ))}
+            </div>
+          </div>
+          {/* Tier */}
+          <div>
+            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: '#4b5563', marginBottom: 6 }}>Tier</div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {TIER_OPTS.map(opt => (
+                <button key={opt.value} onClick={() => { onTierChange(opt.value) }}
+                  style={{ padding: '4px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: tierFilter === opt.value ? 'rgba(96,165,250,0.15)' : 'transparent', border: `1px solid ${tierFilter === opt.value ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, color: tierFilter === opt.value ? '#60A5FA' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                >{opt.label}</button>
+              ))}
+            </div>
+          </div>
+          {/* Reset + Done */}
+          <div style={{ display: 'flex', gap: 6, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <button onClick={() => { onFilterChange('all'); onTierChange('all') }}
+              style={{ flex: 1, padding: '6px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+            >Reset</button>
+            <button onClick={() => setOpen(false)}
+              style={{ flex: 1, padding: '6px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: 'rgba(14,165,160,0.12)', border: '1px solid rgba(14,165,160,0.4)', borderRadius: 8, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+            >Done</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function DealPipelinePanel() {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
@@ -277,9 +390,8 @@ export default function DealPipelinePanel() {
             </span>
           </div>
 
-          {/* Filters — right, pill style */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-            {/* Status filter pills */}
+          {/* ── Desktop filters (sm+): full pills ── */}
+          <div className="hidden sm:flex" style={{ gap: 6, alignItems: 'center', flexShrink: 0 }}>
             <div style={{ display: 'flex', gap: 4 }}>
               {[
                 { value: 'all', label: 'All' },
@@ -288,69 +400,35 @@ export default function DealPipelinePanel() {
                 { value: 'under_contract', label: 'UC' },
                 { value: 'pipeline', label: 'Pipe' },
               ].map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setFilter(opt.value as DealStatus | 'all')}
-                  style={{
-                    padding: '4px 10px',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase' as const,
-                    background: filter === opt.value ? 'rgba(14,165,160,0.2)' : 'transparent',
-                    border: `1px solid ${filter === opt.value ? 'rgba(14,165,160,0.6)' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius: 8,
-                    color: filter === opt.value ? '#2dd4bf' : 'var(--text-muted)',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-body)',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {opt.label}
-                </button>
+                <button key={opt.value} onClick={() => setFilter(opt.value as DealStatus | 'all')}
+                  style={{ padding: '4px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: filter === opt.value ? 'rgba(14,165,160,0.2)' : 'transparent', border: `1px solid ${filter === opt.value ? 'rgba(14,165,160,0.6)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, color: filter === opt.value ? '#2dd4bf' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s' }}
+                >{opt.label}</button>
               ))}
             </div>
-
-            {/* Divider */}
             <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.08)' }} />
-
-            {/* Tier toggle */}
             <div style={{ display: 'flex', gap: 4 }}>
               {[
                 { value: 'all', label: 'All' },
                 { value: 'filed', label: 'Filed' },
                 { value: 'tracked', label: 'Tracked' },
               ].map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setTierFilter(opt.value as DealTier | 'all')}
-                  style={{
-                    padding: '4px 10px',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase' as const,
-                    background: tierFilter === opt.value ? 'rgba(96,165,250,0.15)' : 'transparent',
-                    border: `1px solid ${tierFilter === opt.value ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius: 8,
-                    color: tierFilter === opt.value ? '#60A5FA' : 'var(--text-muted)',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-body)',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {opt.label}
-                </button>
+                <button key={opt.value} onClick={() => setTierFilter(opt.value as DealTier | 'all')}
+                  style={{ padding: '4px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: tierFilter === opt.value ? 'rgba(96,165,250,0.15)' : 'transparent', border: `1px solid ${tierFilter === opt.value ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, color: tierFilter === opt.value ? '#60A5FA' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s' }}
+                >{opt.label}</button>
               ))}
             </div>
-
-            {/* Reset sort */}
-            <button
-              onClick={() => { setSortBy(null); setSortDir('asc') }}
-              title="Reset sort"
+            <button onClick={() => { setSortBy(null); setSortDir('asc') }} title="Reset sort"
               style={{ padding: '3px 7px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}
             >↺</button>
           </div>
+
+          {/* ── Mobile filters: single ALL pill → tap opens status + tier dropdowns ── */}
+          <MobileFilterPill
+            filter={filter}
+            tierFilter={tierFilter}
+            onFilterChange={setFilter}
+            onTierChange={setTierFilter}
+          />
         </div>
       </div>
 
@@ -377,7 +455,7 @@ export default function DealPipelinePanel() {
                   { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
                   { label: 'Status',      cls: '',                      align: 'left',   width: undefined },
                   { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
-                  { label: 'Rating',      cls: '',                      align: 'left',   width: undefined },
+                  { label: 'Rating',      cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
                   { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
                 ] as { label: string; cls: string; align: string; width: number | undefined }[]).map(h => (
                   <th key={h.label} className={h.cls} style={{
@@ -644,7 +722,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
             {['tracked','filed'].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
           </select>
         </td>
-        <td style={{ padding: '6px 8px' }}>
+        <td className="hidden sm:table-cell" style={{ padding: '6px 8px' }}>
           <StarRating dealId={deal.id} value={draft.rating ?? null} onSave={(v) => setDraft(p => ({ ...p, rating: v }))} />
         </td>
         {/* Col 9: Save/Cancel — hidden on mobile */}
@@ -714,7 +792,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
           {deal.tier ? deal.tier.charAt(0).toUpperCase() + deal.tier.slice(1) : '—'}
         </span>
       </td>
-      <td style={{ padding: '6px 10px' }}>
+      <td className="hidden sm:table-cell" style={{ padding: '6px 10px' }}>
         <StarRating dealId={deal.id} value={deal.rating ?? null} onSave={(v) => onUpdate({ ...deal, rating: v })} />
       </td>
       {/* Col 9: Actions — hidden on mobile */}
