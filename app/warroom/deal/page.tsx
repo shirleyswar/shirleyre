@@ -250,7 +250,8 @@ function PinModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: ()
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
       background: 'rgba(0,0,0,0.8)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      paddingTop: '12vh',
     }}>
       <div style={{
         background: '#1A1E25',
