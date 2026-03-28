@@ -104,13 +104,19 @@ function parseAddress(raw: string | null): {
 const DEAL_TYPES: { value: string; label: string }[] = [
   { value: 'potential_listing',   label: 'Potential Listing' },
   { value: 'active_listing',      label: 'Active Listing' },
+  { value: 'listing',             label: 'Listing' },
   { value: 'landlord',            label: 'Landlord' },
   { value: 'seller',              label: 'Seller' },
   { value: 'tenant',              label: 'Tenant' },
   { value: 'buyer',               label: 'Buyer' },
+  { value: 'buyer_rep',           label: 'Buyer Rep' },
+  { value: 'tenant_rep',          label: 'Tenant Rep' },
+  { value: 'landlord_rep',        label: 'Landlord Rep' },
   { value: 'referral',            label: 'Referral' },
+  { value: 'consulting',          label: 'Consulting' },
   { value: 'x_develop_serv',      label: 'X - Develop Serv' },
   { value: 'x_consulting',        label: 'X - Consulting' },
+  { value: 'other',               label: 'Other' },
 ]
 
 const STATUS_LABELS: Record<DealStatus, string> = {
@@ -229,71 +235,118 @@ export default function DealPipelinePanel() {
   return (
     <div className="wr-card">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, minHeight: 44 }}>
+      <div style={{ marginBottom: 16 }}>
+        {/* Top row: +Deal left | ShirleyCRE center | filters right */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 0 }}>
 
-        {/* + Deal — far left, slightly taller/wider */}
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          style={{
-            padding: '10px 22px',
-            fontSize: 13,
-            fontWeight: 800,
-            letterSpacing: '0.08em',
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.35) 0%, rgba(109,40,217,0.48) 100%)',
-            border: '1px solid rgba(167,139,250,0.55)',
-            borderRadius: 10,
-            color: '#c4b5fd',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-body)',
-            boxShadow: '0 0 14px rgba(139,92,246,0.25)',
-            flexShrink: 0,
-          }}
-        >
-          + Deal
-        </button>
-
-        {/* SHIRLEYCRE — absolute center */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <span style={{
-            fontSize: 13,
-            fontWeight: 900,
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            color: '#E8B84B',
-            fontFamily: 'var(--font-display, var(--font-body))',
-            textShadow: '0 0 18px rgba(232,184,75,0.4)',
-            userSelect: 'none',
-          }}>
-            ShirleyCRE
-          </span>
-        </div>
-
-        {/* Filters — far right */}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-          <select
-            value={filter}
-            onChange={e => setFilter(e.target.value as DealStatus | 'all')}
-            style={{ padding: '8px 14px', fontSize: 13, background: 'rgba(14,165,160,0.06)', border: '1px solid rgba(14,165,160,0.3)', color: 'rgba(14,165,160,0.85)', borderRadius: 8, outline: 'none', cursor: 'pointer' }}
-          >
-            <option value="all">All Status</option>
-            {Object.entries(STATUS_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
-          <select
-            value={tierFilter}
-            onChange={e => setTierFilter(e.target.value as DealTier | 'all')}
-            style={{ padding: '8px 14px', fontSize: 13, background: 'rgba(14,165,160,0.06)', border: '1px solid rgba(14,165,160,0.3)', color: 'rgba(14,165,160,0.85)', borderRadius: 8, outline: 'none', cursor: 'pointer' }}
-          >
-            <option value="all">All Tiers</option>
-            <option value="tracked">Tracked</option>
-            <option value="filed">Filed</option>
-          </select>
+          {/* + Deal — compact, left */}
           <button
-            onClick={() => { setSortBy(null); setSortDir('asc') }}
-            title="Reset sort"
-            style={{ padding: '4px 8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}
-          >↺</button>
+            onClick={() => setShowAddForm(!showAddForm)}
+            style={{
+              padding: '7px 16px',
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.42) 100%)',
+              border: '1px solid rgba(167,139,250,0.5)',
+              borderRadius: 8,
+              color: '#c4b5fd',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-body)',
+              flexShrink: 0,
+            }}
+          >
+            + Deal
+          </button>
+
+          {/* ShirleyCRE — bold section header, centered */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <span style={{
+              fontSize: 26,
+              fontWeight: 900,
+              letterSpacing: '0.06em',
+              color: '#E8B84B',
+              fontFamily: 'var(--font-display, var(--font-body))',
+              textShadow: '0 0 28px rgba(232,184,75,0.5), 0 2px 0 rgba(0,0,0,0.4)',
+              userSelect: 'none',
+              lineHeight: 1,
+            }}>
+              ShirleyCRE
+            </span>
+          </div>
+
+          {/* Filters — right, pill style */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+            {/* Status filter pills */}
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[
+                { value: 'all', label: 'All' },
+                { value: 'active', label: 'Active' },
+                { value: 'hot', label: 'Hot' },
+                { value: 'under_contract', label: 'UC' },
+                { value: 'pipeline', label: 'Pipe' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFilter(opt.value as DealStatus | 'all')}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    background: filter === opt.value ? 'rgba(14,165,160,0.2)' : 'transparent',
+                    border: `1px solid ${filter === opt.value ? 'rgba(14,165,160,0.6)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 20,
+                    color: filter === opt.value ? '#2dd4bf' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.08)' }} />
+
+            {/* Tier toggle */}
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[
+                { value: 'all', label: 'All' },
+                { value: 'filed', label: 'Filed' },
+                { value: 'tracked', label: 'Tracked' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setTierFilter(opt.value as DealTier | 'all')}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    background: tierFilter === opt.value ? 'rgba(96,165,250,0.15)' : 'transparent',
+                    border: `1px solid ${tierFilter === opt.value ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 20,
+                    color: tierFilter === opt.value ? '#60A5FA' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Reset sort */}
+            <button
+              onClick={() => { setSortBy(null); setSortDir('asc') }}
+              title="Reset sort"
+              style={{ padding: '3px 7px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}
+            >↺</button>
+          </div>
         </div>
       </div>
 
@@ -393,12 +446,16 @@ export default function DealPipelinePanel() {
 // ─── Kill action helpers ─────────────────────────────────────────────────────
 type KillAction = { status: 'expired' | 'dormant' | 'terminated'; label: string; folderPath: string }
 
+const KILLABLE_STATUSES: DealStatus[] = ['active', 'hot', 'in_review', 'in_service', 'pipeline']
+
 function getKillOptions(deal: Deal): KillAction[] {
+  // Only show kill options for active/live statuses — not after revert or already killed
+  if (!KILLABLE_STATUSES.includes(deal.status as DealStatus)) return []
   const options: KillAction[] = []
-  if (deal.tier === 'filed' && deal.type === 'active_listing') {
+  if (deal.tier === 'filed' && (deal.type === 'active_listing' || deal.type === 'listing')) {
     options.push({ status: 'expired', label: 'Expire → X - Expired Listings', folderPath: 'X - Expired Listings' })
   }
-  if (deal.tier === 'filed' && deal.type !== 'active_listing') {
+  if (deal.tier === 'filed' && deal.type !== 'active_listing' && deal.type !== 'listing') {
     options.push({ status: 'dormant', label: 'Dormant → X - Dormant Projects', folderPath: 'X - Dormant Projects' })
   }
   if (deal.tier === 'filed' && deal.dropbox_link) {
