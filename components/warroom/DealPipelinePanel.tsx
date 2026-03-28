@@ -264,14 +264,15 @@ export default function DealPipelinePanel() {
             <span style={{
               fontSize: 26,
               fontWeight: 900,
-              letterSpacing: '0.06em',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
               color: '#E8B84B',
               fontFamily: 'var(--font-display, var(--font-body))',
               textShadow: '0 0 28px rgba(232,184,75,0.5), 0 2px 0 rgba(0,0,0,0.4)',
               userSelect: 'none',
               lineHeight: 1,
             }}>
-              ShirleyCRE
+              SHIRLEYCRE
             </span>
           </div>
 
@@ -366,19 +367,22 @@ export default function DealPipelinePanel() {
                 boxShadow: 'inset 0 -1px 0 rgba(139,92,246,0.3)',
               }}>
                 {([
-                  { label: 'FILES', cls: 'hidden sm:table-cell', align: 'center' },
-                  { label: 'More',  cls: '',                      align: 'center' },
-                  { label: 'Address',     cls: '',                      align: 'left'   },
-                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'left'   },
-                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'left'   },
-                  { label: 'Status',      cls: '',                      align: 'left'   },
-                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'left'   },
-                  { label: 'Rating',      cls: '',                      align: 'left'   },
-                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'left'   },
-                ] as { label: string; cls: string; align: string }[]).map(h => (
+                  { label: 'FILES', cls: 'hidden sm:table-cell', align: 'center', width: 58  },
+                  { label: 'MORE',  cls: '',                      align: 'center', width: 38  },
+                  { label: 'Address',     cls: '',                      align: 'left',   width: undefined },
+                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
+                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
+                  { label: 'Status',      cls: '',                      align: 'left',   width: undefined },
+                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
+                  { label: 'Rating',      cls: '',                      align: 'left',   width: undefined },
+                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'left',   width: undefined },
+                ] as { label: string; cls: string; align: string; width: number | undefined }[]).map(h => (
                   <th key={h.label} className={h.cls} style={{
                     textAlign: h.align as React.CSSProperties['textAlign'],
-                    padding: '8px 6px',
+                    width: h.width,
+                    minWidth: h.width,
+                    maxWidth: h.width,
+                    padding: '8px 4px',
                     fontSize: 9,
                     fontWeight: 800,
                     color: 'rgba(167,139,250,0.8)',
@@ -657,11 +661,13 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       onMouseLeave={e => (e.currentTarget.style.background = editing ? 'rgba(167,139,250,0.04)' : '')}
     >
       {/* Col 1: Files — hidden on mobile */}
-      <td className="hidden sm:table-cell" style={{ padding: '8px 6px', textAlign: 'center', borderRight: '1px solid rgba(139,92,246,0.1)' }}>
-        <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
+      <td className="hidden sm:table-cell" style={{ width: 58, minWidth: 58, maxWidth: 58, padding: '6px 4px', textAlign: 'center', borderRight: '1px solid rgba(139,92,246,0.1)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
+        </div>
       </td>
       {/* Col 2: Deal page button — MORE */}
-      <td style={{ padding: '8px 6px', textAlign: 'center' }}>
+      <td style={{ width: 38, minWidth: 38, maxWidth: 38, padding: '6px 4px', textAlign: 'center' }}>
         <a
           href={`/warroom/deal?id=${deal.id}`}
           title="Open Deal Dashboard"
