@@ -589,13 +589,14 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
               <select
                 value={leaseType}
                 onChange={e => setLeaseType(e.target.value)}
-                style={{ ...inputStyle, whiteSpace: 'normal', wordBreak: 'break-word' }}
+                style={{ ...inputStyle, fontSize: 12 }}
               >
                 {['NNN', 'Modified Gross', 'Full Service', 'Gross', 'Absolute Net'].map(t => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
-              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{leaseType}</div>
+              {/* Show full selected value below — prevents mobile truncation */}
+              <div style={{ fontSize: 11, color: 'var(--accent-gold, #E8B84B)', marginTop: 3, fontWeight: 600 }}>{leaseType}</div>
             </div>
           </div>
           <div style={rowStyle}>
@@ -1617,17 +1618,15 @@ function DealDashboardInner() {
       </header>
 
       {/* ── Body ── */}
-      <div style={{
-        display: 'flex',
+      <div className="flex flex-col sm:flex-row sm:items-start" style={{
         gap: 20,
         padding: '24px',
         maxWidth: 1400,
         margin: '0 auto',
-        alignItems: 'flex-start',
       }}>
 
-        {/* ── LEFT COLUMN (65%) ── */}
-        <div style={{ flex: '0 0 65%', minWidth: 0 }}>
+        {/* ── LEFT COLUMN ── */}
+        <div className="w-full sm:w-[65%]" style={{ minWidth: 0 }}>
 
           {/* Deal Economics */}
           <DealEconomicsCard deal={deal} />
@@ -1809,11 +1808,11 @@ function DealDashboardInner() {
           </div>
         </div>
 
-        {/* ── RIGHT COLUMN (35%) ── */}
-        <div style={{ flex: '0 0 35%', minWidth: 0 }}>
+        {/* ── RIGHT COLUMN — hidden on mobile ── */}
+        <div className="hidden sm:block sm:w-[35%]" style={{ minWidth: 0 }}>
 
-          {/* Deal Actions Card — hidden on mobile */}
-          <div className="hidden sm:block" style={cardStyle}>
+          {/* Deal Actions Card */}
+          <div style={cardStyle}>
             <div style={{ ...sectionHeadStyle, marginBottom: 16 }}>Deal Actions</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
