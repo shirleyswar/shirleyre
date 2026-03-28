@@ -229,23 +229,47 @@ export default function DealPipelinePanel() {
   return (
     <div className="wr-card">
       {/* Header */}
-      <div className="wr-card-header" style={{ flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
-          <PipeIcon />
-        </span>
-        <span className="wr-card-title">Deals</span>
-        {/* +Deal button — LEFT */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, minHeight: 44 }}>
+
+        {/* + Deal — far left, slightly taller/wider */}
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="wr-btn-orbit"
+          style={{
+            padding: '10px 22px',
+            fontSize: 13,
+            fontWeight: 800,
+            letterSpacing: '0.08em',
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.35) 0%, rgba(109,40,217,0.48) 100%)',
+            border: '1px solid rgba(167,139,250,0.55)',
+            borderRadius: 10,
+            color: '#c4b5fd',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-body)',
+            boxShadow: '0 0 14px rgba(139,92,246,0.25)',
+            flexShrink: 0,
+          }}
         >
           + Deal
         </button>
-        <div style={{ flex: 1 }} />
 
-        {/* Filters — right */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Status filter */}
+        {/* SHIRLEYCRE — absolute center */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <span style={{
+            fontSize: 13,
+            fontWeight: 900,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: '#E8B84B',
+            fontFamily: 'var(--font-display, var(--font-body))',
+            textShadow: '0 0 18px rgba(232,184,75,0.4)',
+            userSelect: 'none',
+          }}>
+            ShirleyCRE
+          </span>
+        </div>
+
+        {/* Filters — far right */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
           <select
             value={filter}
             onChange={e => setFilter(e.target.value as DealStatus | 'all')}
@@ -256,8 +280,6 @@ export default function DealPipelinePanel() {
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
-
-          {/* Tier filter */}
           <select
             value={tierFilter}
             onChange={e => setTierFilter(e.target.value as DealTier | 'all')}
@@ -267,21 +289,10 @@ export default function DealPipelinePanel() {
             <option value="tracked">Tracked</option>
             <option value="filed">Filed</option>
           </select>
-
-          {/* Reset sort */}
           <button
             onClick={() => { setSortBy(null); setSortDir('asc') }}
             title="Reset sort"
-            style={{
-              padding: '4px 8px',
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 6,
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              fontSize: 14,
-              lineHeight: 1,
-            }}
+            style={{ padding: '4px 8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}
           >↺</button>
         </div>
       </div>
