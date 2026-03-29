@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import React from 'react'
 import type { JSX } from 'react'
+import { supabase } from '@/lib/supabase'
 
 const NAV_MAIN = [
   { id: 'overview',   icon: GridIcon,   label: 'Overview'       },
@@ -26,9 +28,13 @@ interface SidebarProps {
 
 export default function Sidebar({ open, onToggle, activePanel, onPanelSelect }: SidebarProps) {
   const [isMobile, setIsMobile] = useState(false)
+  const [isVertical, setIsVertical] = useState(false)
 
   useEffect(() => {
-    function check() { setIsMobile(window.innerWidth < 640) }
+    function check() {
+      setIsMobile(window.innerWidth < 640)
+      setIsVertical(window.innerWidth <= 1080 && window.innerHeight >= 1200)
+    }
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
@@ -62,7 +68,7 @@ export default function Sidebar({ open, onToggle, activePanel, onPanelSelect }: 
             overflow: 'hidden',
           }}
         >
-          <SidebarContent activePanel={activePanel} onPanelSelect={(id) => { onPanelSelect(id); onToggle() }} />
+          <SidebarContent activePanel={activePanel} onPanelSelect={(id) => { onPanelSelect(id); onToggle() }} isVertical={isVertical} />
         </nav>
       </>
     )
@@ -82,12 +88,12 @@ export default function Sidebar({ open, onToggle, activePanel, onPanelSelect }: 
         zIndex: 10,
       }}
     >
-      <SidebarContent activePanel={activePanel} onPanelSelect={onPanelSelect} />
+      <SidebarContent activePanel={activePanel} onPanelSelect={onPanelSelect} isVertical={isVertical} />
     </nav>
   )
 }
 
-function SidebarContent({ activePanel, onPanelSelect }: { activePanel: string; onPanelSelect: (id: string) => void }) {
+function SidebarContent({ activePanel, onPanelSelect, isVertical }: { activePanel: string; onPanelSelect: (id: string) => void; isVertical: boolean }) {
   return (
     <>
       {/* Logo mark */}
@@ -118,11 +124,107 @@ function SidebarContent({ activePanel, onPanelSelect }: { activePanel: string; o
         {NAV_SECONDARY.map(item => (
           <NavBtn key={item.id} item={item} isActive={activePanel === item.id} onClick={() => onPanelSelect(item.id)} />
         ))}
+
+        {/* Vertical monitor extras — pipeline stats + LACDB/CREXI */}
+        {isVertical && (
+          <>
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '6px 10px 4px' }} />
+            <SidebarPipelineStats />
+            <SidebarLinkBtn label="LACDB" url="https://roam.clareityiam.net/idp/login/lacdb" />
+            <SidebarLinkBtn label="CREXI" url="https://www.crexi.com/" />
+          </>
+        )}
+
         <div style={{ marginTop: 4, paddingBottom: 12 }}>
           <button title="Settings" className="wr-sidebar-btn"><SettingsIcon /></button>
         </div>
       </div>
     </>
+  )
+}
+
+// ─── Pipeline stats — compact vertical stack for sidebar ─────────────────────
+function SidebarPipelineStats() {
+  const [stats, setStats] = React.useState({ pipeline: 0, openDeals: 0, ar: 0 })
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const { data } = await supabase.from('deals').select('status,commission_estimated,commission_collected')
+        if (data) {
+          const active = (data as { status: string; commission_estimated: number | null; commission_collected: number | null }[])
+            .filter(d => !['closed','dead','expired','dormant','terminated'].includes(d.status))
+          const pipeline = active.reduce((s, d) => s + (d.commission_estimated || 0), 0)
+          const ar = active.filter(d => d.status === 'pending_payment')
+            .reduce((s, d) => s + ((d.commission_estimated || 0) - (d.commission_collected || 0)), 0)
+          setStats({ pipeline, openDeals: active.length, ar })
+        }
+      } catch {}
+      setLoading(false)
+    }
+    load()
+    const t = setInterval(load, 60000)
+    return () => clearInterval(t)
+  }, [])
+
+  function fmt(n: number) {
+    if (n >= 1_000_000) return `$${(n/1_000_000).toFixed(1)}M`
+    if (n >= 1_000) return `$${(n/1_000).toFixed(0)}K`
+    return `$${n.toFixed(0)}`
+  }
+
+  const items = [
+    { label: 'PIPE', value: loading ? '—' : fmt(stats.pipeline), color: '#E8B84B' },
+    { label: 'OPEN', value: loading ? '—' : String(stats.openDeals), color: '#22C55E' },
+    { label: 'A/R',  value: loading ? '—' : fmt(stats.ar),          color: '#60A5FA' },
+  ]
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '8px 0 4px' }}>
+      {items.map(item => (
+        <div key={item.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: item.color, fontFamily: 'var(--font-body)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+            {item.value}
+          </div>
+          <div style={{ fontSize: 7, fontWeight: 600, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            {item.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Teal link button — LACDB / CREXI ────────────────────────────────────────
+function SidebarLinkBtn({ label, url }: { label: string; url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={label}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: 2, width: '100%', padding: '6px 0', textDecoration: 'none', cursor: 'pointer',
+      }}
+    >
+      <div style={{
+        width: 28, height: 28, borderRadius: 8,
+        background: 'rgba(14,165,160,0.12)', border: '1px solid rgba(14,165,160,0.3)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: 'rgba(14,165,160,0.85)',
+      }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+      </div>
+      <span style={{ fontSize: 7, fontWeight: 700, color: 'rgba(14,165,160,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+        {label}
+      </span>
+    </a>
   )
 }
 

@@ -165,6 +165,21 @@ export default function WarRoomPage() {
 
 // ─── WAR ROOM HEADER ────────────────────────────────────────────────────────
 
+// Detects vertical monitor: width ≤ 1080 AND height ≥ 1200
+// Keeps mobile (short height) and normal desktop (wide) unaffected
+function useVerticalMonitor() {
+  const [isVertical, setIsVertical] = useState(false)
+  useEffect(() => {
+    function check() {
+      setIsVertical(window.innerWidth <= 1080 && window.innerHeight >= 1200)
+    }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return isVertical
+}
+
 function useDateLabel() {
   const [label, setLabel] = useState('')
   useEffect(() => {
@@ -267,6 +282,7 @@ function NavRibbon({
   activeSection: NavSection | 'operations'
   onSectionChange: (s: NavSection | 'operations') => void
 }) {
+  const isVertical = useVerticalMonitor()
   const insideSection = activeSection !== 'operations'
   const activeNav = NAV_SECTIONS.find(s => s.id === activeSection)
 
@@ -498,15 +514,15 @@ function NavRibbon({
       {/* Spacer — pushes link orbits to the right, hidden on mobile */}
       <div className="hidden sm:block" style={{ flex: 1, minWidth: 24 }} />
 
-      {/* Stats card — lives between orbit nav and LACDB/CREXI */}
-      <StatsNavCard />
+      {/* Stats card + LACDB/CREXI — hidden on vertical monitor (moved to sidebar) */}
+      {!isVertical && <StatsNavCard />}
 
-      {/* Teal link orbits — LACDB & CREXI — hidden on mobile */}
+      {/* Teal link orbits — LACDB & CREXI — hidden on mobile and vertical monitor */}
       {[
         { label: 'LACDB', url: 'https://roam.clareityiam.net/idp/login/lacdb' },
         { label: 'CREXI', url: 'https://www.crexi.com/' },
       ].map(link => (
-        <div key={link.label} className="hidden sm:block">
+        <div key={link.label} className="hidden sm:block" style={{ display: isVertical ? 'none' : undefined }}>
         <motion.a
           key={link.label}
           href={link.url}
