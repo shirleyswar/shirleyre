@@ -302,9 +302,16 @@ function SleeveTab() {
   const [uploadMsg, setUploadMsg]     = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [dragOver, setDragOver]       = useState(false)
+  const [refreshing, setRefreshing]   = useState(false)
+  const [refreshMsg, setRefreshMsg]   = useState<string | null>(null)
+  const [lastRefreshed, setLastRefreshed] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { fetchSleeve() }, [])
+  useEffect(() => {
+    const dates = positions.map(p => p.price_updated_at).filter(Boolean) as string[]
+    if (dates.length > 0) setLastRefreshed(dates.sort().reverse()[0])
+  }, [positions])
 
   async function fetchSleeve() {
     try {
@@ -313,6 +320,29 @@ function SleeveTab() {
       if (data) setPositions(data as Position[])
     } catch {}
     finally { setLoading(false) }
+  }
+
+  function cacheAge(): { fresh: boolean; label: string } {
+    if (!lastRefreshed) return { fresh: false, label: '' }
+    const hrs = (Date.now() - new Date(lastRefreshed).getTime()) / (1000 * 60 * 60)
+    if (hrs < 24) return { fresh: true, label: `Updated ${hrs < 1 ? 'recently' : Math.floor(hrs) + 'h ago'} — next in ${Math.ceil(24 - hrs)}h` }
+    return { fresh: false, label: '' }
+  }
+
+  async function refreshPrices() {
+    setRefreshing(true); setRefreshMsg(null)
+    try {
+      const SUPABASE_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
+      const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
+      const res  = await fetch(`${SUPABASE_URL}/functions/v1/refresh-portfolio-prices`, { method: 'POST', headers: { 'Authorization': `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json' } })
+      const text = await res.text()
+      let json: Record<string, unknown> = {}
+      try { json = JSON.parse(text) } catch { setRefreshMsg(`Error: ${res.status} — ${text.slice(0,200)}`); setRefreshing(false); return }
+      if (!res.ok) { setRefreshMsg(`Error ${res.status}: ${json.error || json.message || text.slice(0,200)}`) }
+      else if (json.cached) { setRefreshMsg(`Prices current as of ${json.lastUpdated}.${json.nextRefreshIn ? ` Next in ${json.nextRefreshIn}.` : ''}`) }
+      else { const errs = Array.isArray(json.errors) ? json.errors : []; setRefreshMsg(`✓ Updated ${json.updated} tickers${errs.length ? ` (${errs.length} skipped)` : ''}`); await fetchSleeve() }
+    } catch (e: unknown) { setRefreshMsg('Error: ' + (e instanceof Error ? e.message : String(e))) }
+    setRefreshing(false)
   }
 
   const handleFile = useCallback(async (file: File) => {
@@ -390,6 +420,15 @@ function SleeveTab() {
         <span style={{ fontSize: 16, fontWeight: 800, color: P.purple, letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: `0 0 20px rgba(139,92,246,0.4)` }}>SLEEVE</span>
         <span style={{ fontSize: 11, color: P.muted }}>Matthew&apos;s directed buys</span>
         <div style={{ flex: 1 }} />
+        {positions.length > 0 && (() => {
+          const cache = cacheAge()
+          return (
+            <button onClick={refreshPrices} disabled={refreshing || cache.fresh} title={cache.fresh ? cache.label : 'Refresh prices from both tables'}
+              style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: `1px solid ${cache.fresh ? 'rgba(255,255,255,0.08)' : 'rgba(34,197,94,0.35)'}`, borderRadius: 8, color: cache.fresh ? P.muted : P.green, cursor: cache.fresh ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+              {refreshing ? '⟳ Refreshing…' : cache.fresh ? '✓ Prices Current' : '⟳ Refresh Prices'}
+            </button>
+          )
+        })()}
         <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
           style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', opacity: uploading ? 0.5 : 1 }}>
           {uploading ? 'Loading…' : '↑ Upload Sleeve .xlsx'}
@@ -397,6 +436,7 @@ function SleeveTab() {
         <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }} style={{ display: 'none' }} />
       </div>
 
+      {refreshMsg  && <div style={{ marginBottom: 12, fontSize: 12, color: refreshMsg.startsWith('Error') ? P.red : P.green, fontFamily: 'monospace' }}>{refreshMsg}</div>}
       {uploadMsg   && <div style={{ marginBottom: 12, fontSize: 12, color: P.green, fontFamily: 'monospace' }}>{uploadMsg}</div>}
       {uploadError && <div style={{ marginBottom: 12, fontSize: 12, color: P.red,   fontFamily: 'monospace' }}>{uploadError}</div>}
 
