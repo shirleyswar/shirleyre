@@ -2161,6 +2161,28 @@ function DealDashboardInner() {
     }
   }
 
+  async function doLanded() {
+    if (!deal) return
+    const { data, error } = await supabase
+      .from('deals')
+      .update({ status: 'pending_payment', updated_at: new Date().toISOString() })
+      .eq('id', deal.id)
+      .select()
+      .single()
+    if (!error && data) {
+      setDeal(data as Deal)
+      // Write to activity log
+      try {
+        await supabase.from('activity_log').insert({
+          deal_id: deal.id,
+          action_type: 'landed',
+          description: 'Deal moved to Pending Payment — commission earned',
+          created_by: 'matthew',
+        })
+      } catch {}
+    }
+  }
+
   async function doKillAction(newStatus: DealStatus, destination: string) {
     if (!deal) return
     const { data, error } = await supabase
@@ -2637,6 +2659,22 @@ function DealDashboardInner() {
                   bg="rgba(45,212,191,0.08)"
                   border="rgba(45,212,191,0.35)"
                   onClick={() => pinGate(() => doStatusChange('under_contract'))}
+                />
+              )}
+
+              {/* LANDED — under_contract only */}
+              {deal.status === 'under_contract' && (
+                <ActionBtn
+                  label="LANDED"
+                  color="#22c55e"
+                  bg="rgba(34,197,94,0.12)"
+                  border="rgba(34,197,94,0.45)"
+                  onClick={() => pinGate(() => doLanded())}
+                  icon={
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  }
                 />
               )}
 
