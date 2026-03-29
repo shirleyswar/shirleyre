@@ -95,7 +95,8 @@ export default function BattlePlanPanel() {
 
       const filtered = (data as BattlePlanTask[]).filter(t => {
         if (t.status === 'open' || t.status === 'in_progress') {
-          return !t.due_date || t.due_date <= today
+          // Show ALL open tasks regardless of due_date — deadline is display-only, not a filter
+          return true
         }
         if (t.status === 'complete' || t.status === 'done') {
           const completedTime = t.completed_at || t.created_at
