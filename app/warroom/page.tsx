@@ -777,6 +777,30 @@ function SectionView({ children, onBack, title }: { children: React.ReactNode; o
 }
 
 function OperationsView({ activePanel }: { activePanel: string }) {
+  const isVertical = useVerticalMonitor()
+
+  if (isVertical) {
+    // Vertical monitor: single column, panels stacked in order
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18 }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1080 }}>
+          <BattlePlanPanel />
+          <SchedulePanel />
+          <HotPanel />
+          <UnderContractPanel />
+          <MoneyMoversPanel />
+          <DealPipelinePanel />
+          <AccountsReceivablePanel />
+        </div>
+      </motion.div>
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}

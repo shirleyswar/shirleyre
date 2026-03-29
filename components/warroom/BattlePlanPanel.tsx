@@ -19,6 +19,7 @@ interface BattlePlanTask {
   bp_priority?: number | null
   is_family?: boolean | null
   is_life?: boolean | null
+  is_entity?: boolean | null
 }
 
 interface DealOption {
@@ -44,6 +45,7 @@ export default function BattlePlanPanel() {
   const [newBpPriority, setNewBpPriority] = useState<number | null>(null)
   const [prioritySortDir, setPrioritySortDir] = useState<'desc' | 'asc'>('desc')
   const [newIsFamily, setNewIsFamily] = useState(false)
+  const [newIsEntity, setNewIsEntity] = useState(false)
   const [newDueDate, setNewDueDate] = useState('')
 
   // Completion modal state
@@ -127,6 +129,7 @@ export default function BattlePlanPanel() {
         contact_name: addToLife ? 'LIFE' : (newContactName.trim() || null),
         bp_priority: newBpPriority || null,
         is_family: newIsFamily || null,
+        is_entity: newIsEntity || null,
         due_date: newDueDate || null,
       }
       try {
@@ -149,6 +152,7 @@ export default function BattlePlanPanel() {
         setNewContactName('')
         setNewBpPriority(null)
         setNewIsFamily(false)
+        setNewIsEntity(false)
         setAddToLife(false)
         setNewDueDate('')
         // Auto-dismiss the modal after save ✓
@@ -165,6 +169,7 @@ export default function BattlePlanPanel() {
     setNewContactName('')
     setNewBpPriority(null)
     setNewIsFamily(false)
+    setNewIsEntity(false)
     setAddToLife(false)
     setNewDueDate('')
   }
@@ -357,6 +362,10 @@ export default function BattlePlanPanel() {
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: newIsFamily ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: newIsFamily ? 700 : 400 }}>
                 <input type="checkbox" checked={newIsFamily} onChange={e => setNewIsFamily(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#ef4444', cursor: 'pointer' }} />
                 <FamilyIcon active={newIsFamily} /> Family
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: newIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: newIsEntity ? 700 : 400 }}>
+                <input type="checkbox" checked={newIsEntity} onChange={e => setNewIsEntity(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#22c55e', cursor: 'pointer' }} />
+                Entity
               </label>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -563,12 +572,13 @@ function TaskRow({
   const [editDealId, setEditDealId] = useState(task.deal_id || '')
   const [editContactName, setEditContactName] = useState(task.contact_name || '')
   const [editIsFamily, setEditIsFamily] = useState(!!task.is_family)
+  const [editIsEntity, setEditIsEntity] = useState(!!task.is_entity)
   const [circleHovered, setCircleHovered] = useState(false)
   const isDragTarget = dragOverId === task.id
   const isLong = task.title.length > 48
 
   function saveEdit() {
-    if (editTitle.trim()) onUpdate({ title: editTitle.trim(), deal_id: editDealId || null, contact_name: editContactName.trim() || null, is_family: editIsFamily || null })
+    if (editTitle.trim()) onUpdate({ title: editTitle.trim(), deal_id: editDealId || null, contact_name: editContactName.trim() || null, is_family: editIsFamily || null, is_entity: editIsEntity || null })
     setEditing(false)
   }
 
@@ -591,11 +601,15 @@ function TaskRow({
       style={{
         background: isDragTarget
           ? 'rgba(232,184,75,0.07)'
+          : task.is_entity
+          ? (hovered ? 'rgba(34,197,94,0.10)' : 'rgba(34,197,94,0.06)')
           : hovered
           ? 'rgba(139,92,246,0.07)'
           : isEven ? 'rgba(255,255,255,0.015)' : 'transparent',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
-        borderLeft: hovered ? '2px solid rgba(139,92,246,0.6)' : '2px solid transparent',
+        borderLeft: task.is_entity
+          ? '2px solid rgba(34,197,94,0.5)'
+          : hovered ? '2px solid rgba(139,92,246,0.6)' : '2px solid transparent',
         opacity: completing ? 0.35 : 1,
         transition: 'all 0.12s',
       }}
@@ -671,10 +685,16 @@ function TaskRow({
                 <option key={n} value={n} />
               ))}
             </datalist>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: editIsFamily ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsFamily ? 700 : 400 }}>
-              <input type="checkbox" checked={editIsFamily} onChange={e => setEditIsFamily(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#ef4444', cursor: 'pointer' }} />
-              <FamilyIcon active={editIsFamily} /> Family
-            </label>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: editIsFamily ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsFamily ? 700 : 400 }}>
+                <input type="checkbox" checked={editIsFamily} onChange={e => setEditIsFamily(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#ef4444', cursor: 'pointer' }} />
+                <FamilyIcon active={editIsFamily} /> Family
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: editIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsEntity ? 700 : 400 }}>
+                <input type="checkbox" checked={editIsEntity} onChange={e => setEditIsEntity(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#22c55e', cursor: 'pointer' }} />
+                Entity
+              </label>
+            </div>
             <div style={{ display: 'flex', gap: 6 }}>
               <button onClick={saveEdit} style={{ padding: '3px 10px', background: 'var(--accent-gold)', color: '#0D0F14', border: 'none', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
               <button onClick={() => setEditing(false)} style={{ padding: '3px 10px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', borderRadius: 4, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
@@ -743,7 +763,7 @@ function TaskRow({
         {!editing && hovered && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
-              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditing(true) }}
+              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditIsEntity(!!task.is_entity); setEditing(true) }}
               title="Edit"
               style={{ padding: '2px 5px', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.65 }}
             >
