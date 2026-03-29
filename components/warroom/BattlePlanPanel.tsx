@@ -921,7 +921,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
   return (
     <span
       title={value}
-      style={{ fontSize: 12, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'] }}>
+      style={{ fontSize: 13, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'] }}>
       {isOverdue ? '⚠ ' : ''}{fmtDate(value)}
     </span>
   )
