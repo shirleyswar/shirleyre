@@ -134,7 +134,8 @@ export default function PortfolioPanel() {
         const next = json.nextRefreshIn ? ` Next refresh in ${json.nextRefreshIn}.` : ''
         setRefreshMsg(`Prices current as of ${json.lastUpdated}.${next}`)
       } else {
-        setRefreshMsg(`✓ Updated ${json.updated} tickers${json.errors?.length ? ` (${json.errors.length} skipped)` : ''}`)
+        const errs = Array.isArray(json.errors) ? json.errors : []
+        setRefreshMsg(`✓ Updated ${json.updated} tickers${errs.length ? ` (${errs.length} skipped)` : ''}`)
         await fetchPositions()
       }
     } catch (e: unknown) {
@@ -470,20 +471,15 @@ export default function PortfolioPanel() {
             <thead>
               <tr style={{ borderBottom: `1px solid ${P.purpleBorder}`, background: P.purpleFaint }}>
                 {([
+                  { label: '',          field: 'symbol',               cls: '' }, // MORE button col
                   { label: 'Symbol',    field: 'symbol' },
-                  { label: 'Name',      field: 'name',    cls: 'hidden sm:table-cell' },
-                  { label: 'Acquired',  field: 'acquired', cls: 'hidden sm:table-cell' },
-                  { label: 'Yrs Held',  field: 'years_held', cls: 'hidden sm:table-cell' },
-                  { label: 'Period',    field: 'period',  cls: 'hidden sm:table-cell' },
-                  { label: 'Qty',       field: 'qty',     cls: 'hidden sm:table-cell' },
+                  { label: 'Ann. Ret',  field: 'annualized_return_pct' },
                   { label: 'Mkt Value', field: 'market_value' },
-                  { label: 'Cost',      field: 'total_cost', cls: 'hidden sm:table-cell' },
-                  { label: 'G/L $',     field: 'unrealized_gl_dollar' },
-                  { label: 'G/L %',     field: 'unrealized_gl_pct' },
-                  { label: 'Ann. Ret',  field: 'annualized_return_pct', cls: 'hidden sm:table-cell' },
-                  { label: 'YTD',       field: 'ytd_pct',               cls: 'hidden sm:table-cell' },
-                  { label: '12mo',      field: 'rolling_12mo_pct',      cls: 'hidden sm:table-cell' },
-                  { label: '36mo',      field: 'rolling_36mo_pct',      cls: 'hidden sm:table-cell' },
+                  { label: 'Period',    field: 'period',  cls: 'hidden sm:table-cell' },
+                  { label: 'Yrs Held',  field: 'years_held', cls: 'hidden sm:table-cell' },
+                  { label: 'YTD',       field: 'ytd_pct' },
+                  { label: '12mo',      field: 'rolling_12mo_pct' },
+                  { label: '36mo',      field: 'rolling_36mo_pct' },
                 ] as { label: string; field: SortField; cls?: string }[]).map(col => (
                   <th key={col.label} className={col.cls ?? ''} onClick={() => handleSort(col.field)}
                     style={{ padding: '8px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
@@ -513,57 +509,48 @@ export default function PortfolioPanel() {
                         cursor: isMultiLot ? 'pointer' : 'default',
                         transition: 'background 0.1s',
                       }}>
+                      {/* MORE button col */}
+                      <td style={{ width: 38, padding: '9px 4px', textAlign: 'center' }}>
+                        <a href={`/warroom/portfolio?symbol=${encodeURIComponent(row.symbol)}`}
+                          title="Open position detail"
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.35)', color: P.purple, textDecoration: 'none', fontSize: 14, transition: 'all 0.15s' }}>↗</a>
+                      </td>
                       <td style={{ padding: '9px 8px', textAlign: 'center', fontWeight: 700, color: P.text, whiteSpace: 'nowrap' }}>
                         {isMultiLot && <span style={{ fontSize: 9, color: P.purpleDim, marginRight: 4 }}>{expanded ? '▼' : '▶'}</span>}
                         {row.symbol}
                         {isMultiLot && <span style={{ marginLeft: 5, fontSize: 9, padding: '1px 5px', background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 3, color: P.purpleDim }}>{row.lots.length}</span>}
                       </td>
-                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', color: P.muted, fontSize: 12, textAlign: 'center', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</td>
-                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 12, whiteSpace: 'nowrap' }}>
-                        {row.lots.length === 1 && row.lots[0].acquired
-                          ? new Date(row.lots[0].acquired).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                          : row.lots.length > 1 ? <span style={{ color: P.purpleDim, fontSize: 10 }}>{row.lots.length} lots</span> : '—'}
+                      <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.annualized_return_pct), fontWeight: 600 }}>{fmtPct(row.annualized_return_pct)}</td>
+                      <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 600, color: P.text }}>{fmt$(row.market_value)}</td>
+                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center' }}>
+                        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, background: row.period === 'Long' ? 'rgba(139,92,246,0.12)' : 'rgba(251,191,36,0.1)', border: `1px solid ${row.period === 'Long' ? P.purpleBorder : 'rgba(251,191,36,0.3)'}`, color: row.period === 'Long' ? P.purple : '#fbbf24', fontWeight: 600 }}>{row.period}</span>
                       </td>
                       <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 12 }}>
-                        {row.lots.length === 1 ? fmtNum(row.lots[0].years_held, 1) : '—'}
+                        {row.lots.length === 1 ? fmtNum(row.lots[0].years_held, 1) : <span style={{ color: P.purpleDim, fontSize: 10 }}>{row.lots.length} lots</span>}
                       </td>
-                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center' }}>
-                        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, background: row.period === 'Long' ? 'rgba(139,92,246,0.12)' : 'rgba(251,191,36,0.1)', border: `1px solid ${row.period === 'Long' ? P.purpleBorder : 'rgba(251,191,36,0.3)'}`, color: row.period === 'Long' ? P.purple : '#fbbf24', fontWeight: 600 }}>
-                          {row.period}
-                        </span>
-                      </td>
-                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 12 }}>{fmtNum(row.qty)}</td>
-                      <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 600, color: P.text }}>{fmt$(row.market_value)}</td>
-                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: P.muted }}>{fmt$(row.total_cost)}</td>
-                      <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.unrealized_gl_dollar), fontWeight: 600 }}>{fmt$(row.unrealized_gl_dollar)}</td>
-                      <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.unrealized_gl_pct), fontWeight: 600 }}>{fmtPct(row.unrealized_gl_pct)}</td>
-                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.annualized_return_pct) }}>{fmtPct(row.annualized_return_pct)}</td>
-                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.lots[0]?.ytd_pct ?? null) }}>{fmtPct(row.lots[0]?.ytd_pct ?? null)}</td>
-                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.lots[0]?.rolling_12mo_pct ?? null) }}>{fmtPct(row.lots[0]?.rolling_12mo_pct ?? null)}</td>
-                      <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.lots[0]?.rolling_36mo_pct ?? null) }}>{fmtPct(row.lots[0]?.rolling_36mo_pct ?? null)}</td>
+                      <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.lots[0]?.ytd_pct ?? null), fontWeight: 600 }}>{fmtPct(row.lots[0]?.ytd_pct ?? null)}</td>
+                      <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.lots[0]?.rolling_12mo_pct ?? null), fontWeight: 600 }}>{fmtPct(row.lots[0]?.rolling_12mo_pct ?? null)}</td>
+                      <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.lots[0]?.rolling_36mo_pct ?? null), fontWeight: 600 }}>{fmtPct(row.lots[0]?.rolling_36mo_pct ?? null)}</td>
                     </tr>
                     {/* Individual lots when expanded */}
                     {isMultiLot && expanded && row.lots.map((lot, li) => (
                       <tr key={lot.id}
                         style={{ borderBottom: `1px solid rgba(255,255,255,0.025)`, background: 'rgba(139,92,246,0.03)' }}>
-                        <td style={{ padding: '7px 8px', textAlign: 'center', paddingLeft: 24 }}>
+                        <td style={{ padding: '7px 4px', textAlign: 'center' }}>
                           <span style={{ fontSize: 9, color: P.purpleDim }}>Lot {li + 1}</span>
                         </td>
-                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', color: P.muted, fontSize: 11, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                          {lot.acquired ? new Date(lot.acquired).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                        <td style={{ padding: '7px 8px', textAlign: 'center', color: P.muted, fontSize: 11, fontFamily: 'monospace' }}>
+                          {lot.acquired ? new Date(lot.acquired).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'}
                         </td>
-                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 11 }}>
-                          {fmtNum(lot.years_held, 1)}
-                        </td>
-                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 11 }}>{fmtNum(lot.qty)}</td>
+                        <td style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.annualized_return_pct) }}>{fmtPct(lot.annualized_return_pct)}</td>
                         <td style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: P.muted }}>{fmt$(lot.market_value)}</td>
-                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: P.muted }}>{fmt$(lot.total_cost)}</td>
-                        <td style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.unrealized_gl_dollar) }}>{fmt$(lot.unrealized_gl_dollar)}</td>
-                        <td style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.unrealized_gl_pct) }}>{fmtPct(lot.unrealized_gl_pct)}</td>
-                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.annualized_return_pct) }}>{fmtPct(lot.annualized_return_pct)}</td>
-                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.ytd_pct) }}>{fmtPct(lot.ytd_pct)}</td>
-                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.rolling_12mo_pct) }}>{fmtPct(lot.rolling_12mo_pct)}</td>
-                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.rolling_36mo_pct) }}>{fmtPct(lot.rolling_36mo_pct)}</td>
+                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center' }}>
+                          <span style={{ fontSize: 9, color: P.muted }}>{lot.period}</span>
+                        </td>
+                        <td className="hidden sm:table-cell" style={{ padding: '7px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 11 }}>{fmtNum(lot.years_held, 1)}</td>
+                        <td style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.ytd_pct) }}>{fmtPct(lot.ytd_pct)}</td>
+                        <td style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.rolling_12mo_pct) }}>{fmtPct(lot.rolling_12mo_pct)}</td>
+                        <td style={{ padding: '7px 8px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.rolling_36mo_pct) }}>{fmtPct(lot.rolling_36mo_pct)}</td>
                       </tr>
                     ))}
                   </>

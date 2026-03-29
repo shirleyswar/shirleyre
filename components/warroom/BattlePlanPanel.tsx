@@ -347,13 +347,13 @@ export default function BattlePlanPanel() {
               borderBottom: '1px solid rgba(139,92,246,0.35)',
               background: 'rgba(139,92,246,0.06)',
             }}>
-              <th style={{ width: 28, padding: '7px 6px' }}></th>
-              <th style={{ padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
-              <th className="hidden sm:table-cell" style={{ width: 120, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ID / Contact</th>
               <th style={{ width: 90, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
                 onClick={() => setPrioritySortDir(d => d === 'desc' ? 'asc' : 'desc')}>
                 Priority {prioritySortDir === 'desc' ? '↓' : '↑'}
               </th>
+              <th style={{ width: 28, padding: '7px 6px' }}></th>
+              <th style={{ padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
+              <th className="hidden sm:table-cell" style={{ width: 120, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ID / Contact</th>
               <th style={{ width: 36, padding: '7px 6px' }}></th>
             </tr>
           </thead>
@@ -549,7 +549,18 @@ function TaskRow({
         transition: 'all 0.12s',
       }}
     >
-      {/* Col 1: Checkbox */}
+      {/* Col 1: Priority stars — far left */}
+      <td style={{ width: 90, padding: '6px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
+        <BpStarPicker
+          value={task.bp_priority ?? null}
+          onChange={async (v) => {
+            await supabase.from('tasks').update({ bp_priority: v } as Record<string, unknown>).eq('id', task.id)
+            onUpdate({ bp_priority: v })
+          }}
+        />
+      </td>
+
+      {/* Col 2: Checkbox */}
       <td style={{ width: 28, padding: '10px 6px', verticalAlign: 'middle' }}>
         <button
           onClick={onComplete}
@@ -570,7 +581,7 @@ function TaskRow({
         </button>
       </td>
 
-      {/* Col 2: Title */}
+      {/* Col 3: Title */}
       <td style={{ padding: '10px 8px', verticalAlign: 'middle' }}>
         {editing ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -651,20 +662,9 @@ function TaskRow({
         )}
       </td>
 
-      {/* Col 3: ID / Contact badge — hidden on mobile */}
+      {/* Col 4: ID / Contact badge — hidden on mobile */}
       <td className="hidden sm:table-cell" style={{ width: 120, padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
         <ContactBadge contactName={task.contact_name ?? null} deal={deal} />
-      </td>
-
-      {/* Col 4: Priority stars */}
-      <td style={{ width: 90, padding: '6px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
-        <BpStarPicker
-          value={task.bp_priority ?? null}
-          onChange={async (v) => {
-            await supabase.from('tasks').update({ bp_priority: v } as Record<string, unknown>).eq('id', task.id)
-            onUpdate({ bp_priority: v })
-          }}
-        />
       </td>
 
       {/* Col 5: Edit + drag handle */}
