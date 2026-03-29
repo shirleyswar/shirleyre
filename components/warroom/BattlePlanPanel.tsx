@@ -890,11 +890,11 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
     )
   }
 
-  const color = isOverdue ? '#ef4444' : isToday ? '#f59e0b' : isSoon ? '#fb923c' : '#6b7280'
+  const color = isOverdue ? '#ef4444' : '#22c55e'
   return (
     <span
       title={value}
-      style={{ fontSize: 10, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+      style={{ fontSize: 12, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
       {isOverdue ? '⚠ ' : ''}{fmtDate(value)}
     </span>
   )
