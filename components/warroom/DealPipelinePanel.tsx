@@ -1241,7 +1241,7 @@ function StarRating({ dealId, value, onSave }: { dealId: string; value: number |
 
   const display = hover ?? value ?? 0
   return (
-    <div style={{ display: 'flex', gap: 2, alignItems: 'center', opacity: saving ? 0.5 : 1 }}>
+    <div style={{ display: 'flex', gap: 2, alignItems: 'center', justifyContent: 'center', opacity: saving ? 0.5 : 1 }}>
       {[1,2,3,4,5].map(i => (
         <span
           key={i}
