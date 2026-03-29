@@ -1644,7 +1644,36 @@ function DocumentsCard({ deal }: { deal: Deal }) {
   const [loadingFiles, setLoadingFiles] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [parsingFile, setParsingFile] = useState<string | null>(null)
+  const [parseMsg, setParseMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function parseDeadlines(fileName: string) {
+    setParsingFile(fileName)
+    setParseMsg(null)
+    try {
+      const SUPABASE_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
+      const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/parse-deadlines`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deal_id: deal.id,
+          file_path: `deals/${deal.id}/${fileName}`,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setParseMsg({ text: `✓ ${data.deadlines_created} deadlines extracted — check contingency tracker`, ok: true })
+      } else {
+        setParseMsg({ text: `Error: ${data.error}`, ok: false })
+      }
+    } catch (e: unknown) {
+      setParseMsg({ text: 'Network error', ok: false })
+    }
+    setParsingFile(null)
+    setTimeout(() => setParseMsg(null), 6000)
+  }
 
   const storagePrefix = `deals/${deal.id}`
 
@@ -1729,6 +1758,13 @@ function DocumentsCard({ deal }: { deal: Deal }) {
         )}
       </div>
 
+      {/* Parse message */}
+      {parseMsg && (
+        <div style={{ marginBottom: 10, fontSize: 12, color: parseMsg.ok ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+          {parseMsg.text}
+        </div>
+      )}
+
       {/* File list */}
       {loadingFiles ? (
         <div style={{ fontSize: 12, color: '#4b5563' }}>Loading files…</div>
@@ -1736,13 +1772,17 @@ function DocumentsCard({ deal }: { deal: Deal }) {
         <div style={{ fontSize: 12, color: '#4b5563', textAlign: 'center', padding: '8px 0' }}>No files uploaded</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {files.map(f => (
+          {files.map(f => {
+            const isPdf = f.name.toLowerCase().endsWith('.pdf')
+            const isUC  = deal.status === 'under_contract'
+            return (
             <div key={f.name} style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '8px 10px',
               background: 'rgba(255,255,255,0.02)',
               borderRadius: 7,
               border: '1px solid rgba(255,255,255,0.04)',
+              flexWrap: 'wrap',
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, color: '#F0F2FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1755,6 +1795,15 @@ function DocumentsCard({ deal }: { deal: Deal }) {
                   </div>
                 )}
               </div>
+              {isPdf && isUC && (
+                <button
+                  onClick={() => parseDeadlines(f.name)}
+                  disabled={parsingFile === f.name}
+                  style={{ ...btnStyle('#a78bfa', 'rgba(139,92,246,0.1)', 'rgba(139,92,246,0.3)'), padding: '3px 8px', fontSize: 10, opacity: parsingFile === f.name ? 0.5 : 1, whiteSpace: 'nowrap' }}
+                >
+                  {parsingFile === f.name ? '⟳ Parsing…' : '✦ Parse Deadlines'}
+                </button>
+              )}
               <button
                 onClick={() => getDownloadUrl(f.name)}
                 style={{ ...btnStyle('#4F8EF7', 'rgba(79,142,247,0.08)', 'rgba(79,142,247,0.25)'), padding: '3px 8px', fontSize: 10 }}
@@ -1768,7 +1817,8 @@ function DocumentsCard({ deal }: { deal: Deal }) {
                 ✕
               </button>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
