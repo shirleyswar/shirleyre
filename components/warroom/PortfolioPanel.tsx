@@ -613,6 +613,7 @@ async function parseSoldXlsx(file: File): Promise<Record<string, unknown>[] | st
       const amount   = parseNum(row[iAmount])
 
       rows.push({
+        upload_batch:         new Date().toISOString(),
         symbol:               sym.trim().toUpperCase(),
         name,
         qty,
