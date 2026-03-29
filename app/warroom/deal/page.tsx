@@ -850,6 +850,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
   const [propertyTypeCustom, setPropertyTypeCustom] = useState('')
   const [transactionType, setTransactionType] = useState<'sale' | 'lease' | 'both'>('sale')
   const [sqft, setSqft] = useState('')
+  const [acres, setAcres] = useState('')
   const [askingPrice, setAskingPrice] = useState('')
   const [saleCommPct, setSaleCommPct] = useState('3.0')
   const [leaseRatePsf, setLeaseRatePsf] = useState('')
@@ -877,6 +878,9 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
         setPropertyTypeCustom(data.property_type_custom ?? '')
         setTransactionType((data.transaction_type ?? 'sale') as 'sale' | 'lease' | 'both')
         setSqft(data.sqft != null ? String(data.sqft) : '')
+        if (data.sqft && (data.property_type === 'Vacant Land')) {
+          setAcres((data.sqft / 43560).toFixed(4))
+        }
         setAskingPrice(data.asking_price != null ? String(data.asking_price) : '')
         setSaleCommPct(data.sale_commission_pct != null ? String(data.sale_commission_pct) : '3.0')
         setLeaseRatePsf(data.lease_rate_psf != null ? String(data.lease_rate_psf) : '')
@@ -1060,20 +1064,68 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
         </div>
       )}
 
-      {/* Square Footage */}
-      <div style={{ marginBottom: 10 }}>
-        <div style={labelStyle}>Square Footage</div>
-        <input
-          type="number"
-          value={sqft}
-          onChange={e => setSqft(e.target.value)}
-          placeholder="e.g. 5000"
-          style={inputStyle}
-        />
-        {sqftNum > 0 && (
-          <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtSqft(sqftNum)}</div>
-        )}
-      </div>
+      {/* Square Footage / Acreage — dual input for Vacant Land */}
+      {propertyType === 'Vacant Land' ? (
+        <div style={{ marginBottom: 10 }}>
+          <div style={labelStyle}>Size</div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Square Feet</div>
+              <input
+                type="number"
+                value={sqft}
+                onChange={e => {
+                  const v = e.target.value
+                  setSqft(v)
+                  // Auto-fill acres
+                  const sf = parseFloat(v)
+                  if (!isNaN(sf) && sf > 0) setAcres((sf / 43560).toFixed(4))
+                  else setAcres('')
+                }}
+                placeholder="e.g. 43560"
+                style={inputStyle}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', paddingTop: 18, color: 'rgba(255,255,255,0.25)', fontSize: 14, fontWeight: 700 }}>↔</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Acres</div>
+              <input
+                type="number"
+                value={acres}
+                onChange={e => {
+                  const v = e.target.value
+                  setAcres(v)
+                  // Auto-fill SF
+                  const ac = parseFloat(v)
+                  if (!isNaN(ac) && ac > 0) setSqft((ac * 43560).toFixed(0))
+                  else setSqft('')
+                }}
+                placeholder="e.g. 1.00"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+          {sqftNum > 0 && (
+            <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+              {sqftNum.toLocaleString()} SF &nbsp;·&nbsp; {(sqftNum / 43560).toFixed(4)} acres
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ marginBottom: 10 }}>
+          <div style={labelStyle}>Square Footage</div>
+          <input
+            type="number"
+            value={sqft}
+            onChange={e => setSqft(e.target.value)}
+            placeholder="e.g. 5000"
+            style={inputStyle}
+          />
+          {sqftNum > 0 && (
+            <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtSqft(sqftNum)}</div>
+          )}
+        </div>
+      )}
 
       {/* Sale section */}
       {(transactionType === 'sale' || transactionType === 'both') && (
