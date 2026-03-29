@@ -294,6 +294,83 @@ const SLEEVE_COL_MAP: Record<string, string> = {
   years_held: 'YRS HELD', annualized_return_pct: 'ANN. RETURN',
 }
 
+// ─── Sleeve Table (Symbol, Name, Qty, Mkt Value, Cost Basis, G/L $, G/L %, Ann. Return) ──
+function SleeveTable({ positions }: { positions: Position[] }) {
+  type SF = 'symbol' | 'name' | 'qty' | 'market_value' | 'total_cost' | 'unrealized_gl_dollar' | 'unrealized_gl_pct' | 'annualized_return_pct'
+  const [sortField, setSortField] = useState<SF>('market_value')
+  const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('desc')
+
+  function handleSort(f: SF) {
+    if (sortField === f) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(f); setSortDir('desc') }
+  }
+  function arrow(f: SF) {
+    if (sortField !== f) return <span style={{ color: P.muted, fontSize: 9 }}>⇅</span>
+    return <span style={{ color: P.purple, fontSize: 9 }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
+  }
+
+  const sorted = [...positions].sort((a, b) => {
+    let av: number | string = 0, bv: number | string = 0
+    if      (sortField === 'symbol')                { av = a.symbol ?? ''; bv = b.symbol ?? '' }
+    else if (sortField === 'name')                  { av = a.name ?? ''; bv = b.name ?? '' }
+    else if (sortField === 'qty')                   { av = a.qty ?? -999; bv = b.qty ?? -999 }
+    else if (sortField === 'market_value')          { av = a.market_value ?? -999; bv = b.market_value ?? -999 }
+    else if (sortField === 'total_cost')            { av = a.total_cost ?? -999; bv = b.total_cost ?? -999 }
+    else if (sortField === 'unrealized_gl_dollar')  { av = a.unrealized_gl_dollar ?? -999; bv = b.unrealized_gl_dollar ?? -999 }
+    else if (sortField === 'unrealized_gl_pct')     { av = a.unrealized_gl_pct ?? -999; bv = b.unrealized_gl_pct ?? -999 }
+    else if (sortField === 'annualized_return_pct') { av = a.annualized_return_pct ?? -999; bv = b.annualized_return_pct ?? -999 }
+    if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv as string) : (bv as string).localeCompare(av)
+    return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number)
+  })
+
+  const cols: { label: string; field: SF }[] = [
+    { label: 'Symbol',      field: 'symbol'                },
+    { label: 'Name',        field: 'name'                  },
+    { label: 'Qty',         field: 'qty'                   },
+    { label: 'Mkt Value',   field: 'market_value'          },
+    { label: 'Cost Basis',  field: 'total_cost'            },
+    { label: 'G/L $',       field: 'unrealized_gl_dollar'  },
+    { label: 'G/L %',       field: 'unrealized_gl_pct'     },
+    { label: 'Ann. Return', field: 'annualized_return_pct' },
+  ]
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+        <thead>
+          <tr style={{ borderBottom: `1px solid ${P.purpleBorder}`, background: P.purpleFaint }}>
+            {cols.map(col => (
+              <th key={col.field} onClick={() => handleSort(col.field)}
+                style={{ padding: '8px 10px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
+                {col.label} {arrow(col.field)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.length === 0 ? (
+            <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px 0', color: P.muted, fontSize: 13 }}>No positions.</td></tr>
+          ) : sorted.map(p => (
+            <tr key={p.id}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.06)')}
+              onMouseLeave={e => (e.currentTarget.style.background = '')}
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.1s' }}>
+              <td style={{ padding: '11px 10px', textAlign: 'center', fontWeight: 700, color: P.text, whiteSpace: 'nowrap' }}>{p.symbol}</td>
+              <td style={{ padding: '11px 10px', textAlign: 'left', color: P.muted, fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || '—'}</td>
+              <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', color: P.muted, fontSize: 12 }}>{fmtNum(p.qty, 0)}</td>
+              <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, color: P.text }}>{fmt$(p.market_value)}</td>
+              <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', color: P.muted }}>{fmt$(p.total_cost)}</td>
+              <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(p.unrealized_gl_dollar), fontWeight: 600 }}>{fmt$(p.unrealized_gl_dollar)}</td>
+              <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(p.unrealized_gl_pct), fontWeight: 600 }}>{fmtPct(p.unrealized_gl_pct)}</td>
+              <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(p.annualized_return_pct), fontWeight: 700 }}>{fmtPct(p.annualized_return_pct)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 // ─── Sleeve Tab ───────────────────────────────────────────────────────────────
 function SleeveTab() {
   const [positions, setPositions]     = useState<Position[]>([])
@@ -420,15 +497,12 @@ function SleeveTab() {
         <span style={{ fontSize: 16, fontWeight: 800, color: P.purple, letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: `0 0 20px rgba(139,92,246,0.4)` }}>SLEEVE</span>
         <span style={{ fontSize: 11, color: P.muted }}>Matthew&apos;s directed buys</span>
         <div style={{ flex: 1 }} />
-        {positions.length > 0 && (() => {
-          const cache = cacheAge()
-          return (
-            <button onClick={refreshPrices} disabled={refreshing || cache.fresh} title={cache.fresh ? cache.label : 'Refresh prices from both tables'}
-              style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: `1px solid ${cache.fresh ? 'rgba(255,255,255,0.08)' : 'rgba(34,197,94,0.35)'}`, borderRadius: 8, color: cache.fresh ? P.muted : P.green, cursor: cache.fresh ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1, whiteSpace: 'nowrap' }}>
-              {refreshing ? '⟳ Refreshing…' : cache.fresh ? '✓ Prices Current' : '⟳ Refresh Prices'}
-            </button>
-          )
-        })()}
+        {positions.length > 0 && (
+          <button onClick={refreshPrices} disabled={refreshing || cacheAge().fresh} title={cacheAge().fresh ? cacheAge().label : 'Refresh prices'}
+            style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: `1px solid ${cacheAge().fresh ? 'rgba(255,255,255,0.08)' : 'rgba(34,197,94,0.35)'}`, borderRadius: 8, color: cacheAge().fresh ? P.muted : P.green, cursor: cacheAge().fresh ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+            {refreshing ? '⟳ Refreshing…' : cacheAge().fresh ? '✓ Prices Current' : '⟳ Refresh Prices'}
+          </button>
+        )}
         <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
           style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', opacity: uploading ? 0.5 : 1 }}>
           {uploading ? 'Loading…' : '↑ Upload Sleeve .xlsx'}
@@ -452,7 +526,7 @@ function SleeveTab() {
       ) : (
         <>
           <KpiCards positions={positions} />
-          <PositionTable positions={positions} />
+          <SleeveTable positions={positions} />
         </>
       )}
     </div>
