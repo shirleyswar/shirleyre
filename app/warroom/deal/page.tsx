@@ -55,13 +55,20 @@ const DEAL_TYPES: { value: string; label: string }[] = [
 ]
 
 const DEADLINE_TYPE_COLORS: Record<DeadlineType, { bg: string; text: string; label: string }> = {
-  inspection: { bg: 'rgba(251,146,60,0.15)',  text: '#fb923c', label: 'Inspection' },
-  financing:  { bg: 'rgba(79,142,247,0.15)',  text: '#4F8EF7', label: 'Financing' },
-  appraisal:  { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa', label: 'Appraisal' },
-  title:      { bg: 'rgba(45,212,191,0.15)',  text: '#2dd4bf', label: 'Title' },
-  survey:     { bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', label: 'Survey' },
-  closing:    { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24', label: 'Closing' },
-  custom:     { bg: 'rgba(107,114,128,0.12)', text: '#6b7280', label: 'Custom' },
+  inspection:        { bg: 'rgba(251,146,60,0.15)',  text: '#fb923c', label: 'Inspection' },
+  financing:         { bg: 'rgba(79,142,247,0.15)',  text: '#4F8EF7', label: 'Financing' },
+  appraisal:         { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa', label: 'Appraisal' },
+  title:             { bg: 'rgba(45,212,191,0.15)',  text: '#2dd4bf', label: 'Title' },
+  survey:            { bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', label: 'Survey' },
+  closing:           { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24', label: 'Closing' },
+  custom:            { bg: 'rgba(107,114,128,0.12)', text: '#6b7280', label: 'Custom' },
+  contingency:       { bg: 'rgba(239,68,68,0.12)',   text: '#ef4444', label: 'Contingency' },
+  psa_review:        { bg: 'rgba(139,92,246,0.15)',  text: '#a78bfa', label: 'PSA Review' },
+  lease_review:      { bg: 'rgba(59,130,246,0.15)',  text: '#60a5fa', label: 'Lease Review' },
+  psa_draft:         { bg: 'rgba(139,92,246,0.10)',  text: '#c4b5fd', label: 'PSA Draft' },
+  lease_draft:       { bg: 'rgba(59,130,246,0.10)',  text: '#93c5fd', label: 'Lease Draft' },
+  lease_execution:   { bg: 'rgba(45,212,191,0.12)',  text: '#2dd4bf', label: 'Lease Execution' },
+  lease_deliverables:{ bg: 'rgba(34,197,94,0.12)',   text: '#22c55e', label: 'Lease Deliverables' },
 }
 
 const DEADLINE_STATUS_STYLES: Record<DeadlineStatus, { bg: string; text: string; label: string }> = {

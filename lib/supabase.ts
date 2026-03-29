@@ -96,7 +96,7 @@ export interface FolderQueue {
 }
 
 // Contract deadline types
-export type DeadlineType = 'inspection' | 'financing' | 'appraisal' | 'title' | 'survey' | 'closing' | 'custom'
+export type DeadlineType = 'inspection' | 'financing' | 'appraisal' | 'title' | 'survey' | 'closing' | 'custom' | 'contingency' | 'psa_review' | 'lease_review' | 'psa_draft' | 'lease_draft' | 'lease_execution' | 'lease_deliverables'
 export type DeadlineStatus = 'pending' | 'satisfied' | 'extended' | 'missed'
 
 export interface ContractDeadline {

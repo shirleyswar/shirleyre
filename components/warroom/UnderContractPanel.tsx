@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase, Deal, ContractDeadline, DeadlineType, DeadlineStatus } from '@/lib/supabase'
 
 interface ContractDeal extends Deal {
@@ -54,15 +55,22 @@ function buildSparkPaths(values: number[], w: number, h: number) {
   return { linePath, areaPath }
 }
 
-// Deadline type badge colors
+// Stage badge colors
 const TYPE_COLORS: Record<DeadlineType, { bg: string; text: string; label: string }> = {
-  inspection: { bg: 'rgba(251,146,60,0.15)', text: '#fb923c', label: 'Inspection' },
-  financing:  { bg: 'rgba(79,142,247,0.15)', text: '#4F8EF7', label: 'Financing' },
-  appraisal:  { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa', label: 'Appraisal' },
-  title:      { bg: 'rgba(45,212,191,0.15)', text: '#2dd4bf', label: 'Title' },
-  survey:     { bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', label: 'Survey' },
-  closing:    { bg: 'rgba(251,191,36,0.15)', text: '#fbbf24', label: 'Closing' },
-  custom:     { bg: 'rgba(107,114,128,0.12)', text: '#6b7280', label: 'Custom' },
+  inspection:       { bg: 'rgba(251,146,60,0.15)',  text: '#fb923c', label: 'Inspection' },
+  financing:        { bg: 'rgba(79,142,247,0.15)',  text: '#4F8EF7', label: 'Financing' },
+  appraisal:        { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa', label: 'Appraisal' },
+  title:            { bg: 'rgba(45,212,191,0.15)',  text: '#2dd4bf', label: 'Title' },
+  survey:           { bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', label: 'Survey' },
+  closing:          { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24', label: 'Closing' },
+  custom:           { bg: 'rgba(107,114,128,0.12)', text: '#6b7280', label: 'Custom' },
+  contingency:      { bg: 'rgba(239,68,68,0.12)',   text: '#ef4444', label: 'Contingency' },
+  psa_review:       { bg: 'rgba(139,92,246,0.15)',  text: '#a78bfa', label: 'PSA Review' },
+  lease_review:     { bg: 'rgba(59,130,246,0.15)',  text: '#60a5fa', label: 'Lease Review' },
+  psa_draft:        { bg: 'rgba(139,92,246,0.10)',  text: '#c4b5fd', label: 'PSA Draft' },
+  lease_draft:      { bg: 'rgba(59,130,246,0.10)',  text: '#93c5fd', label: 'Lease Draft' },
+  lease_execution:  { bg: 'rgba(45,212,191,0.12)',  text: '#2dd4bf', label: 'Lease Execution' },
+  lease_deliverables:{ bg: 'rgba(34,197,94,0.12)',  text: '#22c55e', label: 'Lease Deliverables' },
 }
 
 const STATUS_STYLES: Record<DeadlineStatus, { bg: string; text: string; label: string }> = {
@@ -117,8 +125,8 @@ function DeadlineRow({ deadline, onSatisfy, onDelete, onEdit }: DeadlineRowProps
         </span>
       </div>
 
-      {/* Type badge */}
-      <div style={{ flex: '0 0 80px' }}>
+      {/* Stage badge */}
+      <div style={{ flex: '0 0 130px' }}>
         <span style={{
           display: 'inline-block',
           padding: '1px 7px',
@@ -307,15 +315,22 @@ function DeadlineForm({ dealId, editing, onSaved, onCancel }: DeadlineFormProps)
         <select
           value={type}
           onChange={e => setType(e.target.value as DeadlineType)}
-          style={{ ...inputStyle, flex: '0 0 120px', minWidth: 120 }}
+          style={{ ...inputStyle, flex: '0 0 150px', minWidth: 140 }}
         >
+          <option value="contingency">Contingency</option>
           <option value="inspection">Inspection</option>
+          <option value="psa_review">PSA Review</option>
+          <option value="lease_review">Lease Review</option>
+          <option value="psa_draft">PSA Draft</option>
+          <option value="lease_draft">Lease Draft</option>
+          <option value="lease_execution">Lease Execution</option>
+          <option value="lease_deliverables">Lease Deliverables</option>
           <option value="financing">Financing</option>
           <option value="appraisal">Appraisal</option>
           <option value="title">Title</option>
           <option value="survey">Survey</option>
           <option value="closing">Closing</option>
-          <option value="custom">Custom</option>
+          <option value="custom">Other</option>
         </select>
 
         <input
@@ -467,8 +482,8 @@ function DealSubpanel({ deal, onDeadlinesChange }: DealSubpanelProps) {
       {!loading && deadlines.length > 0 && (
         <div style={{ display: 'flex', gap: 10, padding: '0 12px 4px', marginBottom: 2 }}>
           <div style={{ flex: '0 0 160px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Label</div>
-          <div style={{ flex: '0 0 80px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Type</div>
-          <div style={{ flex: '0 0 60px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Date</div>
+          <div style={{ flex: '0 0 130px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Stage</div>
+          <div style={{ flex: '0 0 60px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Deadline</div>
           <div style={{ flex: '0 0 70px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'right' }}>Days</div>
           <div style={{ flex: '0 0 70px', fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Status</div>
           <div style={{ flex: 1 }} />
@@ -583,6 +598,180 @@ function DeadlinesSummary({ deadlines, onExpand, isExpanded }: DeadlinesSummaryP
   )
 }
 
+// ─── Contacts Cell ────────────────────────────────────────────────────────────
+
+interface DealContact {
+  id: string
+  deal_id: string
+  contact_id: string
+  relationship: string | null
+  contacts: {
+    id: string
+    name: string
+    role: string | null
+    phone: string | null
+    email: string | null
+  } | null
+}
+
+function ContactsCell({ dealId, dealName }: { dealId: string; dealName: string }) {
+  const [open, setOpen] = useState(false)
+  const [contacts, setContacts] = useState<DealContact[]>([])
+  const [loading, setLoading] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ name: '', role: '', phone: '', email: '' })
+  const [err, setErr] = useState('')
+
+  async function fetchContacts() {
+    setLoading(true)
+    try {
+      const { data } = await supabase
+        .from('deal_contacts')
+        .select('*, contacts(*)')
+        .eq('deal_id', dealId)
+      setContacts((data as DealContact[]) || [])
+    } catch {}
+    finally { setLoading(false) }
+  }
+
+  function openModal() {
+    setOpen(true)
+    fetchContacts()
+  }
+
+  async function addContact() {
+    if (!form.name.trim()) { setErr('Name is required'); return }
+    setSaving(true); setErr('')
+    try {
+      // 1. Insert contact
+      const { data: c, error: ce } = await supabase
+        .from('contacts')
+        .insert({ name: form.name.trim(), role: form.role.trim() || null, phone: form.phone.trim() || null, email: form.email.trim() || null, priority: 'standard' })
+        .select()
+        .single()
+      if (ce) throw ce
+
+      // 2. Link to deal
+      const { data: dc, error: dce } = await supabase
+        .from('deal_contacts')
+        .insert({ deal_id: dealId, contact_id: c.id, relationship: form.role.trim() || null })
+        .select('*, contacts(*)')
+        .single()
+      if (dce) throw dce
+
+      setContacts(prev => [...prev, dc as DealContact])
+      setForm({ name: '', role: '', phone: '', email: '' })
+      setAdding(false)
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Save failed')
+    }
+    setSaving(false)
+  }
+
+  async function removeContact(dcId: string, contactId: string) {
+    try {
+      await supabase.from('deal_contacts').delete().eq('id', dcId)
+      // Optionally delete the contact itself if it has no other deal links
+      // For now, just remove the junction
+      setContacts(prev => prev.filter(dc => dc.id !== dcId))
+    } catch {}
+  }
+
+  const inp: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 7, padding: '8px 10px', fontSize: 13, color: '#F0F2FF',
+    outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
+  }
+
+  return (
+    <>
+      <button
+        onClick={openModal}
+        style={{
+          padding: '3px 9px', fontSize: 10, fontWeight: 700,
+          background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)',
+          borderRadius: 5, color: '#a78bfa', cursor: 'pointer', whiteSpace: 'nowrap',
+        }}>
+        Contacts
+      </button>
+
+      {open && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={() => setOpen(false)}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#13112A', border: '1px solid rgba(167,139,250,0.4)', borderRadius: 14, padding: 28, width: '100%', maxWidth: 500, maxHeight: '80vh', overflow: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.7)' }}>
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)', fontFamily: 'monospace', marginBottom: 4 }}>Contacts</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#F0F2FF' }}>{dealName}</div>
+              </div>
+              <button onClick={() => setOpen(false)} style={{ background: 'transparent', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>✕</button>
+            </div>
+
+            {/* Contact list */}
+            {loading ? (
+              <div style={{ fontSize: 12, color: '#6b7280', padding: '8px 0' }}>Loading…</div>
+            ) : contacts.length === 0 ? (
+              <div style={{ fontSize: 12, color: '#6b7280', padding: '8px 0', fontStyle: 'italic' }}>No contacts linked yet.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+                {contacts.map(dc => (
+                  <div key={dc.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 7, border: '1px solid rgba(167,139,250,0.15)' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#F0F2FF' }}>{dc.contacts?.name || '—'}</div>
+                      <div style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>
+                        {[dc.contacts?.role, dc.contacts?.phone, dc.contacts?.email].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                    {dc.relationship && (
+                      <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)', color: '#a78bfa', fontWeight: 600 }}>
+                        {dc.relationship}
+                      </span>
+                    )}
+                    <button onClick={() => removeContact(dc.id, dc.contact_id)} style={{ background: 'transparent', border: 'none', color: 'rgba(239,68,68,0.5)', cursor: 'pointer', fontSize: 13 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add contact */}
+            {adding ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '14px', background: 'rgba(167,139,250,0.05)', borderRadius: 8, border: '1px solid rgba(167,139,250,0.2)' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)', fontFamily: 'monospace' }}>Add Contact</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <input autoFocus placeholder="Name *" value={form.name} onChange={e => setForm(p => ({...p, name: e.target.value}))} style={inp} />
+                  <input placeholder="Role (e.g. Buyer, Attorney)" value={form.role} onChange={e => setForm(p => ({...p, role: e.target.value}))} style={inp} />
+                  <input placeholder="Phone" value={form.phone} onChange={e => setForm(p => ({...p, phone: e.target.value}))} style={inp} />
+                  <input placeholder="Email" value={form.email} onChange={e => setForm(p => ({...p, email: e.target.value}))} style={inp} />
+                </div>
+                {err && <div style={{ fontSize: 11, color: '#ef4444' }}>{err}</div>}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => { setAdding(false); setErr('') }} style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, color: '#6b7280', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+                  <button onClick={addContact} disabled={saving} style={{ flex: 2, padding: '8px', background: 'rgba(167,139,250,0.2)', border: '1px solid rgba(167,139,250,0.5)', borderRadius: 7, color: '#a78bfa', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: saving ? 0.5 : 1 }}>
+                    {saving ? 'Saving…' : 'Add Contact'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setAdding(true)}
+                style={{ padding: '8px 18px', fontSize: 12, fontWeight: 700, background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 8, color: '#a78bfa', cursor: 'pointer' }}>
+                + Add Contact
+              </button>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
+
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
 export default function UnderContractPanel() {
@@ -651,9 +840,9 @@ export default function UnderContractPanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr>
-                {['', 'Deal', 'Type', 'Value', 'Commission', 'Day', '', 'Deadlines', 'Files'].map((h, i) => (
+                {['', '↗', 'Deal', 'Stage', 'Value', 'Commission', 'Day', '', 'Deadlines', 'Contacts', 'Files'].map((h, i) => (
                   <th key={i} style={{
-                    textAlign: i === 0 ? 'center' : i >= 5 ? 'center' : 'left',
+                    textAlign: i <= 1 ? 'center' : i >= 6 ? 'center' : 'left',
                     padding: '7px 8px',
                     fontSize: 10,
                     fontWeight: 800,
@@ -703,6 +892,23 @@ export default function UnderContractPanel() {
                         </span>
                       </td>
 
+                      {/* Deal page arrow */}
+                      <td style={{ width: 38, minWidth: 38, maxWidth: 38, padding: '6px 4px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                        <a
+                          href={`/warroom/deal?id=${deal.id}`}
+                          title="Open deal dashboard"
+                          onClick={e => e.stopPropagation()}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            width: 28, height: 28, borderRadius: 6,
+                            background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.35)',
+                            color: '#2dd4bf', textDecoration: 'none', fontSize: 14, lineHeight: 1,
+                            transition: 'all 0.15s',
+                          }}>
+                          ↗
+                        </a>
+                      </td>
+
                       {/* Deal name */}
                       <td style={{ padding: '13px 8px', color: 'var(--text-primary)', fontWeight: 700, maxWidth: 220 }}>
                         <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 15 }}>{deal.name}</div>
@@ -713,7 +919,7 @@ export default function UnderContractPanel() {
                         )}
                       </td>
 
-                      {/* Type */}
+                      {/* Stage (deal type) */}
                       <td style={{ padding: '13px 8px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 12, textTransform: 'capitalize' }}>
                         {deal.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                       </td>
@@ -760,6 +966,11 @@ export default function UnderContractPanel() {
                         />
                       </td>
 
+                      {/* Contacts */}
+                      <td style={{ padding: '6px 8px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                        <ContactsCell dealId={deal.id} dealName={deal.name} />
+                      </td>
+
                       {/* Dropbox */}
                       <td style={{ padding: '6px 8px' }} onClick={e => e.stopPropagation()}>
                         <DropboxCell
@@ -773,7 +984,7 @@ export default function UnderContractPanel() {
                     {/* Expanded subpanel */}
                     {isExpanded && (
                       <tr key={`${deal.id}-expand`} style={{ borderBottom: i < deals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                        <td colSpan={9} style={{ padding: '0 10px 10px' }}>
+                        <td colSpan={11} style={{ padding: '0 10px 10px' }}>
                           <DealSubpanel
                             deal={deal}
                             onDeadlinesChange={handleDeadlinesChange}
