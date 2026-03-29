@@ -269,7 +269,7 @@ export default function BattlePlanPanel() {
 
       {/* Add task button */}
       <div style={{ marginBottom: 14 }}>
-        <button onClick={() => setShowAddForm(true)} className="wr-btn-orbit" style={{ fontSize: 12 }}>
+        <button onClick={() => setShowAddForm(true)} style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontFamily: 'inherit', padding: '4px 0' }}>
           + Add Item
         </button>
       </div>

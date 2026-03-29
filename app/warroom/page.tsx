@@ -165,7 +165,24 @@ export default function WarRoomPage() {
 
 // ─── WAR ROOM HEADER ────────────────────────────────────────────────────────
 
+function useDateLabel() {
+  const [label, setLabel] = useState('')
+  useEffect(() => {
+    function update() {
+      const now = new Date()
+      const day = now.toLocaleDateString('en-US', { timeZone: 'America/Chicago', weekday: 'long' }).toUpperCase()
+      const date = now.toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()
+      setLabel(`${day}, ${date}`)
+    }
+    update()
+    const t = setInterval(update, 60000)
+    return () => clearInterval(t)
+  }, [])
+  return label
+}
+
 function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
+  const dateLabel = useDateLabel()
   return (
     <header
       style={{
@@ -225,6 +242,14 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
       </span>
 
       <div style={{ flex: 1 }} />
+      {dateLabel && (
+        <span style={{
+          fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+          color: '#22c55e', fontFamily: 'var(--font-body)',
+          textShadow: '0 0 10px rgba(34,197,94,0.4)',
+          whiteSpace: 'nowrap', marginRight: 10,
+        }}>{dateLabel}</span>
+      )}
       <LiveStatusDot />
     </header>
   )
