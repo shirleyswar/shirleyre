@@ -172,6 +172,7 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
   fontFamily: 'inherit',
   boxSizing: 'border-box',
+  colorScheme: 'dark',
 }
 
 const btnStyle = (color: string, bg: string, border: string): React.CSSProperties => ({
