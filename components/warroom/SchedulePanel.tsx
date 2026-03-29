@@ -705,13 +705,12 @@ function EventRow({
         display: 'flex',
         gap: 10,
         padding: '7px 10px',
-        background: 'var(--bg-elevated)',
+        background: hovered ? 'rgba(232,184,75,0.04)' : 'var(--bg-elevated)',
         borderRadius: 6,
-        border: '1px solid var(--border-subtle)',
+        border: '1px solid transparent',
         alignItems: 'center',
         cursor: 'default',
-        transition: 'border-color 0.15s',
-        ...(hovered ? { borderColor: 'rgba(232,184,75,0.2)' } : {}),
+        transition: 'background 0.15s',
       }}
     >
       {/* Time */}
@@ -729,23 +728,21 @@ function EventRow({
           </div>
         )}
       </div>
-      {/* Hover actions */}
-      {hovered && (
-        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-          <button
-            onClick={() => setEditing(true)}
-            title="Edit"
-            style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, padding: '2px 6px' }}
-          >✎</button>
-          <button
-            onClick={() => onDelete(event.id)}
-            title="Delete"
-            style={{ background: 'transparent', border: 'none', color: 'rgba(239,68,68,0.6)', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(239,68,68,0.6)')}
-          >✕</button>
-        </div>
-      )}
+      {/* Action buttons — always in layout, invisible until hover to prevent layout shift */}
+      <div style={{ display: 'flex', gap: 4, flexShrink: 0, opacity: hovered ? 1 : 0, transition: 'opacity 0.15s', pointerEvents: hovered ? 'auto' : 'none' }}>
+        <button
+          onClick={() => setEditing(true)}
+          title="Edit"
+          style={{ background: 'transparent', border: 'none', borderRadius: 4, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, padding: '2px 5px' }}
+        >✎</button>
+        <button
+          onClick={() => onDelete(event.id)}
+          title="Delete"
+          style={{ background: 'transparent', border: 'none', color: 'rgba(239,68,68,0.5)', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(239,68,68,0.5)')}
+        >✕</button>
+      </div>
     </div>
   )
 }
