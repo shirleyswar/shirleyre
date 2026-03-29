@@ -196,8 +196,22 @@ function useDateLabel() {
   return label
 }
 
+function useLiveTime() {
+  const [time, setTime] = useState('')
+  useEffect(() => {
+    function update() {
+      setTime(new Date().toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true }))
+    }
+    update()
+    const t = setInterval(update, 60000)
+    return () => clearInterval(t)
+  }, [])
+  return time
+}
+
 function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
   const dateLabel = useDateLabel()
+  const liveTime  = useLiveTime()
   return (
     <header
       style={{
@@ -268,6 +282,16 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
       )}
 
       <div style={{ flex: 1 }} />
+
+      {/* Live time — updates every minute */}
+      {liveTime && (
+        <span style={{
+          fontSize: 12, fontWeight: 700, color: 'rgba(232,184,75,0.75)',
+          fontFamily: 'var(--font-body)', letterSpacing: '0.04em',
+          marginRight: 10, flexShrink: 0, fontVariantNumeric: 'tabular-nums',
+        }}>{liveTime}</span>
+      )}
+
       <LiveStatusDot />
     </header>
   )

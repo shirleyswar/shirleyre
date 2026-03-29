@@ -415,14 +415,33 @@ export default function SchedulePanel() {
     } catch {}
   }
 
-  // Filter out any events that have now passed (date+time < now CST) — handles page staying open
-  const nowCST = new Date().toLocaleString('en-CA', { timeZone: 'America/Chicago', hour12: false }).replace(', ', 'T')
+  // Filter out events that have passed — re-evaluated every render (interval drives re-renders)
+  const [nowTick, setNowTick] = useState(Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 60000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Convert stored "H:MM AM/PM" time to 24h "HH:MM" for reliable comparison
+  function to24h(t: string): string {
+    const m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+    if (!m) return t.slice(0, 5) // already 24h or unknown — take first 5 chars
+    let h = parseInt(m[1])
+    const min = m[2]
+    const ampm = m[3].toUpperCase()
+    if (ampm === 'PM' && h !== 12) h += 12
+    if (ampm === 'AM' && h === 12) h = 0
+    return `${String(h).padStart(2, '0')}:${min}`
+  }
+
+  const nowStr = new Date(nowTick).toLocaleString('en-CA', { timeZone: 'America/Chicago', hour12: false }).replace(', ', 'T').slice(0, 16) // "YYYY-MM-DDTHH:MM"
   const liveEvents = upcomingEvents
     .filter(e => {
-      const evDT = `${e.date}T${e.time || '23:59'}`
-      return evDT >= nowCST
+      const t24 = to24h(e.time || '23:59')
+      const evDT = `${e.date}T${t24}`
+      return evDT >= nowStr
     })
-    .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
+    .sort((a, b) => a.date.localeCompare(b.date) || to24h(a.time || '').localeCompare(to24h(b.time || '')))
 
   // Group events by date for display
   const grouped: { date: string; events: ScheduleEvent[] }[] = []

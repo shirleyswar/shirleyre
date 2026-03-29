@@ -18,6 +18,7 @@ interface BattlePlanTask {
   contact_name?: string | null
   bp_priority?: number | null
   is_family?: boolean | null
+  is_life?: boolean | null
 }
 
 interface DealOption {
@@ -43,6 +44,7 @@ export default function BattlePlanPanel() {
   const [newBpPriority, setNewBpPriority] = useState<number | null>(null)
   const [prioritySortDir, setPrioritySortDir] = useState<'desc' | 'asc'>('desc')
   const [newIsFamily, setNewIsFamily] = useState(false)
+  const [newDueDate, setNewDueDate] = useState('')
 
   // Completion modal state
   const [pendingComplete, setPendingComplete] = useState<BattlePlanTask | null>(null)
@@ -122,9 +124,10 @@ export default function BattlePlanPanel() {
         title: newTitle.trim(),
         status: 'open',
         deal_id: addToLife ? null : (newDealId || null),
-        contact_name: newContactName.trim() || null,
+        contact_name: addToLife ? 'LIFE' : (newContactName.trim() || null),
         bp_priority: newBpPriority || null,
         is_family: newIsFamily || null,
+        due_date: newDueDate || null,
       }
       try {
         if (addToLife) {
@@ -147,6 +150,7 @@ export default function BattlePlanPanel() {
         setNewBpPriority(null)
         setNewIsFamily(false)
         setAddToLife(false)
+        setNewDueDate('')
         // Auto-dismiss the modal after save ✓
         setShowAddForm(false)
       }
@@ -162,6 +166,7 @@ export default function BattlePlanPanel() {
     setNewBpPriority(null)
     setNewIsFamily(false)
     setAddToLife(false)
+    setNewDueDate('')
   }
 
   // Open completion modal
@@ -324,14 +329,29 @@ export default function BattlePlanPanel() {
                 ))}
               </datalist>
             </div>
-            {/* Priority stars */}
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Priority</div>
-              <BpStarPicker value={newBpPriority} onChange={setNewBpPriority} />
+            {/* Priority + Deadline row */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Priority</div>
+                <BpStarPicker value={newBpPriority} onChange={setNewBpPriority} />
+              </div>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Deadline</div>
+                <input
+                  type="date"
+                  value={newDueDate}
+                  onChange={e => setNewDueDate(e.target.value)}
+                  style={{ fontSize: 12, padding: '6px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+                />
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 20 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer' }}>
-                <input type="checkbox" checked={addToLife} onChange={e => setAddToLife(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
+                <input type="checkbox" checked={addToLife} onChange={e => {
+                  setAddToLife(e.target.checked)
+                  if (e.target.checked) setNewContactName('LIFE')
+                  else if (newContactName === 'LIFE') setNewContactName('')
+                }} style={{ width: 16, height: 16, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
                 Add to Life tab
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: newIsFamily ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: newIsFamily ? 700 : 400 }}>
@@ -372,17 +392,25 @@ export default function BattlePlanPanel() {
                 Priority {prioritySortDir === 'desc' ? '↓' : '↑'}
               </th>
               <th style={{ width: 28, padding: '7px 6px' }}></th>
-              <th style={{ padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
               <th className="hidden sm:table-cell" style={{ width: 120, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ID / Contact</th>
+              <th className="hidden sm:table-cell" style={{ width: 86, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Deadline</th>
+              <th style={{ padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
               <th style={{ width: 36, padding: '7px 6px' }}></th>
             </tr>
           </thead>
           <tbody>
             {[...tasks.filter(t => t.status === 'open' || t.status === 'in_progress')]
               .sort((a, b) => {
+                // Primary: star priority
                 const ap = a.bp_priority ?? 0
                 const bp = b.bp_priority ?? 0
-                return prioritySortDir === 'desc' ? bp - ap : ap - bp
+                const pDiff = prioritySortDir === 'desc' ? bp - ap : ap - bp
+                if (pDiff !== 0) return pDiff
+                // Secondary: deadline (soonest first; no deadline = last)
+                if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
+                if (a.due_date) return -1
+                if (b.due_date) return 1
+                return 0
               })
               .map(task => (
                 <TaskRow
@@ -604,7 +632,23 @@ function TaskRow({
         </button>
       </td>
 
-      {/* Col 3: Title */}
+      {/* Col 3: ID / Contact badge — moved before Action Item */}
+      <td className="hidden sm:table-cell" style={{ width: 120, padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
+        <ContactBadge contactName={task.contact_name ?? null} deal={deal} isLife={!!task.is_life} />
+      </td>
+
+      {/* Col 4: Deadline */}
+      <td className="hidden sm:table-cell" style={{ width: 86, padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
+        <DeadlinePicker
+          value={task.due_date ?? null}
+          onChange={async (d) => {
+            await supabase.from('tasks').update({ due_date: d } as Record<string, unknown>).eq('id', task.id)
+            onUpdate({ due_date: d })
+          }}
+        />
+      </td>
+
+      {/* Col 5: Title */}
       <td style={{ padding: '10px 8px', verticalAlign: 'middle' }}>
         {editing ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -694,12 +738,7 @@ function TaskRow({
         )}
       </td>
 
-      {/* Col 4: ID / Contact badge — hidden on mobile */}
-      <td className="hidden sm:table-cell" style={{ width: 120, padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
-        <ContactBadge contactName={task.contact_name ?? null} deal={deal} />
-      </td>
-
-      {/* Col 5: Edit + drag handle */}
+      {/* Col 6: Edit + drag handle */}
       <td style={{ width: 36, padding: '10px 6px', verticalAlign: 'middle' }}>
         {!editing && hovered && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -768,7 +807,25 @@ const BP_STATUS_BADGE_COLORS: Record<string, { bg: string; border: string; color
 }
 const BP_NEUTRAL_BADGE = { bg: 'rgba(232,184,75,0.08)', border: 'rgba(232,184,75,0.25)', color: 'rgba(232,184,75,0.8)' }
 
-function ContactBadge({ contactName, deal }: { contactName: string | null; deal: DealOption | null }) {
+function ContactBadge({ contactName, deal, isLife }: { contactName: string | null; deal: DealOption | null; isLife?: boolean }) {
+  // LIFE badge — red with heart icon
+  if (isLife || contactName === 'LIFE') {
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 3,
+        padding: '2px 8px',
+        background: 'rgba(239,68,68,0.15)',
+        border: '1px solid rgba(239,68,68,0.4)',
+        borderRadius: 4, fontSize: 10, fontWeight: 700,
+        color: '#f87171', whiteSpace: 'nowrap',
+      }}>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="#f87171" stroke="#f87171" strokeWidth="1">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        LIFE
+      </span>
+    )
+  }
   if (!contactName) return <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.1)' }}>—</span>
   const style = (deal as any)?.status ? (BP_STATUS_BADGE_COLORS[(deal as any).status] ?? BP_NEUTRAL_BADGE) : BP_NEUTRAL_BADGE
   return (
@@ -777,18 +834,52 @@ function ContactBadge({ contactName, deal }: { contactName: string | null; deal:
       padding: '2px 8px',
       background: style.bg,
       border: `1px solid ${style.border}`,
-      borderRadius: 4,
-      fontSize: 10,
-      fontWeight: 600,
-      color: style.color,
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      maxWidth: 116,
-      letterSpacing: '0.02em',
+      borderRadius: 4, fontSize: 10, fontWeight: 600, color: style.color,
+      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      maxWidth: 116, letterSpacing: '0.02em',
     }} title={contactName}>
       {contactName.length > 16 ? contactName.slice(0, 15) + '…' : contactName}
     </span>
+  )
+}
+
+// ─── Deadline Picker ─────────────────────────────────────────────────────────
+function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (d: string | null) => void }) {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  const isOverdue = value && value < today
+  const isToday   = value === today
+  const isSoon    = value && value > today && value <= new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+
+  function fmtDate(d: string) {
+    const [y, m, day] = d.split('-').map(Number)
+    return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  if (!value) {
+    return (
+      <input
+        type="date"
+        onChange={e => onChange(e.target.value || null)}
+        style={{ width: 80, fontSize: 10, padding: '2px 4px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, color: 'rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
+      />
+    )
+  }
+
+  const color = isOverdue ? '#ef4444' : isToday ? '#f59e0b' : isSoon ? '#fb923c' : '#6b7280'
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+      <span
+        title={value}
+        style={{ fontSize: 10, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+        {isOverdue ? '⚠ ' : ''}{fmtDate(value)}
+      </span>
+      <button
+        onClick={() => onChange(null)}
+        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: 10, padding: '0 2px', lineHeight: 1 }}
+        title="Clear deadline">
+        ✕
+      </button>
+    </div>
   )
 }
 
