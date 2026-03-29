@@ -232,7 +232,7 @@ export default function HotPanel() {
                   </td>
                   {/* Type */}
                   <td style={{ padding: '10px 10px', color: '#9ca3af', fontSize: 11 }}>
-                    {deal.type.replace(/_/g, ' ')}
+                    {deal.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                   </td>
                   {/* Value */}
                   <td style={{ padding: '10px 10px', color: '#E8B84B', fontFamily: 'monospace', fontWeight: 600 }}>
