@@ -229,7 +229,7 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
 
       {/* ShirleyCRE wordmark — stays in top bar */}
       <span style={{
-        fontSize: 13, fontWeight: 800,
+        fontSize: 17, fontWeight: 800,
         color: '#E8B84B',
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
@@ -241,15 +241,18 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
         ShirleyCRE
       </span>
 
-      <div style={{ flex: 1 }} />
+      {/* Date — absolute center */}
       {dateLabel && (
         <span style={{
+          position: 'absolute', left: '50%', transform: 'translateX(-50%)',
           fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
           color: '#22c55e', fontFamily: 'var(--font-body)',
           textShadow: '0 0 10px rgba(34,197,94,0.4)',
-          whiteSpace: 'nowrap', marginRight: 10,
+          whiteSpace: 'nowrap', pointerEvents: 'none',
         }}>{dateLabel}</span>
       )}
+
+      <div style={{ flex: 1 }} />
       <LiveStatusDot />
     </header>
   )
