@@ -417,10 +417,12 @@ export default function SchedulePanel() {
 
   // Filter out any events that have now passed (date+time < now CST) — handles page staying open
   const nowCST = new Date().toLocaleString('en-CA', { timeZone: 'America/Chicago', hour12: false }).replace(', ', 'T')
-  const liveEvents = upcomingEvents.filter(e => {
-    const evDT = `${e.date}T${e.time || '23:59'}`
-    return evDT >= nowCST
-  })
+  const liveEvents = upcomingEvents
+    .filter(e => {
+      const evDT = `${e.date}T${e.time || '23:59'}`
+      return evDT >= nowCST
+    })
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
 
   // Group events by date for display
   const grouped: { date: string; events: ScheduleEvent[] }[] = []
