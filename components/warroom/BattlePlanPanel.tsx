@@ -712,6 +712,7 @@ function TaskRow({
               onClick={() => isLong && setExpanded(e => !e)}
               style={{
                 fontSize: 13,
+                fontVariant: 'small-caps',
                 color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
                 textDecoration: completing ? 'line-through' : 'none',
                 transition: 'all 0.3s',
@@ -872,7 +873,10 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
 
   function fmtDate(d: string) {
     const [y, m, day] = d.split('-').map(Number)
-    return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const dt = new Date(y, m - 1, day)
+    const dow = dt.toLocaleDateString('en-US', { weekday: 'short' })  // "Mon"
+    const mon = dt.toLocaleDateString('en-US', { month: 'short' })    // "Mar"
+    return `${dow} ${mon}. ${day}`  // "Mon Mar. 30"
   }
 
   if (!value) {
@@ -887,19 +891,11 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
 
   const color = isOverdue ? '#ef4444' : isToday ? '#f59e0b' : isSoon ? '#fb923c' : '#6b7280'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-      <span
-        title={value}
-        style={{ fontSize: 10, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-        {isOverdue ? '⚠ ' : ''}{fmtDate(value)}
-      </span>
-      <button
-        onClick={() => onChange(null)}
-        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: 10, padding: '0 2px', lineHeight: 1 }}
-        title="Clear deadline">
-        ✕
-      </button>
-    </div>
+    <span
+      title={value}
+      style={{ fontSize: 10, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+      {isOverdue ? '⚠ ' : ''}{fmtDate(value)}
+    </span>
   )
 }
 
