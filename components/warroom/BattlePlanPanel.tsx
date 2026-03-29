@@ -402,7 +402,7 @@ export default function BattlePlanPanel() {
                 Priority {prioritySortDir === 'desc' ? '↓' : '↑'}
               </th>
               <th style={{ width: 28, padding: '7px 6px' }}></th>
-              <th className="hidden sm:table-cell" style={{ width: 120, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ID / Contact</th>
+              <th className="hidden sm:table-cell" style={{ width: 150, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ID / Contact</th>
               <th className="hidden sm:table-cell" style={{ width: 86, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Deadline</th>
               <th style={{ padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
               <th style={{ width: 36, padding: '7px 6px' }}></th>
@@ -648,7 +648,7 @@ function TaskRow({
       </td>
 
       {/* Col 3: ID / Contact badge — moved before Action Item */}
-      <td className="hidden sm:table-cell" style={{ width: 120, padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
+      <td className="hidden sm:table-cell" style={{ width: 150, padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
         <ContactBadge contactName={task.contact_name ?? null} deal={deal} isLife={!!task.is_life} />
       </td>
 
@@ -857,10 +857,9 @@ function ContactBadge({ contactName, deal, isLife }: { contactName: string | nul
       background: style.bg,
       border: `1px solid ${style.border}`,
       borderRadius: 4, fontSize: 10, fontWeight: 600, color: style.color,
-      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-      maxWidth: 116, letterSpacing: '0.02em',
+      whiteSpace: 'nowrap', letterSpacing: '0.02em',
     }} title={contactName}>
-      {contactName.length > 16 ? contactName.slice(0, 15) + '…' : contactName}
+      {contactName}
     </span>
   )
 }
