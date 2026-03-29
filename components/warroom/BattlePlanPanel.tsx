@@ -29,6 +29,7 @@ interface DealOption {
 export default function BattlePlanPanel() {
   const [tasks, setTasks] = useState<BattlePlanTask[]>([])
   const [deals, setDeals] = useState<DealOption[]>([])
+  const [entityNames, setEntityNames] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [newTitle, setNewTitle] = useState('')
   const [newDealId, setNewDealId] = useState('')
@@ -54,7 +55,15 @@ export default function BattlePlanPanel() {
   useEffect(() => {
     fetchDeals()
     fetchTasks()
+    fetchEntityNames()
   }, [])
+
+  async function fetchEntityNames() {
+    try {
+      const { data } = await supabase.from('entities').select('name').limit(100)
+      if (data) setEntityNames(data.map((e: { name: string }) => e.name).filter(Boolean))
+    } catch {}
+  }
 
   async function fetchDeals() {
     try {
@@ -274,7 +283,7 @@ export default function BattlePlanPanel() {
 
       {/* Add task button */}
       <div style={{ marginBottom: 14 }}>
-        <button onClick={() => setShowAddForm(true)} style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontFamily: 'inherit', padding: '4px 0' }}>
+        <button onClick={() => setShowAddForm(true)} className="wr-btn-orbit" style={{ fontSize: 12 }}>
           + Add Item
         </button>
       </div>
@@ -310,7 +319,7 @@ export default function BattlePlanPanel() {
                 style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
               />
               <datalist id="bp-contact-list">
-                {Array.from(new Set(deals.map(d => d.name).filter(Boolean))).map(n => (
+                {Array.from(new Set([...deals.map(d => d.name), ...entityNames].filter(Boolean))).map(n => (
                   <option key={n} value={n} />
                 ))}
               </datalist>
@@ -390,6 +399,7 @@ export default function BattlePlanPanel() {
                   onDrop={(e) => handleDrop(e, task.id)}
                   onDragEnd={handleDragEnd}
                   deals={deals}
+                  entityNames={entityNames}
                 />
               ))}
           </tbody>
@@ -509,13 +519,14 @@ interface TaskRowProps {
   onDrop: (e: React.DragEvent) => void
   onDragEnd: () => void
   deals: DealOption[]
+  entityNames: string[]
 }
 
 function TaskRow({
   task, deal, completing, dragOverId,
   onComplete, onUpdate,
   onDragStart, onDragOver, onDrop, onDragEnd,
-  deals,
+  deals, entityNames,
 }: TaskRowProps) {
   const [hovered, setHovered] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -612,7 +623,7 @@ function TaskRow({
               style={{ width: '100%', background: 'transparent', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 4, padding: '4px 8px', fontSize: 13, color: 'var(--accent-gold)', outline: 'none', fontFamily: 'var(--font-body)' }}
             />
             <datalist id="bp-contact-list-edit">
-              {Array.from(new Set(deals.map(d => d.name).filter(Boolean))).map(n => (
+              {Array.from(new Set([...deals.map(d => d.name), ...entityNames].filter(Boolean))).map(n => (
                 <option key={n} value={n} />
               ))}
             </datalist>
