@@ -564,7 +564,7 @@ function getKillOptions(deal: Deal): KillAction[] {
   return options
 }
 
-// ─── Editable Deal Row ───────────────────────────────────────────────────────
+// ─── Editable Deal Row (v2) ──────────────────────────────────────────────────
 const DELETE_PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e' // SHA-256 of "1887"
 
 async function sha256(text: string): Promise<string> {

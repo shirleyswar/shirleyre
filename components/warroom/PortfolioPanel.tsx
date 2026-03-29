@@ -294,7 +294,7 @@ const SLEEVE_COL_MAP: Record<string, string> = {
   years_held: 'YRS HELD', annualized_return_pct: 'ANN. RETURN',
 }
 
-// ─── Sleeve Table (Symbol, Name, Qty, Mkt Value, Cost Basis, G/L $, G/L %, Ann. Return) ──
+// ─── Sleeve Table v2 (Symbol, Name, Qty, Mkt Value, Cost Basis, G/L $, G/L %, Ann. Return) ──
 function SleeveTable({ positions }: { positions: Position[] }) {
   type SF = 'symbol' | 'name' | 'qty' | 'market_value' | 'total_cost' | 'unrealized_gl_dollar' | 'unrealized_gl_pct' | 'annualized_return_pct'
   const [sortField, setSortField] = useState<SF>('market_value')
