@@ -39,6 +39,7 @@ export default function BattlePlanPanel() {
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set())
   const [showFollowUpFor, setShowFollowUpFor] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addToLife, setAddToLife] = useState(false)
   const [newContactName, setNewContactName] = useState('')
@@ -255,7 +256,7 @@ export default function BattlePlanPanel() {
   }
 
   // Drag handlers
-  const handleDragStart = useCallback((id: string) => { dragIdRef.current = id }, [])
+  const handleDragStart = useCallback((id: string) => { dragIdRef.current = id; setDraggingId(id) }, [])
   const handleDragOver = useCallback((e: React.DragEvent, id: string) => { e.preventDefault(); setDragOverId(id) }, [])
   const handleDrop = useCallback(async (e: React.DragEvent, targetId: string) => {
     e.preventDefault()
@@ -277,7 +278,7 @@ export default function BattlePlanPanel() {
     })
     dragIdRef.current = null
   }, [])
-  const handleDragEnd = useCallback(() => { setDragOverId(null); dragIdRef.current = null }, [])
+  const handleDragEnd = useCallback(() => { setDragOverId(null); setDraggingId(null); dragIdRef.current = null }, [])
 
   const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'in_progress')
 
@@ -409,37 +410,49 @@ export default function BattlePlanPanel() {
             </tr>
           </thead>
           <tbody>
-            {[...tasks.filter(t => t.status === 'open' || t.status === 'in_progress')]
-              .sort((a, b) => {
-                // Primary: star priority
-                const ap = a.bp_priority ?? 0
-                const bp = b.bp_priority ?? 0
-                const pDiff = prioritySortDir === 'desc' ? bp - ap : ap - bp
-                if (pDiff !== 0) return pDiff
-                // Secondary: deadline (soonest first; no deadline = last)
-                if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
-                if (a.due_date) return -1
-                if (b.due_date) return 1
-                return 0
-              })
-              .map(task => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  deal={deals.find(d => d.id === task.deal_id) || null}
-                  completing={completingIds.has(task.id)}
-                  showFollowUp={showFollowUpFor === task.id}
-                  dragOverId={dragOverId}
-                  onComplete={() => completeTask(task)}
-                  onUpdate={(updates) => updateTask(task.id, updates)}
-                  onDragStart={() => handleDragStart(task.id)}
-                  onDragOver={(e) => handleDragOver(e, task.id)}
-                  onDrop={(e) => handleDrop(e, task.id)}
-                  onDragEnd={handleDragEnd}
-                  deals={deals}
-                  entityNames={entityNames}
-                />
-              ))}
+            {(() => {
+                let sorted = [...tasks.filter(t => t.status === 'open' || t.status === 'in_progress')]
+                  .sort((a, b) => {
+                    const ap = a.bp_priority ?? 0
+                    const bp = b.bp_priority ?? 0
+                    const pDiff = prioritySortDir === 'desc' ? bp - ap : ap - bp
+                    if (pDiff !== 0) return pDiff
+                    if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
+                    if (a.due_date) return -1
+                    if (b.due_date) return 1
+                    return 0
+                  })
+                // Live preview reorder while dragging
+                if (draggingId && dragOverId && draggingId !== dragOverId) {
+                  const fromIdx = sorted.findIndex(t => t.id === draggingId)
+                  const toIdx = sorted.findIndex(t => t.id === dragOverId)
+                  if (fromIdx !== -1 && toIdx !== -1) {
+                    const preview = [...sorted]
+                    const [item] = preview.splice(fromIdx, 1)
+                    preview.splice(toIdx, 0, item)
+                    sorted = preview
+                  }
+                }
+                return sorted.map(task => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    deal={deals.find(d => d.id === task.deal_id) || null}
+                    completing={completingIds.has(task.id)}
+                    showFollowUp={showFollowUpFor === task.id}
+                    dragOverId={dragOverId}
+                    draggingId={draggingId}
+                    onComplete={() => completeTask(task)}
+                    onUpdate={(updates) => updateTask(task.id, updates)}
+                    onDragStart={() => handleDragStart(task.id)}
+                    onDragOver={(e) => handleDragOver(e, task.id)}
+                    onDrop={(e) => handleDrop(e, task.id)}
+                    onDragEnd={handleDragEnd}
+                    deals={deals}
+                    entityNames={entityNames}
+                  />
+                ))
+              })()}
           </tbody>
         </table>
       )}
@@ -550,6 +563,7 @@ interface TaskRowProps {
   completing: boolean
   showFollowUp: boolean
   dragOverId: string | null
+  draggingId?: string | null
   onComplete: () => void
   onUpdate: (updates: Partial<BattlePlanTask>) => void
   onDragStart: () => void
@@ -561,7 +575,7 @@ interface TaskRowProps {
 }
 
 function TaskRow({
-  task, deal, completing, dragOverId,
+  task, deal, completing, dragOverId, draggingId,
   onComplete, onUpdate,
   onDragStart, onDragOver, onDrop, onDragEnd,
   deals, entityNames,
@@ -575,7 +589,8 @@ function TaskRow({
   const [editIsFamily, setEditIsFamily] = useState(!!task.is_family)
   const [editIsEntity, setEditIsEntity] = useState(!!task.is_entity)
   const [circleHovered, setCircleHovered] = useState(false)
-  const isDragTarget = dragOverId === task.id
+  const isDragTarget = dragOverId === task.id && draggingId !== task.id
+  const isDragging   = draggingId === task.id
   const isLong = task.title.length > 48
 
   function saveEdit() {
@@ -600,19 +615,23 @@ function TaskRow({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: isDragTarget
-          ? 'rgba(232,184,75,0.07)'
+        background: isDragging
+          ? 'rgba(232,184,75,0.03)'
+          : isDragTarget
+          ? 'rgba(232,184,75,0.12)'
           : task.is_entity
           ? (hovered ? 'rgba(34,197,94,0.10)' : 'rgba(34,197,94,0.06)')
           : hovered
           ? 'rgba(139,92,246,0.07)'
           : isEven ? 'rgba(255,255,255,0.015)' : 'transparent',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-        borderLeft: task.is_entity
+        borderBottom: isDragTarget ? '2px solid rgba(232,184,75,0.8)' : '1px solid rgba(255,255,255,0.04)',
+        borderLeft: isDragTarget
+          ? '3px solid #E8B84B'
+          : task.is_entity
           ? '2px solid rgba(34,197,94,0.5)'
           : hovered ? '2px solid rgba(139,92,246,0.6)' : '2px solid transparent',
-        opacity: completing ? 0.35 : 1,
-        transition: 'all 0.12s',
+        opacity: completing ? 0.35 : isDragging ? 0.4 : 1,
+        transition: 'all 0.08s',
       }}
     >
       {/* Col 1: Priority stars — far left */}
@@ -857,7 +876,7 @@ function ContactBadge({ contactName, deal, isLife }: { contactName: string | nul
       background: style.bg,
       border: `1px solid ${style.border}`,
       borderRadius: 4, fontSize: 10, fontWeight: 600, color: style.color,
-      whiteSpace: 'nowrap', letterSpacing: '0.02em',
+      whiteSpace: 'nowrap', letterSpacing: '0.02em', fontVariant: 'small-caps',
     }} title={contactName}>
       {contactName}
     </span>
@@ -893,7 +912,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
   return (
     <span
       title={value}
-      style={{ fontSize: 12, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+      style={{ fontSize: 12, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap', fontVariant: 'small-caps' }}>
       {isOverdue ? '⚠ ' : ''}{fmtDate(value)}
     </span>
   )
