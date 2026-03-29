@@ -845,7 +845,7 @@ function LeaseTypeDropdown({ value, onChange }: { value: string; onChange: (v: s
 
 // ─── Deal Economics Card ──────────────────────────────────────────────────────
 
-function DealEconomicsCard({ deal }: { deal: Deal }) {
+function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?: LacdbListing | null }) {
   const [propertyType, setPropertyType] = useState('Office')
   const [propertyTypeCustom, setPropertyTypeCustom] = useState('')
   const [transactionType, setTransactionType] = useState<'sale' | 'lease' | 'both'>('sale')
@@ -863,6 +863,41 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
   const [saved, setSaved] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [econId, setEconId] = useState<string | null>(null)
+  const [fillMsg, setFillMsg] = useState<string | null>(null)
+
+  // Auto-fill from LACDB when parent triggers it
+  useEffect(() => {
+    if (!lacdbAutoFill) return
+    const l = lacdbAutoFill
+
+    // Property type mapping
+    const ptMap: Record<string, string> = {
+      Office: 'Office', Retail: 'Retail', Industrial: 'Industrial',
+      Land: 'Vacant Land', 'Vacant Land': 'Vacant Land',
+      Hospitality: 'Other', Mixed: 'Other',
+    }
+    const firstType = l.property_types?.[0] ?? ''
+    const mappedType = ptMap[firstType] ?? 'Other'
+    setPropertyType(mappedType)
+
+    // Transaction type
+    if (l.listing_type === 'sale') setTransactionType('sale')
+    else if (l.listing_type === 'lease') setTransactionType('lease')
+    else if (l.listing_type === 'both') setTransactionType('both')
+
+    // Size
+    if (l.sqft) { setSqft(String(l.sqft)); if (mappedType === 'Vacant Land') setAcres((l.sqft / 43560).toFixed(4)) }
+    else if (l.acres) { setAcres(String(l.acres)); setSqft((l.acres * 43560).toFixed(0)) }
+
+    // Price / rate
+    if (l.price) setAskingPrice(String(l.price))
+    if (l.lease_rate) setLeaseRatePsf(String(l.lease_rate))
+
+    // Expand card so user sees the prefill
+    setCollapsed(false)
+    setFillMsg('✓ Filled from LACDB — review and save')
+    setTimeout(() => setFillMsg(null), 4000)
+  }, [lacdbAutoFill])
 
   useEffect(() => {
     async function loadEcon() {
@@ -1011,7 +1046,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
 
   return (
     <div style={cardStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: fillMsg ? 8 : 14 }}>
         <span style={{ ...sectionHeadStyle }}>Deal Economics</span>
         {econId && (
           <button
@@ -1022,6 +1057,9 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
           </button>
         )}
       </div>
+      {fillMsg && (
+        <div style={{ fontSize: 12, color: '#22c55e', marginBottom: 12, fontWeight: 600 }}>{fillMsg}</div>
+      )}
 
       {/* Row 1: Property Type + Transaction */}
       <div style={rowStyle}>
@@ -1303,7 +1341,7 @@ function DealEconomicsCard({ deal }: { deal: Deal }) {
 
 // ─── LACDB Card ───────────────────────────────────────────────────────────────
 
-function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: string) => void }) {
+function LacdbCard({ deal, onLacdbIdSave, onAutoFill }: { deal: Deal; onLacdbIdSave: (id: string) => void; onAutoFill?: (listing: LacdbListing) => void }) {
   const [listing, setListing] = useState<LacdbListing | null>(null)
   const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(true)
@@ -1547,26 +1585,46 @@ function LacdbCard({ deal, onLacdbIdSave }: { deal: Deal; onLacdbIdSave: (id: st
         </div>
       )}
 
-      {listing.lacdb_url && (
-        <a
-          href={listing.lacdb_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '7px 14px',
-            background: 'rgba(79,142,247,0.1)',
-            border: '1px solid rgba(79,142,247,0.35)',
-            borderRadius: 8,
-            color: '#4F8EF7',
-            fontSize: 12,
-            fontWeight: 700,
-            textDecoration: 'none',
-          }}
-        >
-          View on LACDB ↗
-        </a>
-      )}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {listing.lacdb_url && (
+          <a
+            href={listing.lacdb_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '7px 14px',
+              background: 'rgba(79,142,247,0.1)',
+              border: '1px solid rgba(79,142,247,0.35)',
+              borderRadius: 8,
+              color: '#4F8EF7',
+              fontSize: 12,
+              fontWeight: 700,
+              textDecoration: 'none',
+            }}
+          >
+            View on LACDB ↗
+          </a>
+        )}
+        {onAutoFill && (listing.price || listing.sqft || listing.acres || listing.lease_rate) && (
+          <button
+            onClick={() => onAutoFill(listing)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '7px 14px',
+              background: 'rgba(34,197,94,0.1)',
+              border: '1px solid rgba(34,197,94,0.4)',
+              borderRadius: 8,
+              color: '#22c55e',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            → Fill Economics
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -1935,6 +1993,7 @@ function DealDashboardInner() {
   const [deal, setDeal] = useState<Deal | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [lacdbAutoFill, setLacdbAutoFill] = useState<LacdbListing | null>(null)
 
   // Edit state
   const [editing, setEditing] = useState(false)
@@ -2352,10 +2411,11 @@ function DealDashboardInner() {
                 .single()
               if (!error && data) setDeal(data as Deal)
             }}
+            onAutoFill={(listing) => setLacdbAutoFill(listing)}
           />
 
           {/* Deal Economics — below LACDB */}
-          <DealEconomicsCard deal={deal} />
+          <DealEconomicsCard deal={deal} lacdbAutoFill={lacdbAutoFill} />
 
           {/* Deal Info Card */}
           <div style={cardStyle}>
