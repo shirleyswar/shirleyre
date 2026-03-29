@@ -706,6 +706,7 @@ function LiveStatusDot() {
 // ─── SECTION VIEWS ───────────────────────────────────────────────────────────
 
 function SectionView({ children, onBack, title }: { children: React.ReactNode; onBack?: () => void; title?: string }) {
+  const dateLabel = useDateLabel()
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -716,11 +717,20 @@ function SectionView({ children, onBack, title }: { children: React.ReactNode; o
         maxWidth: 960,
         margin: '0 auto',
         width: '100%',
-        // Override accent color to purple for all child panels
         ['--accent-gold' as string]: '#A78BFA',
         ['--accent-gold-light' as string]: '#C4B5FD',
       } as React.CSSProperties}
     >
+      {/* Green date — centered above panel content */}
+      {dateLabel && (
+        <div style={{ textAlign: 'center', marginBottom: 14 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+            color: '#22c55e', fontFamily: 'var(--font-body)',
+            textShadow: '0 0 10px rgba(34,197,94,0.4)',
+          }}>{dateLabel}</span>
+        </div>
+      )}
       {children}
     </motion.div>
   )
@@ -778,7 +788,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 
 function HeartIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
     </svg>
   )
@@ -786,7 +796,7 @@ function HeartIcon() {
 
 function BuildingIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M2 3h8v18H2zM14 8h8v13h-8zM2 20h20v2H2z"/>
     </svg>
   )
@@ -794,7 +804,7 @@ function BuildingIcon() {
 
 function ChartIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
     </svg>
   )
