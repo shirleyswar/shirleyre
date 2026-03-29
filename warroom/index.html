@@ -95,18 +95,25 @@
   ═══════════════════════════════════════════════════ */
   #topbar {
     flex: 0 0 52px; display: flex; align-items: center;
-    padding: 0 24px; gap: 20px;
+    padding: 0 16px; gap: 12px;
     border-bottom: 1px solid var(--border2);
     background: rgba(6,13,15,0.95);
+    overflow: hidden;
   }
   .topbar-logo {
     font-family: var(--font-display); font-weight: 800; font-size: 16px;
     letter-spacing: -0.02em;
     background: linear-gradient(90deg, var(--gold), var(--gold-l));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    white-space: nowrap;
+    white-space: nowrap; flex-shrink: 0;
   }
-  .topbar-sep { width: 1px; height: 20px; background: var(--border); }
+  .topbar-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+  @media (max-width: 640px) {
+    #topbar-clock { display: none !important; }
+    .topbar-sep { display: none !important; }
+    .topbar-status-row { display: none !important; }
+    #topbar { padding: 0 12px; gap: 8px; }
+  }
   .topbar-label {
     font-family: var(--font-mono); font-size: 10px;
     letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted);
