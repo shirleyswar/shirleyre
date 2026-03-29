@@ -255,14 +255,43 @@ export default function BattlePlanPanel() {
     } catch {}
   }
 
-  // Drag handlers
-  const handleDragStart = useCallback((id: string) => { dragIdRef.current = id; setDraggingId(id) }, [])
-  const handleDragOver = useCallback((e: React.DragEvent, id: string) => { e.preventDefault(); setDragOverId(id) }, [])
-  const handleDrop = useCallback(async (e: React.DragEvent, targetId: string) => {
-    e.preventDefault()
+  // ── Pointer-based drag (smooth, no ghost image) ──────────────────────────
+  const pointerDragRef = useRef<{ sourceId: string; startY: number } | null>(null)
+
+  const handlePointerDragStart = useCallback((e: React.PointerEvent, id: string) => {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    pointerDragRef.current = { sourceId: id, startY: e.clientY }
+    dragIdRef.current = id
+    setDraggingId(id)
+  }, [])
+
+  const handlePointerDragMove = useCallback((e: React.PointerEvent) => {
+    if (!pointerDragRef.current) return
+    // Find which row the pointer is over using elementFromPoint
+    const els = document.elementsFromPoint(e.clientX, e.clientY)
+    for (const el of els) {
+      const row = el.closest('[data-task-id]') as HTMLElement | null
+      if (row) {
+        const targetId = row.dataset.taskId
+        if (targetId && targetId !== pointerDragRef.current.sourceId) {
+          setDragOverId(targetId)
+          return
+        }
+      }
+    }
+  }, [])
+
+  const handlePointerDragEnd = useCallback(async (e: React.PointerEvent) => {
+    const drag = pointerDragRef.current
+    pointerDragRef.current = null
+    setDraggingId(null)
+
+    const targetId = dragOverId
     setDragOverId(null)
-    const sourceId = dragIdRef.current
-    if (!sourceId || sourceId === targetId) return
+
+    const sourceId = drag?.sourceId
+    if (!sourceId || !targetId || sourceId === targetId) return
+
     setTasks(prev => {
       const arr = [...prev]
       const fromIdx = arr.findIndex(t => t.id === sourceId)
@@ -277,8 +306,13 @@ export default function BattlePlanPanel() {
       return arr.map((t, i) => ({ ...t, sort_order: i }))
     })
     dragIdRef.current = null
-  }, [])
-  const handleDragEnd = useCallback(() => { setDragOverId(null); setDraggingId(null); dragIdRef.current = null }, [])
+  }, [dragOverId])
+
+  // Keep legacy drag handlers as stubs (no-ops) since TaskRow still references them
+  const handleDragStart = useCallback(() => {}, [])
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault() }, [])
+  const handleDrop = useCallback((e: React.DragEvent) => { e.preventDefault() }, [])
+  const handleDragEnd = useCallback(() => {}, [])
 
   const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'in_progress')
 
@@ -444,10 +478,13 @@ export default function BattlePlanPanel() {
                     draggingId={draggingId}
                     onComplete={() => completeTask(task)}
                     onUpdate={(updates) => updateTask(task.id, updates)}
-                    onDragStart={() => handleDragStart(task.id)}
-                    onDragOver={(e) => handleDragOver(e, task.id)}
-                    onDrop={(e) => handleDrop(e, task.id)}
+                    onDragStart={() => handleDragStart()}
+                    onDragOver={(e) => handleDragOver(e)}
+                    onDrop={(e) => handleDrop(e)}
                     onDragEnd={handleDragEnd}
+                    onPointerDragStart={(e) => handlePointerDragStart(e, task.id)}
+                    onPointerDragMove={handlePointerDragMove}
+                    onPointerDragEnd={handlePointerDragEnd}
                     deals={deals}
                     entityNames={entityNames}
                   />
@@ -558,6 +595,9 @@ export default function BattlePlanPanel() {
 // ─── Task Row ────────────────────────────────────────────────────────────────
 
 interface TaskRowProps {
+  onPointerDragStart?: (e: React.PointerEvent) => void
+  onPointerDragMove?: (e: React.PointerEvent) => void
+  onPointerDragEnd?: (e: React.PointerEvent) => void
   task: BattlePlanTask
   deal: DealOption | null
   completing: boolean
@@ -578,6 +618,7 @@ function TaskRow({
   task, deal, completing, dragOverId, draggingId,
   onComplete, onUpdate,
   onDragStart, onDragOver, onDrop, onDragEnd,
+  onPointerDragStart, onPointerDragMove, onPointerDragEnd,
   deals, entityNames,
 }: TaskRowProps) {
   const [hovered, setHovered] = useState(false)
@@ -607,11 +648,7 @@ function TaskRow({
 
   return (
     <tr
-      draggable
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
+      data-task-id={task.id}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -790,7 +827,14 @@ function TaskRow({
             >
               <PencilIcon />
             </button>
-            <span style={{ fontSize: 14, color: 'var(--text-muted)', cursor: 'grab', opacity: 0.6, userSelect: 'none' }}>⠿</span>
+            <span
+              onPointerDown={onPointerDragStart}
+              onPointerMove={onPointerDragMove}
+              onPointerUp={onPointerDragEnd}
+              onPointerCancel={onPointerDragEnd}
+              style={{ fontSize: 16, color: 'var(--text-muted)', cursor: 'grab', opacity: 0.7, userSelect: 'none', touchAction: 'none', padding: '2px 4px' }}>
+              ⠿
+            </span>
           </div>
         )}
       </td>
