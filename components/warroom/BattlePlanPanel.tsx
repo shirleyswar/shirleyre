@@ -17,6 +17,7 @@ interface BattlePlanTask {
   follow_up_of?: string | null
   contact_name?: string | null
   bp_priority?: number | null
+  is_family?: boolean | null
 }
 
 interface DealOption {
@@ -40,6 +41,7 @@ export default function BattlePlanPanel() {
   const [newContactName, setNewContactName] = useState('')
   const [newBpPriority, setNewBpPriority] = useState<number | null>(null)
   const [prioritySortDir, setPrioritySortDir] = useState<'desc' | 'asc'>('desc')
+  const [newIsFamily, setNewIsFamily] = useState(false)
 
   // Completion modal state
   const [pendingComplete, setPendingComplete] = useState<BattlePlanTask | null>(null)
@@ -113,6 +115,7 @@ export default function BattlePlanPanel() {
         deal_id: addToLife ? null : (newDealId || null),
         contact_name: newContactName.trim() || null,
         bp_priority: newBpPriority || null,
+        is_family: newIsFamily || null,
       }
       try {
         if (addToLife) {
@@ -133,6 +136,7 @@ export default function BattlePlanPanel() {
         setNewDealId('')
         setNewContactName('')
         setNewBpPriority(null)
+        setNewIsFamily(false)
         setAddToLife(false)
         // Auto-dismiss the modal after save ✓
         setShowAddForm(false)
@@ -147,6 +151,7 @@ export default function BattlePlanPanel() {
     setNewDealId('')
     setNewContactName('')
     setNewBpPriority(null)
+    setNewIsFamily(false)
     setAddToLife(false)
   }
 
@@ -315,10 +320,16 @@ export default function BattlePlanPanel() {
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Priority</div>
               <BpStarPicker value={newBpPriority} onChange={setNewBpPriority} />
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={addToLife} onChange={e => setAddToLife(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
-              Add to Life tab
-            </label>
+            <div style={{ display: 'flex', gap: 20 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={addToLife} onChange={e => setAddToLife(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
+                Add to Life tab
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: newIsFamily ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: newIsFamily ? 700 : 400 }}>
+                <input type="checkbox" checked={newIsFamily} onChange={e => setNewIsFamily(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#ef4444', cursor: 'pointer' }} />
+                <FamilyIcon active={newIsFamily} /> Family
+              </label>
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={closeAddForm} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
                 Cancel
@@ -512,12 +523,13 @@ function TaskRow({
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDealId, setEditDealId] = useState(task.deal_id || '')
   const [editContactName, setEditContactName] = useState(task.contact_name || '')
+  const [editIsFamily, setEditIsFamily] = useState(!!task.is_family)
   const [circleHovered, setCircleHovered] = useState(false)
   const isDragTarget = dragOverId === task.id
   const isLong = task.title.length > 48
 
   function saveEdit() {
-    if (editTitle.trim()) onUpdate({ title: editTitle.trim(), deal_id: editDealId || null, contact_name: editContactName.trim() || null })
+    if (editTitle.trim()) onUpdate({ title: editTitle.trim(), deal_id: editDealId || null, contact_name: editContactName.trim() || null, is_family: editIsFamily || null })
     setEditing(false)
   }
 
@@ -604,6 +616,10 @@ function TaskRow({
                 <option key={n} value={n} />
               ))}
             </datalist>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: editIsFamily ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsFamily ? 700 : 400 }}>
+              <input type="checkbox" checked={editIsFamily} onChange={e => setEditIsFamily(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#ef4444', cursor: 'pointer' }} />
+              <FamilyIcon active={editIsFamily} /> Family
+            </label>
             <div style={{ display: 'flex', gap: 6 }}>
               <button onClick={saveEdit} style={{ padding: '3px 10px', background: 'var(--accent-gold)', color: '#0D0F14', border: 'none', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
               <button onClick={() => setEditing(false)} style={{ padding: '3px 10px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', borderRadius: 4, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
@@ -612,6 +628,11 @@ function TaskRow({
         ) : (
           <div>
             {/* Title — clamp to 2 lines unless expanded */}
+            {task.is_family && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: 6, verticalAlign: 'middle' }}>
+                <FamilyIcon active={true} />
+              </span>
+            )}
             <span
               onClick={() => isLong && setExpanded(e => !e)}
               style={{
@@ -672,7 +693,7 @@ function TaskRow({
         {!editing && hovered && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
-              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditing(true) }}
+              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditing(true) }}
               title="Edit"
               style={{ padding: '2px 5px', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.65 }}
             >
@@ -683,6 +704,20 @@ function TaskRow({
         )}
       </td>
     </tr>
+  )
+}
+
+// ─── Family Icon — home/shield SVG, red when active ──────────────────────────
+function FamilyIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke={active ? '#ef4444' : 'currentColor'}
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      style={{ flexShrink: 0, filter: active ? 'drop-shadow(0 0 4px rgba(239,68,68,0.5))' : 'none' }}
+    >
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
   )
 }
 
