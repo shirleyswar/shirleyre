@@ -333,14 +333,22 @@ export default function PortfolioPanel() {
       let av: number | string = 0
       let bv: number | string = 0
       const f = sortField as string
-      if (f === 'market_value')          { av = a.market_value; bv = b.market_value }
-      else if (f === 'unrealized_gl_dollar') { av = a.unrealized_gl_dollar; bv = b.unrealized_gl_dollar }
-      else if (f === 'unrealized_gl_pct')    { av = a.unrealized_gl_pct; bv = b.unrealized_gl_pct }
-      else if (f === 'annualized_return_pct') { av = a.annualized_return_pct ?? -999; bv = b.annualized_return_pct ?? -999 }
-      else if (f === 'total_cost')       { av = a.total_cost; bv = b.total_cost }
-      else if (f === 'qty')              { av = a.qty; bv = b.qty }
-      else if (f === 'symbol')           { av = a.symbol; bv = b.symbol }
-      else if (f === 'name')             { av = a.name; bv = b.name }
+      // Consolidated row fields
+      if (f === 'market_value')              { av = a.market_value;                        bv = b.market_value }
+      else if (f === 'unrealized_gl_dollar') { av = a.unrealized_gl_dollar;                bv = b.unrealized_gl_dollar }
+      else if (f === 'unrealized_gl_pct')    { av = a.unrealized_gl_pct;                   bv = b.unrealized_gl_pct }
+      else if (f === 'annualized_return_pct'){ av = a.annualized_return_pct ?? -999;       bv = b.annualized_return_pct ?? -999 }
+      else if (f === 'total_cost')           { av = a.total_cost;                           bv = b.total_cost }
+      else if (f === 'qty')                  { av = a.qty;                                  bv = b.qty }
+      else if (f === 'symbol')               { av = a.symbol;                               bv = b.symbol }
+      else if (f === 'name')                 { av = a.name;                                 bv = b.name }
+      else if (f === 'period')               { av = a.period ?? '';                         bv = b.period ?? '' }
+      // Per-lot fields — use first lot's value for sorting consolidated rows
+      else if (f === 'years_held')           { av = a.lots[0]?.years_held ?? -999;          bv = b.lots[0]?.years_held ?? -999 }
+      else if (f === 'ytd_pct')              { av = a.lots[0]?.ytd_pct ?? -999;             bv = b.lots[0]?.ytd_pct ?? -999 }
+      else if (f === 'rolling_12mo_pct')     { av = a.lots[0]?.rolling_12mo_pct ?? -999;    bv = b.lots[0]?.rolling_12mo_pct ?? -999 }
+      else if (f === 'rolling_36mo_pct')     { av = a.lots[0]?.rolling_36mo_pct ?? -999;    bv = b.lots[0]?.rolling_36mo_pct ?? -999 }
+      else if (f === 'acquired')             { av = a.lots[0]?.acquired ?? '';               bv = b.lots[0]?.acquired ?? '' }
       if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv as string) : (bv as string).localeCompare(av)
       return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number)
     })
