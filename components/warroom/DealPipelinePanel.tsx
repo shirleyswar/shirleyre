@@ -774,7 +774,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         >↗</a>
       </td>
       {/* Col 3: Address */}
-      <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap', fontSize: 13, textAlign: 'center' }}>
+      <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap', fontSize: 13, textAlign: 'left' }}>
         {isSubDeal && <span style={{ marginRight: 8, color: 'var(--text-dim)', fontSize: 11 }}>↳</span>}
         {isPortfolio && onToggleExpand ? (
           <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700 }}>
@@ -790,7 +790,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         )}
       </td>
       {/* Col 4: ID/Client — hidden on mobile */}
-      <td className="hidden sm:table-cell" style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 13, textAlign: 'center' }}>{deal.name}</td>
+      <td className="hidden sm:table-cell" style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 13, textAlign: 'left' }}>{deal.name}</td>
       {/* Col 5: Type — hidden on mobile */}
       <td className="hidden sm:table-cell" style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 13, textAlign: 'center' }}>{DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type.replace(/_/g, ' ')}</td>
       <td style={{ padding: '10px 10px', textAlign: 'center' }}>
