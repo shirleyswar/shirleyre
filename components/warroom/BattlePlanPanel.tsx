@@ -893,9 +893,18 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
   function fmtDate(d: string) {
     const [y, m, day] = d.split('-').map(Number)
     const dt = new Date(y, m - 1, day)
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+    const [ty, tm, td] = todayStr.split('-').map(Number)
+    const todayMidnight = new Date(ty, tm - 1, td)
+    const diffDays = Math.round((dt.getTime() - todayMidnight.getTime()) / 86400000)
+    if (diffDays >= 0 && diffDays <= 7) {
+      // Within next 7 days — full day name only
+      return dt.toLocaleDateString('en-US', { weekday: 'long' })  // "Monday"
+    }
+    // Outside 7 days — "Mon. Apr. 4"
     const dow = dt.toLocaleDateString('en-US', { weekday: 'short' })  // "Mon"
-    const mon = dt.toLocaleDateString('en-US', { month: 'short' })    // "Mar"
-    return `${dow} ${mon}. ${day}`  // "Mon Mar. 30"
+    const mon = dt.toLocaleDateString('en-US', { month: 'short' })    // "Apr"
+    return `${dow}. ${mon}. ${day}`
   }
 
   if (!value) {
