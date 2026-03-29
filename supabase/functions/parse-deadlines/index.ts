@@ -122,7 +122,9 @@ Deno.serve(async (req) => {
     const inserts = deadlines.map(d => ({
       deal_id,
       label: d.label ?? 'Unnamed Deadline',
-      deadline_date: d.deadline_date ?? null,
+      // If Claude returns null (relative deadline), use a far-future placeholder so NOT NULL constraint is satisfied.
+      // The notes field will describe the actual trigger. Matthew can set the real date once known.
+      deadline_date: d.deadline_date ?? '2099-12-31',
       deadline_type: [
         'inspection', 'financing', 'appraisal', 'title', 'survey', 'closing', 'custom',
         'contingency', 'psa_review', 'lease_review', 'psa_draft', 'lease_draft',
