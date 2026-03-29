@@ -534,35 +534,194 @@ function SleeveTab() {
 }
 
 // ─── Sold Tab ─────────────────────────────────────────────────────────────────
+// ─── Sold Tab ─────────────────────────────────────────────────────────────────
+// Accepts Morgan Stanley activity export (wipe-and-replace seed upload)
+// Expected headers (Row 3): Activity Date, Transaction Date, Activity,
+//   Description, Symbol, Cusip, Memo, Tags, Quantity, Price($), Amount($)
+// Rows above row 3 are title/blank. Rows with no Symbol are footer boilerplate.
+
+async function parseSoldXlsx(file: File): Promise<Record<string, unknown>[] | string> {
+  try {
+    const XLSX = await import('xlsx')
+    const buf  = await file.arrayBuffer()
+    const wb   = XLSX.read(buf, { type: 'array', cellDates: true })
+    const ws   = wb.Sheets[wb.SheetNames[0]]
+
+    // Find the header row — search first 10 rows for 'Symbol'
+    const raw: Record<string, unknown>[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as Record<string, unknown>[][]
+    let headerRowIdx = -1
+    for (let i = 0; i < Math.min(raw.length, 10); i++) {
+      const row = raw[i] as unknown[]
+      if (row.some(cell => typeof cell === 'string' && cell.trim() === 'Symbol')) {
+        headerRowIdx = i
+        break
+      }
+    }
+    if (headerRowIdx === -1) return 'Could not find header row with "Symbol" column.'
+
+    const headers = (raw[headerRowIdx] as unknown as unknown[]).map(h => String(h ?? '').trim())
+    const colIdx = (name: string) => headers.findIndex(h => h.toLowerCase() === name.toLowerCase())
+
+    const iActivity  = colIdx('Activity Date')
+    const iSymbol    = colIdx('Symbol')
+    const iDesc      = colIdx('Description')
+    const iQty       = colIdx('Quantity')
+    const iPrice     = colIdx('Price($)')
+    const iAmount    = colIdx('Amount($)')
+    const iActivity2 = colIdx('Activity') // to filter for "Sold" rows only
+
+    if (iSymbol === -1) return 'Symbol column not found in header row.'
+    if (iAmount === -1) return 'Amount($) column not found.'
+
+    const parseNum = (v: unknown): number | null => {
+      if (v === null || v === undefined || v === '') return null
+      const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/[$,%]/g, ''))
+      return isNaN(n) ? null : n
+    }
+
+    const parseDate = (v: unknown): string | null => {
+      if (!v) return null
+      if (v instanceof Date) return v.toISOString().split('T')[0]
+      if (typeof v === 'string') {
+        // Handle MM/DD/YYYY format
+        const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+        if (m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`
+        return v.split('T')[0]
+      }
+      return null
+    }
+
+    const rows: Record<string, unknown>[] = []
+    for (let i = headerRowIdx + 1; i < raw.length; i++) {
+      const row = raw[i] as unknown[]
+      const sym = row[iSymbol]
+      if (!sym || typeof sym !== 'string' || sym.trim() === '') continue // skip footer/blank rows
+
+      // Only include "Sold" activity rows if Activity column exists
+      if (iActivity2 !== -1) {
+        const act = String(row[iActivity2] ?? '').trim().toLowerCase()
+        if (act && act !== 'sold') continue
+      }
+
+      // Extract clean name from Description (first line only)
+      const rawDesc = String(row[iDesc] ?? '')
+      const name = rawDesc.split('\n')[0].trim() || sym.trim().toUpperCase()
+
+      const soldDate = iActivity !== -1 ? parseDate(row[iActivity]) : null
+      const qty      = iQty !== -1     ? parseNum(row[iQty])     : null
+      const price    = iPrice !== -1   ? parseNum(row[iPrice])   : null
+      const amount   = parseNum(row[iAmount])
+
+      rows.push({
+        symbol:               sym.trim().toUpperCase(),
+        name,
+        qty,
+        market_value:         amount,       // proceeds at sale
+        total_cost:           null,         // not in this export
+        last_price:           price,        // sale price per share
+        unrealized_gl_dollar: null,
+        unrealized_gl_pct:    null,
+        annualized_return_pct:null,
+        ytd_pct:              null,
+        rolling_12mo_pct:     null,
+        rolling_36mo_pct:     null,
+        acquired:             null,
+        period:               null,
+        years_held:           null,
+        price_updated_at:     null,
+        sold_at:              soldDate ? new Date(soldDate + 'T00:00:00').toISOString() : new Date().toISOString(),
+      })
+    }
+
+    if (rows.length === 0) return 'No valid sold rows found. Check that the file contains "Sold" activity rows with a Symbol.'
+    return rows
+  } catch (e: unknown) {
+    return 'Parse error: ' + (e instanceof Error ? e.message : String(e))
+  }
+}
+
 function SoldTab() {
   const [positions, setPositions] = useState<Position[]>([])
   const [loading, setLoading]     = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [uploadMsg, setUploadMsg] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [dragOver, setDragOver]   = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    async function fetch() {
-      try {
-        const { data, error } = await supabase.from('sold_positions').select('*').order('sold_at', { ascending: false }).limit(200)
-        if (error?.code === '42P01') { setLoading(false); return }
-        if (data) setPositions(data as Position[])
-      } catch {}
-      finally { setLoading(false) }
+  useEffect(() => { fetchSold() }, [])
+
+  async function fetchSold() {
+    try {
+      const { data, error } = await supabase.from('sold_positions').select('*').order('sold_at', { ascending: false }).limit(500)
+      if (error?.code === '42P01') { setLoading(false); return }
+      if (data) setPositions(data as Position[])
+    } catch {}
+    finally { setLoading(false) }
+  }
+
+  async function handleFile(file: File) {
+    if (!file.name.match(/\.xlsx?$/i)) { setUploadError('Please upload an .xlsx file.'); return }
+    setUploading(true); setUploadMsg(null); setUploadError(null)
+
+    const rows = await parseSoldXlsx(file)
+    if (typeof rows === 'string') { setUploadError(rows); setUploading(false); return }
+
+    // Wipe existing sold_positions and re-insert
+    const { error: delErr } = await supabase
+      .from('sold_positions')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000')
+    if (delErr) { setUploadError('Clear failed: ' + delErr.message); setUploading(false); return }
+
+    const inserts = rows as Record<string, unknown>[]
+    for (let i = 0; i < inserts.length; i += 50) {
+      const { error } = await supabase.from('sold_positions').insert(inserts.slice(i, i + 50))
+      if (error) { setUploadError('Insert failed: ' + error.message); setUploading(false); return }
     }
-    fetch()
-  }, [])
+
+    setUploadMsg(`✓ ${inserts.length} sold positions loaded`)
+    await fetchSold()
+    setUploading(false)
+  }
 
   if (loading) return <SkeletonTable />
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 16, fontWeight: 800, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase' }}>SOLD</span>
-        <span style={{ fontSize: 11, color: P.muted }}>Historical record — frozen at time of sale</span>
+        <span style={{ fontSize: 11, color: P.muted }}>Historical record — Morgan Stanley activity export</span>
+        <div style={{ flex: 1 }} />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(156,163,175,0.1)', border: '1px solid rgba(156,163,175,0.3)', borderRadius: 8, color: '#9ca3af', cursor: 'pointer', opacity: uploading ? 0.5 : 1 }}>
+          {uploading ? 'Loading…' : '↑ Upload Sold .xlsx'}
+        </button>
+        <input ref={fileInputRef} type="file" accept=".xlsx,.xls"
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
+          style={{ display: 'none' }} />
       </div>
+
+      {uploadMsg   && <div style={{ marginBottom: 12, fontSize: 12, color: P.green,  fontFamily: 'monospace' }}>{uploadMsg}</div>}
+      {uploadError && <div style={{ marginBottom: 12, fontSize: 12, color: P.red,    fontFamily: 'monospace' }}>{uploadError}</div>}
+
       {positions.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px 0', color: P.muted, fontSize: 13 }}>No sold positions yet. When a symbol is removed from the Sleeve upload, it moves here automatically.</div>
+        <div
+          onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
+          onClick={() => fileInputRef.current?.click()}
+          style={{ border: `2px dashed ${dragOver ? '#9ca3af' : 'rgba(156,163,175,0.25)'}`, borderRadius: 12, padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? 'rgba(156,163,175,0.06)' : 'transparent', transition: 'all 0.15s', marginBottom: 16 }}>
+          <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.3 }}>📂</div>
+          <div style={{ fontSize: 13, color: P.text, fontWeight: 600, marginBottom: 6 }}>Drop your Morgan Stanley activity export here</div>
+          <div style={{ fontSize: 12, color: P.muted }}>Expected: Activity Date · Symbol · Description · Quantity · Price($) · Amount($)</div>
+        </div>
       ) : (
         <>
-          <KpiCards positions={positions} glLabel="Realized G/L" />
+          <KpiCards positions={positions} glLabel="Realized Proceeds" />
           <PositionTable positions={positions} showSoldAt />
         </>
       )}
