@@ -732,7 +732,7 @@ function TaskRow({
               onClick={() => isLong && setExpanded(e => !e)}
               style={{
                 fontSize: 13,
-                fontVariant: 'small-caps',
+                fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'],
                 color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
                 textDecoration: completing ? 'line-through' : 'none',
                 transition: 'all 0.3s',
@@ -876,7 +876,7 @@ function ContactBadge({ contactName, deal, isLife }: { contactName: string | nul
       background: style.bg,
       border: `1px solid ${style.border}`,
       borderRadius: 4, fontSize: 10, fontWeight: 600, color: style.color,
-      whiteSpace: 'nowrap', letterSpacing: '0.02em', fontVariant: 'small-caps',
+      whiteSpace: 'nowrap', letterSpacing: '0.02em', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'],
     }} title={contactName}>
       {contactName}
     </span>
@@ -912,7 +912,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
   return (
     <span
       title={value}
-      style={{ fontSize: 12, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap', fontVariant: 'small-caps' }}>
+      style={{ fontSize: 12, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'] }}>
       {isOverdue ? '⚠ ' : ''}{fmtDate(value)}
     </span>
   )
