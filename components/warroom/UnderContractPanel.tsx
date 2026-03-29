@@ -628,13 +628,13 @@ export default function UnderContractPanel() {
   return (
     <div className="wr-card">
       {/* Panel header */}
-      <div className="wr-card-header">
-        <span style={{ color: 'var(--accent-blue)', display: 'flex' }}>
+      <div className="wr-card-header" style={{ marginBottom: 4 }}>
+        <span style={{ color: '#2dd4bf', display: 'flex' }}>
           <DocIcon />
         </span>
-        <span className="wr-card-title">Under Contract</span>
+        <span className="wr-card-title" style={{ fontSize: 16, fontWeight: 900, color: '#2dd4bf', letterSpacing: '0.06em', textShadow: '0 0 16px rgba(45,212,191,0.4)' }}>Under Contract</span>
         <span className="wr-panel-line" />
-        <span className="wr-panel-stat">
+        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#2dd4bf' }}>
           {loading ? '—' : deals.length}
         </span>
       </div>
@@ -648,20 +648,20 @@ export default function UnderContractPanel() {
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr>
                 {['', 'Deal', 'Type', 'Value', 'Commission', 'Day', '', 'Deadlines', 'Files'].map((h, i) => (
                   <th key={i} style={{
                     textAlign: i === 0 ? 'center' : i >= 5 ? 'center' : 'left',
-                    padding: '5px 8px',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: 'var(--text-dim)',
+                    padding: '7px 8px',
+                    fontSize: 10,
+                    fontWeight: 800,
+                    color: 'rgba(45,212,191,0.6)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.10em',
+                    letterSpacing: '0.12em',
                     whiteSpace: 'nowrap',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    borderBottom: '1px solid rgba(45,212,191,0.15)',
                   }}>{h}</th>
                 ))}
               </tr>
@@ -704,35 +704,35 @@ export default function UnderContractPanel() {
                       </td>
 
                       {/* Deal name */}
-                      <td style={{ padding: '10px 8px', color: 'var(--text-primary)', fontWeight: 500, maxWidth: 200 }}>
-                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13 }}>{deal.name}</div>
+                      <td style={{ padding: '13px 8px', color: 'var(--text-primary)', fontWeight: 700, maxWidth: 220 }}>
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 15 }}>{deal.name}</div>
                         {deal.address && (
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {deal.address}
                           </div>
                         )}
                       </td>
 
                       {/* Type */}
-                      <td style={{ padding: '10px 8px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 11, textTransform: 'capitalize' }}>
-                        {deal.type.replace(/_/g, ' ')}
+                      <td style={{ padding: '13px 8px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 12, textTransform: 'capitalize' }}>
+                        {deal.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                       </td>
 
                       {/* Value */}
-                      <td style={{ padding: '10px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
+                      <td style={{ padding: '13px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 600 }}>
                         {deal.value ? formatCurrency(deal.value) : '—'}
                       </td>
 
                       {/* Commission */}
-                      <td style={{ padding: '10px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-                        <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>
+                      <td style={{ padding: '13px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 15 }}>
+                        <span style={{ color: '#22c55e', fontWeight: 800 }}>
                           {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
                         </span>
                       </td>
 
                       {/* Day counter */}
-                      <td style={{ padding: '10px 8px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'center', fontSize: 13 }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      <td style={{ padding: '13px 8px', fontVariantNumeric: 'tabular-nums', textAlign: 'center', fontSize: 14 }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--text-secondary)' }}>
                           {deal.days_since_contract ?? '—'}
                         </span>
                       </td>

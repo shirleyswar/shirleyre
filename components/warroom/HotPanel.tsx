@@ -175,9 +175,10 @@ export default function HotPanel() {
   return (
     <div style={{
       background: 'var(--bg-card, #1A1E25)',
-      border: '1px solid rgba(251,146,60,0.2)',
+      border: '1px solid rgba(251,146,60,0.35)',
       borderRadius: 16,
-      padding: '18px 20px',
+      padding: '22px 24px',
+      boxShadow: '0 0 0 1px rgba(251,146,60,0.08) inset, 0 4px 32px rgba(251,146,60,0.08)',
     }}>
       {pendingAction && (
         <PinModal
@@ -187,27 +188,29 @@ export default function HotPanel() {
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: '#fb923c', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          Hot
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <span style={{ fontSize: 18, fontWeight: 900, color: '#fb923c', letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: '0 0 20px rgba(251,146,60,0.5)' }}>
+          🔥 HOT
         </span>
         <span style={{
-          padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700,
-          background: 'rgba(251,146,60,0.12)', color: '#fb923c',
-          border: '1px solid rgba(251,146,60,0.3)',
+          padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 800,
+          background: 'rgba(251,146,60,0.15)', color: '#fb923c',
+          border: '1px solid rgba(251,146,60,0.4)',
         }}>{deals.length}</span>
+        <div style={{ flex: 1 }} />
+        <span style={{ fontSize: 10, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Active Offer Negotiations</span>
       </div>
 
       {/* Table */}
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <tr style={{ borderBottom: '1px solid rgba(251,146,60,0.2)' }}>
               {['Deal', 'Type', 'Value', 'Commission', 'Days Hot', 'Files', 'Actions'].map(h => (
                 <th key={h} style={{
-                  textAlign: 'left', padding: '6px 10px',
-                  fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
-                  color: '#4b5563',
+                  textAlign: 'left', padding: '8px 12px',
+                  fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase',
+                  color: 'rgba(251,146,60,0.6)',
                 }}>
                   {h}
                 </th>
@@ -219,42 +222,44 @@ export default function HotPanel() {
               const daysHot = daysDiff(deal.updated_at)
               const daysColor = daysHot > 14 ? '#ef4444' : daysHot > 7 ? '#fb923c' : '#22c55e'
               return (
-                <tr key={deal.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <tr key={deal.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(251,146,60,0.04)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   {/* Deal */}
-                  <td style={{ padding: '10px 10px' }}>
+                  <td style={{ padding: '14px 12px' }}>
                     <a
                       href={`/warroom/deal?id=${deal.id}`}
-                      style={{ color: '#F0F2FF', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
+                      style={{ color: '#F0F2FF', textDecoration: 'none', fontWeight: 700, fontSize: 15 }}
                     >
                       {deal.address || deal.name}
                     </a>
-                    <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>{deal.name}</div>
+                    <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{deal.name}</div>
                   </td>
                   {/* Type */}
-                  <td style={{ padding: '10px 10px', color: '#9ca3af', fontSize: 11 }}>
+                  <td style={{ padding: '14px 12px', color: '#9ca3af', fontSize: 12 }}>
                     {deal.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                   </td>
                   {/* Value */}
-                  <td style={{ padding: '10px 10px', color: '#E8B84B', fontFamily: 'monospace', fontWeight: 600 }}>
+                  <td style={{ padding: '14px 12px', color: '#E8B84B', fontFamily: 'monospace', fontWeight: 700, fontSize: 15 }}>
                     {formatCurrency(deal.value)}
                   </td>
                   {/* Commission */}
-                  <td style={{ padding: '10px 10px', color: '#9ca3af', fontFamily: 'monospace' }}>
+                  <td style={{ padding: '14px 12px', color: '#22c55e', fontFamily: 'monospace', fontWeight: 700, fontSize: 15 }}>
                     {formatCurrency(deal.commission_estimated)}
                   </td>
                   {/* Days Hot */}
-                  <td style={{ padding: '10px 10px', fontFamily: 'monospace', fontWeight: 700, color: daysColor }}>
+                  <td style={{ padding: '14px 12px', fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: daysColor }}>
                     {daysHot}d
                   </td>
                   {/* Files */}
-                  <td style={{ padding: '10px 10px' }}>
+                  <td style={{ padding: '14px 12px' }}>
                     {deal.dropbox_link ? (
                       <a
                         href={deal.dropbox_link}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
-                          padding: '3px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700,
+                          padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
                           background: 'rgba(45,212,191,0.08)', color: '#2dd4bf',
                           border: '1px solid rgba(45,212,191,0.25)', textDecoration: 'none',
                         }}
@@ -262,16 +267,16 @@ export default function HotPanel() {
                         Dropbox ↗
                       </a>
                     ) : (
-                      <span style={{ color: '#4b5563', fontSize: 10 }}>—</span>
+                      <span style={{ color: '#4b5563', fontSize: 11 }}>—</span>
                     )}
                   </td>
                   {/* Actions */}
-                  <td style={{ padding: '10px 10px' }}>
+                  <td style={{ padding: '14px 12px' }}>
                     <button
                       onClick={() => pinGate(() => moveToUC(deal))}
                       style={{
-                        padding: '4px 10px', fontSize: 11, fontWeight: 700,
-                        background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.4)',
+                        padding: '6px 14px', fontSize: 12, fontWeight: 700,
+                        background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.5)',
                         borderRadius: 7, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit',
                       }}
                     >
