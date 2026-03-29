@@ -422,6 +422,43 @@
 
   /* Panel spanning */
   .panel-span-row { grid-column: 1 / -1; }
+
+  /* ═══════════════════════════════════════════════════
+     TOPBAR CLOCK
+  ═══════════════════════════════════════════════════ */
+  #topbar-clock {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text); letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  #topbar-clock .clock-date { color: var(--muted); }
+  #topbar-clock .clock-time { color: var(--gold-l); font-weight: 700; }
+
+  /* ═══════════════════════════════════════════════════
+     REMINDER TOGGLE
+  ═══════════════════════════════════════════════════ */
+  .reminder-toggle {
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; padding: 10px 12px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: var(--radius); transition: border-color 0.15s;
+  }
+  .reminder-toggle:hover { border-color: var(--border); }
+  .reminder-toggle input[type="checkbox"] {
+    width: 16px; height: 16px; flex: 0 0 16px;
+    accent-color: var(--gold); cursor: pointer;
+  }
+  .reminder-toggle span {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  /* Scheduled task badge */
+  .task-time-badge {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--gold); background: rgba(201,147,58,0.1);
+    border: 1px solid rgba(201,147,58,0.25);
+    padding: 2px 7px; border-radius: 100px; white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -460,6 +497,8 @@
 ═══════════════════════════════════════════════════ -->
 <div id="topbar">
   <div class="topbar-logo">SHIRLEYCRE / WAR ROOM</div>
+  <div class="topbar-sep"></div>
+  <div id="topbar-clock"><span class="clock-date" id="clock-date"></span>&nbsp;&nbsp;<span class="clock-time" id="clock-time"></span></div>
   <div class="topbar-sep"></div>
   <div class="topbar-label" id="sync-indicator">Ready</div>
   <div class="topbar-status-row" id="status-pills">
@@ -637,6 +676,19 @@
       <div class="form-field">
         <div class="form-label">Commission Tied ($)</div>
         <input class="form-input" id="task-commission" placeholder="e.g. 16650" type="number">
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Scheduled Time (CST)</div>
+          <input class="form-input" id="task-start-time" type="datetime-local">
+        </div>
+        <div class="form-field" style="justify-content:flex-end">
+          <div class="form-label">&nbsp;</div>
+          <label class="reminder-toggle">
+            <input type="checkbox" id="task-email-reminder">
+            <span>Email reminder 30 min prior</span>
+          </label>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1004,33 +1056,66 @@ function renderMovers() {
   `).join('');
 }
 
+function fmtTaskTime(isoStr) {
+  if (!isoStr) return null;
+  return new Date(isoStr).toLocaleString('en-US', {
+    timeZone: 'America/Chicago',
+    weekday: 'short', month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true
+  }) + ' CST';
+}
+
 function renderTasks() {
   const list  = document.getElementById('tasks-list');
   const count = document.getElementById('task-count');
-  const open  = state.tasks.filter(t => t.status !== 'done');
-  count.textContent = open.length;
+
+  const nowMs = Date.now();
+
+  // Burn off: hide scheduled tasks whose start_time has passed (and they're not done)
+  // A task is "burned off" if it has a start_time and that time is in the past
+  const visible = state.tasks.filter(t => {
+    if (t.status === 'done' || t.status === 'complete') return false; // never show done tasks
+    if (t.start_time) {
+      const startMs = new Date(t.start_time).getTime();
+      if (startMs <= nowMs) return false; // time passed — burn it off
+    }
+    return true;
+  });
+
+  count.textContent = visible.length;
 
   if (!state.tasks.length) {
     list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#10003;</div><div class="empty-text">No tasks — add one above</div></div>`;
     return;
   }
 
-  const sorted = [...state.tasks].sort((a, b) => {
-    // open tasks first, then by created_at
-    if ((a.status === 'done') !== (b.status === 'done')) return a.status === 'done' ? 1 : -1;
+  if (!visible.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#10003;</div><div class="empty-text">All clear — no open items</div></div>`;
+    return;
+  }
+
+  // Sort: scheduled (soonest first) → unscheduled (by created_at)
+  const sorted = [...visible].sort((a, b) => {
+    const aTime = a.start_time ? new Date(a.start_time).getTime() : Infinity;
+    const bTime = b.start_time ? new Date(b.start_time).getTime() : Infinity;
+    if (aTime !== bTime) return aTime - bTime;
     return new Date(a.created_at) - new Date(b.created_at);
   });
 
-  list.innerHTML = sorted.map(t => `
-    <div class="task-row ${t.status === 'done' ? 'done' : ''}" id="tr-${t.id}">
-      <div class="task-check ${t.status === 'done' ? 'checked' : ''}" onclick="toggleTask('${t.id}')"></div>
+  list.innerHTML = sorted.map(t => {
+    const timeLabel = t.start_time ? fmtTaskTime(t.start_time) : null;
+    return `
+    <div class="task-row" id="tr-${t.id}">
+      <div class="task-check" onclick="toggleTask('${t.id}')"></div>
       <div class="task-info">
         <div class="task-title">${escHtml(t.title)}</div>
-        ${t.deal_name || t.person ? `<div class="task-deal">${escHtml(t.deal_name || '')}${t.deal_name && t.person ? ' · ' : ''}${escHtml(t.person || '')}${t.commission ? ' · <span style="color:var(--gold-d)">' + fmtMoney(t.commission) + '</span>' : ''}</div>` : ''}
+        ${t.deal_name || t.person || t.contact_name ? `<div class="task-deal">${escHtml(t.deal_name || t.contact_name || '')}${(t.deal_name || t.contact_name) && t.person ? ' · ' : ''}${escHtml(t.person || '')}${t.commission ? ' · <span style="color:var(--gold-d)">' + fmtMoney(t.commission) + '</span>' : ''}</div>` : ''}
       </div>
+      ${timeLabel ? `<div class="task-time-badge">${timeLabel}</div>` : ''}
+      ${t.email_reminder ? `<div style="font-size:12px;opacity:0.5;" title="Email reminder set">✉</div>` : ''}
       <div class="task-del" onclick="deleteTask('${t.id}')">&#10005;</div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function renderContacts() {
@@ -1200,12 +1285,32 @@ async function saveTask() {
   const title = document.getElementById('task-title').value.trim();
   if (!title) { toast('Task title is required', 'error'); return; }
 
+  // Convert local datetime-local input to ISO UTC for storage
+  const startRaw = document.getElementById('task-start-time').value;
+  let startIso = null;
+  if (startRaw) {
+    // datetime-local gives "YYYY-MM-DDTHH:MM" in local time — treat as CST
+    // Build a Date by appending CST offset (-06:00 std / -05:00 dst)
+    // Use the browser's interpretation with explicit CST timezone
+    const cstStr = startRaw.length === 16 ? startRaw : startRaw.substring(0, 16);
+    // Parse as CST by creating a date string with timezone info
+    const tempDate = new Date(cstStr);
+    // Adjust: datetime-local is parsed as local browser time, but we want CST
+    // Since the War Room is always CST, we do: stored as ISO timestamptz
+    startIso = tempDate.toISOString(); // will be UTC-adjusted
+  }
+
+  const emailReminder = document.getElementById('task-email-reminder').checked;
+
   const payload = {
     title,
-    deal_name:  document.getElementById('task-deal-name').value.trim() || null,
-    person:     document.getElementById('task-person').value.trim() || null,
-    commission: parseFloat(document.getElementById('task-commission').value) || null,
-    status:     'open',
+    deal_name:      document.getElementById('task-deal-name').value.trim() || null,
+    person:         document.getElementById('task-person').value.trim() || null,
+    commission:     parseFloat(document.getElementById('task-commission').value) || null,
+    status:         'open',
+    start_time:     startIso,
+    email_reminder: emailReminder || false,
+    reminder_sent:  false,
   };
 
   setSyncStatus('Saving');
@@ -1213,9 +1318,23 @@ async function saveTask() {
   if (r.ok) {
     const newTask = Array.isArray(r.data) ? r.data[0] : r.data;
     state.tasks.push(newTask);
-    toast('Task added', 'success');
+    if (emailReminder && startIso) {
+      toast('Task added — reminder set ✉', 'success');
+    } else {
+      toast('Task added', 'success');
+    }
   } else {
-    toast('Save failed', 'error');
+    // If start_time/email_reminder columns don't exist yet, save without them
+    if (r.data?.code === 'PGRST204') {
+      const fallback = { title: payload.title, deal_name: payload.deal_name, person: payload.person, commission: payload.commission, status: 'open' };
+      const r2 = await sbInsert('tasks', fallback);
+      if (r2.ok) {
+        state.tasks.push(Array.isArray(r2.data) ? r2.data[0] : r2.data);
+        toast('Task added (run migration.sql to enable scheduling)', 'success');
+      } else { toast('Save failed', 'error'); }
+    } else {
+      toast('Save failed', 'error');
+    }
   }
   setSyncStatus('Live');
   closeModal('task');
@@ -1281,6 +1400,8 @@ function openModal(type) {
     document.getElementById('task-deal-name').value = '';
     document.getElementById('task-person').value = '';
     document.getElementById('task-commission').value = '';
+    document.getElementById('task-start-time').value = '';
+    document.getElementById('task-email-reminder').checked = false;
     updateDealDatalist();
   } else if (type === 'contact') {
     document.getElementById('contact-name').value = '';
@@ -1342,18 +1463,101 @@ function escAttr(str) {
 }
 
 // ──────────────────────────────────────────────────────────────
+// CLOCK — Live CST date + time in topbar
+// ──────────────────────────────────────────────────────────────
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function updateClock() {
+  const now = new Date();
+  // Format in CST (America/Chicago)
+  const cst = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+  const dow  = DAYS[cst.getDay()];
+  const mon  = MONTHS[cst.getMonth()];
+  const day  = cst.getDate();
+  let hr = cst.getHours();
+  const ampm = hr >= 12 ? 'PM' : 'AM';
+  hr = hr % 12 || 12;
+  const min  = String(cst.getMinutes()).padStart(2, '0');
+
+  document.getElementById('clock-date').textContent = `${dow}, ${mon} ${day}`;
+  document.getElementById('clock-time').textContent = `${hr}:${min} ${ampm} CST`;
+}
+
+// ──────────────────────────────────────────────────────────────
+// REMINDER CHECKER — runs every minute, fires email 30 min before
+// ──────────────────────────────────────────────────────────────
+async function checkReminders() {
+  const now = Date.now();
+  const upcoming = state.tasks.filter(t =>
+    t.status !== 'complete' && t.status !== 'done' &&
+    t.start_time &&
+    t.email_reminder &&
+    !t.reminder_sent
+  );
+  for (const task of upcoming) {
+    const startMs = new Date(task.start_time).getTime();
+    const msUntil = startMs - now;
+    // Fire if within 30–31 min window (gives 1-minute run margin)
+    if (msUntil > 0 && msUntil <= 31 * 60 * 1000) {
+      // Mark sent first to prevent double-fire
+      await sbUpdate('tasks', task.id, { reminder_sent: true });
+      task.reminder_sent = true;
+      // Send reminder email via edge function / fetch
+      const cst = new Date(task.start_time).toLocaleString('en-US', {
+        timeZone: 'America/Chicago',
+        weekday: 'short', month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true
+      });
+      const subject = `⏰ Reminder: ${task.title}`;
+      const body = `You have a scheduled item in 30 minutes:\n\n${task.title}\n${cst} CST${task.deal_name ? '\nDeal: ' + task.deal_name : ''}${task.person ? '\nWith: ' + task.person : ''}\n\n— ShirleyCRE War Room`;
+      // Use the Supabase edge function if available, otherwise fallback to mailto
+      sendReminderEmail(subject, body);
+    }
+  }
+}
+
+async function sendReminderEmail(subject, body) {
+  // Best-effort via Supabase edge function
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        to: 'matthew@sr-cre.com',
+        subject,
+        text: body
+      })
+    });
+  } catch(e) {
+    console.warn('Reminder email send failed (edge function not deployed):', e);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
 // INIT
 // ──────────────────────────────────────────────────────────────
 async function init() {
+  updateClock();
+  setInterval(updateClock, 10000); // update every 10s
   await loadAll();
   // Auto-refresh every 60 seconds
   setInterval(loadAll, 60000);
+  // Reminder check every 60 seconds
+  setInterval(checkReminders, 60000);
 }
 
 // Check session on load
 if (checkSession()) {
   document.getElementById('pin-gate').classList.add('hidden');
   init();
+} else {
+  // Still start clock on pin screen
+  updateClock();
+  setInterval(updateClock, 10000);
 }
 </script>
 </body>

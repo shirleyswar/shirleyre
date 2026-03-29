@@ -148,3 +148,14 @@ ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS is_life boolean DEFAULT false;
 -- Run in Supabase SQL editor
 ALTER TABLE public.deal_economics ADD COLUMN IF NOT EXISTS nnn_psf numeric;
 -- ──────────────────────────────────────────────────────────────────────────────
+
+-- ─── TASK SCHEDULING + EMAIL REMINDERS (2026-03-29) ──────────────────────────
+-- Run in Supabase SQL editor:
+-- https://supabase.com/dashboard/project/mtkyyaorvensylrfbhxv/sql/new
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS start_time timestamptz;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS email_reminder boolean DEFAULT false;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS reminder_sent boolean DEFAULT false;
+-- start_time: scheduled date+time for the task (stored UTC, displayed CST)
+-- email_reminder: if true, send email 30 min before start_time
+-- reminder_sent: tracks whether the reminder has already fired (prevents duplicates)
+-- ──────────────────────────────────────────────────────────────────────────────
