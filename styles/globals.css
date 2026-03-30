@@ -627,6 +627,15 @@ html, body {
 }
 
 
+/* ── Dark selects — force dark dropdown on all browsers ── */
+select option {
+  background: #1A1E25;
+  color: #F0F2FF;
+}
+select {
+  color-scheme: dark;
+}
+
 /* ── War Room Nav Ribbon — Mobile full-width cards ── */
 @media (max-width: 640px) {
   .wr-nav-ribbon {
