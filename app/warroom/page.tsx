@@ -238,23 +238,28 @@ function usePullToRefresh(scrollRef: React.RefObject<HTMLElement | null>, onRefr
   const THRESHOLD = 64
 
   useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-
+    // Attach to document so iOS Safari overscroll is captured reliably
     function onTouchStart(e: TouchEvent) {
-      if (el && el.scrollTop === 0) {
+      const el = scrollRef.current
+      // Allow pull when the scroll container is at top (or close to it)
+      if (el && el.scrollTop <= 2) {
         startY.current = e.touches[0].clientY
         pulling.current = true
       }
     }
 
     function onTouchMove(e: TouchEvent) {
-      if (!pulling.current || refreshingRef.current || !el) return
+      if (!pulling.current || refreshingRef.current) return
       const dy = e.touches[0].clientY - startY.current
       if (dy > 0) {
-        const clamped = Math.min(dy * 0.45, 100)
+        const clamped = Math.min(dy * 0.5, 80)
         pullYRef.current = clamped
         setPullY(clamped)
+      } else {
+        // scrolling down — cancel pull
+        pulling.current = false
+        pullYRef.current = 0
+        setPullY(0)
       }
     }
 
@@ -268,7 +273,7 @@ function usePullToRefresh(scrollRef: React.RefObject<HTMLElement | null>, onRefr
         setPullY(THRESHOLD)
         await new Promise(r => setTimeout(r, 400))
         onRefreshRef.current()
-        await new Promise(r => setTimeout(r, 800))
+        await new Promise(r => setTimeout(r, 900))
         refreshingRef.current = false
         setRefreshing(false)
       }
@@ -276,13 +281,13 @@ function usePullToRefresh(scrollRef: React.RefObject<HTMLElement | null>, onRefr
       setPullY(0)
     }
 
-    el.addEventListener('touchstart', onTouchStart, { passive: true })
-    el.addEventListener('touchmove', onTouchMove, { passive: true })
-    el.addEventListener('touchend', onTouchEnd)
+    document.addEventListener('touchstart', onTouchStart, { passive: true })
+    document.addEventListener('touchmove', onTouchMove, { passive: true })
+    document.addEventListener('touchend', onTouchEnd)
     return () => {
-      el.removeEventListener('touchstart', onTouchStart)
-      el.removeEventListener('touchmove', onTouchMove)
-      el.removeEventListener('touchend', onTouchEnd)
+      document.removeEventListener('touchstart', onTouchStart)
+      document.removeEventListener('touchmove', onTouchMove)
+      document.removeEventListener('touchend', onTouchEnd)
     }
   }, [scrollRef]) // stable — no stale closures
 
