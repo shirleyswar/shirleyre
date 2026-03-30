@@ -335,7 +335,11 @@ export default function DealPipelinePanel() {
       let aVal: string | number = ''
       let bVal: string | number = ''
       if (sortBy === 'rating') { aVal = (a as any).rating ?? 0; bVal = (b as any).rating ?? 0 }
-      else if (sortBy === 'address') { aVal = a.address || a.name || ''; bVal = b.address || b.name || '' }
+      else if (sortBy === 'address') {
+        // Use addr_display (parsed clean format) if available, fallback to raw address then name
+        aVal = (a as any).addr_display || a.address?.replace(/^📁\s*/, '') || a.name || ''
+        bVal = (b as any).addr_display || b.address?.replace(/^📁\s*/, '') || b.name || ''
+      }
       else if (sortBy === 'name') { aVal = a.name || ''; bVal = b.name || '' }
       else if (sortBy === 'type') { aVal = a.type || ''; bVal = b.type || '' }
       else if (sortBy === 'status') { aVal = a.status || ''; bVal = b.status || '' }
@@ -462,31 +466,31 @@ export default function DealPipelinePanel() {
                 boxShadow: 'inset 0 -1px 0 rgba(139,92,246,0.3)',
               }}>
                 {([
-                  { label: 'FILES',       cls: 'hidden sm:table-cell', align: 'center', width: 58,        sortField: null        },
-                  { label: 'MORE',        cls: '',                      align: 'center', width: 38,        sortField: null        },
-                  { label: 'Address',     cls: '',                      align: 'center', width: undefined, sortField: 'address'   },
-                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: 'name'      },
-                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: 'type'      },
-                  { label: 'Status',      cls: '',                      align: 'center', width: undefined, sortField: 'status'    },
-                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: 'tier'      },
-                  { label: 'Priority',    cls: 'deal-rating-col hidden sm:table-cell', align: 'center', width: undefined, sortField: 'rating' },
-                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: null        },
-                ] as { label: string; cls: string; align: string; width: number | undefined; sortField: SortField | null }[]).map(h => {
-                  const isActive = h.sortField && sortBy === h.sortField
+                  { label: 'FILES',       cls: 'hidden sm:table-cell', align: 'center', width: 58,        sortable: false },
+                  { label: 'MORE',        cls: '',                      align: 'center', width: 38,        sortable: false },
+                  { label: 'Address',     cls: '',                      align: 'center', width: undefined, sortable: true  },
+                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortable: false },
+                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortable: false },
+                  { label: 'Status',      cls: '',                      align: 'center', width: undefined, sortable: false },
+                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortable: false },
+                  { label: 'Priority',    cls: 'deal-rating-col hidden sm:table-cell', align: 'center', width: undefined, sortable: false },
+                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortable: false },
+                ] as { label: string; cls: string; align: string; width: number | undefined; sortable: boolean }[]).map(h => {
+                  const isActive = h.sortable && sortBy === 'address'
                   return (
                   <th key={h.label} className={h.cls}
-                    onClick={h.sortField ? () => handleSort(h.sortField!) : undefined}
+                    onClick={h.sortable ? () => handleSort('address') : undefined}
                     style={{
                       textAlign: h.align as React.CSSProperties['textAlign'],
                       width: h.width, minWidth: h.width, maxWidth: h.width,
                       padding: '8px 4px', fontSize: 9, fontWeight: 800,
                       color: isActive ? '#E8B84B' : 'rgba(167,139,250,0.8)',
                       textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap',
-                      cursor: h.sortField ? 'pointer' : 'default', userSelect: 'none',
+                      cursor: h.sortable ? 'pointer' : 'default', userSelect: 'none',
                       borderRight: h.label === 'FILES' ? '1px solid rgba(139,92,246,0.15)' : undefined,
                     }}>
                     {h.label}
-                    {h.sortField && <span style={{ marginLeft: 3, fontSize: 8, opacity: 0.7 }}>
+                    {h.sortable && <span style={{ marginLeft: 3, fontSize: 8, opacity: 0.7 }}>
                       {isActive ? (sortDir === 'asc' ? '↑' : '↓') : '⇅'}
                     </span>}
                   </th>
