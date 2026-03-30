@@ -328,7 +328,10 @@ export default function DealPipelinePanel() {
       const singles = topLevel.filter(d => !d.address?.startsWith('📁')).sort((a,b) => (a.address||a.name||'').localeCompare(b.address||b.name||''))
       return [...portfolios, ...singles]
     }
-    return [...topLevel].sort((a, b) => {
+    // Portfolios always stay at the top regardless of sort
+    const portfolios = topLevel.filter(d => d.address?.startsWith('📁')).sort((a,b) => (a.address||'').localeCompare(b.address||''))
+    const singles = topLevel.filter(d => !d.address?.startsWith('📁'))
+    singles.sort((a, b) => {
       let aVal: string | number = ''
       let bVal: string | number = ''
       if (sortBy === 'rating') { aVal = (a as any).rating ?? 0; bVal = (b as any).rating ?? 0 }
@@ -341,6 +344,7 @@ export default function DealPipelinePanel() {
       if (typeof aVal === 'number') return sortDir === 'asc' ? aVal - (bVal as number) : (bVal as number) - aVal
       return sortDir === 'asc' ? aVal.localeCompare(bVal as string) : (bVal as string).localeCompare(aVal)
     })
+    return [...portfolios, ...singles]
   }
 
   const filteredCount = deals.length
