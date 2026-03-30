@@ -705,7 +705,7 @@ function TaskRow({
 
       {/* Col 3: ID / Contact badge — moved before Action Item */}
       <td className="hidden sm:table-cell" style={{ width: 150, padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
-        <ContactBadge contactName={task.contact_name ?? null} deal={deal} isLife={!!task.is_life} />
+        <ContactBadge contactName={task.contact_name ?? null} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
       </td>
 
       {/* Col 4: Deadline */}
@@ -892,7 +892,20 @@ const BP_STATUS_BADGE_COLORS: Record<string, { bg: string; border: string; color
 }
 const BP_NEUTRAL_BADGE = { bg: 'rgba(232,184,75,0.08)', border: 'rgba(232,184,75,0.25)', color: 'rgba(232,184,75,0.8)' }
 
-function ContactBadge({ contactName, deal, isLife }: { contactName: string | null; deal: DealOption | null; isLife?: boolean }) {
+function ContactBadge({ contactName, deal, isLife, isEntity }: { contactName: string | null; deal: DealOption | null; isLife?: boolean; isEntity?: boolean }) {
+  // ENTITY badge — purple (takes visual priority over gold, but LIFE still beats it)
+  if (!isLife && isEntity) {
+    return (
+      <span style={{
+        display: 'inline-block', padding: '2px 8px',
+        background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.4)',
+        borderRadius: 4, fontSize: 10, fontWeight: 600, color: '#a78bfa',
+        whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'],
+      }} title={contactName ?? undefined}>
+        {contactName || 'Entity'}
+      </span>
+    )
+  }
   // LIFE badge — red with heart icon
   if (isLife || contactName === 'LIFE') {
     return (
@@ -912,6 +925,7 @@ function ContactBadge({ contactName, deal, isLife }: { contactName: string | nul
     )
   }
   if (!contactName) return <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.1)' }}>—</span>
+  // Gold for all others (deal-linked gets deal status color, unlinked gets neutral gold)
   const style = (deal as any)?.status ? (BP_STATUS_BADGE_COLORS[(deal as any).status] ?? BP_NEUTRAL_BADGE) : BP_NEUTRAL_BADGE
   return (
     <span style={{
