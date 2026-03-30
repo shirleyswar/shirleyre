@@ -788,6 +788,82 @@
 <div id="toast-container"></div>
 
 <!-- ═══════════════════════════════════════════════════
+     UC TRANSITION DIALOG
+═══════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-uc">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">Under Contract — Deal Economics</div>
+      <button class="modal-close" onclick="closeModal('uc')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="uc-deal-id">
+      <div id="uc-sale-fields">
+        <div class="form-field">
+          <div class="form-label">Contract Price ($) *</div>
+          <input class="form-input" id="uc-contract-price" placeholder="e.g. 1250000" type="number">
+        </div>
+      </div>
+      <div id="uc-lease-fields" style="display:none;">
+        <div class="form-row">
+          <div class="form-field">
+            <div class="form-label">Lease Rate *</div>
+            <input class="form-input" id="uc-lease-rate" placeholder="e.g. 22.50" type="number" step="0.01">
+          </div>
+          <div class="form-field">
+            <div class="form-label">Rate Unit *</div>
+            <select class="form-select" id="uc-lease-rate-unit">
+              <option value="$/SF/YR">$/SF/YR</option>
+              <option value="$/SF/MO">$/SF/MO</option>
+              <option value="$/MO">$/MO</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <div class="form-label">Lease Term (months) *</div>
+          <input class="form-input" id="uc-lease-term" placeholder="e.g. 60" type="number">
+        </div>
+      </div>
+      <div class="form-field" style="margin-top:12px;">
+        <div class="form-label">Notes</div>
+        <textarea class="form-textarea" id="uc-notes" placeholder="Optional deal notes..."></textarea>
+      </div>
+
+      <!-- CO-BROKER SECTION -->
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
+        <div style="font-size:12px;font-weight:600;color:var(--dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;">Co-Brokers (optional)</div>
+
+        <div class="form-field" style="margin-bottom:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="uc-cobroke-listing" onchange="toggleCobrokeSection('listing')">
+            Co-Broker — Listing Side
+          </label>
+        </div>
+        <div id="uc-cobroke-listing-section" style="display:none;margin-bottom:12px;">
+          <div id="uc-cobroke-listing-rows"></div>
+          <button class="deal-btn edit" style="margin-top:6px;font-size:11px;" onclick="addCobrokeRow('listing')">+ Add Co-Broker</button>
+        </div>
+
+        <div class="form-field" style="margin-bottom:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="uc-cobroke-buyer" onchange="toggleCobrokeSection('buyer')">
+            <span id="uc-cobroke-buyer-label">Co-Broker — Buyer Side</span>
+          </label>
+        </div>
+        <div id="uc-cobroke-buyer-section" style="display:none;">
+          <div id="uc-cobroke-buyer-rows"></div>
+          <button class="deal-btn edit" style="margin-top:6px;font-size:11px;" onclick="addCobrokeRow('buyer')">+ Add Co-Broker</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('uc')">Cancel</button>
+      <button class="btn-save" onclick="saveUCDialog()">Confirm Under Contract</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
      APPLICATION SCRIPT
 ═══════════════════════════════════════════════════ -->
 <script>
@@ -1227,10 +1303,162 @@ async function cycleStatus(id) {
   if (!deal) return;
   const idx = STATUS_CYCLE.indexOf(deal.status);
   const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+
+  // Intercept → UC: show economics dialog instead of writing directly
+  if (next === 'under_contract') {
+    openUCDialog(id);
+    return;
+  }
+
   await sbUpdate('deals', id, { status: next, updated_at: new Date().toISOString() });
   deal.status = next;
   renderAll();
   toast(`Status → ${STATUS_LABELS[next]}`, 'success');
+}
+
+// ── UC Dialog ──────────────────────────────────────────────────
+
+function openUCDialog(dealId) {
+  const deal = state.deals.find(d => d.id === dealId);
+  if (!deal) return;
+
+  document.getElementById('uc-deal-id').value = dealId;
+  document.getElementById('uc-contract-price').value = '';
+  document.getElementById('uc-lease-rate').value = '';
+  document.getElementById('uc-lease-rate-unit').value = '$/SF/YR';
+  document.getElementById('uc-lease-term').value = '';
+  document.getElementById('uc-notes').value = '';
+  document.getElementById('uc-cobroke-listing').checked = false;
+  document.getElementById('uc-cobroke-buyer').checked = false;
+  document.getElementById('uc-cobroke-listing-section').style.display = 'none';
+  document.getElementById('uc-cobroke-buyer-section').style.display = 'none';
+  document.getElementById('uc-cobroke-listing-rows').innerHTML = '';
+  document.getElementById('uc-cobroke-buyer-rows').innerHTML = '';
+
+  // Detect sale vs lease from deal type
+  const isLease = (deal.type || '').toLowerCase().includes('lease');
+  document.getElementById('uc-sale-fields').style.display = isLease ? 'none' : 'block';
+  document.getElementById('uc-lease-fields').style.display = isLease ? 'block' : 'none';
+
+  // Update buyer/tenant label
+  document.getElementById('uc-cobroke-buyer-label').textContent =
+    isLease ? 'Co-Broker — Tenant Side' : 'Co-Broker — Buyer Side';
+
+  document.getElementById('modal-uc').classList.remove('hidden');
+}
+
+function toggleCobrokeSection(side) {
+  const checked = document.getElementById(`uc-cobroke-${side}`).checked;
+  const section = document.getElementById(`uc-cobroke-${side}-section`);
+  section.style.display = checked ? 'block' : 'none';
+  if (checked && document.getElementById(`uc-cobroke-${side}-rows`).children.length === 0) {
+    addCobrokeRow(side);
+  }
+}
+
+function addCobrokeRow(side) {
+  const container = document.getElementById(`uc-cobroke-${side}-rows`);
+  const idx = container.children.length;
+  const row = document.createElement('div');
+  row.className = 'form-row';
+  row.style.marginBottom = '8px';
+  row.innerHTML = `
+    <div class="form-field"><input class="form-input" placeholder="Broker Name" data-side="${side}" data-idx="${idx}" data-field="broker_name"></div>
+    <div class="form-field"><input class="form-input" placeholder="Firm" data-side="${side}" data-idx="${idx}" data-field="broker_firm"></div>
+    <div class="form-field" style="max-width:90px;"><input class="form-input" placeholder="Comm %" type="number" step="0.01" data-side="${side}" data-idx="${idx}" data-field="commission_pct"></div>
+    <button class="deal-btn delete" style="align-self:center;" onclick="this.parentElement.remove()">&#10005;</button>
+  `;
+  container.appendChild(row);
+}
+
+async function saveUCDialog() {
+  const dealId = document.getElementById('uc-deal-id').value;
+  const deal = state.deals.find(d => d.id === dealId);
+  if (!deal) return;
+
+  const isLease = document.getElementById('uc-lease-fields').style.display !== 'none';
+  const notes = document.getElementById('uc-notes').value.trim() || null;
+
+  // Build uc_details payload
+  const ucPayload = {
+    deal_id: dealId,
+    deal_category: isLease ? 'lease' : 'sale',
+    notes,
+  };
+
+  if (isLease) {
+    const rate = parseFloat(document.getElementById('uc-lease-rate').value);
+    const term = parseInt(document.getElementById('uc-lease-term').value);
+    if (!rate || !term) { toast('Lease rate and term are required', 'error'); return; }
+    ucPayload.lease_rate = rate;
+    ucPayload.lease_rate_unit = document.getElementById('uc-lease-rate-unit').value;
+    ucPayload.lease_term_months = term;
+  } else {
+    const price = parseFloat(document.getElementById('uc-contract-price').value);
+    if (!price) { toast('Contract price is required', 'error'); return; }
+    ucPayload.contract_price = price;
+  }
+
+  setSyncStatus('Saving');
+
+  // Upsert uc_details
+  const ucRes = await sbInsert('uc_details', ucPayload);
+  if (!ucRes.ok) {
+    // May already exist — try update
+    await sbUpdate('uc_details', null, ucPayload, `deal_id=eq.${dealId}`);
+  }
+
+  // Save co-brokers
+  const sides = ['listing', 'buyer'];
+  for (const side of sides) {
+    const checked = document.getElementById(`uc-cobroke-${side}`)?.checked;
+    if (!checked) continue;
+    const rows = document.querySelectorAll(`#uc-cobroke-${side}-rows .form-row`);
+    let order = 0;
+    for (const row of rows) {
+      const name = row.querySelector('[data-field="broker_name"]')?.value?.trim();
+      const firm = row.querySelector('[data-field="broker_firm"]')?.value?.trim();
+      const pct  = parseFloat(row.querySelector('[data-field="commission_pct"]')?.value);
+      if (!name || !firm || !pct) continue;
+      const actualSide = isLease && side === 'buyer' ? 'tenant' : side;
+      await sbInsert('co_brokers', { deal_id: dealId, side: actualSide, broker_name: name, broker_firm: firm, commission_pct: pct, sort_order: order++ });
+    }
+  }
+
+  // Update deal status to under_contract
+  await sbUpdate('deals', dealId, { status: 'under_contract', updated_at: new Date().toISOString() });
+  deal.status = 'under_contract';
+
+  // Log to activity_log
+  await sbInsert('activity_log', {
+    deal_id: dealId,
+    action_type: 'under_contract',
+    description: isLease
+      ? `Under Contract — Lease: ${ucPayload.lease_rate} ${ucPayload.lease_rate_unit}, ${ucPayload.lease_term_months} months`
+      : `Under Contract — Sale: $${ucPayload.contract_price?.toLocaleString()}`,
+    created_by: 'matthew',
+  });
+
+  setSyncStatus('Live');
+  closeModal('uc');
+  renderAll();
+  toast('Under Contract — economics saved', 'success');
+}
+
+// Quick patch for sbUpdate without an id (filter-based)
+async function sbUpdateWhere(table, filter, payload) {
+  const url = `${SUPABASE_URL}/rest/v1/${table}?${filter}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON,
+      'Authorization': `Bearer ${SUPABASE_ANON}`,
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify(payload),
+  });
+  return { ok: res.ok };
 }
 
 async function deleteDeal(id) {
@@ -1479,6 +1707,19 @@ function openModal(type) {
 
 function closeModal(type) {
   document.getElementById('modal-' + type).classList.add('hidden');
+  if (type === 'uc') {
+    document.getElementById('uc-deal-id').value = '';
+    document.getElementById('uc-contract-price').value = '';
+    document.getElementById('uc-lease-rate').value = '';
+    document.getElementById('uc-lease-term').value = '';
+    document.getElementById('uc-notes').value = '';
+    document.getElementById('uc-cobroke-listing').checked = false;
+    document.getElementById('uc-cobroke-buyer').checked = false;
+    document.getElementById('uc-cobroke-listing-section').style.display = 'none';
+    document.getElementById('uc-cobroke-buyer-section').style.display = 'none';
+    document.getElementById('uc-cobroke-listing-rows').innerHTML = '';
+    document.getElementById('uc-cobroke-buyer-rows').innerHTML = '';
+  }
 }
 
 // Close modal on overlay click
