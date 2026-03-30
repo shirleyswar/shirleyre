@@ -214,7 +214,7 @@ function usePullToRefresh(scrollRef: React.RefObject<HTMLElement | null>, onRefr
     if (!el) return
 
     function onTouchStart(e: TouchEvent) {
-      if (el.scrollTop === 0) {
+      if (el && el.scrollTop === 0) {
         startY.current = e.touches[0].clientY
         pulling.current = true
       }
