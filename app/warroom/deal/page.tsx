@@ -2963,6 +2963,7 @@ async function sha256Earned(text: string): Promise<string> {
 }
 
 interface EarnedForm {
+  gross_deal_value: string
   deal_type: string
   invoice_number: string
   commission_percent: string
@@ -2987,11 +2988,12 @@ function EarnedModal({ deal, onClose, onSaved }: {
   onSaved: (updatedDeal: Deal) => void
 }) {
   const [form, setForm] = useState<EarnedForm>({
+    gross_deal_value: '',
     deal_type: '',
     invoice_number: '',
     commission_percent: '',
     commission_amount: '',
-    sr_portion_percent: '',
+    sr_portion_percent: '75',
     sr_portion_amount: '',
     payment_terms: '',
     payment_terms_note: '',
@@ -3011,8 +3013,22 @@ function EarnedModal({ deal, onClose, onSaved }: {
 
   const num = (v: string) => parseFloat(v) || 0
 
+  // Auto-calc: when gross_deal_value or commission_percent changes, update commission_amount + sr_portion_amount
+  function handleGrossOrPctChange(field: 'gross_deal_value' | 'commission_percent' | 'sr_portion_percent', value: string) {
+    const updated = { ...form, [field]: value }
+    const gross = parseFloat(updated.gross_deal_value) || 0
+    const commPct = parseFloat(updated.commission_percent) || 0
+    const srPct = parseFloat(updated.sr_portion_percent) || 75
+    if (gross > 0 && commPct > 0) {
+      const firmTotal = gross * (commPct / 100)
+      updated.commission_amount = firmTotal.toFixed(2)
+      updated.sr_portion_amount = (firmTotal * (srPct / 100)).toFixed(2)
+    }
+    setForm(updated)
+  }
+
   const totalDue =
-    num(form.commission_amount)
+    num(form.sr_portion_amount)
     - (form.deal_type === 'sale' ? num(form.deposit_retainage) : 0)
     - 0 // paid_to_date starts at 0
     + num(form.reimbursable_amount)
@@ -3143,6 +3159,23 @@ function EarnedModal({ deal, onClose, onSaved }: {
           {deal.name} — Creates AR item and marks deal as earned.
         </div>
 
+        {/* Gross Deal Value */}
+        <div>
+          <label style={fLabel}>Gross Deal Value ($) *</label>
+          <input
+            type="number"
+            style={fInput}
+            value={form.gross_deal_value}
+            onChange={e => handleGrossOrPctChange('gross_deal_value', e.target.value)}
+            placeholder="e.g. 1250000"
+          />
+          {num(form.gross_deal_value) > 0 && (
+            <div style={{ fontSize: 11, color: '#E8B84B', marginTop: 3, fontWeight: 600 }}>
+              ${num(form.gross_deal_value).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+            </div>
+          )}
+        </div>
+
         {/* Deal Type */}
         <div>
           <label style={fLabel}>Deal Type *</label>
@@ -3164,23 +3197,50 @@ function EarnedModal({ deal, onClose, onSaved }: {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={fLabel}>Commission % *</label>
-            <input type="number" step="0.01" style={fInput} value={form.commission_percent} onChange={e => set('commission_percent', e.target.value)} placeholder="6.0" />
+            <input
+              type="number" step="0.01" style={fInput}
+              value={form.commission_percent}
+              onChange={e => handleGrossOrPctChange('commission_percent', e.target.value)}
+              placeholder="6.0"
+            />
           </div>
           <div>
-            <label style={fLabel}>Commission Amount * ($)</label>
-            <input type="number" step="0.01" style={fInput} value={form.commission_amount} onChange={e => set('commission_amount', e.target.value)} placeholder="0.00" />
+            <label style={fLabel}>Firm Total Commission ($)</label>
+            <input
+              type="number" step="0.01"
+              style={{ ...fInput, background: 'rgba(232,184,75,0.06)', color: '#E8B84B' }}
+              value={form.commission_amount}
+              onChange={e => set('commission_amount', e.target.value)}
+              placeholder="Auto-calculated"
+            />
           </div>
         </div>
 
         {/* SR Portion */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
-            <label style={fLabel}>SR Portion % *</label>
-            <input type="number" step="0.01" style={fInput} value={form.sr_portion_percent} onChange={e => set('sr_portion_percent', e.target.value)} placeholder="75" />
+            <label style={fLabel}>Matthew&apos;s Split %</label>
+            <input
+              type="number" step="0.01" style={fInput}
+              value={form.sr_portion_percent}
+              onChange={e => handleGrossOrPctChange('sr_portion_percent', e.target.value)}
+              placeholder="75"
+            />
           </div>
           <div>
-            <label style={fLabel}>SR Portion Amount * ($)</label>
-            <input type="number" step="0.01" style={fInput} value={form.sr_portion_amount} onChange={e => set('sr_portion_amount', e.target.value)} placeholder="0.00" />
+            <label style={fLabel}>Matthew&apos;s Commission ($)</label>
+            <input
+              type="number" step="0.01"
+              style={{ ...fInput, background: 'rgba(34,197,94,0.08)', color: '#22c55e' }}
+              value={form.sr_portion_amount}
+              onChange={e => set('sr_portion_amount', e.target.value)}
+              placeholder="Auto-calculated"
+            />
+            {num(form.sr_portion_amount) > 0 && (
+              <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4, fontWeight: 800 }}>
+                ${num(form.sr_portion_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            )}
           </div>
         </div>
 
