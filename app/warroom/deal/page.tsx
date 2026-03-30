@@ -2069,6 +2069,20 @@ function DealDashboardInner() {
   // Earned modal
   const [showEarnedModal, setShowEarnedModal] = useState(false)
 
+  // UC Dialog
+  const [showUCDialog, setShowUCDialog] = useState(false)
+  const [ucForm, setUCForm] = useState({
+    contractPrice: '',
+    leaseRate: '',
+    leaseRateUnit: '$/SF/YR',
+    leaseTermMonths: '',
+    notes: '',
+    cobrokeListingOn: false,
+    cobrokeBuyerOn: false,
+    listingBrokers: [{ name: '', firm: '', pct: '' }],
+    buyerBrokers: [{ name: '', firm: '', pct: '' }],
+  })
+
   // Copied ID state
   const [copiedId, setCopiedId] = useState(false)
 
@@ -2187,6 +2201,91 @@ function DealDashboardInner() {
       .select()
       .single()
     if (!error && data) setDeal(data as Deal)
+  }
+
+  async function submitUCDialog() {
+    if (!deal) return
+    const isLease = (deal.type || '').toLowerCase().includes('lease')
+
+    // Validate required fields
+    if (isLease) {
+      if (!ucForm.leaseRate || !ucForm.leaseTermMonths) {
+        alert('Lease rate and term are required')
+        return
+      }
+    } else {
+      if (!ucForm.contractPrice) {
+        alert('Contract price is required')
+        return
+      }
+    }
+
+    // Save uc_details
+    const ucPayload: Record<string, unknown> = {
+      deal_id: deal.id,
+      deal_category: isLease ? 'lease' : 'sale',
+      notes: ucForm.notes || null,
+    }
+    if (isLease) {
+      ucPayload.lease_rate = parseFloat(ucForm.leaseRate)
+      ucPayload.lease_rate_unit = ucForm.leaseRateUnit
+      ucPayload.lease_term_months = parseInt(ucForm.leaseTermMonths)
+    } else {
+      ucPayload.contract_price = parseFloat(ucForm.contractPrice)
+    }
+
+    await supabase.from('uc_details').upsert(ucPayload, { onConflict: 'deal_id' })
+
+    // Save co-brokers
+    const sides: Array<{ key: 'cobrokeListingOn' | 'cobrokeBuyerOn'; brokerKey: 'listingBrokers' | 'buyerBrokers'; side: string }> = [
+      { key: 'cobrokeListingOn', brokerKey: 'listingBrokers', side: 'listing' },
+      { key: 'cobrokeBuyerOn', brokerKey: 'buyerBrokers', side: isLease ? 'tenant' : 'buyer' },
+    ]
+    for (const s of sides) {
+      if (!ucForm[s.key]) continue
+      const brokers = ucForm[s.brokerKey]
+      for (let i = 0; i < brokers.length; i++) {
+        const b = brokers[i]
+        if (!b.name || !b.firm || !b.pct) continue
+        await supabase.from('co_brokers').insert({
+          deal_id: deal.id,
+          side: s.side,
+          broker_name: b.name,
+          broker_firm: b.firm,
+          commission_pct: parseFloat(b.pct),
+          sort_order: i,
+        })
+      }
+    }
+
+    // Update deal status
+    const { data, error } = await supabase
+      .from('deals')
+      .update({ status: 'under_contract', updated_at: new Date().toISOString() })
+      .eq('id', deal.id)
+      .select()
+      .single()
+    if (!error && data) setDeal(data as Deal)
+
+    // Activity log
+    const desc = isLease
+      ? `Under Contract — Lease: ${ucForm.leaseRate} ${ucForm.leaseRateUnit}, ${ucForm.leaseTermMonths} months`
+      : `Under Contract — Sale: $${parseFloat(ucForm.contractPrice).toLocaleString()}`
+    await supabase.from('activity_log').insert({
+      deal_id: deal.id,
+      action_type: 'under_contract',
+      description: desc,
+      created_by: 'matthew',
+    })
+
+    // Reset and close
+    setShowUCDialog(false)
+    setUCForm({
+      contractPrice: '', leaseRate: '', leaseRateUnit: '$/SF/YR', leaseTermMonths: '',
+      notes: '', cobrokeListingOn: false, cobrokeBuyerOn: false,
+      listingBrokers: [{ name: '', firm: '', pct: '' }],
+      buyerBrokers: [{ name: '', firm: '', pct: '' }],
+    })
   }
 
   async function doLaunch() {
@@ -2457,7 +2556,7 @@ function DealDashboardInner() {
         {/* → Under Contract */}
         {deal.tier === 'filed' && (deal.status === 'active' || deal.status === 'hot') && (
           <button
-            onClick={() => pinGate(() => doStatusChange('under_contract'))}
+            onClick={() => pinGate(() => setShowUCDialog(true))}
             style={{ width: '100%', padding: '11px', fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.4)', borderRadius: 10, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit', marginBottom: 8 }}
           >
             → Under Contract
@@ -2713,7 +2812,7 @@ function DealDashboardInner() {
                   color="#2dd4bf"
                   bg="rgba(45,212,191,0.08)"
                   border="rgba(45,212,191,0.35)"
-                  onClick={() => pinGate(() => doStatusChange('under_contract'))}
+                  onClick={() => pinGate(() => setShowUCDialog(true))}
                 />
               )}
 
@@ -2944,6 +3043,152 @@ function DealDashboardInner() {
           setShowEarnedModal(false)
         }}
       />,
+      document.body
+    )}
+
+    {/* UC Dialog */}
+    {showUCDialog && deal && typeof document !== 'undefined' && createPortal(
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.82)',
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        paddingTop: '8vh', paddingBottom: '6vh', overflowY: 'auto',
+      }} onClick={() => setShowUCDialog(false)}>
+        <div style={{
+          background: '#1A1E25',
+          border: '1px solid rgba(45,212,191,0.35)',
+          borderRadius: 14,
+          padding: '24px 28px',
+          width: '90vw', maxWidth: 480,
+          display: 'flex', flexDirection: 'column', gap: 14,
+        }} onClick={e => e.stopPropagation()}>
+
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#2dd4bf', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Under Contract — Deal Economics
+            </div>
+            <button onClick={() => setShowUCDialog(false)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 0 }}>×</button>
+          </div>
+
+          {(() => {
+            const isLease = (deal.type || '').toLowerCase().includes('lease')
+            const fLabel: React.CSSProperties = { fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b7280', marginBottom: 4, display: 'block' }
+            const fInput: React.CSSProperties = { width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '8px 10px', fontSize: 13, color: '#F0F2FF', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', colorScheme: 'dark' }
+
+            return (
+              <>
+                {/* Sale fields */}
+                {!isLease && (
+                  <div>
+                    <label style={fLabel}>Contract Price ($) *</label>
+                    <input type="number" style={fInput} value={ucForm.contractPrice}
+                      onChange={e => setUCForm(f => ({ ...f, contractPrice: e.target.value }))}
+                      placeholder="e.g. 1250000" autoFocus />
+                  </div>
+                )}
+
+                {/* Lease fields */}
+                {isLease && (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div>
+                        <label style={fLabel}>Lease Rate *</label>
+                        <input type="number" step="0.01" style={fInput} value={ucForm.leaseRate}
+                          onChange={e => setUCForm(f => ({ ...f, leaseRate: e.target.value }))}
+                          placeholder="e.g. 22.50" autoFocus />
+                      </div>
+                      <div>
+                        <label style={fLabel}>Rate Unit *</label>
+                        <select style={fInput} value={ucForm.leaseRateUnit}
+                          onChange={e => setUCForm(f => ({ ...f, leaseRateUnit: e.target.value }))}>
+                          <option>$/SF/YR</option>
+                          <option>$/SF/MO</option>
+                          <option>$/MO</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={fLabel}>Lease Term (months) *</label>
+                      <input type="number" style={fInput} value={ucForm.leaseTermMonths}
+                        onChange={e => setUCForm(f => ({ ...f, leaseTermMonths: e.target.value }))}
+                        placeholder="e.g. 60" />
+                    </div>
+                  </>
+                )}
+
+                {/* Notes */}
+                <div>
+                  <label style={fLabel}>Notes (optional)</label>
+                  <textarea style={{ ...fInput, minHeight: 60, resize: 'vertical' }} value={ucForm.notes}
+                    onChange={e => setUCForm(f => ({ ...f, notes: e.target.value }))}
+                    placeholder="Any deal notes…" />
+                </div>
+
+                {/* Co-broker — Listing Side */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
+                    <input type="checkbox" checked={ucForm.cobrokeListingOn}
+                      onChange={e => setUCForm(f => ({ ...f, cobrokeListingOn: e.target.checked }))}
+                      style={{ accentColor: '#2dd4bf', width: 14, height: 14 }} />
+                    <span style={{ fontSize: 12, color: '#9ca3af' }}>Co-Broker — Listing Side</span>
+                  </label>
+                  {ucForm.cobrokeListingOn && ucForm.listingBrokers.map((b, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginBottom: 6 }}>
+                      <input style={fInput} placeholder="Broker Name" value={b.name}
+                        onChange={e => setUCForm(f => { const a = [...f.listingBrokers]; a[i] = { ...a[i], name: e.target.value }; return { ...f, listingBrokers: a } })} />
+                      <input style={fInput} placeholder="Firm" value={b.firm}
+                        onChange={e => setUCForm(f => { const a = [...f.listingBrokers]; a[i] = { ...a[i], firm: e.target.value }; return { ...f, listingBrokers: a } })} />
+                      <input type="number" step="0.01" style={{ ...fInput, width: 70 }} placeholder="%" value={b.pct}
+                        onChange={e => setUCForm(f => { const a = [...f.listingBrokers]; a[i] = { ...a[i], pct: e.target.value }; return { ...f, listingBrokers: a } })} />
+                    </div>
+                  ))}
+                  {ucForm.cobrokeListingOn && (
+                    <button onClick={() => setUCForm(f => ({ ...f, listingBrokers: [...f.listingBrokers, { name: '', firm: '', pct: '' }] }))}
+                      style={{ fontSize: 11, color: '#2dd4bf', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>+ Add Co-Broker</button>
+                  )}
+                </div>
+
+                {/* Co-broker — Buyer/Tenant Side */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
+                    <input type="checkbox" checked={ucForm.cobrokeBuyerOn}
+                      onChange={e => setUCForm(f => ({ ...f, cobrokeBuyerOn: e.target.checked }))}
+                      style={{ accentColor: '#2dd4bf', width: 14, height: 14 }} />
+                    <span style={{ fontSize: 12, color: '#9ca3af' }}>Co-Broker — {isLease ? 'Tenant' : 'Buyer'} Side</span>
+                  </label>
+                  {ucForm.cobrokeBuyerOn && ucForm.buyerBrokers.map((b, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginBottom: 6 }}>
+                      <input style={fInput} placeholder="Broker Name" value={b.name}
+                        onChange={e => setUCForm(f => { const a = [...f.buyerBrokers]; a[i] = { ...a[i], name: e.target.value }; return { ...f, buyerBrokers: a } })} />
+                      <input style={fInput} placeholder="Firm" value={b.firm}
+                        onChange={e => setUCForm(f => { const a = [...f.buyerBrokers]; a[i] = { ...a[i], firm: e.target.value }; return { ...f, buyerBrokers: a } })} />
+                      <input type="number" step="0.01" style={{ ...fInput, width: 70 }} placeholder="%" value={b.pct}
+                        onChange={e => setUCForm(f => { const a = [...f.buyerBrokers]; a[i] = { ...a[i], pct: e.target.value }; return { ...f, buyerBrokers: a } })} />
+                    </div>
+                  ))}
+                  {ucForm.cobrokeBuyerOn && (
+                    <button onClick={() => setUCForm(f => ({ ...f, buyerBrokers: [...f.buyerBrokers, { name: '', firm: '', pct: '' }] }))}
+                      style={{ fontSize: 11, color: '#2dd4bf', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>+ Add Co-Broker</button>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                  <button onClick={() => setShowUCDialog(false)}
+                    style={{ flex: 1, padding: '10px', fontSize: 12, fontWeight: 700, background: 'transparent', border: '1px solid rgba(156,163,175,0.3)', borderRadius: 8, color: '#9ca3af', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Cancel
+                  </button>
+                  <button onClick={submitUCDialog}
+                    style={{ flex: 2, padding: '10px', fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', background: 'rgba(45,212,191,0.15)', border: '1px solid rgba(45,212,191,0.5)', borderRadius: 8, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Confirm Under Contract
+                  </button>
+                </div>
+              </>
+            )
+          })()}
+        </div>
+      </div>,
       document.body
     )}
     </>
