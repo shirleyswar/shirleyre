@@ -534,7 +534,6 @@ function SleeveTab() {
 }
 
 // ─── Sold Tab ─────────────────────────────────────────────────────────────────
-// ─── Sold Tab ─────────────────────────────────────────────────────────────────
 // Accepts Morgan Stanley activity export (wipe-and-replace seed upload)
 // Expected headers (Row 3): Activity Date, Transaction Date, Activity,
 //   Description, Symbol, Cusip, Memo, Tags, Quantity, Price($), Amount($)
@@ -641,6 +640,194 @@ async function parseSoldXlsx(file: File): Promise<Record<string, unknown>[] | st
   }
 }
 
+// ─── Sold KPI Cards ──────────────────────────────────────────────────────────
+function SoldKpiCards({ positions }: { positions: Position[] }) {
+  const totalProceeds = positions.reduce((s, p) => s + (p.market_value ?? 0), 0)
+  const totalCost     = positions.reduce((s, p) => s + (p.total_cost ?? 0), 0)
+  const totalGL       = positions.reduce((s, p) => {
+    const gl = (p.market_value ?? 0) - (p.total_cost ?? 0)
+    return s + (p.total_cost != null ? gl : 0)
+  }, 0)
+  const totalGLPct    = totalCost > 0 ? (totalGL / totalCost) * 100 : 0
+  const positionsWithCost = positions.filter(p => p.total_cost != null)
+  const winners       = positionsWithCost.filter(p => (p.market_value ?? 0) > (p.total_cost ?? 0))
+  const winRate       = positionsWithCost.length > 0 ? (winners.length / positionsWithCost.length) * 100 : null
+  const mvForAnn      = positionsWithCost.reduce((s, p) => s + (p.market_value ?? 0), 0)
+  const wtdAnn        = mvForAnn > 0
+    ? positionsWithCost.reduce((s, p) => s + ((p.annualized_return_pct ?? 0) * (p.market_value ?? 0)), 0) / mvForAnn
+    : null
+
+  const kpis = [
+    {
+      label: 'Win Rate',
+      value: winRate != null ? `${winRate.toFixed(0)}%` : '—',
+      sub: `${winners.length}/${positionsWithCost.length} trades`,
+      color: winRate != null ? (winRate >= 50 ? P.green : P.red) : P.muted,
+      big: true,
+    },
+    { label: 'Realized G/L',  value: fmt$(totalGL),            sub: fmtPct(totalGLPct), color: pctColor(totalGL) },
+    { label: 'Total Proceeds', value: fmt$(totalProceeds),      sub: null, color: P.purple },
+    { label: 'Total Cost',     value: totalCost > 0 ? fmt$(totalCost) : '—', sub: null, color: P.muted },
+    { label: 'Avg Ann. Return', value: wtdAnn != null ? fmtPct(wtdAnn) : '—', sub: 'weighted', color: pctColor(wtdAnn) },
+    { label: 'Positions',      value: String(positions.length), sub: `${positionsWithCost.length} w/ cost basis`, color: P.purple },
+  ]
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, marginBottom: 20 }}>
+      {kpis.map(k => (
+        <div key={k.label} style={{
+          background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 10,
+          padding: '14px 16px',
+          boxShadow: k.big ? `0 0 0 1px ${P.purpleBorder} inset, 0 0 20px rgba(34,197,94,0.05)` : `0 0 0 1px ${P.purpleBorder} inset`,
+        }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: P.muted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>{k.label}</div>
+          <div style={{ fontSize: k.big ? 28 : 20, fontWeight: 800, color: k.color, letterSpacing: '-0.02em', fontFamily: 'monospace', lineHeight: 1 }}>{k.value}</div>
+          {k.sub && <div style={{ fontSize: 10, color: P.muted, marginTop: 3 }}>{k.sub}</div>}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Sold Table ───────────────────────────────────────────────────────────────
+function SoldTable({ positions, onCostUpdate }: { positions: Position[]; onCostUpdate: (id: string, cost: number) => void }) {
+  type SF = 'symbol' | 'name' | 'acquired' | 'sold_at' | 'qty' | 'market_value' | 'total_cost' | 'gl_dollar' | 'gl_pct' | 'years_held' | 'annualized_return_pct'
+  const [sortField, setSortField] = useState<SF>('sold_at')
+  const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('desc')
+  const [editingCost, setEditingCost] = useState<string | null>(null)
+  const [costDraft, setCostDraft]     = useState('')
+
+  function handleSort(f: SF) {
+    if (sortField === f) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(f); setSortDir('desc') }
+  }
+  function arrow(f: SF) {
+    if (sortField !== f) return <span style={{ color: P.muted, fontSize: 9 }}>⇅</span>
+    return <span style={{ color: P.purple, fontSize: 9 }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
+  }
+
+  function glDollar(p: Position): number | null {
+    if (p.market_value == null || p.total_cost == null) return null
+    return p.market_value - p.total_cost
+  }
+  function glPct(p: Position): number | null {
+    if (p.market_value == null || p.total_cost == null || p.total_cost === 0) return null
+    return ((p.market_value - p.total_cost) / p.total_cost) * 100
+  }
+
+  const sorted = [...positions].sort((a, b) => {
+    let av: number | string = 0, bv: number | string = 0
+    if      (sortField === 'symbol')               { av = a.symbol ?? ''; bv = b.symbol ?? '' }
+    else if (sortField === 'name')                 { av = a.name ?? ''; bv = b.name ?? '' }
+    else if (sortField === 'acquired')             { av = a.acquired ?? ''; bv = b.acquired ?? '' }
+    else if (sortField === 'sold_at')              { av = a.sold_at ?? ''; bv = b.sold_at ?? '' }
+    else if (sortField === 'qty')                  { av = a.qty ?? -999; bv = b.qty ?? -999 }
+    else if (sortField === 'market_value')         { av = a.market_value ?? -999; bv = b.market_value ?? -999 }
+    else if (sortField === 'total_cost')           { av = a.total_cost ?? -999; bv = b.total_cost ?? -999 }
+    else if (sortField === 'gl_dollar')            { av = glDollar(a) ?? -999; bv = glDollar(b) ?? -999 }
+    else if (sortField === 'gl_pct')               { av = glPct(a) ?? -999; bv = glPct(b) ?? -999 }
+    else if (sortField === 'years_held')           { av = a.years_held ?? -999; bv = b.years_held ?? -999 }
+    else if (sortField === 'annualized_return_pct'){ av = a.annualized_return_pct ?? -999; bv = b.annualized_return_pct ?? -999 }
+    if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv as string) : (bv as string).localeCompare(av)
+    return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number)
+  })
+
+  function fmtDate(s: string | null | undefined) {
+    if (!s) return '—'
+    return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })
+  }
+
+  const cols: { label: string; field: SF; tip?: string }[] = [
+    { label: 'Symbol',       field: 'symbol' },
+    { label: 'Name',         field: 'name' },
+    { label: 'Acquired',     field: 'acquired' },
+    { label: 'Sold',         field: 'sold_at' },
+    { label: 'Qty',          field: 'qty' },
+    { label: 'Cost Basis',   field: 'total_cost', tip: 'Click — to enter cost basis' },
+    { label: 'Proceeds',     field: 'market_value' },
+    { label: 'G/L $',        field: 'gl_dollar' },
+    { label: 'G/L %',        field: 'gl_pct' },
+    { label: 'Yrs Held',     field: 'years_held' },
+    { label: 'Ann. Return',  field: 'annualized_return_pct' },
+  ]
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <div style={{ fontSize: 11, color: P.muted, marginBottom: 8, fontStyle: 'italic' }}>
+        Cost Basis missing? Click the — in that column to enter it manually.
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <thead>
+          <tr style={{ borderBottom: `1px solid ${P.purpleBorder}`, background: P.purpleFaint }}>
+            {cols.map(col => (
+              <th key={col.field} onClick={() => handleSort(col.field)} title={col.tip}
+                style={{ padding: '8px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
+                {col.label} {arrow(col.field)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.length === 0 ? (
+            <tr><td colSpan={11} style={{ textAlign: 'center', padding: '32px 0', color: P.muted }}>No sold positions.</td></tr>
+          ) : sorted.map(p => {
+            const gl$  = glDollar(p)
+            const gl_p = glPct(p)
+            const isEditing = editingCost === p.id
+            return (
+              <tr key={p.id}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,92,246,0.06)'}
+                onMouseLeave={e => e.currentTarget.style.background = ''}
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.1s' }}>
+                <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, color: P.text, whiteSpace: 'nowrap' }}>{p.symbol}</td>
+                <td style={{ padding: '10px 8px', textAlign: 'left', color: P.muted, fontSize: 11, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || '—'}</td>
+                <td style={{ padding: '10px 8px', textAlign: 'center', color: P.muted, fontSize: 11, fontFamily: 'monospace' }}>{fmtDate(p.acquired)}</td>
+                <td style={{ padding: '10px 8px', textAlign: 'center', color: P.muted, fontSize: 11, fontFamily: 'monospace' }}>{fmtDate(p.sold_at)}</td>
+                <td style={{ padding: '10px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace' }}>{fmtNum(p.qty, 0)}</td>
+                {/* Cost Basis — editable */}
+                <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'monospace' }}>
+                  {isEditing ? (
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'center' }}>
+                      <input
+                        autoFocus
+                        type="number"
+                        value={costDraft}
+                        onChange={e => setCostDraft(e.target.value)}
+                        onKeyDown={async e => {
+                          if (e.key === 'Enter') {
+                            const v = parseFloat(costDraft)
+                            if (!isNaN(v) && v > 0) { onCostUpdate(p.id, v) }
+                            setEditingCost(null)
+                          }
+                          if (e.key === 'Escape') setEditingCost(null)
+                        }}
+                        style={{ width: 80, fontSize: 11, padding: '2px 5px', background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 4, color: P.text, outline: 'none', textAlign: 'center' }}
+                      />
+                      <button onClick={() => setEditingCost(null)} style={{ background: 'none', border: 'none', color: P.muted, cursor: 'pointer', fontSize: 11 }}>✕</button>
+                    </div>
+                  ) : (
+                    <span
+                      onClick={() => { setEditingCost(p.id); setCostDraft(p.total_cost != null ? String(p.total_cost) : '') }}
+                      title="Click to edit cost basis"
+                      style={{ color: p.total_cost != null ? P.muted : 'rgba(167,139,250,0.4)', cursor: 'pointer', textDecoration: p.total_cost != null ? 'none' : 'underline dotted' }}>
+                      {p.total_cost != null ? fmt$(p.total_cost) : '—'}
+                    </span>
+                  )}
+                </td>
+                <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, color: P.text }}>{fmt$(p.market_value)}</td>
+                <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(gl$), fontWeight: 600 }}>{gl$ != null ? fmt$(gl$) : '—'}</td>
+                <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(gl_p), fontWeight: 600 }}>{gl_p != null ? fmtPct(gl_p) : '—'}</td>
+                <td style={{ padding: '10px 8px', textAlign: 'center', color: P.muted, fontFamily: 'monospace', fontSize: 11 }}>{p.years_held != null ? fmtNum(p.years_held, 1) : '—'}</td>
+                <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(p.annualized_return_pct), fontWeight: 600 }}>{p.annualized_return_pct != null ? fmtPct(p.annualized_return_pct) : '—'}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 function SoldTab() {
   const [positions, setPositions] = useState<Position[]>([])
   const [loading, setLoading]     = useState(true)
@@ -668,22 +855,65 @@ function SoldTab() {
     const rows = await parseSoldXlsx(file)
     if (typeof rows === 'string') { setUploadError(rows); setUploading(false); return }
 
-    // Wipe existing sold_positions and re-insert
-    const { error: delErr } = await supabase
-      .from('sold_positions')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000')
+    // When re-uploading: try to preserve existing cost basis entries
+    const { data: existing } = await supabase.from('sold_positions').select('symbol,total_cost,acquired,years_held,annualized_return_pct')
+    const existingMap = new Map<string, { total_cost: number | null; acquired: string | null; years_held: number | null; annualized_return_pct: number | null }>(
+      (existing ?? []).map((e: Record<string,unknown>) => [e.symbol as string, {
+        total_cost: e.total_cost as number | null,
+        acquired: e.acquired as string | null,
+        years_held: e.years_held as number | null,
+        annualized_return_pct: e.annualized_return_pct as number | null,
+      }])
+    )
+
+    const { error: delErr } = await supabase.from('sold_positions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     if (delErr) { setUploadError('Clear failed: ' + delErr.message); setUploading(false); return }
 
-    const inserts = rows as Record<string, unknown>[]
+    const inserts = (rows as Record<string, unknown>[]).map(r => {
+      const sym = String(r.symbol ?? '')
+      const prev = existingMap.get(sym)
+      const cost  = prev?.total_cost ?? r.total_cost ?? null
+      const acq   = prev?.acquired ?? r.acquired ?? null
+      // Recalculate holding period and annualized return if we have cost+acquired+sold
+      let yrs: number | null = prev?.years_held ?? null
+      let ann: number | null = prev?.annualized_return_pct ?? null
+      if (acq && r.sold_at) {
+        const acqMs   = new Date(String(acq)).getTime()
+        const soldMs  = new Date(String(r.sold_at)).getTime()
+        yrs = (soldMs - acqMs) / (365.25 * 86400000)
+        if (yrs > 0 && cost && (r.market_value as number) > 0) {
+          ann = (Math.pow((r.market_value as number) / (cost as number), 1 / (yrs as number)) - 1) * 100
+        }
+      }
+      return { ...r, total_cost: cost, acquired: acq, years_held: yrs, annualized_return_pct: ann }
+    })
+
     for (let i = 0; i < inserts.length; i += 50) {
       const { error } = await supabase.from('sold_positions').insert(inserts.slice(i, i + 50))
       if (error) { setUploadError('Insert failed: ' + error.message); setUploading(false); return }
     }
 
-    setUploadMsg(`✓ ${inserts.length} sold positions loaded`)
+    setUploadMsg(`✓ ${inserts.length} positions loaded`)
     await fetchSold()
     setUploading(false)
+  }
+
+  async function handleCostUpdate(id: string, cost: number) {
+    // When user enters cost basis: save + recalculate holding period and annualized return
+    const pos = positions.find(p => p.id === id)
+    if (!pos) return
+    let yrs: number | null = pos.years_held
+    let ann: number | null = pos.annualized_return_pct
+    if (pos.acquired && pos.sold_at) {
+      const acqMs  = new Date(pos.acquired).getTime()
+      const soldMs = new Date(pos.sold_at).getTime()
+      yrs = (soldMs - acqMs) / (365.25 * 86400000)
+      if (yrs > 0 && pos.market_value) {
+        ann = (Math.pow(pos.market_value / cost, 1 / yrs) - 1) * 100
+      }
+    }
+    await supabase.from('sold_positions').update({ total_cost: cost, years_held: yrs, annualized_return_pct: ann }).eq('id', id)
+    setPositions(prev => prev.map(p => p.id === id ? { ...p, total_cost: cost, years_held: yrs, annualized_return_pct: ann } : p))
   }
 
   if (loading) return <SkeletonTable />
@@ -693,7 +923,7 @@ function SoldTab() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 16, fontWeight: 800, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase' }}>SOLD</span>
-        <span style={{ fontSize: 11, color: P.muted }}>Historical record — Morgan Stanley activity export</span>
+        <span style={{ fontSize: 11, color: P.muted }}>Directed buy scorecard</span>
         <div style={{ flex: 1 }} />
         <button
           onClick={() => fileInputRef.current?.click()}
@@ -706,8 +936,8 @@ function SoldTab() {
           style={{ display: 'none' }} />
       </div>
 
-      {uploadMsg   && <div style={{ marginBottom: 12, fontSize: 12, color: P.green,  fontFamily: 'monospace' }}>{uploadMsg}</div>}
-      {uploadError && <div style={{ marginBottom: 12, fontSize: 12, color: P.red,    fontFamily: 'monospace' }}>{uploadError}</div>}
+      {uploadMsg   && <div style={{ marginBottom: 12, fontSize: 12, color: P.green, fontFamily: 'monospace' }}>{uploadMsg}</div>}
+      {uploadError && <div style={{ marginBottom: 12, fontSize: 12, color: P.red,   fontFamily: 'monospace' }}>{uploadError}</div>}
 
       {positions.length === 0 ? (
         <div
@@ -715,15 +945,15 @@ function SoldTab() {
           onDragLeave={() => setDragOver(false)}
           onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
           onClick={() => fileInputRef.current?.click()}
-          style={{ border: `2px dashed ${dragOver ? '#9ca3af' : 'rgba(156,163,175,0.25)'}`, borderRadius: 12, padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? 'rgba(156,163,175,0.06)' : 'transparent', transition: 'all 0.15s', marginBottom: 16 }}>
-          <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.3 }}>📂</div>
+          style={{ border: `2px dashed ${dragOver ? P.purple : 'rgba(156,163,175,0.25)'}`, borderRadius: 12, padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? P.purpleFaint : 'transparent', transition: 'all 0.15s', marginBottom: 16 }}>
+          <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.3 }}>📊</div>
           <div style={{ fontSize: 13, color: P.text, fontWeight: 600, marginBottom: 6 }}>Drop your Morgan Stanley activity export here</div>
           <div style={{ fontSize: 12, color: P.muted }}>Expected: Activity Date · Symbol · Description · Quantity · Price($) · Amount($)</div>
         </div>
       ) : (
         <>
-          <KpiCards positions={positions} glLabel="Realized Proceeds" />
-          <PositionTable positions={positions} showSoldAt />
+          <SoldKpiCards positions={positions} />
+          <SoldTable positions={positions} onCostUpdate={handleCostUpdate} />
         </>
       )}
     </div>
