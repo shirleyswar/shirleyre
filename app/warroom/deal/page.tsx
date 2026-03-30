@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, Deal, DealStatus, DealTier, DealType, ContractDeadline, DeadlineType, DeadlineStatus, Contact, DealContact, LacdbListing } from '@/lib/supabase'
 import { Suspense } from 'react'
@@ -2065,6 +2066,9 @@ function DealDashboardInner() {
   // PIN modal
   const [pendingAction, setPendingAction] = useState<null | (() => void)>(null)
 
+  // Earned modal
+  const [showEarnedModal, setShowEarnedModal] = useState(false)
+
   // Copied ID state
   const [copiedId, setCopiedId] = useState(false)
 
@@ -2294,6 +2298,7 @@ function DealDashboardInner() {
   const sc = STATUS_COLORS[deal.status]
 
   return (
+    <>
     <div style={{
       minHeight: '100vh',
       background: '#0D0F14',
@@ -2728,6 +2733,24 @@ function DealDashboardInner() {
                 />
               )}
 
+              {/* Earned — Commission section */}
+              {deal.tier === 'filed' && (
+                <div style={{ marginTop: 4, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.5)', marginBottom: 6 }}>Commission</div>
+                  {(deal as any).earned ? (
+                    <div style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>✓ Earned — AR item created</div>
+                  ) : (
+                    <ActionBtn
+                      label="Mark as EARNED"
+                      color="#22c55e"
+                      bg="rgba(34,197,94,0.1)"
+                      border="rgba(34,197,94,0.35)"
+                      onClick={() => setShowEarnedModal(true)}
+                    />
+                  )}
+                </div>
+              )}
+
               {/* Kill zone */}
               {deal.tier === 'filed' && (deal.type === 'active_listing' || deal.type === 'listing' || deal.dropbox_link) && (
                 <div style={{
@@ -2908,6 +2931,419 @@ function DealDashboardInner() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    {/* Earned Modal Portal */}
+    {showEarnedModal && deal && typeof document !== 'undefined' && createPortal(
+      <EarnedModal
+        deal={deal}
+        onClose={() => setShowEarnedModal(false)}
+        onSaved={(updatedDeal) => {
+          setDeal(updatedDeal)
+          setShowEarnedModal(false)
+        }}
+      />,
+      document.body
+    )}
+    </>
+  )
+}
+
+// ─── Earned Modal ─────────────────────────────────────────────────────────────
+
+const AR_PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
+
+async function sha256Earned(text: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(text)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+interface EarnedForm {
+  deal_type: string
+  invoice_number: string
+  commission_percent: string
+  commission_amount: string
+  sr_portion_percent: string
+  sr_portion_amount: string
+  payment_terms: string
+  payment_terms_note: string
+  co_broker: boolean
+  co_broker_name: string
+  co_broker_percent: string
+  co_broker_amount: string
+  co_broker_separate_invoice: boolean
+  reimbursable_description: string
+  reimbursable_amount: string
+  deposit_retainage: string
+}
+
+function EarnedModal({ deal, onClose, onSaved }: {
+  deal: Deal
+  onClose: () => void
+  onSaved: (updatedDeal: Deal) => void
+}) {
+  const [form, setForm] = useState<EarnedForm>({
+    deal_type: '',
+    invoice_number: '',
+    commission_percent: '',
+    commission_amount: '',
+    sr_portion_percent: '',
+    sr_portion_amount: '',
+    payment_terms: '',
+    payment_terms_note: '',
+    co_broker: false,
+    co_broker_name: '',
+    co_broker_percent: '',
+    co_broker_amount: '',
+    co_broker_separate_invoice: false,
+    reimbursable_description: '',
+    reimbursable_amount: '',
+    deposit_retainage: '',
+  })
+  const [pin, setPin] = useState('')
+  const [pinErr, setPinErr] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [showPin, setShowPin] = useState(false)
+
+  const num = (v: string) => parseFloat(v) || 0
+
+  const totalDue =
+    num(form.commission_amount)
+    - (form.deal_type === 'sale' ? num(form.deposit_retainage) : 0)
+    - 0 // paid_to_date starts at 0
+    + num(form.reimbursable_amount)
+
+  function set<K extends keyof EarnedForm>(k: K, v: EarnedForm[K]) {
+    setForm(f => ({ ...f, [k]: v }))
+  }
+
+  async function handleSave(pinValue: string) {
+    const hash = await sha256Earned(pinValue)
+    if (hash !== AR_PIN_HASH) {
+      setPinErr(true)
+      setPin('')
+      return
+    }
+
+    setSaving(true)
+    try {
+      // 1. Update deal earned=true
+      const { data: updatedDeal, error: dealErr } = await supabase
+        .from('deals')
+        .update({ earned: true, updated_at: new Date().toISOString() })
+        .eq('id', deal.id)
+        .select()
+        .single()
+
+      if (dealErr) {
+        console.error('Deal update error:', dealErr)
+        setSaving(false)
+        return
+      }
+
+      // 2. Insert ar_item
+      const arPayload: Record<string, unknown> = {
+        deal_id: deal.id,
+        deal_type: form.deal_type || null,
+        invoice_number: form.invoice_number || null,
+        commission_percent: num(form.commission_percent) || null,
+        commission_amount: num(form.commission_amount) || null,
+        sr_portion_percent: num(form.sr_portion_percent) || null,
+        sr_portion_amount: num(form.sr_portion_amount) || null,
+        payment_terms: form.payment_terms || null,
+        payment_terms_note: form.payment_terms_note || null,
+        co_broker: form.co_broker,
+        co_broker_name: form.co_broker ? (form.co_broker_name || null) : null,
+        co_broker_percent: form.co_broker ? (num(form.co_broker_percent) || null) : null,
+        co_broker_amount: form.co_broker ? (num(form.co_broker_amount) || null) : null,
+        co_broker_separate_invoice: form.co_broker ? form.co_broker_separate_invoice : false,
+        reimbursable_description: form.reimbursable_description || null,
+        reimbursable_amount: num(form.reimbursable_amount) || null,
+        deposit_retainage: form.deal_type === 'sale' ? (num(form.deposit_retainage) || null) : null,
+        paid_to_date: 0,
+        total_due: totalDue,
+        status: 'receivable',
+      }
+
+      const { error: arErr } = await supabase.from('ar_items').insert(arPayload)
+      if (arErr) {
+        console.error('AR insert error:', arErr)
+        setSaving(false)
+        return
+      }
+
+      // 3. Update local state
+      onSaved(updatedDeal as Deal)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const modalBase: React.CSSProperties = {
+    position: 'fixed', inset: 0, zIndex: 9999,
+    background: 'rgba(0,0,0,0.8)',
+    display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+    paddingTop: '6vh', paddingBottom: '6vh',
+    overflowY: 'auto',
+  }
+
+  const modalCard: React.CSSProperties = {
+    background: '#1A1E25',
+    border: '1px solid rgba(232,184,75,0.35)',
+    borderRadius: 14,
+    padding: '24px 28px',
+    width: '90vw',
+    maxWidth: 540,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 14,
+    position: 'relative',
+  }
+
+  const fLabel: React.CSSProperties = {
+    fontSize: 9,
+    fontWeight: 800,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    color: '#6b7280',
+    marginBottom: 4,
+    display: 'block',
+  }
+
+  const fInput: React.CSSProperties = {
+    width: '100%',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 6,
+    padding: '7px 10px',
+    fontSize: 13,
+    color: '#F0F2FF',
+    outline: 'none',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box',
+    colorScheme: 'dark',
+  }
+
+  return (
+    <div style={modalBase} onClick={onClose}>
+      <div style={modalCard} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#E8B84B', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Mark as Earned
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0 }}>×</button>
+        </div>
+
+        <div style={{ fontSize: 12, color: '#9ca3af' }}>
+          {deal.name} — Creates AR item and marks deal as earned.
+        </div>
+
+        {/* Deal Type */}
+        <div>
+          <label style={fLabel}>Deal Type *</label>
+          <select style={fInput} value={form.deal_type} onChange={e => set('deal_type', e.target.value)}>
+            <option value="">Select…</option>
+            <option value="full_service_lease">Full Service Lease</option>
+            <option value="nnn_lease">NNN Lease</option>
+            <option value="sale">Sale</option>
+          </select>
+        </div>
+
+        {/* Invoice Number */}
+        <div>
+          <label style={fLabel}>Invoice Number *</label>
+          <input style={fInput} value={form.invoice_number} onChange={e => set('invoice_number', e.target.value)} placeholder="e.g. INV-2024-001" />
+        </div>
+
+        {/* Commission */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={fLabel}>Commission % *</label>
+            <input type="number" step="0.01" style={fInput} value={form.commission_percent} onChange={e => set('commission_percent', e.target.value)} placeholder="6.0" />
+          </div>
+          <div>
+            <label style={fLabel}>Commission Amount * ($)</label>
+            <input type="number" step="0.01" style={fInput} value={form.commission_amount} onChange={e => set('commission_amount', e.target.value)} placeholder="0.00" />
+          </div>
+        </div>
+
+        {/* SR Portion */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={fLabel}>SR Portion % *</label>
+            <input type="number" step="0.01" style={fInput} value={form.sr_portion_percent} onChange={e => set('sr_portion_percent', e.target.value)} placeholder="75" />
+          </div>
+          <div>
+            <label style={fLabel}>SR Portion Amount * ($)</label>
+            <input type="number" step="0.01" style={fInput} value={form.sr_portion_amount} onChange={e => set('sr_portion_amount', e.target.value)} placeholder="0.00" />
+          </div>
+        </div>
+
+        {/* Payment Terms */}
+        <div>
+          <label style={fLabel}>Payment Terms *</label>
+          <select style={fInput} value={form.payment_terms} onChange={e => set('payment_terms', e.target.value)}>
+            <option value="">Select…</option>
+            <option value="due_now">Due Now</option>
+            <option value="50_50_rcd">50%/50% at RCD</option>
+            <option value="upon_closing">Upon Closing</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+
+        {/* Payment Terms Note */}
+        <div>
+          <label style={fLabel}>Payment Terms Note</label>
+          <input style={fInput} value={form.payment_terms_note} onChange={e => set('payment_terms_note', e.target.value)} placeholder="Optional note" />
+        </div>
+
+        {/* Co-Broker Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <label style={{ ...fLabel, marginBottom: 0 }}>Co-Broker?</label>
+          <button
+            type="button"
+            onClick={() => set('co_broker', !form.co_broker)}
+            style={{
+              padding: '4px 14px',
+              fontSize: 11,
+              fontWeight: 700,
+              background: form.co_broker ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${form.co_broker ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.12)'}`,
+              borderRadius: 6,
+              color: form.co_broker ? '#a78bfa' : '#6b7280',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            {form.co_broker ? 'Yes' : 'No'}
+          </button>
+        </div>
+
+        {/* Co-Broker Fields */}
+        {form.co_broker && (
+          <>
+            <div>
+              <label style={fLabel}>Co-Broker Name</label>
+              <input style={fInput} value={form.co_broker_name} onChange={e => set('co_broker_name', e.target.value)} placeholder="Firm / Agent name" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={fLabel}>Co-Broker %</label>
+                <input type="number" step="0.01" style={fInput} value={form.co_broker_percent} onChange={e => set('co_broker_percent', e.target.value)} placeholder="50" />
+              </div>
+              <div>
+                <label style={fLabel}>Co-Broker Amount ($)</label>
+                <input type="number" step="0.01" style={fInput} value={form.co_broker_amount} onChange={e => set('co_broker_amount', e.target.value)} placeholder="0.00" />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                id="co_broker_sep"
+                checked={form.co_broker_separate_invoice}
+                onChange={e => set('co_broker_separate_invoice', e.target.checked)}
+                style={{ accentColor: '#a78bfa', width: 14, height: 14 }}
+              />
+              <label htmlFor="co_broker_sep" style={{ ...fLabel, marginBottom: 0, cursor: 'pointer' }}>Separate Invoice</label>
+            </div>
+          </>
+        )}
+
+        {/* Reimbursable */}
+        <div>
+          <label style={fLabel}>Reimbursable Description</label>
+          <input style={fInput} value={form.reimbursable_description} onChange={e => set('reimbursable_description', e.target.value)} placeholder="Optional" />
+        </div>
+        <div>
+          <label style={fLabel}>Reimbursable Amount ($)</label>
+          <input type="number" step="0.01" style={fInput} value={form.reimbursable_amount} onChange={e => set('reimbursable_amount', e.target.value)} placeholder="0.00" />
+        </div>
+
+        {/* Deposit Retainage — only for sale */}
+        {form.deal_type === 'sale' && (
+          <div>
+            <label style={fLabel}>Deposit Retainage ($)</label>
+            <input type="number" step="0.01" style={fInput} value={form.deposit_retainage} onChange={e => set('deposit_retainage', e.target.value)} placeholder="0.00" />
+          </div>
+        )}
+
+        {/* Total Due display */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '10px 14px',
+          background: 'rgba(34,197,94,0.06)',
+          border: '1px solid rgba(34,197,94,0.2)',
+          borderRadius: 8,
+        }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Total Due</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#22c55e', fontVariantNumeric: 'tabular-nums' }}>
+            ${totalDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+
+        {/* PIN Entry / Save */}
+        {!showPin ? (
+          <button
+            onClick={() => setShowPin(true)}
+            style={{
+              padding: '10px 0',
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              background: 'rgba(232,184,75,0.12)',
+              border: '1px solid rgba(232,184,75,0.4)',
+              borderRadius: 8,
+              color: '#E8B84B',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Save &amp; Mark Earned
+          </button>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 11, color: '#9ca3af', textAlign: 'center' }}>Enter PIN to confirm</div>
+            <input
+              autoFocus
+              type="tel"
+              inputMode="numeric"
+              maxLength={4}
+              value={pin}
+              onChange={e => {
+                const v = e.target.value.replace(/\D/g, '').slice(0, 4)
+                setPin(v)
+                setPinErr(false)
+                if (v.length === 4) handleSave(v)
+              }}
+              placeholder="· · · ·"
+              style={{
+                width: '100%',
+                fontSize: 28,
+                textAlign: 'center',
+                letterSpacing: '0.4em',
+                padding: '12px',
+                background: 'rgba(255,255,255,0.05)',
+                border: `1px solid ${pinErr ? '#ef4444' : 'rgba(255,255,255,0.12)'}`,
+                borderRadius: 8,
+                color: '#f0f0f0',
+                outline: 'none',
+                boxSizing: 'border-box',
+                fontFamily: 'inherit',
+              }}
+            />
+            {pinErr && <div style={{ color: '#ef4444', fontSize: 11, textAlign: 'center' }}>Incorrect PIN</div>}
+            {saving && <div style={{ fontSize: 11, color: '#E8B84B', textAlign: 'center' }}>Saving…</div>}
+            <button onClick={() => { setShowPin(false); setPin(''); setPinErr(false) }} style={{ padding: '6px 0', fontSize: 12, color: '#6b7280', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
