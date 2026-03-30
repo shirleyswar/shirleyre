@@ -605,7 +605,7 @@
       <div class="form-row">
         <div class="form-field">
           <div class="form-label">Type</div>
-          <select class="form-select" id="deal-type">
+          <select class="form-select" id="deal-type" onchange="toggleLandFields()">
             <option value="">Select type</option>
             <option value="Sale">Sale</option>
             <option value="Lease">Lease</option>
@@ -644,6 +644,16 @@
       <div class="form-field">
         <div class="form-label">Primary Contact</div>
         <input class="form-input" id="deal-contact" placeholder="e.g. Donnie Braud">
+      </div>
+      <div class="form-row" id="land-fields-row" style="display:none;">
+        <div class="form-field">
+          <div class="form-label">Sq Ft</div>
+          <input class="form-input" id="deal-sqft" placeholder="e.g. 21780" type="number">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Acreage</div>
+          <input class="form-input" id="deal-acreage" placeholder="e.g. 0.5" type="number" step="0.01">
+        </div>
       </div>
       <div class="form-row">
         <div class="form-field">
@@ -1028,21 +1038,13 @@ function renderDeals() {
     return;
   }
 
-  // Sort: 1) priority (1 high → null last), 2) LIFE/status (pending→contract→hot→active→in_review→in_service→pipeline), 3) deadline (soonest first → null last)
-  const statusOrder = { pending_payment: 0, under_contract: 1, hot: 2, active: 3, in_review: 4, in_service: 5, pipeline: 6 };
+  // Sort: 1) Portfolio listings A-Z first, 2) all other deals A-Z after
+  const isPortfolio = d => ['active_listing', 'listing', 'Sale', 'Lease', 'Land', 'Industrial', 'Office', 'Retail'].includes(d.type);
   const sorted = [...deals].sort((a, b) => {
-    // Priority: numbered 1/2/3, null = lowest
-    const pa = a.priority != null ? Number(a.priority) : 9;
-    const pb = b.priority != null ? Number(b.priority) : 9;
-    if (pa !== pb) return pa - pb;
-    // LIFE (status)
-    const sa = statusOrder[a.status] ?? 9;
-    const sb = statusOrder[b.status] ?? 9;
-    if (sa !== sb) return sa - sb;
-    // Deadline (soonest first, null last)
-    const da = a.deadline ? new Date(a.deadline).getTime() : Infinity;
-    const db = b.deadline ? new Date(b.deadline).getTime() : Infinity;
-    return da - db;
+    const ap = isPortfolio(a) ? 0 : 1;
+    const bp = isPortfolio(b) ? 0 : 1;
+    if (ap !== bp) return ap - bp;
+    return (a.name || '').localeCompare(b.name || '');
   });
 
   list.innerHTML = sorted.map(d => `
@@ -1050,7 +1052,7 @@ function renderDeals() {
       <div class="deal-status-bar status-bar-${d.status || 'pipeline'}"></div>
       <div class="deal-info">
         <div class="deal-name">${escHtml(d.name)}</div>
-        <div class="deal-meta">${escHtml(d.type || '')}${d.type && d.contact ? ' · ' : ''}${escHtml(d.contact || '')} <span style="color:var(--dim);font-size:9px;margin-left:4px;">${STATUS_LABELS[d.status] || d.status || ''}</span>${d.deadline ? `<span style="color:var(--gold-d);font-size:9px;margin-left:6px;">⏎ ${d.deadline.substring(0,10)}</span>` : ''}${d.priority != null ? `<span style="color:var(--dim);font-size:9px;margin-left:6px;">P${d.priority}</span>` : ''}</div>
+        <div class="deal-meta">${escHtml(d.type || '')}${d.type && d.contact ? ' · ' : ''}${escHtml(d.contact || '')} <span style="color:var(--dim);font-size:9px;margin-left:4px;">${STATUS_LABELS[d.status] || d.status || ''}</span>${d.deadline ? `<span style="color:var(--gold-d);font-size:9px;margin-left:6px;">⏎ ${d.deadline.substring(0,10)}</span>` : ''}${d.priority != null ? `<span style="color:var(--dim);font-size:9px;margin-left:6px;">P${d.priority}</span>` : ''}${d.type === 'Land' && (d.sqft || d.acreage) ? `<span style="color:var(--gold-d);font-size:9px;margin-left:6px;">${d.sqft ? Number(d.sqft).toLocaleString() + ' SF' : ''}${d.sqft && d.acreage ? ' · ' : ''}${d.acreage ? d.acreage + ' ac' : ''}</span>` : ''}</div>
       </div>
       ${d.commission ? `<div class="deal-commission">${fmtMoney(d.commission)}</div>` : ''}
       <div class="deal-expand" id="de-${d.id}">&#9660;</div>
@@ -1239,6 +1241,12 @@ async function deleteDeal(id) {
   toast('Deal deleted');
 }
 
+function toggleLandFields() {
+  const type = document.getElementById('deal-type').value;
+  const row = document.getElementById('land-fields-row');
+  if (row) row.style.display = type === 'Land' ? 'flex' : 'none';
+}
+
 function editDeal(id) {
   const d = state.deals.find(d => d.id === id);
   if (!d) return;
@@ -1251,9 +1259,12 @@ function editDeal(id) {
   document.getElementById('deal-value').value = d.value || '';
   document.getElementById('deal-address').value = d.address || '';
   document.getElementById('deal-contact').value = d.contact || '';
+  document.getElementById('deal-sqft').value = d.sqft || '';
+  document.getElementById('deal-acreage').value = d.acreage || '';
   document.getElementById('deal-priority').value = d.priority != null ? String(d.priority) : '';
   document.getElementById('deal-deadline').value = d.deadline ? d.deadline.substring(0, 10) : '';
   document.getElementById('deal-notes').value = d.notes || '';
+  toggleLandFields();
   document.getElementById('modal-deal').classList.remove('hidden');
 }
 
@@ -1270,6 +1281,8 @@ async function saveDeal() {
     value:      parseFloat(document.getElementById('deal-value').value) || null,
     address:    document.getElementById('deal-address').value.trim() || null,
     contact:    document.getElementById('deal-contact').value.trim() || null,
+    sqft:       parseFloat(document.getElementById('deal-sqft').value) || null,
+    acreage:    parseFloat(document.getElementById('deal-acreage').value) || null,
     priority:   document.getElementById('deal-priority').value ? parseInt(document.getElementById('deal-priority').value) : null,
     deadline:   document.getElementById('deal-deadline').value || null,
     notes:      document.getElementById('deal-notes').value.trim() || null,
@@ -1433,9 +1446,12 @@ function openModal(type) {
     document.getElementById('deal-value').value = '';
     document.getElementById('deal-address').value = '';
     document.getElementById('deal-contact').value = '';
+    document.getElementById('deal-sqft').value = '';
+    document.getElementById('deal-acreage').value = '';
     document.getElementById('deal-priority').value = '';
     document.getElementById('deal-deadline').value = '';
     document.getElementById('deal-notes').value = '';
+    toggleLandFields();
   } else if (type === 'task') {
     document.getElementById('task-title').value = '';
     document.getElementById('task-deal-name').value = '';
