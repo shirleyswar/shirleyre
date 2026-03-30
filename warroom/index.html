@@ -790,6 +790,66 @@
 <div id="toast-container"></div>
 
 <!-- ═══════════════════════════════════════════════════
+     LANDED DIALOG
+═══════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-landed">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <div class="modal-title" style="color:#16a34a;">LANDED — Commission Earned</div>
+      <button class="modal-close" onclick="closeModal('landed')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="landed-deal-id">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:13px;color:#166534;">
+        Deal closes here. Enter the gross numbers below.
+      </div>
+
+      <div class="form-field">
+        <div class="form-label">Gross Deal Value ($) *</div>
+        <input class="form-input" id="landed-deal-value" type="number" placeholder="e.g. 1250000" oninput="calcLandedCommission()">
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Commission Rate (%) *</div>
+          <input class="form-input" id="landed-comm-rate" type="number" step="0.01" placeholder="e.g. 6" oninput="calcLandedCommission()">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Matthew's Split</div>
+          <input class="form-input" id="landed-split" type="number" value="75" step="1" oninput="calcLandedCommission()">
+        </div>
+      </div>
+
+      <div id="landed-calc" style="display:none;background:#1a1a1a;border-radius:6px;padding:12px 14px;margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="color:#888;font-size:12px;">Firm Total Commission</span>
+          <span id="landed-firm-total" style="color:#fff;font-size:13px;font-weight:600;"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="color:#888;font-size:12px;">Matthew's 75% Split</span>
+          <span id="landed-matthew-cut" style="color:#22c55e;font-size:15px;font-weight:700;"></span>
+        </div>
+        <div style="border-top:1px solid #333;padding-top:8px;margin-top:4px;">
+          <div style="display:flex;justify-content:space-between;">
+            <span style="color:#888;font-size:11px;">Commission Pending Collection</span>
+            <span id="landed-pending" style="color:#facc15;font-size:12px;font-weight:600;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field" style="margin-top:12px;">
+        <div class="form-label">PIN *</div>
+        <input class="form-input" id="landed-pin" type="password" placeholder="Enter PIN to confirm">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('landed')">Cancel</button>
+      <button class="btn-save" style="background:#16a34a;border-color:#16a34a;" onclick="confirmLanded()">LANDED</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
      UC TRANSITION DIALOG
 ═══════════════════════════════════════════════════ -->
 <div class="modal-overlay hidden" id="modal-uc">
@@ -1473,32 +1533,87 @@ async function sbUpdateWhere(table, filter, payload) {
   return { ok: res.ok };
 }
 
-async function landedDeal(id) {
+function landedDeal(id) {
   const deal = state.deals.find(d => d.id === id);
   if (!deal) return;
-  if (!confirm(`Mark "${deal.name}" as LANDED?\n\nCommission earned — moves to Pending Payment.`)) return;
 
-  // PIN confirmation
-  const pin = prompt('Enter PIN to confirm LANDED:');
-  if (!pin) return;
+  document.getElementById('landed-deal-id').value = id;
+  // Pre-fill deal value if already set on the deal
+  document.getElementById('landed-deal-value').value = deal.value || '';
+  document.getElementById('landed-comm-rate').value = deal.commission_rate ? (deal.commission_rate * 100).toFixed(2) : '';
+  document.getElementById('landed-split').value = '75';
+  document.getElementById('landed-pin').value = '';
+  document.getElementById('landed-calc').style.display = 'none';
+  calcLandedCommission();
+  document.getElementById('modal-landed').classList.remove('hidden');
+}
+
+function calcLandedCommission() {
+  const val  = parseFloat(document.getElementById('landed-deal-value').value) || 0;
+  const rate = parseFloat(document.getElementById('landed-comm-rate').value) || 0;
+  const split = parseFloat(document.getElementById('landed-split').value) || 75;
+  const calc = document.getElementById('landed-calc');
+
+  if (!val || !rate) { calc.style.display = 'none'; return; }
+
+  const firmTotal = val * (rate / 100);
+  const matthewCut = firmTotal * (split / 100);
+
+  document.getElementById('landed-firm-total').textContent = '$' + firmTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.getElementById('landed-matthew-cut').textContent = '$' + matthewCut.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.getElementById('landed-pending').textContent = '$' + matthewCut.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  calc.style.display = 'block';
+}
+
+async function confirmLanded() {
+  const id = document.getElementById('landed-deal-id').value;
+  const deal = state.deals.find(d => d.id === id);
+  if (!deal) return;
+
+  const val  = parseFloat(document.getElementById('landed-deal-value').value);
+  const rate = parseFloat(document.getElementById('landed-comm-rate').value);
+  const split = parseFloat(document.getElementById('landed-split').value) || 75;
+  const pin  = document.getElementById('landed-pin').value;
+
+  if (!val) { toast('Gross deal value is required', 'error'); return; }
+  if (!rate) { toast('Commission rate is required', 'error'); return; }
+  if (!pin)  { toast('PIN is required', 'error'); return; }
+
   const pinHash = await sha256(pin);
-  const stored = localStorage.getItem('warroom_pin') || DEFAULT_PIN_HASH;
+  const stored  = localStorage.getItem('warroom_pin') || DEFAULT_PIN_HASH;
   if (pinHash !== stored) { toast('Incorrect PIN', 'error'); return; }
 
+  const firmTotal   = val * (rate / 100);
+  const matthewCut  = firmTotal * (split / 100);
+  const commRate    = rate / 100; // store as decimal
+
   setSyncStatus('Saving');
-  await sbUpdate('deals', id, { status: 'pending_payment', updated_at: new Date().toISOString() });
-  deal.status = 'pending_payment';
+
+  await sbUpdate('deals', id, {
+    status:                'pending_payment',
+    value:                 val,
+    commission_rate:       commRate,
+    commission_estimated:  matthewCut,
+    earned:                true,
+    updated_at:            new Date().toISOString(),
+  });
+  deal.status               = 'pending_payment';
+  deal.value                = val;
+  deal.commission_rate      = commRate;
+  deal.commission_estimated = matthewCut;
+  deal.earned               = true;
 
   await sbInsert('activity_log', {
-    deal_id: id,
+    deal_id:     id,
     action_type: 'landed',
-    description: 'Deal moved to Pending Payment — commission earned',
-    created_by: 'matthew',
+    description: `LANDED — Gross: $${val.toLocaleString()} @ ${rate}% = $${firmTotal.toLocaleString('en-US',{maximumFractionDigits:0})} firm / $${matthewCut.toLocaleString('en-US',{maximumFractionDigits:0})} Matthew`,
+    created_by:  'matthew',
   });
 
   setSyncStatus('Live');
+  closeModal('landed');
   renderAll();
-  toast('LANDED — moved to Pending Payment', 'success');
+  toast(`LANDED — $${matthewCut.toLocaleString('en-US',{maximumFractionDigits:0})} pending collection`, 'success');
 }
 
 async function deleteDeal(id) {
@@ -1757,6 +1872,14 @@ function openModal(type) {
 
 function closeModal(type) {
   document.getElementById('modal-' + type).classList.add('hidden');
+  if (type === 'landed') {
+    document.getElementById('landed-deal-id').value = '';
+    document.getElementById('landed-deal-value').value = '';
+    document.getElementById('landed-comm-rate').value = '';
+    document.getElementById('landed-split').value = '75';
+    document.getElementById('landed-pin').value = '';
+    document.getElementById('landed-calc').style.display = 'none';
+  }
   if (type === 'uc') {
     document.getElementById('uc-deal-id').value = '';
     document.getElementById('uc-contract-price').value = '';
