@@ -187,7 +187,8 @@ function useDateLabel() {
       const now = new Date()
       const day = now.toLocaleDateString('en-US', { timeZone: 'America/Chicago', weekday: 'long' }).toUpperCase()
       const date = now.toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()
-      setLabel(`${day}, ${date}`)
+      // Store both formats: full (desktop) and date-only (mobile)
+      setLabel(`${day}||${date}`)
     }
     update()
     const t = setInterval(update, 60000)
@@ -270,16 +271,30 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
         ShirleyCRE
       </span>
 
-      {/* Date — absolute center */}
-      {dateLabel && (
-        <span style={{
-          position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-          fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
-          color: '#22c55e', fontFamily: 'var(--font-body)',
-          textShadow: '0 0 10px rgba(34,197,94,0.4)',
-          whiteSpace: 'nowrap', pointerEvents: 'none',
-        }}>{dateLabel}</span>
-      )}
+      {/* Date — absolute center. Mobile: date only. Desktop: day + date. */}
+      {dateLabel && (() => {
+        const [day, date] = dateLabel.split('||')
+        return (
+          <>
+            {/* Mobile: date only */}
+            <span className="sm:hidden" style={{
+              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+              color: '#22c55e', fontFamily: 'var(--font-body)',
+              textShadow: '0 0 10px rgba(34,197,94,0.4)',
+              whiteSpace: 'nowrap', pointerEvents: 'none',
+            }}>{date}</span>
+            {/* Desktop: day + date */}
+            <span className="hidden sm:inline" style={{
+              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+              color: '#22c55e', fontFamily: 'var(--font-body)',
+              textShadow: '0 0 10px rgba(34,197,94,0.4)',
+              whiteSpace: 'nowrap', pointerEvents: 'none',
+            }}>{day}, {date}</span>
+          </>
+        )
+      })()}
 
       <div style={{ flex: 1 }} />
 
