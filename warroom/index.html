@@ -645,6 +645,21 @@
         <div class="form-label">Primary Contact</div>
         <input class="form-input" id="deal-contact" placeholder="e.g. Donnie Braud">
       </div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Priority</div>
+          <select class="form-select" id="deal-priority">
+            <option value="">— None —</option>
+            <option value="1">1 — High</option>
+            <option value="2">2 — Medium</option>
+            <option value="3">3 — Low</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <div class="form-label">Deadline</div>
+          <input class="form-input" id="deal-deadline" type="date">
+        </div>
+      </div>
       <div class="form-field">
         <div class="form-label">Notes</div>
         <textarea class="form-textarea" id="deal-notes" placeholder="Current status, action items, key dates..."></textarea>
@@ -1013,16 +1028,29 @@ function renderDeals() {
     return;
   }
 
-  // Sort: pending_payment → under_contract → active → pipeline
-  const order = { pending_payment: 0, under_contract: 1, active: 2, pipeline: 3 };
-  const sorted = [...deals].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+  // Sort: 1) priority (1 high → null last), 2) LIFE/status (pending→contract→hot→active→in_review→in_service→pipeline), 3) deadline (soonest first → null last)
+  const statusOrder = { pending_payment: 0, under_contract: 1, hot: 2, active: 3, in_review: 4, in_service: 5, pipeline: 6 };
+  const sorted = [...deals].sort((a, b) => {
+    // Priority: numbered 1/2/3, null = lowest
+    const pa = a.priority != null ? Number(a.priority) : 9;
+    const pb = b.priority != null ? Number(b.priority) : 9;
+    if (pa !== pb) return pa - pb;
+    // LIFE (status)
+    const sa = statusOrder[a.status] ?? 9;
+    const sb = statusOrder[b.status] ?? 9;
+    if (sa !== sb) return sa - sb;
+    // Deadline (soonest first, null last)
+    const da = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+    const db = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+    return da - db;
+  });
 
   list.innerHTML = sorted.map(d => `
     <div class="deal-row" id="dr-${d.id}" onclick="toggleDeal('${d.id}')">
       <div class="deal-status-bar status-bar-${d.status || 'pipeline'}"></div>
       <div class="deal-info">
         <div class="deal-name">${escHtml(d.name)}</div>
-        <div class="deal-meta">${escHtml(d.type || '')}${d.type && d.contact ? ' · ' : ''}${escHtml(d.contact || '')} <span style="color:var(--dim);font-size:9px;margin-left:4px;">${STATUS_LABELS[d.status] || d.status || ''}</span></div>
+        <div class="deal-meta">${escHtml(d.type || '')}${d.type && d.contact ? ' · ' : ''}${escHtml(d.contact || '')} <span style="color:var(--dim);font-size:9px;margin-left:4px;">${STATUS_LABELS[d.status] || d.status || ''}</span>${d.deadline ? `<span style="color:var(--gold-d);font-size:9px;margin-left:6px;">⏎ ${d.deadline.substring(0,10)}</span>` : ''}${d.priority != null ? `<span style="color:var(--dim);font-size:9px;margin-left:6px;">P${d.priority}</span>` : ''}</div>
       </div>
       ${d.commission ? `<div class="deal-commission">${fmtMoney(d.commission)}</div>` : ''}
       <div class="deal-expand" id="de-${d.id}">&#9660;</div>
@@ -1223,6 +1251,8 @@ function editDeal(id) {
   document.getElementById('deal-value').value = d.value || '';
   document.getElementById('deal-address').value = d.address || '';
   document.getElementById('deal-contact').value = d.contact || '';
+  document.getElementById('deal-priority').value = d.priority != null ? String(d.priority) : '';
+  document.getElementById('deal-deadline').value = d.deadline ? d.deadline.substring(0, 10) : '';
   document.getElementById('deal-notes').value = d.notes || '';
   document.getElementById('modal-deal').classList.remove('hidden');
 }
@@ -1240,6 +1270,8 @@ async function saveDeal() {
     value:      parseFloat(document.getElementById('deal-value').value) || null,
     address:    document.getElementById('deal-address').value.trim() || null,
     contact:    document.getElementById('deal-contact').value.trim() || null,
+    priority:   document.getElementById('deal-priority').value ? parseInt(document.getElementById('deal-priority').value) : null,
+    deadline:   document.getElementById('deal-deadline').value || null,
     notes:      document.getElementById('deal-notes').value.trim() || null,
   };
 
@@ -1401,6 +1433,8 @@ function openModal(type) {
     document.getElementById('deal-value').value = '';
     document.getElementById('deal-address').value = '';
     document.getElementById('deal-contact').value = '';
+    document.getElementById('deal-priority').value = '';
+    document.getElementById('deal-deadline').value = '';
     document.getElementById('deal-notes').value = '';
   } else if (type === 'task') {
     document.getElementById('task-title').value = '';
