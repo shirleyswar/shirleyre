@@ -357,18 +357,18 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
         ShirleyCRE
       </span>
 
-      {/* Mobile: date flows inline after wordmark (no overlap) */}
+      {/* Mobile: date + time inline after wordmark */}
       {dateLabel && (() => {
-        const [day, date] = dateLabel.split('||')
+        const [, date] = dateLabel.split('||')
         return (
-          <>
-            <span className="sm:hidden" style={{
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
-              color: '#22c55e', fontFamily: 'var(--font-body)',
-              whiteSpace: 'nowrap', marginLeft: 8, flexShrink: 1, overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}>{date}</span>
-          </>
+          <span className="sm:hidden" style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
+            color: '#22c55e', fontFamily: 'var(--font-body)',
+            whiteSpace: 'nowrap', marginLeft: 8, flexShrink: 1, overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {date}{liveTime ? ` · ${liveTime}` : ''}
+          </span>
         )
       })()}
 
