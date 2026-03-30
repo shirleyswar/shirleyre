@@ -271,43 +271,48 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
         ShirleyCRE
       </span>
 
-      {/* Date — absolute center. Mobile: date only. Desktop: day + date. */}
+      {/* Mobile: date flows inline after wordmark (no overlap) */}
       {dateLabel && (() => {
         const [day, date] = dateLabel.split('||')
         return (
           <>
-            {/* Mobile: date only */}
             <span className="sm:hidden" style={{
-              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-              fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
               color: '#22c55e', fontFamily: 'var(--font-body)',
-              textShadow: '0 0 10px rgba(34,197,94,0.4)',
-              whiteSpace: 'nowrap', pointerEvents: 'none',
+              whiteSpace: 'nowrap', marginLeft: 8, flexShrink: 1, overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}>{date}</span>
-            {/* Desktop: day + date */}
-            <span className="hidden sm:inline" style={{
-              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-              fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
-              color: '#22c55e', fontFamily: 'var(--font-body)',
-              textShadow: '0 0 10px rgba(34,197,94,0.4)',
-              whiteSpace: 'nowrap', pointerEvents: 'none',
-            }}>{day}, {date}</span>
           </>
         )
       })()}
 
       <div style={{ flex: 1 }} />
 
-      {/* Live time — updates every minute */}
+      {/* Desktop: day + date centered, live time, LIVE dot */}
+      {dateLabel && (() => {
+        const [day, date] = dateLabel.split('||')
+        return (
+          <span className="hidden sm:inline" style={{
+            position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+            color: '#22c55e', fontFamily: 'var(--font-body)',
+            textShadow: '0 0 10px rgba(34,197,94,0.4)',
+            whiteSpace: 'nowrap', pointerEvents: 'none',
+          }}>{day}, {date}</span>
+        )
+      })()}
+
+      {/* Live time — desktop only */}
       {liveTime && (
-        <span style={{
+        <span className="hidden sm:inline" style={{
           fontSize: 12, fontWeight: 700, color: 'rgba(232,184,75,0.75)',
           fontFamily: 'var(--font-body)', letterSpacing: '0.04em',
           marginRight: 10, flexShrink: 0, fontVariantNumeric: 'tabular-nums',
         }}>{liveTime}</span>
       )}
 
-      <LiveStatusDot />
+      {/* LIVE dot — desktop only */}
+      <span className="hidden sm:flex"><LiveStatusDot /></span>
     </header>
   )
 }
