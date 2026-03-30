@@ -2036,6 +2036,101 @@ function ContactsCard({ deal }: { deal: Deal }) {
 
 // ─── Inner component ──────────────────────────────────────────────────────────
 
+// ─── UC Broker Row (with Save to Contacts) ───────────────────────────────────
+
+function UCBrokerRow({
+  broker, onChange, fInput, dealId,
+}: {
+  broker: { name: string; firm: string; pct: string }
+  onChange: (updated: { name: string; firm: string; pct: string }) => void
+  fInput: React.CSSProperties
+  dealId: string
+}) {
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  async function saveToContacts() {
+    if (!broker.name.trim()) return
+    setSaving(true)
+    try {
+      // Check if contact already exists by name
+      const { data: existing } = await supabase
+        .from('contacts')
+        .select('id')
+        .ilike('name', broker.name.trim())
+        .limit(1)
+
+      let contactId: string | null = null
+
+      if (existing && existing.length > 0) {
+        contactId = existing[0].id
+        // Update firm if we have it
+        if (broker.firm) {
+          await supabase.from('contacts').update({ company: broker.firm }).eq('id', contactId)
+        }
+      } else {
+        // Create new contact
+        const { data: newContact } = await supabase
+          .from('contacts')
+          .insert({
+            name: broker.name.trim(),
+            company: broker.firm.trim() || null,
+            priority: 'standard',
+          })
+          .select()
+          .single()
+        if (newContact) contactId = newContact.id
+      }
+
+      // Link to this deal
+      if (contactId) {
+        await supabase.from('deal_contacts').upsert({
+          deal_id: dealId,
+          contact_id: contactId,
+          relationship: 'Co-Broker',
+        }, { onConflict: 'deal_id,contact_id' })
+      }
+
+      setSaved(true)
+    } catch {}
+    setSaving(false)
+  }
+
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 72px', gap: 8, marginBottom: 4 }}>
+        <input style={fInput} placeholder="Broker Name" value={broker.name}
+          onChange={e => onChange({ ...broker, name: e.target.value })} />
+        <input style={fInput} placeholder="Firm" value={broker.firm}
+          onChange={e => onChange({ ...broker, firm: e.target.value })} />
+        <input type="number" step="0.01" style={fInput} placeholder="%" value={broker.pct}
+          onChange={e => onChange({ ...broker, pct: e.target.value })} />
+      </div>
+      {broker.name.trim() && (
+        <button
+          onClick={saveToContacts}
+          disabled={saving}
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            background: saved ? 'rgba(34,197,94,0.1)' : 'rgba(79,142,247,0.08)',
+            border: `1px solid ${saved ? 'rgba(34,197,94,0.35)' : 'rgba(79,142,247,0.3)'}`,
+            borderRadius: 5,
+            color: saved ? '#22c55e' : '#4F8EF7',
+            cursor: saving ? 'default' : 'pointer',
+            padding: '3px 10px',
+            fontFamily: 'inherit',
+            transition: 'all 0.2s',
+          }}
+        >
+          {saved ? '✓ Saved to Contacts' : saving ? 'Saving…' : '+ Save to Contacts'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 function DealDashboardInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -3134,18 +3229,13 @@ function DealDashboardInner() {
                     <span style={{ fontSize: 12, color: '#9ca3af' }}>Co-Broker — Listing Side</span>
                   </label>
                   {ucForm.cobrokeListingOn && ucForm.listingBrokers.map((b, i) => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginBottom: 6 }}>
-                      <input style={fInput} placeholder="Broker Name" value={b.name}
-                        onChange={e => setUCForm(f => { const a = [...f.listingBrokers]; a[i] = { ...a[i], name: e.target.value }; return { ...f, listingBrokers: a } })} />
-                      <input style={fInput} placeholder="Firm" value={b.firm}
-                        onChange={e => setUCForm(f => { const a = [...f.listingBrokers]; a[i] = { ...a[i], firm: e.target.value }; return { ...f, listingBrokers: a } })} />
-                      <input type="number" step="0.01" style={{ ...fInput, width: 70 }} placeholder="%" value={b.pct}
-                        onChange={e => setUCForm(f => { const a = [...f.listingBrokers]; a[i] = { ...a[i], pct: e.target.value }; return { ...f, listingBrokers: a } })} />
-                    </div>
+                    <UCBrokerRow key={i} broker={b}
+                      onChange={updated => setUCForm(f => { const a = [...f.listingBrokers]; a[i] = updated; return { ...f, listingBrokers: a } })}
+                      fInput={fInput} dealId={deal.id} />
                   ))}
                   {ucForm.cobrokeListingOn && (
                     <button onClick={() => setUCForm(f => ({ ...f, listingBrokers: [...f.listingBrokers, { name: '', firm: '', pct: '' }] }))}
-                      style={{ fontSize: 11, color: '#2dd4bf', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>+ Add Co-Broker</button>
+                      style={{ fontSize: 11, color: '#2dd4bf', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: 2 }}>+ Add Co-Broker</button>
                   )}
                 </div>
 
@@ -3158,18 +3248,13 @@ function DealDashboardInner() {
                     <span style={{ fontSize: 12, color: '#9ca3af' }}>Co-Broker — {isLease ? 'Tenant' : 'Buyer'} Side</span>
                   </label>
                   {ucForm.cobrokeBuyerOn && ucForm.buyerBrokers.map((b, i) => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginBottom: 6 }}>
-                      <input style={fInput} placeholder="Broker Name" value={b.name}
-                        onChange={e => setUCForm(f => { const a = [...f.buyerBrokers]; a[i] = { ...a[i], name: e.target.value }; return { ...f, buyerBrokers: a } })} />
-                      <input style={fInput} placeholder="Firm" value={b.firm}
-                        onChange={e => setUCForm(f => { const a = [...f.buyerBrokers]; a[i] = { ...a[i], firm: e.target.value }; return { ...f, buyerBrokers: a } })} />
-                      <input type="number" step="0.01" style={{ ...fInput, width: 70 }} placeholder="%" value={b.pct}
-                        onChange={e => setUCForm(f => { const a = [...f.buyerBrokers]; a[i] = { ...a[i], pct: e.target.value }; return { ...f, buyerBrokers: a } })} />
-                    </div>
+                    <UCBrokerRow key={i} broker={b}
+                      onChange={updated => setUCForm(f => { const a = [...f.buyerBrokers]; a[i] = updated; return { ...f, buyerBrokers: a } })}
+                      fInput={fInput} dealId={deal.id} />
                   ))}
                   {ucForm.cobrokeBuyerOn && (
                     <button onClick={() => setUCForm(f => ({ ...f, buyerBrokers: [...f.buyerBrokers, { name: '', firm: '', pct: '' }] }))}
-                      style={{ fontSize: 11, color: '#2dd4bf', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>+ Add Co-Broker</button>
+                      style={{ fontSize: 11, color: '#2dd4bf', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: 2 }}>+ Add Co-Broker</button>
                   )}
                 </div>
 
