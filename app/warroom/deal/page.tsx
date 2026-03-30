@@ -2652,8 +2652,8 @@ function DealDashboardInner() {
           </div>
         </div>
 
-        {/* ── RIGHT COLUMN — hidden on mobile ── */}
-        <div className="hidden sm:block sm:w-[35%]" style={{ minWidth: 0 }}>
+        {/* ── RIGHT COLUMN — visible on all screens (stacks below left on mobile) ── */}
+        <div className="w-full sm:w-[35%]" style={{ minWidth: 0 }}>
 
           {/* Deal Actions Card */}
           <div style={{
