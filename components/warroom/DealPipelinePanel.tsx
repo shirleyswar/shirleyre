@@ -506,10 +506,25 @@ export default function DealPipelinePanel() {
                   </td>
                 </tr>
               ) : (
-                sortedDeals(deals).map((deal, i, arr) => {
+                (() => {
+                  // Build base-address frequency map to detect duplicates
+                  const baseCounts: Record<string, number> = {}
+                  deals.forEach(d => {
+                    const b = baseAddress(d.address)
+                    if (b && !d.address?.startsWith('📁')) baseCounts[b] = (baseCounts[b] || 0) + 1
+                  })
+                  return sortedDeals(deals).map((deal, i, arr) => {
                   const isPortfolio = deal.address?.startsWith('📁')
                   const subDeals = deals.filter(d => d.parent_deal_id === deal.id).sort((a,b) => (a.address||'').localeCompare(b.address||''))
                   const isExpanded = expandedPortfolios.has(deal.id)
+
+                  // Compute display address: append suite if base address is shared by >1 deal
+                  const base = baseAddress(deal.address)
+                  const suite = extractSuite(deal.address)
+                  const hasDupe = base && baseCounts[base] > 1
+                  const parsedBase = (deal as any).addr_display || base || deal.address || ''
+                  const displayAddr = hasDupe && suite ? `${parsedBase} ${suite}` : undefined
+
                   return (
                     <>
                       <DealRow
@@ -518,6 +533,7 @@ export default function DealPipelinePanel() {
                         isLast={i === arr.length - 1 && (!isExpanded || subDeals.length === 0)}
                         isPortfolio={isPortfolio}
                         isExpanded={isExpanded}
+                        displayAddress={displayAddr}
                         onToggleExpand={isPortfolio ? () => setExpandedPortfolios(prev => {
                           const next = new Set(prev)
                           next.has(deal.id) ? next.delete(deal.id) : next.add(deal.id)
@@ -527,16 +543,24 @@ export default function DealPipelinePanel() {
                         onDelete={(id) => setDeals(prev => prev.filter(d => d.id !== id))}
                         onAddSubDeal={(subDeal) => setDeals(prev => [...prev, subDeal])}
                       />
-                      {isPortfolio && isExpanded && subDeals.map((sub, si) => (
+                      {isPortfolio && isExpanded && subDeals.map((sub, si) => {
+                        const subBase = baseAddress(sub.address)
+                        const subSuite = extractSuite(sub.address)
+                        const subDupe = subBase && baseCounts[subBase] > 1
+                        const subParsedBase = (sub as any).addr_display || subBase || sub.address || ''
+                        const subDisplayAddr = subDupe && subSuite ? `${subParsedBase} ${subSuite}` : undefined
+                        return (
                         <DealRow
                           key={sub.id}
                           deal={sub}
                           isLast={si === subDeals.length - 1}
                           isSubDeal
+                          displayAddress={subDisplayAddr}
                           onUpdate={(updated) => setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))}
                           onDelete={(id) => setDeals(prev => prev.filter(d => d.id !== id))}
                         />
-                      ))}
+                        )
+                      })}
                       {isPortfolio && isExpanded && (
                         <AddSubDealRow
                           key={`add-sub-${deal.id}`}
@@ -547,6 +571,7 @@ export default function DealPipelinePanel() {
                     </>
                   )
                 })
+                })()
               )}
             </tbody>
           </table>
@@ -560,6 +585,22 @@ export default function DealPipelinePanel() {
 type KillAction = { status: 'expired' | 'dormant' | 'terminated'; label: string; folderPath: string }
 
 const KILLABLE_STATUSES: DealStatus[] = ['active', 'hot', 'in_review', 'in_service', 'pipeline']
+
+// Extract suite/unit suffix from a raw address string
+// e.g. "619 Jefferson Hwy. Suite 2-G" → "Suite 2-G"
+//      "1400 Wooddale Blvd Unit 3"     → "Unit 3"
+//      "619 Jefferson Hwy."            → null
+function extractSuite(address: string | null): string | null {
+  if (!address) return null
+  const m = address.match(/\b(Suite|Ste\.?|Unit|Apt\.?|#)\s*[\w-]+/i)
+  return m ? m[0] : null
+}
+
+// Return base address without suite suffix
+function baseAddress(address: string | null): string | null {
+  if (!address) return null
+  return address.replace(/\s*\b(Suite|Ste\.?|Unit|Apt\.?|#)\s*[\w-]+/i, '').trim()
+}
 
 function getKillOptions(deal: Deal): KillAction[] {
   // Only show kill options for active/live statuses — not after revert or already killed
@@ -585,9 +626,10 @@ async function sha256(text: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, onToggleExpand, isSubDeal, onAddSubDeal }: {
+function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, onToggleExpand, isSubDeal, onAddSubDeal, displayAddress }: {
   deal: Deal; isLast: boolean; onUpdate: (d: Deal) => void; onDelete: (id: string) => void
   isPortfolio?: boolean; isExpanded?: boolean; onToggleExpand?: () => void; isSubDeal?: boolean; onAddSubDeal?: (d: Deal) => void
+  displayAddress?: string
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(deal)
@@ -792,13 +834,13 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         {isPortfolio && onToggleExpand ? (
           <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700 }}>
             <span style={{ fontSize: 13, transition: 'transform 0.15s', display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-            {(deal as any).addr_display || deal.address?.replace(/^📁\s*/, '')}
+            {displayAddress || (deal as any).addr_display || deal.address?.replace(/^📁\s*/, '')}
           </button>
         ) : deal.address?.startsWith('📁') ? (
           <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>{deal.address?.replace(/^📁\s*/, '')}</span>
         ) : (
           <span style={{ color: isSubDeal ? 'var(--text-muted)' : 'var(--text-primary)' }}>
-            {(deal as any).addr_display || deal.address || '—'}
+            {displayAddress || (deal as any).addr_display || deal.address || '—'}
           </span>
         )}
       </td>
