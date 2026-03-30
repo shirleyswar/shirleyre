@@ -235,6 +235,8 @@
   .deal-btn.delete:hover { background: rgba(239,68,68,0.15); }
   .deal-btn.status-change { color: var(--muted); border-color: var(--border); background: var(--bg2); }
   .deal-btn.status-change:hover { color: var(--text); border-color: var(--border); }
+  .deal-btn.landed { color: #fff; border-color: #16a34a; background: #16a34a; font-weight: 700; letter-spacing: .04em; }
+  .deal-btn.landed:hover { background: #15803d; border-color: #15803d; }
 
   /* Money mover rank badge */
   .mm-rank {
@@ -1140,6 +1142,7 @@ function renderDeals() {
       <div class="deal-detail-actions">
         <button class="deal-btn edit" onclick="editDeal('${d.id}');event.stopPropagation()">Edit</button>
         <button class="deal-btn status-change" onclick="cycleStatus('${d.id}');event.stopPropagation()">&#10227; Status</button>
+        ${d.status === 'under_contract' ? `<button class="deal-btn landed" onclick="landedDeal('${d.id}');event.stopPropagation()">LANDED</button>` : ''}
         <button class="deal-btn delete" onclick="deleteDeal('${d.id}');event.stopPropagation()">Delete</button>
       </div>
     </div>
@@ -1459,6 +1462,34 @@ async function sbUpdateWhere(table, filter, payload) {
     body: JSON.stringify(payload),
   });
   return { ok: res.ok };
+}
+
+async function landedDeal(id) {
+  const deal = state.deals.find(d => d.id === id);
+  if (!deal) return;
+  if (!confirm(`Mark "${deal.name}" as LANDED?\n\nCommission earned — moves to Pending Payment.`)) return;
+
+  // PIN confirmation
+  const pin = prompt('Enter PIN to confirm LANDED:');
+  if (!pin) return;
+  const pinHash = await sha256(pin);
+  const stored = localStorage.getItem('warroom_pin') || DEFAULT_PIN_HASH;
+  if (pinHash !== stored) { toast('Incorrect PIN', 'error'); return; }
+
+  setSyncStatus('Saving');
+  await sbUpdate('deals', id, { status: 'pending_payment', updated_at: new Date().toISOString() });
+  deal.status = 'pending_payment';
+
+  await sbInsert('activity_log', {
+    deal_id: id,
+    action_type: 'landed',
+    description: 'Deal moved to Pending Payment — commission earned',
+    created_by: 'matthew',
+  });
+
+  setSyncStatus('Live');
+  renderAll();
+  toast('LANDED — moved to Pending Payment', 'success');
 }
 
 async function deleteDeal(id) {
