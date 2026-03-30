@@ -92,6 +92,7 @@ function PinModal({
 
 export default function AccountsReceivablePanel() {
   const [items, setItems] = useState<ArItem[]>([])
+  const [legacyDeals, setLegacyDeals] = useState<{id:string;name:string;commission_estimated:number|null;commission_collected:number|null}[]>([])
   const [loading, setLoading] = useState(true)
   const [tableError, setTableError] = useState(false)
 
@@ -122,7 +123,17 @@ export default function AccountsReceivablePanel() {
           return
         }
 
-        if (data) setItems(data as ArItem[])
+        if (data) {
+          setItems(data as ArItem[])
+          // If ar_items is empty, pull pending_payment deals as a fallback display
+          if (data.length === 0) {
+            const { data: deals } = await supabase
+              .from('deals')
+              .select('id, name, commission_estimated, commission_collected')
+              .eq('status', 'pending_payment')
+            if (deals) setLegacyDeals(deals as typeof legacyDeals)
+          }
+        }
       } catch (e) {
         setTableError(true)
       }
@@ -206,9 +217,33 @@ export default function AccountsReceivablePanel() {
           </div>
         </div>
       ) : sorted.length === 0 ? (
-        <div style={{ fontSize: 13, color: 'var(--success)', textAlign: 'center', padding: '12px 0' }}>
-          ✓ No AR items yet
-        </div>
+        legacyDeals.length > 0 ? (
+          // Legacy fallback: show pending_payment deals until AR items are created via Earned toggle
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, fontStyle: 'italic' }}>
+              Pending payment deals — use the Earned toggle on each deal page to create a full AR item.
+            </div>
+            {legacyDeals.map(d => {
+              const outstanding = Math.max(0, (d.commission_estimated || 0) - (d.commission_collected || 0))
+              return (
+                <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--bg-elevated)', borderRadius: 7, border: '1px solid var(--border-subtle)' }}>
+                  <a href={`/warroom/deal?id=${d.id}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 6, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.35)', color: '#A78BFA', textDecoration: 'none', fontSize: 13, flexShrink: 0 }}>↗</a>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Pending Payment</div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#C084FC', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                    {outstanding > 0 ? `$${outstanding.toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '—'}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div style={{ fontSize: 13, color: 'var(--success)', textAlign: 'center', padding: '12px 0' }}>
+            ✓ All commissions collected
+          </div>
+        )
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
