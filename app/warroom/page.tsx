@@ -147,28 +147,56 @@ export default function WarRoomPage() {
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              height: Math.min(pullY, 60),
+              height: refreshing ? 72 : Math.min(pullY, 72),
               overflow: 'hidden',
-              transition: refreshing ? 'none' : 'height 0.15s',
+              transition: refreshing ? 'height 0.2s ease' : 'none',
+              pointerEvents: 'none',
             }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-                color: pullY >= 64 || refreshing ? '#E8B84B' : 'rgba(232,184,75,0.4)',
-                fontFamily: 'var(--font-body)',
-                transition: 'color 0.2s',
-              }}>
-                <span style={{
-                  display: 'inline-block',
-                  animation: refreshing ? 'spin 0.7s linear infinite' : 'none',
-                  fontSize: 16,
-                }}>⟳</span>
-                {refreshing ? 'Refreshing…' : pullY >= 64 ? 'Release to refresh' : 'Pull to refresh'}
-              </div>
+              {refreshing ? (
+                /* Spinning gold orb */
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: '50%',
+                    background: 'radial-gradient(circle at 35% 35%, #F5CE7A, #C9933A)',
+                    boxShadow: '0 0 20px rgba(232,184,75,0.7), 0 0 40px rgba(201,147,58,0.4)',
+                    animation: 'ptr-spin 0.8s linear infinite',
+                  }} />
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+                    color: 'rgba(232,184,75,0.8)', fontFamily: 'var(--font-body)',
+                  }}>Refreshing</span>
+                </div>
+              ) : (
+                /* Pull progress — arc fills as you pull */
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    border: `3px solid rgba(201,147,58,0.15)`,
+                    borderTopColor: pullY >= 64 ? '#E8B84B' : `rgba(201,147,58,${Math.min(pullY / 64, 1) * 0.8})`,
+                    transition: 'border-top-color 0.15s',
+                    transform: `rotate(${pullY * 2.8}deg)`,
+                  }} />
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                    color: pullY >= 64 ? 'rgba(232,184,75,0.9)' : 'rgba(232,184,75,0.4)',
+                    fontFamily: 'var(--font-body)', transition: 'color 0.15s',
+                  }}>
+                    {pullY >= 64 ? 'Release' : 'Pull to refresh'}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
-          <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
+          <style>{`
+            @keyframes ptr-spin {
+              0%   { transform: rotate(0deg) scale(1); }
+              25%  { transform: rotate(90deg) scale(1.08); }
+              50%  { transform: rotate(180deg) scale(1); }
+              75%  { transform: rotate(270deg) scale(1.08); }
+              100% { transform: rotate(360deg) scale(1); }
+            }
+          `}</style>
           <AnimatePresence mode="wait">
             {activeSection === 'operations' && (
               <OperationsView key={`ops-${refreshKey}`} activePanel={activePanel} />
