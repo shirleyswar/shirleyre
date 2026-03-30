@@ -199,10 +199,14 @@ export default function WarRoomPage() {
 
 // ─── Pull-to-refresh ─────────────────────────────────────────────────────────
 function usePullToRefresh(scrollRef: React.RefObject<HTMLElement | null>, onRefresh: () => void) {
-  const [pullY, setPullY] = useState(0)   // 0–100 (capped)
+  const [pullY, setPullY] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const startY = useRef(0)
   const pulling = useRef(false)
+  const pullYRef = useRef(0)  // ref copy to avoid stale closure
+  const refreshingRef = useRef(false)
+  const onRefreshRef = useRef(onRefresh)
+  onRefreshRef.current = onRefresh
   const THRESHOLD = 64
 
   useEffect(() => {
@@ -210,31 +214,37 @@ function usePullToRefresh(scrollRef: React.RefObject<HTMLElement | null>, onRefr
     if (!el) return
 
     function onTouchStart(e: TouchEvent) {
-      if (el!.scrollTop === 0) {
+      if (el.scrollTop === 0) {
         startY.current = e.touches[0].clientY
         pulling.current = true
       }
     }
 
     function onTouchMove(e: TouchEvent) {
-      if (!pulling.current) return
+      if (!pulling.current || refreshingRef.current) return
       const dy = e.touches[0].clientY - startY.current
       if (dy > 0) {
-        setPullY(Math.min(dy * 0.45, 100))
+        const clamped = Math.min(dy * 0.45, 100)
+        pullYRef.current = clamped
+        setPullY(clamped)
       }
     }
 
     async function onTouchEnd() {
       if (!pulling.current) return
       pulling.current = false
-      if (pullY >= THRESHOLD) {
+      const captured = pullYRef.current
+      if (captured >= THRESHOLD && !refreshingRef.current) {
+        refreshingRef.current = true
         setRefreshing(true)
-        setPullY(THRESHOLD) // hold indicator during refresh
-        await new Promise(r => setTimeout(r, 300)) // brief pause so animation is visible
-        onRefresh()
+        setPullY(THRESHOLD)
+        await new Promise(r => setTimeout(r, 400))
+        onRefreshRef.current()
         await new Promise(r => setTimeout(r, 800))
+        refreshingRef.current = false
         setRefreshing(false)
       }
+      pullYRef.current = 0
       setPullY(0)
     }
 
@@ -246,7 +256,7 @@ function usePullToRefresh(scrollRef: React.RefObject<HTMLElement | null>, onRefr
       el.removeEventListener('touchmove', onTouchMove)
       el.removeEventListener('touchend', onTouchEnd)
     }
-  }, [scrollRef, pullY, onRefresh])
+  }, [scrollRef]) // stable — no stale closures
 
   return { pullY, refreshing }
 }
@@ -284,12 +294,14 @@ function useDateLabel() {
 }
 
 function useLiveTime() {
-  const [time, setTime] = useState('')
+  // Initialize with current time immediately (avoids blank on first render)
+  const [time, setTime] = useState(() =>
+    new Date().toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true })
+  )
   useEffect(() => {
     function update() {
       setTime(new Date().toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true }))
     }
-    update()
     const t = setInterval(update, 60000)
     return () => clearInterval(t)
   }, [])
