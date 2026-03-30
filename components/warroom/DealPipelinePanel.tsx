@@ -462,31 +462,36 @@ export default function DealPipelinePanel() {
                 boxShadow: 'inset 0 -1px 0 rgba(139,92,246,0.3)',
               }}>
                 {([
-                  { label: 'FILES', cls: 'hidden sm:table-cell', align: 'center', width: 58  },
-                  { label: 'MORE',  cls: '',                      align: 'center', width: 38  },
-                  { label: 'Address',     cls: '',                      align: 'center', width: undefined },
-                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'center', width: undefined },
-                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined },
-                  { label: 'Status',      cls: '',                      align: 'center', width: undefined },
-                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined },
-                  { label: 'Priority',    cls: 'deal-rating-col hidden sm:table-cell',  align: 'center', width: undefined },
-                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'center', width: undefined },
-                ] as { label: string; cls: string; align: string; width: number | undefined }[]).map(h => (
-                  <th key={h.label} className={h.cls} style={{
-                    textAlign: h.align as React.CSSProperties['textAlign'],
-                    width: h.width,
-                    minWidth: h.width,
-                    maxWidth: h.width,
-                    padding: '8px 4px',
-                    fontSize: 9,
-                    fontWeight: 800,
-                    color: 'rgba(167,139,250,0.8)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    whiteSpace: 'nowrap',
-                    borderRight: h.label === 'FILES' ? '1px solid rgba(139,92,246,0.15)' : undefined,
-                  }}>{h.label}</th>
-                ))}
+                  { label: 'FILES',       cls: 'hidden sm:table-cell', align: 'center', width: 58,        sortField: null        },
+                  { label: 'MORE',        cls: '',                      align: 'center', width: 38,        sortField: null        },
+                  { label: 'Address',     cls: '',                      align: 'center', width: undefined, sortField: 'address'   },
+                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: 'name'      },
+                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: 'type'      },
+                  { label: 'Status',      cls: '',                      align: 'center', width: undefined, sortField: 'status'    },
+                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: 'tier'      },
+                  { label: 'Priority',    cls: 'deal-rating-col hidden sm:table-cell', align: 'center', width: undefined, sortField: 'rating' },
+                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: null        },
+                ] as { label: string; cls: string; align: string; width: number | undefined; sortField: SortField | null }[]).map(h => {
+                  const isActive = h.sortField && sortBy === h.sortField
+                  return (
+                  <th key={h.label} className={h.cls}
+                    onClick={h.sortField ? () => handleSort(h.sortField!) : undefined}
+                    style={{
+                      textAlign: h.align as React.CSSProperties['textAlign'],
+                      width: h.width, minWidth: h.width, maxWidth: h.width,
+                      padding: '8px 4px', fontSize: 9, fontWeight: 800,
+                      color: isActive ? '#E8B84B' : 'rgba(167,139,250,0.8)',
+                      textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap',
+                      cursor: h.sortField ? 'pointer' : 'default', userSelect: 'none',
+                      borderRight: h.label === 'FILES' ? '1px solid rgba(139,92,246,0.15)' : undefined,
+                    }}>
+                    {h.label}
+                    {h.sortField && <span style={{ marginLeft: 3, fontSize: 8, opacity: 0.7 }}>
+                      {isActive ? (sortDir === 'asc' ? '↑' : '↓') : '⇅'}
+                    </span>}
+                  </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
