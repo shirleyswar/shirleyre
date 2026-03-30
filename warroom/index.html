@@ -1133,7 +1133,11 @@ function renderDeals() {
         <div class="deal-meta">${escHtml(d.type || '')}${d.type && d.contact ? ' · ' : ''}${escHtml(d.contact || '')} <span style="color:var(--dim);font-size:9px;margin-left:4px;">${STATUS_LABELS[d.status] || d.status || ''}</span>${d.deadline ? `<span style="color:var(--gold-d);font-size:9px;margin-left:6px;">⏎ ${d.deadline.substring(0,10)}</span>` : ''}${d.priority != null ? `<span style="color:var(--dim);font-size:9px;margin-left:6px;">P${d.priority}</span>` : ''}${d.type === 'Land' && (d.sqft || d.acreage) ? `<span style="color:var(--gold-d);font-size:9px;margin-left:6px;">${d.sqft ? Number(d.sqft).toLocaleString() + ' SF' : ''}${d.sqft && d.acreage ? ' · ' : ''}${d.acreage ? d.acreage + ' ac' : ''}</span>` : ''}</div>
       </div>
       ${d.commission ? `<div class="deal-commission">${fmtMoney(d.commission)}</div>` : ''}
-      <div class="deal-expand" id="de-${d.id}">&#9660;</div>
+      <div style="display:flex;gap:4px;align-items:center;">
+        ${d.status === 'under_contract' ? `<button class="deal-btn landed" style="padding:3px 8px;font-size:11px;" onclick="landedDeal('${d.id}');event.stopPropagation()">LANDED</button>` : ''}
+        <button class="deal-btn status-change" style="padding:3px 8px;font-size:11px;" onclick="cycleStatus('${d.id}');event.stopPropagation()" title="Advance status">&#10227;</button>
+        <div class="deal-expand" id="de-${d.id}">&#9660;</div>
+      </div>
     </div>
     <div class="deal-detail" id="dd-${d.id}">
       ${d.address ? `<div class="deal-detail-field"><div class="ddf-label">Address</div><div class="ddf-value">${escHtml(d.address)}</div></div>` : ''}
@@ -1321,9 +1325,11 @@ async function cycleStatus(id) {
 
 // ── UC Dialog ──────────────────────────────────────────────────
 
-function openUCDialog(dealId) {
+function openUCDialog(dealId, pendingPayload) {
   const deal = state.deals.find(d => d.id === dealId);
   if (!deal) return;
+  // Store pending payload from edit form so we can apply it after UC dialog
+  document.getElementById('modal-uc').dataset.pendingPayload = pendingPayload ? JSON.stringify(pendingPayload) : '';
 
   document.getElementById('uc-deal-id').value = dealId;
   document.getElementById('uc-contract-price').value = '';
@@ -1428,9 +1434,12 @@ async function saveUCDialog() {
     }
   }
 
-  // Update deal status to under_contract
-  await sbUpdate('deals', dealId, { status: 'under_contract', updated_at: new Date().toISOString() });
-  deal.status = 'under_contract';
+  // Apply any pending edit payload + set status to under_contract
+  const pendingRaw = document.getElementById('modal-uc').dataset.pendingPayload;
+  const pending = pendingRaw ? JSON.parse(pendingRaw) : {};
+  const finalPayload = { ...pending, status: 'under_contract', updated_at: new Date().toISOString() };
+  await sbUpdate('deals', dealId, finalPayload);
+  Object.assign(deal, finalPayload);
 
   // Log to activity_log
   await sbInsert('activity_log', {
@@ -1546,6 +1555,16 @@ async function saveDeal() {
     deadline:   document.getElementById('deal-deadline').value || null,
     notes:      document.getElementById('deal-notes').value.trim() || null,
   };
+
+  // Intercept: if editing an existing deal and status is being set to under_contract, show UC dialog first
+  if (editId) {
+    const existing = state.deals.find(d => d.id === editId);
+    if (existing && existing.status !== 'under_contract' && payload.status === 'under_contract') {
+      closeModal('deal');
+      openUCDialog(editId, payload);
+      return;
+    }
+  }
 
   setSyncStatus('Saving');
   if (editId) {
