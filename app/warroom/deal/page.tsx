@@ -2036,6 +2036,129 @@ function ContactsCard({ deal }: { deal: Deal }) {
 
 // ─── Inner component ──────────────────────────────────────────────────────────
 
+// ─── Save to Contacts Dialog ─────────────────────────────────────────────────
+
+function SaveContactDialog({
+  name, firm, dealId, onClose, onSaved,
+}: {
+  name: string
+  firm: string
+  dealId: string
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [contactName, setContactName] = useState(name)
+  const [contactFirm, setContactFirm] = useState(firm)
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const fInput: React.CSSProperties = {
+    width: '100%', background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6,
+    padding: '8px 10px', fontSize: 13, color: '#F0F2FF',
+    outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', colorScheme: 'dark',
+  }
+  const fLabel: React.CSSProperties = {
+    fontSize: 9, fontWeight: 800, letterSpacing: '0.12em',
+    textTransform: 'uppercase', color: '#6b7280', marginBottom: 4, display: 'block',
+  }
+
+  async function save() {
+    if (!contactName.trim()) return
+    setSaving(true)
+    try {
+      const { data: existing } = await supabase
+        .from('contacts')
+        .select('id')
+        .ilike('name', contactName.trim())
+        .limit(1)
+
+      let contactId: string | null = null
+
+      if (existing && existing.length > 0) {
+        contactId = existing[0].id
+        await supabase.from('contacts').update({
+          company: contactFirm.trim() || null,
+          phone: phone.trim() || null,
+          email: email.trim() || null,
+        }).eq('id', contactId)
+      } else {
+        const { data: newContact } = await supabase.from('contacts').insert({
+          name: contactName.trim(),
+          company: contactFirm.trim() || null,
+          phone: phone.trim() || null,
+          email: email.trim() || null,
+          priority: 'standard',
+        }).select().single()
+        if (newContact) contactId = newContact.id
+      }
+
+      if (contactId) {
+        await supabase.from('deal_contacts').upsert({
+          deal_id: dealId,
+          contact_id: contactId,
+          relationship: 'Co-Broker',
+        }, { onConflict: 'deal_id,contact_id' })
+      }
+
+      onSaved()
+    } catch {}
+    setSaving(false)
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 99999,
+      background: 'rgba(0,0,0,0.75)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div style={{
+        background: '#1A1E25',
+        border: '1px solid rgba(79,142,247,0.4)',
+        borderRadius: 12,
+        padding: '22px 24px',
+        width: '90vw', maxWidth: 400,
+        display: 'flex', flexDirection: 'column', gap: 12,
+      }} onClick={e => e.stopPropagation()}>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: '#4F8EF7', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Save to Contacts
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0 }}>×</button>
+        </div>
+
+        <div>
+          <label style={fLabel}>Name *</label>
+          <input style={fInput} value={contactName} onChange={e => setContactName(e.target.value)} autoFocus />
+        </div>
+        <div>
+          <label style={fLabel}>Firm / Company</label>
+          <input style={fInput} value={contactFirm} onChange={e => setContactFirm(e.target.value)} placeholder="Brokerage name" />
+        </div>
+        <div>
+          <label style={fLabel}>Cell Phone</label>
+          <input style={fInput} value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. 225-555-1234" type="tel" />
+        </div>
+        <div>
+          <label style={fLabel}>Email</label>
+          <input style={fInput} value={email} onChange={e => setEmail(e.target.value)} placeholder="e.g. broker@firm.com" type="email" />
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '9px', fontSize: 12, fontWeight: 700, background: 'transparent', border: '1px solid rgba(156,163,175,0.3)', borderRadius: 8, color: '#9ca3af', cursor: 'pointer', fontFamily: 'inherit' }}>
+            Cancel
+          </button>
+          <button onClick={save} disabled={saving || !contactName.trim()} style={{ flex: 2, padding: '9px', fontSize: 12, fontWeight: 800, letterSpacing: '0.06em', background: 'rgba(79,142,247,0.12)', border: '1px solid rgba(79,142,247,0.45)', borderRadius: 8, color: '#4F8EF7', cursor: 'pointer', fontFamily: 'inherit' }}>
+            {saving ? 'Saving…' : 'Save Contact'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── UC Broker Row (with Save to Contacts) ───────────────────────────────────
 
 function UCBrokerRow({
@@ -2047,87 +2170,47 @@ function UCBrokerRow({
   dealId: string
 }) {
   const [saved, setSaved] = useState(false)
-  const [saving, setSaving] = useState(false)
-
-  async function saveToContacts() {
-    if (!broker.name.trim()) return
-    setSaving(true)
-    try {
-      // Check if contact already exists by name
-      const { data: existing } = await supabase
-        .from('contacts')
-        .select('id')
-        .ilike('name', broker.name.trim())
-        .limit(1)
-
-      let contactId: string | null = null
-
-      if (existing && existing.length > 0) {
-        contactId = existing[0].id
-        // Update firm if we have it
-        if (broker.firm) {
-          await supabase.from('contacts').update({ company: broker.firm }).eq('id', contactId)
-        }
-      } else {
-        // Create new contact
-        const { data: newContact } = await supabase
-          .from('contacts')
-          .insert({
-            name: broker.name.trim(),
-            company: broker.firm.trim() || null,
-            priority: 'standard',
-          })
-          .select()
-          .single()
-        if (newContact) contactId = newContact.id
-      }
-
-      // Link to this deal
-      if (contactId) {
-        await supabase.from('deal_contacts').upsert({
-          deal_id: dealId,
-          contact_id: contactId,
-          relationship: 'Co-Broker',
-        }, { onConflict: 'deal_id,contact_id' })
-      }
-
-      setSaved(true)
-    } catch {}
-    setSaving(false)
-  }
+  const [showDialog, setShowDialog] = useState(false)
 
   return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 72px', gap: 8, marginBottom: 4 }}>
-        <input style={fInput} placeholder="Broker Name" value={broker.name}
-          onChange={e => onChange({ ...broker, name: e.target.value })} />
-        <input style={fInput} placeholder="Firm" value={broker.firm}
-          onChange={e => onChange({ ...broker, firm: e.target.value })} />
-        <input type="number" step="0.01" style={fInput} placeholder="%" value={broker.pct}
-          onChange={e => onChange({ ...broker, pct: e.target.value })} />
+    <>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 72px', gap: 8, marginBottom: 4 }}>
+          <input style={fInput} placeholder="Broker Name" value={broker.name}
+            onChange={e => onChange({ ...broker, name: e.target.value })} />
+          <input style={fInput} placeholder="Firm" value={broker.firm}
+            onChange={e => onChange({ ...broker, firm: e.target.value })} />
+          <input type="number" step="0.01" style={fInput} placeholder="%" value={broker.pct}
+            onChange={e => onChange({ ...broker, pct: e.target.value })} />
+        </div>
+        {broker.name.trim() && (
+          <button
+            onClick={() => saved ? undefined : setShowDialog(true)}
+            style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
+              background: saved ? 'rgba(34,197,94,0.1)' : 'rgba(79,142,247,0.08)',
+              border: `1px solid ${saved ? 'rgba(34,197,94,0.35)' : 'rgba(79,142,247,0.3)'}`,
+              borderRadius: 5,
+              color: saved ? '#22c55e' : '#4F8EF7',
+              cursor: saved ? 'default' : 'pointer',
+              padding: '3px 10px', fontFamily: 'inherit', transition: 'all 0.2s',
+            }}
+          >
+            {saved ? '✓ Saved to Contacts' : '+ Save to Contacts'}
+          </button>
+        )}
       </div>
-      {broker.name.trim() && (
-        <button
-          onClick={saveToContacts}
-          disabled={saving}
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.06em',
-            background: saved ? 'rgba(34,197,94,0.1)' : 'rgba(79,142,247,0.08)',
-            border: `1px solid ${saved ? 'rgba(34,197,94,0.35)' : 'rgba(79,142,247,0.3)'}`,
-            borderRadius: 5,
-            color: saved ? '#22c55e' : '#4F8EF7',
-            cursor: saving ? 'default' : 'pointer',
-            padding: '3px 10px',
-            fontFamily: 'inherit',
-            transition: 'all 0.2s',
-          }}
-        >
-          {saved ? '✓ Saved to Contacts' : saving ? 'Saving…' : '+ Save to Contacts'}
-        </button>
+      {showDialog && typeof document !== 'undefined' && createPortal(
+        <SaveContactDialog
+          name={broker.name}
+          firm={broker.firm}
+          dealId={dealId}
+          onClose={() => setShowDialog(false)}
+          onSaved={() => { setSaved(true); setShowDialog(false) }}
+        />,
+        document.body
       )}
-    </div>
+    </>
   )
 }
 
