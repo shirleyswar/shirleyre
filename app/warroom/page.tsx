@@ -221,7 +221,7 @@ function usePullToRefresh(scrollRef: React.RefObject<HTMLElement | null>, onRefr
     }
 
     function onTouchMove(e: TouchEvent) {
-      if (!pulling.current || refreshingRef.current) return
+      if (!pulling.current || refreshingRef.current || !el) return
       const dy = e.touches[0].clientY - startY.current
       if (dy > 0) {
         const clamped = Math.min(dy * 0.45, 100)
