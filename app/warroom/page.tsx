@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { JSX } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PinGate from '@/components/warroom/PinGate'
@@ -52,6 +52,8 @@ export default function WarRoomPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activePanel, setActivePanel] = useState('overview')
   const [activeSection, setActiveSection] = useState<NavSection | 'operations'>('operations')
+  const [refreshKey, setRefreshKey] = useState(0)
+  const mainScrollRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     const expiry = localStorage.getItem(SESSION_KEY)
@@ -59,6 +61,8 @@ export default function WarRoomPage() {
       setUnlocked(true)
     }
   }, [])
+
+  const { pullY, refreshing } = usePullToRefresh(mainScrollRef, useCallback(() => setRefreshKey(k => k + 1), []))
 
   const handlePinSuccess = useCallback(() => {
     const expiry = Date.now() + SESSION_HOURS * 60 * 60 * 1000
@@ -136,10 +140,38 @@ export default function WarRoomPage() {
         {/* StatsRibbon now lives inline in header */}
 
         {/* ── DASHBOARD BODY ── */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 28px' }}>
+        <main ref={mainScrollRef as React.RefObject<HTMLElement>} style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 28px', position: 'relative' }}>
+
+          {/* Pull-to-refresh indicator — mobile only */}
+          {(pullY > 4 || refreshing) && (
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              height: Math.min(pullY, 60),
+              overflow: 'hidden',
+              transition: refreshing ? 'none' : 'height 0.15s',
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                color: pullY >= 64 || refreshing ? '#E8B84B' : 'rgba(232,184,75,0.4)',
+                fontFamily: 'var(--font-body)',
+                transition: 'color 0.2s',
+              }}>
+                <span style={{
+                  display: 'inline-block',
+                  animation: refreshing ? 'spin 0.7s linear infinite' : 'none',
+                  fontSize: 16,
+                }}>⟳</span>
+                {refreshing ? 'Refreshing…' : pullY >= 64 ? 'Release to refresh' : 'Pull to refresh'}
+              </div>
+            </div>
+          )}
+
+          <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
           <AnimatePresence mode="wait">
             {activeSection === 'operations' && (
-              <OperationsView key="ops" activePanel={activePanel} />
+              <OperationsView key={`ops-${refreshKey}`} activePanel={activePanel} />
             )}
             {activeSection === 'life' && (
               <SectionView key="life" title="Life" onBack={() => setActiveSection('operations')}>
@@ -164,6 +196,60 @@ export default function WarRoomPage() {
 }
 
 // ─── WAR ROOM HEADER ────────────────────────────────────────────────────────
+
+// ─── Pull-to-refresh ─────────────────────────────────────────────────────────
+function usePullToRefresh(scrollRef: React.RefObject<HTMLElement | null>, onRefresh: () => void) {
+  const [pullY, setPullY] = useState(0)   // 0–100 (capped)
+  const [refreshing, setRefreshing] = useState(false)
+  const startY = useRef(0)
+  const pulling = useRef(false)
+  const THRESHOLD = 64
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    function onTouchStart(e: TouchEvent) {
+      if (el!.scrollTop === 0) {
+        startY.current = e.touches[0].clientY
+        pulling.current = true
+      }
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      if (!pulling.current) return
+      const dy = e.touches[0].clientY - startY.current
+      if (dy > 0) {
+        setPullY(Math.min(dy * 0.45, 100))
+      }
+    }
+
+    async function onTouchEnd() {
+      if (!pulling.current) return
+      pulling.current = false
+      if (pullY >= THRESHOLD) {
+        setRefreshing(true)
+        setPullY(THRESHOLD) // hold indicator during refresh
+        await new Promise(r => setTimeout(r, 300)) // brief pause so animation is visible
+        onRefresh()
+        await new Promise(r => setTimeout(r, 800))
+        setRefreshing(false)
+      }
+      setPullY(0)
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchmove', onTouchMove, { passive: true })
+    el.addEventListener('touchend', onTouchEnd)
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [scrollRef, pullY, onRefresh])
+
+  return { pullY, refreshing }
+}
 
 // Detects vertical monitor: width ≤ 1080 AND height ≥ 1200
 // Keeps mobile (short height) and normal desktop (wide) unaffected
