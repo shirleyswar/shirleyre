@@ -2355,6 +2355,7 @@ function DealDashboardInner() {
     notes: '',
     cobrokeListingOn: false,
     cobrokeBuyerOn: false,
+    dualRep: false,
     listingBrokers: [{ name: '', firm: '', pct: '' }],
     buyerBrokers: [{ name: '', firm: '', pct: '' }],
   })
@@ -2512,6 +2513,7 @@ function DealDashboardInner() {
       deal_id: deal.id,
       deal_category: isLease ? 'lease' : 'sale',
       notes: ucForm.notes || null,
+      dual_rep: ucForm.dualRep || false,
     }
     if (isLease) {
       ucPayload.lease_rate = parseFloat(ucForm.leaseRate)
@@ -2569,7 +2571,7 @@ function DealDashboardInner() {
     setShowUCDialog(false)
     setUCForm({
       contractPrice: '', leaseRate: '', leaseRateUnit: '$/SF/YR', leaseTermMonths: '',
-      notes: '', cobrokeListingOn: false, cobrokeBuyerOn: false,
+      notes: '', cobrokeListingOn: false, cobrokeBuyerOn: false, dualRep: false,
       listingBrokers: [{ name: '', firm: '', pct: '' }],
       buyerBrokers: [{ name: '', firm: '', pct: '' }],
     })
@@ -3456,41 +3458,75 @@ function DealDashboardInner() {
                     placeholder="Any deal notes…" />
                 </div>
 
-                {/* Co-broker — Listing Side */}
+                {/* Representation section */}
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
-                    <input type="checkbox" checked={ucForm.cobrokeListingOn}
-                      onChange={e => setUCForm(f => ({ ...f, cobrokeListingOn: e.target.checked }))}
-                      style={{ accentColor: '#2dd4bf', width: 14, height: 14 }} />
-                    <span style={{ fontSize: 12, color: '#9ca3af' }}>Co-Broker — Listing Side</span>
-                  </label>
-                  {ucForm.cobrokeListingOn && ucForm.listingBrokers.map((b, i) => (
-                    <UCBrokerRow key={i} broker={b}
-                      onChange={updated => setUCForm(f => { const a = [...f.listingBrokers]; a[i] = updated; return { ...f, listingBrokers: a } })}
-                      fInput={fInput} dealId={deal.id} contacts={allContacts} />
-                  ))}
-                  {ucForm.cobrokeListingOn && (
-                    <button onClick={() => setUCForm(f => ({ ...f, listingBrokers: [...f.listingBrokers, { name: '', firm: '', pct: '' }] }))}
-                      style={{ fontSize: 11, color: '#2dd4bf', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: 2 }}>+ Add Co-Broker</button>
-                  )}
-                </div>
 
-                {/* Co-broker — Buyer/Tenant Side */}
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
-                    <input type="checkbox" checked={ucForm.cobrokeBuyerOn}
-                      onChange={e => setUCForm(f => ({ ...f, cobrokeBuyerOn: e.target.checked }))}
-                      style={{ accentColor: '#2dd4bf', width: 14, height: 14 }} />
-                    <span style={{ fontSize: 12, color: '#9ca3af' }}>Co-Broker — {isLease ? 'Tenant' : 'Buyer'} Side</span>
+                  {/* Dual Rep toggle */}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={ucForm.dualRep}
+                      onChange={e => setUCForm(f => ({
+                        ...f,
+                        dualRep: e.target.checked,
+                        // Dual rep = no co-brokers on either side
+                        cobrokeListingOn: e.target.checked ? false : f.cobrokeListingOn,
+                        cobrokeBuyerOn: e.target.checked ? false : f.cobrokeBuyerOn,
+                      }))}
+                      style={{ accentColor: '#E8B84B', width: 15, height: 15 }}
+                    />
+                    <span style={{
+                      fontSize: 12,
+                      fontWeight: ucForm.dualRep ? 700 : 400,
+                      color: ucForm.dualRep ? '#E8B84B' : '#9ca3af',
+                    }}>
+                      Dual Rep — I represent both sides
+                    </span>
+                    {ucForm.dualRep && (
+                      <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 4 }}>
+                        (co-brokers disabled)
+                      </span>
+                    )}
                   </label>
-                  {ucForm.cobrokeBuyerOn && ucForm.buyerBrokers.map((b, i) => (
-                    <UCBrokerRow key={i} broker={b}
-                      onChange={updated => setUCForm(f => { const a = [...f.buyerBrokers]; a[i] = updated; return { ...f, buyerBrokers: a } })}
-                      fInput={fInput} dealId={deal.id} contacts={allContacts} />
-                  ))}
-                  {ucForm.cobrokeBuyerOn && (
-                    <button onClick={() => setUCForm(f => ({ ...f, buyerBrokers: [...f.buyerBrokers, { name: '', firm: '', pct: '' }] }))}
-                      style={{ fontSize: 11, color: '#2dd4bf', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: 2 }}>+ Add Co-Broker</button>
+
+                  {/* Co-broker — Listing Side (hidden if dual rep) */}
+                  {!ucForm.dualRep && (
+                    <>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
+                        <input type="checkbox" checked={ucForm.cobrokeListingOn}
+                          onChange={e => setUCForm(f => ({ ...f, cobrokeListingOn: e.target.checked }))}
+                          style={{ accentColor: '#2dd4bf', width: 14, height: 14 }} />
+                        <span style={{ fontSize: 12, color: '#9ca3af' }}>Co-Broker — Listing Side</span>
+                      </label>
+                      {ucForm.cobrokeListingOn && ucForm.listingBrokers.map((b, i) => (
+                        <UCBrokerRow key={i} broker={b}
+                          onChange={updated => setUCForm(f => { const a = [...f.listingBrokers]; a[i] = updated; return { ...f, listingBrokers: a } })}
+                          fInput={fInput} dealId={deal.id} contacts={allContacts} />
+                      ))}
+                      {ucForm.cobrokeListingOn && (
+                        <button onClick={() => setUCForm(f => ({ ...f, listingBrokers: [...f.listingBrokers, { name: '', firm: '', pct: '' }] }))}
+                          style={{ fontSize: 11, color: '#2dd4bf', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: 2, marginBottom: 10 }}>+ Add Co-Broker</button>
+                      )}
+
+                      {/* Co-broker — Buyer/Tenant Side */}
+                      <div style={{ marginTop: ucForm.cobrokeListingOn ? 4 : 0 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
+                          <input type="checkbox" checked={ucForm.cobrokeBuyerOn}
+                            onChange={e => setUCForm(f => ({ ...f, cobrokeBuyerOn: e.target.checked }))}
+                            style={{ accentColor: '#2dd4bf', width: 14, height: 14 }} />
+                          <span style={{ fontSize: 12, color: '#9ca3af' }}>Co-Broker — {isLease ? 'Tenant' : 'Buyer'} Side</span>
+                        </label>
+                        {ucForm.cobrokeBuyerOn && ucForm.buyerBrokers.map((b, i) => (
+                          <UCBrokerRow key={i} broker={b}
+                            onChange={updated => setUCForm(f => { const a = [...f.buyerBrokers]; a[i] = updated; return { ...f, buyerBrokers: a } })}
+                            fInput={fInput} dealId={deal.id} contacts={allContacts} />
+                        ))}
+                        {ucForm.cobrokeBuyerOn && (
+                          <button onClick={() => setUCForm(f => ({ ...f, buyerBrokers: [...f.buyerBrokers, { name: '', firm: '', pct: '' }] }))}
+                            style={{ fontSize: 11, color: '#2dd4bf', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: 2 }}>+ Add Co-Broker</button>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
 
