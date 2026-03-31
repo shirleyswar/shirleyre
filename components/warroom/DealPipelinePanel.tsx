@@ -872,10 +872,17 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       {/* Col 9: Actions — hidden on mobile */}
       <td className="hidden sm:table-cell" style={{ padding: '10px 8px', whiteSpace: 'nowrap', textAlign: 'center' }}>
         <button onClick={() => setEditing(true)} title="Edit row" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 12, marginRight: 4 }}>✎</button>
+        {/* UC status badge — deal IS already under contract */}
+        {deal.status === 'under_contract' && (
+          <span title="Under Contract" style={{ display: 'inline-flex', alignItems: 'center', height: 24, padding: '0 8px', borderRadius: 5, background: 'rgba(45,212,191,0.15)', border: '1px solid rgba(45,212,191,0.5)', color: '#2dd4bf', fontSize: 10, fontWeight: 800, marginRight: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            UC
+          </span>
+        )}
+        {/* UC action button — move active/hot deal to under contract */}
         {(deal.status === 'active' || deal.status === 'hot') && deal.tier === 'filed' && (
-          <button onClick={() => { setConfirmUC(true); setUcPin(''); setUcError(false) }} title="Move to Under Contract" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 24, padding: '0 7px', borderRadius: 5, background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.4)', color: '#2DD4BF', cursor: 'pointer', fontSize: 10, fontWeight: 700, marginRight: 4, whiteSpace: 'nowrap', gap: 3 }}>
+          <button onClick={() => { setConfirmUC(true); setUcPin(''); setUcError(false) }} title="Move to Under Contract" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 24, padding: '0 7px', borderRadius: 5, background: 'rgba(20,184,166,0.1)', border: '1px solid rgba(20,184,166,0.3)', color: '#5eead4', cursor: 'pointer', fontSize: 10, fontWeight: 700, marginRight: 4, whiteSpace: 'nowrap', gap: 3 }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            → UC
+            Sign UC
           </button>
         )}
         {/* Kill actions removed from table — use deal page for expire/dormant/terminate */}
