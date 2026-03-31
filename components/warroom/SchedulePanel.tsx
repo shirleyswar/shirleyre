@@ -833,18 +833,44 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
   function parseTime(v: string) {
     const m = v.match(/(\d+):(\d+)\s*(AM|PM)/i)
     if (m) return { hour: parseInt(m[1]), minute: parseInt(m[2]), ampm: m[3].toUpperCase() as 'AM' | 'PM' }
-    return { hour: 9, minute: 0, ampm: 'AM' as 'AM' | 'PM' }
+    return { hour: 12, minute: 0, ampm: 'PM' as 'AM' | 'PM' }
   }
 
-  const parsed = parseTime(value || '9:00 AM')
+  const parsed = parseTime(value || '12:00 PM')
   const [hour, setHour] = useState(parsed.hour)
   const [minute, setMinute] = useState(parsed.minute)
   const [ampm, setAmpm] = useState<'AM' | 'PM'>(parsed.ampm)
   const [open, setOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const hourScrollRef = useRef<HTMLDivElement>(null)
 
+  // HOURS ordered so 12 is in the middle: 6,7,8,9,10,11,12,1,2,3,4,5,6
+  // Show 1-12 but scroll so selected is centered
   const HOURS = [1,2,3,4,5,6,7,8,9,10,11,12]
   const MINUTES = [0,15,30,45]
+  const ITEM_HEIGHT = 34 // px per hour item including gap
+
+  // Scroll hour column so selected hour is centered when dropdown opens
+  useEffect(() => {
+    if (!open || !hourScrollRef.current) return
+    // 12 hours visible, center = index of selected hour
+    const idx = HOURS.indexOf(hour)
+    if (idx === -1) return
+    const containerH = hourScrollRef.current.clientHeight
+    const scrollTo = idx * ITEM_HEIGHT - (containerH / 2) + (ITEM_HEIGHT / 2)
+    hourScrollRef.current.scrollTop = Math.max(0, scrollTo)
+  }, [open])
+
+  // Mouse wheel on hour column
+  function handleHourWheel(e: React.WheelEvent) {
+    e.preventDefault()
+    const idx = HOURS.indexOf(hour)
+    const delta = e.deltaY > 0 ? 1 : -1
+    const newIdx = (idx + delta + HOURS.length) % HOURS.length
+    const newHour = HOURS[newIdx]
+    setHour(newHour)
+    emit(newHour, minute, ampm)
+  }
 
   // Close on click outside
   useEffect(() => {
@@ -910,22 +936,29 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
           }}
         >
           {/* Hour */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'] }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' }}>HR</div>
-            {HOURS.map(h => (
-              <button key={h} type="button" onClick={() => selectHour(h)}
-                style={{
-                  width: 36, padding: '5px 0',
-                  background: h === hour ? 'var(--accent-gold)' : 'transparent',
-                  border: 'none', borderRadius: 5,
-                  color: h === hour ? '#0D0F14' : 'var(--text-primary)',
-                  fontSize: 13, fontWeight: h === hour ? 700 : 400, cursor: 'pointer',
-                  fontVariantNumeric: 'tabular-nums', transition: 'all 0.1s',
-                }}
-                onMouseEnter={e => { if (h !== hour) e.currentTarget.style.background = 'rgba(232,184,75,0.12)' }}
-                onMouseLeave={e => { if (h !== hour) e.currentTarget.style.background = 'transparent' }}
-              >{h}</button>
-            ))}
+            <div
+              ref={hourScrollRef}
+              onWheel={handleHourWheel}
+              style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 204, overflowY: 'auto', scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'] }}
+            >
+              {HOURS.map(h => (
+                <button key={h} type="button" onClick={() => selectHour(h)}
+                  style={{
+                    width: 36, height: ITEM_HEIGHT - 2, padding: '0',
+                    flexShrink: 0,
+                    background: h === hour ? 'var(--accent-gold)' : 'transparent',
+                    border: 'none', borderRadius: 5,
+                    color: h === hour ? '#0D0F14' : 'var(--text-primary)',
+                    fontSize: 13, fontWeight: h === hour ? 700 : 400, cursor: 'pointer',
+                    fontVariantNumeric: 'tabular-nums', transition: 'all 0.1s',
+                  }}
+                  onMouseEnter={e => { if (h !== hour) e.currentTarget.style.background = 'rgba(232,184,75,0.12)' }}
+                  onMouseLeave={e => { if (h !== hour) e.currentTarget.style.background = 'transparent' }}
+                >{h}</button>
+              ))}
+            </div>
           </div>
           <div style={{ width: 1, height: 200, background: 'rgba(255,255,255,0.08)', flexShrink: 0, marginTop: 22 }} />
           {/* Minute */}
