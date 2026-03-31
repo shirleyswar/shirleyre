@@ -799,31 +799,73 @@ function EventRow({
     )
   }
 
-  // Contract deadline — blue read-only row
+  // Contract deadline — redesigned for readability
   if (event.isDeadline) {
+    // Days until deadline
+    const today = new Date(); today.setHours(0,0,0,0)
+    const due = new Date(event.date + 'T00:00:00')
+    const daysOut = Math.round((due.getTime() - today.getTime()) / 86400000)
+    const isToday = daysOut === 0
+    const isUrgent = daysOut <= 3
+    const isSoon = daysOut <= 7
+
+    // Urgency color
+    const urgentColor = isToday ? '#ef4444' : isUrgent ? '#fb923c' : isSoon ? '#fbbf24' : '#60a5fa'
+    const urgentBg = isToday ? 'rgba(239,68,68,0.12)' : isUrgent ? 'rgba(251,146,60,0.12)' : isSoon ? 'rgba(251,191,36,0.1)' : 'rgba(30,41,59,0.6)'
+    const urgentBorder = isToday ? 'rgba(239,68,68,0.4)' : isUrgent ? 'rgba(251,146,60,0.35)' : isSoon ? 'rgba(251,191,36,0.3)' : 'rgba(59,130,246,0.2)'
+
+    const daysLabel = isToday ? 'TODAY' : daysOut === 1 ? '1 day' : `${daysOut} days`
+
+    // Type label — capitalize and clean up
+    const typeLabel = (event.deadlineType || 'deadline')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase())
+
     return (
       <div style={{
-        display: 'flex', gap: 10, padding: '7px 10px',
-        background: 'rgba(59,130,246,0.07)',
-        borderRadius: 6,
-        border: '1px solid rgba(59,130,246,0.2)',
+        display: 'flex', gap: 12, padding: '9px 12px',
+        background: urgentBg,
+        borderRadius: 7,
+        border: `1px solid ${urgentBorder}`,
         alignItems: 'center',
       }}>
-        <div style={{ width: 68, flexShrink: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#60a5fa' }}>DUE</div>
+        {/* Days countdown */}
+        <div style={{
+          flexShrink: 0, minWidth: 46, textAlign: 'center',
+          padding: '4px 6px',
+          background: isToday || isUrgent ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.15)',
+          borderRadius: 5,
+        }}>
+          <div style={{ fontSize: isToday ? 10 : 14, fontWeight: 800, color: urgentColor, lineHeight: 1, letterSpacing: isToday ? '0.06em' : 0 }}>
+            {daysLabel}
+          </div>
+          {!isToday && (
+            <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>out</div>
+          )}
         </div>
+
+        {/* Title + property */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, color: '#93c5fd', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>
+          <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>
             {event.title}
           </div>
           {event.location && (
-            <div style={{ fontSize: 11, color: 'rgba(147,197,253,0.6)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {event.location}
             </div>
           )}
         </div>
-        <div style={{ fontSize: 9, fontWeight: 700, color: '#60a5fa', letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>
-          {event.deadlineType}
+
+        {/* Type badge */}
+        <div style={{
+          fontSize: 9, fontWeight: 700, color: urgentColor,
+          letterSpacing: '0.07em', textTransform: 'uppercase', flexShrink: 0,
+          padding: '2px 7px',
+          background: 'rgba(0,0,0,0.2)',
+          borderRadius: 4,
+          border: `1px solid ${urgentBorder}`,
+        }}>
+          {typeLabel}
         </div>
       </div>
     )
