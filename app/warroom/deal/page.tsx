@@ -2812,6 +2812,30 @@ function DealDashboardInner() {
             {typeLabel(deal.type)}
           </span>
 
+          {/* Prospects button */}
+          <button
+            onClick={() => router.push(`/warroom/deal/prospects?id=${deal.id}`)}
+            style={{
+              padding: '6px 14px', fontSize: 12, fontWeight: 700,
+              letterSpacing: '0.06em',
+              background: 'rgba(79,142,247,0.1)',
+              border: '1px solid rgba(79,142,247,0.35)',
+              borderRadius: 8,
+              color: '#4F8EF7',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Prospects
+          </button>
+
           {/* Edit toggle */}
           {!editing ? (
             <button onClick={startEdit} style={btnStyle('#E8B84B', 'rgba(232,184,75,0.1)', 'rgba(232,184,75,0.35)')}>
