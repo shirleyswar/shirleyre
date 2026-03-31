@@ -2239,22 +2239,41 @@ function SaveContactDialog({
 // ─── UC Broker Row (with Save to Contacts) ───────────────────────────────────
 
 function UCBrokerRow({
-  broker, onChange, fInput, dealId,
+  broker, onChange, fInput, dealId, contacts,
 }: {
   broker: { name: string; firm: string; pct: string }
   onChange: (updated: { name: string; firm: string; pct: string }) => void
   fInput: React.CSSProperties
   dealId: string
+  contacts?: { id: string; name: string; company: string | null }[]
 }) {
   const [saved, setSaved] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
+  const listId = `uc-broker-contacts-${dealId}-${Math.random().toString(36).slice(2, 7)}`
+
+  function handleNameChange(val: string) {
+    const match = contacts?.find(c => c.name.toLowerCase() === val.toLowerCase())
+    if (match) {
+      onChange({ ...broker, name: match.name, firm: match.company || broker.firm })
+    } else {
+      onChange({ ...broker, name: val })
+    }
+  }
 
   return (
     <>
       <div style={{ marginBottom: 8 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 72px', gap: 8, marginBottom: 4 }}>
-          <input style={fInput} placeholder="Broker Name" value={broker.name}
-            onChange={e => onChange({ ...broker, name: e.target.value })} />
+          <div>
+            <input style={fInput} placeholder="Broker Name" value={broker.name}
+              onChange={e => handleNameChange(e.target.value)}
+              list={listId} autoComplete="off" />
+            <datalist id={listId}>
+              {(contacts || []).map(c => (
+                <option key={c.id} value={c.name} label={c.company || undefined} />
+              ))}
+            </datalist>
+          </div>
           <input style={fInput} placeholder="Firm" value={broker.firm}
             onChange={e => onChange({ ...broker, firm: e.target.value })} />
           <input type="number" step="0.01" style={fInput} placeholder="%" value={broker.pct}
@@ -2326,6 +2345,7 @@ function DealDashboardInner() {
 
   // UC Dialog
   const [showUCDialog, setShowUCDialog] = useState(false)
+  const [allContacts, setAllContacts] = useState<{ id: string; name: string; company: string | null; phone: string | null; email: string | null }[]>([])
   const [ucForm, setUCForm] = useState({
     contractPrice: '',
     leaseRate: '',
@@ -2456,6 +2476,13 @@ function DealDashboardInner() {
       .select()
       .single()
     if (!error && data) setDeal(data as Deal)
+  }
+
+  async function openUCDialogWithContacts() {
+    setShowUCDialog(true)
+    // Load all contacts for autocomplete
+    const { data } = await supabase.from('contacts').select('id,name,company,phone,email').order('name')
+    if (data) setAllContacts(data as typeof allContacts)
   }
 
   async function submitUCDialog() {
@@ -2811,7 +2838,7 @@ function DealDashboardInner() {
         {/* → Under Contract */}
         {deal.tier === 'filed' && (deal.status === 'active' || deal.status === 'hot') && (
           <button
-            onClick={() => pinGate(() => setShowUCDialog(true))}
+            onClick={() => pinGate(() => openUCDialogWithContacts())}
             style={{ width: '100%', padding: '11px', fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.4)', borderRadius: 10, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit', marginBottom: 8 }}
           >
             → Under Contract
@@ -3067,7 +3094,7 @@ function DealDashboardInner() {
                   color="#2dd4bf"
                   bg="rgba(45,212,191,0.08)"
                   border="rgba(45,212,191,0.35)"
-                  onClick={() => pinGate(() => setShowUCDialog(true))}
+                  onClick={() => pinGate(() => openUCDialogWithContacts())}
                 />
               )}
 
@@ -3337,9 +3364,23 @@ function DealDashboardInner() {
                 {!isLease && (
                   <div>
                     <label style={fLabel}>Contract Price ($) *</label>
-                    <input type="number" style={fInput} value={ucForm.contractPrice}
-                      onChange={e => setUCForm(f => ({ ...f, contractPrice: e.target.value }))}
-                      placeholder="e.g. 1250000" autoFocus />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      style={fInput}
+                      value={ucForm.contractPrice ? '$' + Number(ucForm.contractPrice.replace(/[^0-9]/g, '')).toLocaleString('en-US') : ''}
+                      onChange={e => {
+                        const raw = e.target.value.replace(/[^0-9]/g, '')
+                        setUCForm(f => ({ ...f, contractPrice: raw }))
+                      }}
+                      placeholder="e.g. $750,000"
+                      autoFocus
+                    />
+                    {ucForm.contractPrice && Number(ucForm.contractPrice) > 0 && (
+                      <div style={{ fontSize: 11, color: '#2dd4bf', marginTop: 3, fontWeight: 600 }}>
+                        ${Number(ucForm.contractPrice).toLocaleString('en-US')}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -3391,7 +3432,7 @@ function DealDashboardInner() {
                   {ucForm.cobrokeListingOn && ucForm.listingBrokers.map((b, i) => (
                     <UCBrokerRow key={i} broker={b}
                       onChange={updated => setUCForm(f => { const a = [...f.listingBrokers]; a[i] = updated; return { ...f, listingBrokers: a } })}
-                      fInput={fInput} dealId={deal.id} />
+                      fInput={fInput} dealId={deal.id} contacts={allContacts} />
                   ))}
                   {ucForm.cobrokeListingOn && (
                     <button onClick={() => setUCForm(f => ({ ...f, listingBrokers: [...f.listingBrokers, { name: '', firm: '', pct: '' }] }))}
@@ -3410,7 +3451,7 @@ function DealDashboardInner() {
                   {ucForm.cobrokeBuyerOn && ucForm.buyerBrokers.map((b, i) => (
                     <UCBrokerRow key={i} broker={b}
                       onChange={updated => setUCForm(f => { const a = [...f.buyerBrokers]; a[i] = updated; return { ...f, buyerBrokers: a } })}
-                      fInput={fInput} dealId={deal.id} />
+                      fInput={fInput} dealId={deal.id} contacts={allContacts} />
                   ))}
                   {ucForm.cobrokeBuyerOn && (
                     <button onClick={() => setUCForm(f => ({ ...f, buyerBrokers: [...f.buyerBrokers, { name: '', firm: '', pct: '' }] }))}
