@@ -1349,8 +1349,23 @@ function LacdbCard({ deal, onLacdbIdSave, onAutoFill }: { deal: Deal; onLacdbIdS
   const [manualId, setManualId] = useState('')
   const [savingManual, setSavingManual] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+  const [editingLink, setEditingLink] = useState(false)
+  const [editLinkVal, setEditLinkVal] = useState('')
   // linkedSlug: slug/id that was saved but not yet in DB (show fallback link)
   const [linkedSlug, setLinkedSlug] = useState<string | null>(null)
+
+  async function saveEditLink() {
+    if (!editLinkVal.trim()) return
+    setSavingManual(true)
+    let id = editLinkVal.trim()
+    const urlMatch = id.match(/\/listings\/([^/?#]+)/)
+    if (urlMatch) id = urlMatch[1]
+    await onLacdbIdSave(id)
+    setEditingLink(false)
+    setEditLinkVal('')
+    setReloadKey(k => k + 1)
+    setSavingManual(false)
+  }
 
   useEffect(() => {
     async function load() {
@@ -1625,7 +1640,69 @@ function LacdbCard({ deal, onLacdbIdSave, onAutoFill }: { deal: Deal; onLacdbIdS
             → Fill Economics
           </button>
         )}
+        <button
+          onClick={() => { setEditingLink(e => !e); setEditLinkVal('') }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '7px 14px',
+            background: 'rgba(156,163,175,0.06)',
+            border: '1px solid rgba(156,163,175,0.25)',
+            borderRadius: 8,
+            color: '#9ca3af',
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          ✎ Edit Link
+        </button>
       </div>
+
+      {editingLink && (
+        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+          <input
+            autoFocus
+            style={{
+              flex: 1,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(232,184,75,0.4)',
+              borderRadius: 6,
+              padding: '7px 10px',
+              fontSize: 13,
+              color: '#F0F2FF',
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+            value={editLinkVal}
+            onChange={e => setEditLinkVal(e.target.value)}
+            placeholder="Paste new LACDB URL or listing ID"
+            onKeyDown={e => { if (e.key === 'Enter') saveEditLink(); if (e.key === 'Escape') setEditingLink(false) }}
+          />
+          <button
+            onClick={saveEditLink}
+            disabled={savingManual || !editLinkVal.trim()}
+            style={{
+              padding: '7px 14px',
+              background: 'rgba(232,184,75,0.12)',
+              border: '1px solid rgba(232,184,75,0.4)',
+              borderRadius: 8,
+              color: '#E8B84B',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            {savingManual ? 'Saving…' : 'Update'}
+          </button>
+          <button
+            onClick={() => setEditingLink(false)}
+            style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(156,163,175,0.2)', borderRadius: 8, color: '#6b7280', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   )
 }
