@@ -411,7 +411,7 @@ function SleeveTab() {
     try {
       const SUPABASE_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
       const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
-      const res  = await fetch(`${SUPABASE_URL}/functions/v1/refresh-portfolio-prices`, { method: 'POST', headers: { 'Authorization': `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json' } })
+      const res  = await fetch(`${SUPABASE_URL}/functions/v1/refresh-portfolio-prices`, { method: 'POST', headers: { 'Authorization': `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ force: true }) })
       const text = await res.text()
       let json: Record<string, unknown> = {}
       try { json = JSON.parse(text) } catch { setRefreshMsg(`Error: ${res.status} — ${text.slice(0,200)}`); setRefreshing(false); return }
@@ -498,9 +498,9 @@ function SleeveTab() {
         <span style={{ fontSize: 11, color: P.muted }}>Matthew&apos;s directed buys</span>
         <div style={{ flex: 1 }} />
         {positions.length > 0 && (
-          <button onClick={refreshPrices} disabled={refreshing || cacheAge().fresh} title={cacheAge().fresh ? cacheAge().label : 'Refresh prices'}
-            style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: `1px solid ${cacheAge().fresh ? 'rgba(255,255,255,0.08)' : 'rgba(34,197,94,0.35)'}`, borderRadius: 8, color: cacheAge().fresh ? P.muted : P.green, cursor: cacheAge().fresh ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1, whiteSpace: 'nowrap' }}>
-            {refreshing ? '⟳ Refreshing…' : cacheAge().fresh ? '✓ Prices Current' : '⟳ Refresh Prices'}
+          <button onClick={refreshPrices} disabled={refreshing} title={cacheAge().label || 'Refresh prices from Yahoo'}
+            style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 8, color: P.green, cursor: refreshing ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+            {refreshing ? '⟳ Refreshing…' : `⟳ Refresh Prices${cacheAge().fresh ? ` (${cacheAge().label})` : ''}`}
           </button>
         )}
         <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
@@ -998,7 +998,7 @@ function PortfolioTab() {
     try {
       const SUPABASE_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
       const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
-      const res  = await fetch(`${SUPABASE_URL}/functions/v1/refresh-portfolio-prices`, { method: 'POST', headers: { 'Authorization': `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json' } })
+      const res  = await fetch(`${SUPABASE_URL}/functions/v1/refresh-portfolio-prices`, { method: 'POST', headers: { 'Authorization': `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ force: true }) })
       const text = await res.text()
       let json: Record<string, unknown> = {}
       try { json = JSON.parse(text) } catch { setRefreshMsg(`Error: ${res.status} — ${text.slice(0,200)}`); setRefreshing(false); return }
@@ -1105,9 +1105,9 @@ function PortfolioTab() {
         </div>
         <div style={{ flex: 1 }} />
         {positions.length > 0 && (
-          <button onClick={refreshPrices} disabled={refreshing || cache.fresh} title={cache.fresh ? cache.label : 'Refresh prices'}
-            style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: `1px solid ${cache.fresh ? 'rgba(255,255,255,0.08)' : 'rgba(34,197,94,0.35)'}`, borderRadius: 8, color: cache.fresh ? P.muted : P.green, cursor: cache.fresh ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1, whiteSpace: 'nowrap' }}>
-            {refreshing ? '⟳ Refreshing…' : cache.fresh ? '✓ Prices Current' : '⟳ Refresh Prices'}
+          <button onClick={refreshPrices} disabled={refreshing} title={cache.label || 'Refresh prices from Yahoo'}
+            style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 8, color: P.green, cursor: refreshing ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+            {refreshing ? '⟳ Refreshing…' : `⟳ Refresh Prices${cache.fresh ? ` (${cache.label})` : ''}`}
           </button>
         )}
         <button onClick={() => fileInputRef.current?.click()} disabled={uploading}

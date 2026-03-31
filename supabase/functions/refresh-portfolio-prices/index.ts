@@ -7,7 +7,7 @@ const SUPABASE_SERVICE  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const YAHOO_QUOTE = (symbol: string) =>
   `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`
 
-const CACHE_HOURS = 23  // skip refresh if prices updated within this window
+const CACHE_MINUTES = 15  // auto-cache: skip if updated within 15 min (prevents accidental rapid-fire)
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -17,20 +17,29 @@ Deno.serve(async (req) => {
   try {
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE)
 
-    // ── Check cache: if portfolio_positions was updated within CACHE_HOURS, skip ──
-    const { data: newest } = await sb
-      .from('portfolio_positions')
-      .select('price_updated_at')
-      .not('price_updated_at', 'is', null)
-      .order('price_updated_at', { ascending: false })
-      .limit(1)
-      .single()
+    // Check if caller is forcing a refresh (manual button click)
+    let force = false
+    try {
+      const body = await req.json()
+      force = body?.force === true
+    } catch {}
 
-    if (newest?.price_updated_at) {
-      const hrs = (Date.now() - new Date(newest.price_updated_at).getTime()) / (1000 * 60 * 60)
-      if (hrs < CACHE_HOURS) {
-        const nextIn = Math.ceil(CACHE_HOURS - hrs)
-        return json({ cached: true, lastUpdated: newest.price_updated_at, nextRefreshIn: `${nextIn}h` })
+    // ── Check cache: skip only if updated within CACHE_MINUTES AND not forced ──
+    if (!force) {
+      const { data: newest } = await sb
+        .from('portfolio_positions')
+        .select('price_updated_at')
+        .not('price_updated_at', 'is', null)
+        .order('price_updated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (newest?.price_updated_at) {
+        const mins = (Date.now() - new Date(newest.price_updated_at).getTime()) / (1000 * 60)
+        if (mins < CACHE_MINUTES) {
+          const nextIn = Math.ceil(CACHE_MINUTES - mins)
+          return json({ cached: true, lastUpdated: newest.price_updated_at, nextRefreshIn: `${nextIn}m` })
+        }
       }
     }
 
