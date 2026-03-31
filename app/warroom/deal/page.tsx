@@ -2936,53 +2936,67 @@ function DealDashboardInner() {
                 No deadlines yet — add your first deadline above
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
                 {deadlines.map(dl => {
                   const days = daysUntil(dl.deadline_date)
                   const satisfied = dl.status === 'satisfied'
-                  const typeInfo = DEADLINE_TYPE_COLORS[dl.deadline_type]
-                  const statusInfo = DEADLINE_STATUS_STYLES[dl.status]
-                  const urgentColor = !satisfied && days <= 3 ? '#ef4444' : !satisfied && days <= 7 ? '#fb923c' : '#2dd4bf'
+                  // Single urgency color — only used for the days countdown
+                  const daysColor = satisfied ? '#6b7280'
+                    : days < 0 ? '#ef4444'
+                    : days === 0 ? '#ef4444'
+                    : days <= 3 ? '#ef4444'
+                    : days <= 7 ? '#fb923c'
+                    : '#9ca3af'
+                  const daysLabel = days < 0 ? `${Math.abs(days)}d ago` : days === 0 ? 'TODAY' : `${days}d`
                   return (
                     <div key={dl.id} style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       padding: '12px 14px',
-                      background: satisfied ? 'rgba(0,0,0,0.2)' : days <= 3 && !satisfied ? 'rgba(239,68,68,0.07)' : 'rgba(0,0,0,0.25)',
-                      border: `1px solid ${satisfied ? 'rgba(255,255,255,0.06)' : days <= 3 && !satisfied ? 'rgba(239,68,68,0.3)' : 'rgba(45,212,191,0.18)'}`,
+                      background: 'rgba(0,0,0,0.25)',
+                      border: `1px solid ${satisfied ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)'}`,
                       borderRadius: 10,
-                      opacity: satisfied ? 0.6 : 1,
+                      opacity: satisfied ? 0.55 : 1,
                     }}>
+                      {/* Content */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontSize: 13, fontWeight: 700,
-                          color: satisfied ? '#6b7280' : '#F0F2FF',
-                          textDecoration: satisfied ? 'line-through' : 'none',
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          marginBottom: 4,
-                        }}>
-                          {dl.label}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <span style={{ padding: '2px 7px', borderRadius: 20, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', background: typeInfo.bg, color: typeInfo.text }}>
-                            {typeInfo.label}
-                          </span>
-                          <span style={{ fontSize: 12, color: '#9ca3af', fontFamily: 'monospace' }}>
+                        {/* TOP LINE: Date · Title */}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
+                          <span style={{
+                            fontSize: 13, fontWeight: 800,
+                            color: satisfied ? '#6b7280' : '#F0F2FF',
+                            fontFamily: 'monospace',
+                            flexShrink: 0,
+                            textDecoration: satisfied ? 'line-through' : 'none',
+                          }}>
                             {formatDate(dl.deadline_date)}
                           </span>
-                          {!satisfied && (
-                            <span style={{ fontSize: 12, fontWeight: 800, fontFamily: 'monospace', color: urgentColor }}>
-                              {days < 0 ? `${Math.abs(days)}d ago` : days === 0 ? 'TODAY' : `${days}d`}
-                            </span>
-                          )}
-                          <span style={{ padding: '2px 7px', borderRadius: 20, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', background: statusInfo.bg, color: statusInfo.text }}>
-                            {statusInfo.label}
+                          <span style={{
+                            fontSize: 13, fontWeight: 600,
+                            color: satisfied ? '#6b7280' : '#d1d5db',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            textDecoration: satisfied ? 'line-through' : 'none',
+                          }}>
+                            {dl.label}
                           </span>
                         </div>
+                        {/* BOTTOM LINE: days countdown · satisfied badge */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {!satisfied ? (
+                            <span style={{ fontSize: 11, fontWeight: 700, color: daysColor, fontFamily: 'monospace' }}>
+                              {daysLabel}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 10, fontWeight: 700, color: '#22c55e', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                              Satisfied
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      {/* Actions */}
                       {!satisfied && (
-                        <button onClick={() => satisfyDeadline(dl.id)} title="Satisfy" style={{ padding: '4px 10px', fontSize: 12, fontWeight: 700, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 6, color: '#22c55e', cursor: 'pointer', flexShrink: 0 }}>✓</button>
+                        <button onClick={() => satisfyDeadline(dl.id)} title="Mark satisfied" style={{ padding: '5px 11px', fontSize: 13, fontWeight: 700, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 6, color: '#22c55e', cursor: 'pointer', flexShrink: 0 }}>✓</button>
                       )}
-                      <button onClick={() => deleteDeadline(dl.id)} title="Delete" style={{ padding: '4px 10px', fontSize: 12, fontWeight: 700, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', cursor: 'pointer', flexShrink: 0 }}>✕</button>
+                      <button onClick={() => deleteDeadline(dl.id)} title="Delete" style={{ padding: '5px 11px', fontSize: 13, fontWeight: 700, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', cursor: 'pointer', flexShrink: 0 }}>✕</button>
                     </div>
                   )
                 })}
