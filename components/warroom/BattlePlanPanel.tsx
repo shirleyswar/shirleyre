@@ -317,7 +317,7 @@ export default function BattlePlanPanel() {
   const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'in_progress')
 
   return (
-    <div className="wr-card h-full min-h-[320px]">
+    <div className="wr-card">
       <div className="wr-card-header">
         <span style={{ color: 'var(--accent-gold)', display: 'flex' }}><SwordIcon /></span>
         <span className="wr-rank1">BATTLE PLAN</span>
