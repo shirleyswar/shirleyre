@@ -443,14 +443,16 @@ export default function BattlePlanPanel() {
             {(() => {
                 let sorted = [...tasks.filter(t => t.status === 'open' || t.status === 'in_progress')]
                   .sort((a, b) => {
+                    // PRIMARY: deadline (soonest first; no deadline goes to bottom)
+                    const aDate = a.due_date ?? null
+                    const bDate = b.due_date ?? null
+                    if (aDate && bDate && aDate !== bDate) return aDate.localeCompare(bDate)
+                    if (aDate && !bDate) return -1
+                    if (!aDate && bDate) return 1
+                    // SECONDARY: priority (high first)
                     const ap = a.bp_priority ?? 0
                     const bp = b.bp_priority ?? 0
-                    const pDiff = prioritySortDir === 'desc' ? bp - ap : ap - bp
-                    if (pDiff !== 0) return pDiff
-                    if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
-                    if (a.due_date) return -1
-                    if (b.due_date) return 1
-                    return 0
+                    return prioritySortDir === 'desc' ? bp - ap : ap - bp
                   })
                 // Live preview reorder while dragging
                 if (draggingId && dragOverId && draggingId !== dragOverId) {
