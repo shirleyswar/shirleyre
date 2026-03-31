@@ -200,6 +200,10 @@ function ContactsPageInner() {
   const [search, setSearch] = useState('')
   const [sourceFilter, setSourceFilter] = useState<'all' | 'contact' | 'prospect'>('all')
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'rating'>('name')
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addForm, setAddForm] = useState({ name: '', phone: '', email: '', company: '' })
+  const [addSaving, setAddSaving] = useState(false)
+  const [addErr, setAddErr] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -316,6 +320,38 @@ function ContactsPageInner() {
     })
   }
 
+  async function saveNewContact() {
+    if (!addForm.name.trim()) { setAddErr('Name is required'); return }
+    setAddSaving(true); setAddErr('')
+    const { data, error } = await supabase.from('contacts').insert({
+      name: addForm.name.trim(),
+      phone: addForm.phone.trim() || null,
+      email: addForm.email.trim() || null,
+      company: addForm.company.trim() || null,
+      priority: 'standard',
+    }).select().single()
+    if (error || !data) { setAddErr('Save failed — try again'); setAddSaving(false); return }
+    // Add to unified list immediately
+    const newC: UnifiedContact = {
+      id: `contact-standalone-${data.id}`,
+      source: 'contact',
+      name: data.name,
+      phone: data.phone ?? null,
+      email: data.email ?? null,
+      company: data.company ?? null,
+      relationship: null,
+      rating: 0,
+      notes: null,
+      deal_id: null,
+      deal_address: null,
+      created_at: data.created_at ?? new Date().toISOString(),
+    }
+    setContacts(prev => [newC, ...prev])
+    setAddForm({ name: '', phone: '', email: '', company: '' })
+    setShowAddForm(false)
+    setAddSaving(false)
+  }
+
   const list = filtered()
   const totalProspects = contacts.filter(c => c.source === 'prospect').length
   const totalContacts = contacts.filter(c => c.source === 'contact').length
@@ -363,7 +399,93 @@ function ContactsPageInner() {
             {totalContacts} contact{totalContacts !== 1 ? 's' : ''} · {totalProspects} prospect{totalProspects !== 1 ? 's' : ''}
           </div>
         </div>
+
+        {/* + Contact — prominent */}
+        <button
+          onClick={() => { setShowAddForm(s => !s); setAddErr('') }}
+          style={{
+            padding: '11px 24px',
+            fontSize: 14, fontWeight: 900,
+            letterSpacing: '0.08em',
+            background: showAddForm
+              ? 'rgba(79,142,247,0.08)'
+              : 'linear-gradient(135deg, rgba(79,142,247,0.25) 0%, rgba(59,130,246,0.38) 100%)',
+            border: '1px solid rgba(79,142,247,0.6)',
+            borderRadius: 12,
+            color: '#4F8EF7',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            flexShrink: 0,
+            display: 'flex', alignItems: 'center', gap: 8,
+            boxShadow: showAddForm ? 'none' : '0 0 20px rgba(79,142,247,0.2)',
+          }}
+        >
+          <span style={{ fontSize: 18, fontWeight: 900, lineHeight: 1 }}>+</span>
+          Contact
+        </button>
       </header>
+
+      {/* ── Add Contact Form ── */}
+      {showAddForm && (
+        <div style={{ padding: '0 24px', maxWidth: 860, margin: '0 auto' }}>
+          <div style={{
+            background: '#1A1E25',
+            border: '1px solid rgba(79,142,247,0.35)',
+            borderRadius: 14,
+            padding: '20px 22px',
+            marginTop: 16,
+            boxShadow: '0 0 24px rgba(79,142,247,0.1)',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#4F8EF7', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 16 }}>
+              New Contact
+            </div>
+
+            {/* Name */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b7280', marginBottom: 4, display: 'block' }}>Name *</label>
+              <input
+                autoFocus
+                style={inputStyle}
+                value={addForm.name}
+                onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Full name"
+                onKeyDown={e => e.key === 'Enter' && saveNewContact()}
+              />
+            </div>
+
+            {/* Phone + Email */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <div>
+                <label style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b7280', marginBottom: 4, display: 'block' }}>Phone</label>
+                <input style={inputStyle} value={addForm.phone} onChange={e => setAddForm(f => ({ ...f, phone: e.target.value }))} placeholder="225-555-1234" type="tel" />
+              </div>
+              <div>
+                <label style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b7280', marginBottom: 4, display: 'block' }}>Email</label>
+                <input style={inputStyle} value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))} placeholder="name@email.com" type="email" />
+              </div>
+            </div>
+
+            {/* Company */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b7280', marginBottom: 4, display: 'block' }}>Company / Firm</label>
+              <input style={inputStyle} value={addForm.company} onChange={e => setAddForm(f => ({ ...f, company: e.target.value }))} placeholder="Brokerage, firm, or company name" />
+            </div>
+
+            {addErr && <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 10, fontWeight: 600 }}>{addErr}</div>}
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => { setShowAddForm(false); setAddErr('') }}
+                style={{ padding: '9px 20px', fontSize: 12, fontWeight: 700, background: 'transparent', border: '1px solid rgba(156,163,175,0.3)', borderRadius: 8, color: '#9ca3af', cursor: 'pointer', fontFamily: 'inherit' }}>
+                Cancel
+              </button>
+              <button onClick={saveNewContact} disabled={addSaving}
+                style={{ flex: 1, padding: '9px 20px', fontSize: 13, fontWeight: 800, letterSpacing: '0.06em', background: 'rgba(79,142,247,0.15)', border: '1px solid rgba(79,142,247,0.5)', borderRadius: 8, color: '#4F8EF7', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {addSaving ? 'Saving…' : 'Save Contact'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Controls ── */}
       <div style={{ padding: '16px 24px 0', maxWidth: 860, margin: '0 auto' }}>
