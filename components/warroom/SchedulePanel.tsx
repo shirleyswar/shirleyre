@@ -13,6 +13,8 @@ interface ScheduleEvent {
   location: string | null
   deal_id: string | null
   created_at: string
+  isDeadline?: boolean  // synthetic flag for contract deadlines
+  deadlineType?: string
 }
 
 interface DealOption {
@@ -286,8 +288,8 @@ function DateSelector({ value, onChange }: { value: string; onChange: (v: string
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
 export default function SchedulePanel() {
-  // "upcoming" = next 5 events from today onward, grouped by date
   const [upcomingEvents, setUpcomingEvents] = useState<ScheduleEvent[]>([])
+  const [contractDeadlines, setContractDeadlines] = useState<ScheduleEvent[]>([])
   const [deals, setDeals] = useState<DealOption[]>([])
   const [loading, setLoading] = useState(true)
   const [tableReady, setTableReady] = useState(true)
@@ -304,6 +306,7 @@ export default function SchedulePanel() {
   useEffect(() => {
     fetchDeals()
     fetchUpcoming()
+    fetchContractDeadlines()
   }, [])
 
   async function fetchDeals() {
@@ -327,7 +330,7 @@ export default function SchedulePanel() {
         .gte('date', today)
         .order('date', { ascending: true })
         .order('time', { ascending: true })
-        .limit(5)
+        .limit(50)
 
       if (error) {
         if (error.code === '42P01' || error.message?.includes('does not exist')) {
@@ -342,6 +345,48 @@ export default function SchedulePanel() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function fetchContractDeadlines() {
+    try {
+      const today = todayCST()
+      const { data } = await supabase
+        .from('contract_deadlines')
+        .select('id, label, deadline_date, deadline_type, status, deal_id')
+        .gte('deadline_date', today)
+        .neq('status', 'satisfied')
+        .order('deadline_date', { ascending: true })
+        .limit(30)
+
+      if (!data) return
+
+      // Get deal names for context
+      const dealIds = Array.from(new Set(data.map((d: any) => d.deal_id).filter(Boolean)))
+      let dealMap: Record<string, string> = {}
+      if (dealIds.length > 0) {
+        const { data: dealData } = await supabase
+          .from('deals')
+          .select('id,name,address')
+          .in('id', dealIds)
+        if (dealData) {
+          dealData.forEach((d: any) => { dealMap[d.id] = d.address || d.name || '' })
+        }
+      }
+
+      const synth: ScheduleEvent[] = data.map((d: any) => ({
+        id: `deadline-${d.id}`,
+        title: d.label,
+        time: '11:59 PM',
+        date: d.deadline_date,
+        location: dealMap[d.deal_id] || null,
+        deal_id: d.deal_id,
+        created_at: d.deadline_date,
+        isDeadline: true,
+        deadlineType: d.deadline_type,
+      }))
+
+      setContractDeadlines(synth)
+    } catch {}
   }
 
   function openAddForm() {
@@ -435,7 +480,7 @@ export default function SchedulePanel() {
   }
 
   const nowStr = new Date(nowTick).toLocaleString('en-CA', { timeZone: 'America/Chicago', hour12: false }).replace(', ', 'T').slice(0, 16) // "YYYY-MM-DDTHH:MM"
-  const liveEvents = upcomingEvents
+  const liveEvents = [...upcomingEvents, ...contractDeadlines]
     .filter(e => {
       const t24 = to24h(e.time || '23:59')
       const evDT = `${e.date}T${t24}`
@@ -690,6 +735,36 @@ function EventRow({
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={cancel} style={{ flex: 1, padding: '7px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#6B7280', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Cancel</button>
           <button onClick={save} style={{ flex: 2, padding: '7px', background: 'rgba(232,184,75,0.15)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 6, color: '#E8B84B', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Save</button>
+        </div>
+      </div>
+    )
+  }
+
+  // Contract deadline — blue read-only row
+  if (event.isDeadline) {
+    return (
+      <div style={{
+        display: 'flex', gap: 10, padding: '7px 10px',
+        background: 'rgba(59,130,246,0.07)',
+        borderRadius: 6,
+        border: '1px solid rgba(59,130,246,0.2)',
+        alignItems: 'center',
+      }}>
+        <div style={{ width: 68, flexShrink: 0 }}>
+          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#60a5fa' }}>DUE</div>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, color: '#93c5fd', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>
+            {event.title}
+          </div>
+          {event.location && (
+            <div style={{ fontSize: 11, color: 'rgba(147,197,253,0.6)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {event.location}
+            </div>
+          )}
+        </div>
+        <div style={{ fontSize: 9, fontWeight: 700, color: '#60a5fa', letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>
+          {event.deadlineType}
         </div>
       </div>
     )
