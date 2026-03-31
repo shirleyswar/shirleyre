@@ -387,21 +387,17 @@ export default function BattlePlanPanel() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 20 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: addToLife ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: addToLife ? 700 : 400 }}>
                 <input type="checkbox" checked={addToLife} onChange={e => {
                   setAddToLife(e.target.checked)
                   if (e.target.checked) setNewContactName('LIFE')
                   else if (newContactName === 'LIFE') setNewContactName('')
-                }} style={{ width: 16, height: 16, accentColor: 'var(--accent-gold)', cursor: 'pointer' }} />
-                Add to Life tab
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: newIsFamily ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: newIsFamily ? 700 : 400 }}>
-                <input type="checkbox" checked={newIsFamily} onChange={e => setNewIsFamily(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#ef4444', cursor: 'pointer' }} />
-                <FamilyIcon active={newIsFamily} /> Family
+                }} style={{ width: 16, height: 16, accentColor: '#f87171', cursor: 'pointer' }} />
+                <span style={{ fontSize: 15 }}>♥</span> Life
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: newIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: newIsEntity ? 700 : 400 }}>
                 <input type="checkbox" checked={newIsEntity} onChange={e => setNewIsEntity(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#22c55e', cursor: 'pointer' }} />
-                Entity
+                <span style={{ fontSize: 14 }}>🏢</span> Entity
               </label>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -629,13 +625,20 @@ function TaskRow({
   const [editContactName, setEditContactName] = useState(task.contact_name || '')
   const [editIsFamily, setEditIsFamily] = useState(!!task.is_family)
   const [editIsEntity, setEditIsEntity] = useState(!!task.is_entity)
+  const [editIsLife, setEditIsLife] = useState(!!task.is_life)
+  const [editDueDate, setEditDueDate] = useState(task.due_date ?? '')
   const [circleHovered, setCircleHovered] = useState(false)
   const isDragTarget = dragOverId === task.id && draggingId !== task.id
   const isDragging   = draggingId === task.id
   const isLong = task.title.length > 48
 
-  function saveEdit() {
-    if (editTitle.trim()) onUpdate({ title: editTitle.trim(), deal_id: editDealId || null, contact_name: editContactName.trim() || null, is_family: editIsFamily || null, is_entity: editIsEntity || null })
+  async function saveEdit() {
+    if (editTitle.trim()) {
+      const updatePayload: Record<string, unknown> = { title: editTitle.trim(), deal_id: editDealId || null, contact_name: editContactName.trim() || null, is_family: editIsFamily || null, is_entity: editIsEntity || null, is_life: editIsLife || null, due_date: editDueDate || null }
+      // Also persist due_date directly to DB since onUpdate may not handle it
+      await supabase.from('tasks').update({ due_date: editDueDate || null } as Record<string, unknown>).eq('id', task.id)
+      onUpdate(updatePayload as Partial<BattlePlanTask>)
+    }
     setEditing(false)
   }
 
@@ -742,14 +745,23 @@ function TaskRow({
                 <option key={n} value={n} />
               ))}
             </datalist>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: editIsFamily ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsFamily ? 700 : 400 }}>
-                <input type="checkbox" checked={editIsFamily} onChange={e => setEditIsFamily(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#ef4444', cursor: 'pointer' }} />
-                <FamilyIcon active={editIsFamily} /> Family
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 3, fontFamily: 'monospace' }}>Deadline</div>
+                <input
+                  type="date"
+                  value={editDueDate}
+                  onChange={e => setEditDueDate(e.target.value)}
+                  style={{ fontSize: 12, padding: '5px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' }}
+                />
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: editIsLife ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsLife ? 700 : 400, marginTop: 14 }}>
+                <input type="checkbox" checked={editIsLife} onChange={e => setEditIsLife(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#f87171', cursor: 'pointer' }} />
+                <span style={{ fontSize: 13 }}>♥</span> Life
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: editIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsEntity ? 700 : 400 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: editIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsEntity ? 700 : 400, marginTop: 14 }}>
                 <input type="checkbox" checked={editIsEntity} onChange={e => setEditIsEntity(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#22c55e', cursor: 'pointer' }} />
-                Entity
+                <span style={{ fontSize: 12 }}>🏢</span> Entity
               </label>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
@@ -821,7 +833,7 @@ function TaskRow({
         {!editing && hovered && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
-              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditIsEntity(!!task.is_entity); setEditing(true) }}
+              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditIsEntity(!!task.is_entity); setEditIsLife(!!task.is_life); setEditDueDate(task.due_date ?? ''); setEditing(true) }}
               title="Edit"
               style={{ padding: '2px 5px', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.65 }}
             >
