@@ -2864,6 +2864,149 @@ function DealDashboardInner() {
         <DealGlanceCard deal={deal} />
       </div>
 
+      {/* ── UC PRIORITY SECTIONS: Deadlines + Documents (top of page, full width) ── */}
+      {deal.status === 'under_contract' && (
+        <div style={{ padding: '0 24px', maxWidth: 1400, margin: '0 auto' }}>
+
+          {/* CONTRACT DEADLINES — Prominent full-width card */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(45,212,191,0.08) 0%, rgba(20,184,166,0.14) 100%)',
+            border: '2px solid rgba(45,212,191,0.45)',
+            borderRadius: 14,
+            padding: '20px 24px',
+            marginBottom: 16,
+            boxShadow: '0 0 32px rgba(45,212,191,0.12)',
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span style={{ fontSize: 16, fontWeight: 900, color: '#2dd4bf', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                  Contract Deadlines
+                </span>
+              </div>
+              <button
+                onClick={() => setShowAddDeadline(s => !s)}
+                style={{
+                  padding: '7px 16px', fontSize: 12, fontWeight: 700,
+                  background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.5)',
+                  borderRadius: 8, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                + Add
+              </button>
+            </div>
+
+            {/* Add Deadline Form */}
+            {showAddDeadline && (
+              <div style={{
+                background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(45,212,191,0.2)',
+                borderRadius: 10, padding: 16, marginBottom: 16,
+                display: 'flex', flexDirection: 'column', gap: 10,
+              }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <input style={inputStyle} value={newDeadline.label} onChange={e => setNewDeadline(d => ({ ...d, label: e.target.value }))} placeholder="Label (e.g. Inspection)" />
+                  <input type="date" style={inputStyle} value={newDeadline.deadline_date} onChange={e => setNewDeadline(d => ({ ...d, deadline_date: e.target.value }))} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <select style={inputStyle} value={newDeadline.deadline_type} onChange={e => setNewDeadline(d => ({ ...d, deadline_type: e.target.value as DeadlineType }))}>
+                    {(Object.keys(DEADLINE_TYPE_COLORS) as DeadlineType[]).map(t => (
+                      <option key={t} value={t}>{DEADLINE_TYPE_COLORS[t].label}</option>
+                    ))}
+                  </select>
+                  <input style={inputStyle} value={newDeadline.notes} onChange={e => setNewDeadline(d => ({ ...d, notes: e.target.value }))} placeholder="Notes (optional)" />
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setShowAddDeadline(false)} style={btnStyle('#9ca3af', 'transparent', 'rgba(156,163,175,0.3)')}>Cancel</button>
+                  <button onClick={addDeadline} disabled={addingDeadline || !newDeadline.label || !newDeadline.deadline_date} style={btnStyle('#000', '#2dd4bf', '#2dd4bf')}>
+                    {addingDeadline ? 'Adding…' : 'Add Deadline'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Deadline rows */}
+            {deadlines.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'rgba(45,212,191,0.45)', textAlign: 'center', padding: '24px 0' }}>
+                No deadlines yet — add your first deadline above
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 10 }}>
+                {deadlines.map(dl => {
+                  const days = daysUntil(dl.deadline_date)
+                  const satisfied = dl.status === 'satisfied'
+                  const typeInfo = DEADLINE_TYPE_COLORS[dl.deadline_type]
+                  const statusInfo = DEADLINE_STATUS_STYLES[dl.status]
+                  const urgentColor = !satisfied && days <= 3 ? '#ef4444' : !satisfied && days <= 7 ? '#fb923c' : '#2dd4bf'
+                  return (
+                    <div key={dl.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '12px 14px',
+                      background: satisfied ? 'rgba(0,0,0,0.2)' : days <= 3 && !satisfied ? 'rgba(239,68,68,0.07)' : 'rgba(0,0,0,0.25)',
+                      border: `1px solid ${satisfied ? 'rgba(255,255,255,0.06)' : days <= 3 && !satisfied ? 'rgba(239,68,68,0.3)' : 'rgba(45,212,191,0.18)'}`,
+                      borderRadius: 10,
+                      opacity: satisfied ? 0.6 : 1,
+                    }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: 13, fontWeight: 700,
+                          color: satisfied ? '#6b7280' : '#F0F2FF',
+                          textDecoration: satisfied ? 'line-through' : 'none',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          marginBottom: 4,
+                        }}>
+                          {dl.label}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span style={{ padding: '2px 7px', borderRadius: 20, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', background: typeInfo.bg, color: typeInfo.text }}>
+                            {typeInfo.label}
+                          </span>
+                          <span style={{ fontSize: 12, color: '#9ca3af', fontFamily: 'monospace' }}>
+                            {formatDate(dl.deadline_date)}
+                          </span>
+                          {!satisfied && (
+                            <span style={{ fontSize: 12, fontWeight: 800, fontFamily: 'monospace', color: urgentColor }}>
+                              {days < 0 ? `${Math.abs(days)}d ago` : days === 0 ? 'TODAY' : `${days}d`}
+                            </span>
+                          )}
+                          <span style={{ padding: '2px 7px', borderRadius: 20, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', background: statusInfo.bg, color: statusInfo.text }}>
+                            {statusInfo.label}
+                          </span>
+                        </div>
+                      </div>
+                      {!satisfied && (
+                        <button onClick={() => satisfyDeadline(dl.id)} title="Satisfy" style={{ padding: '4px 10px', fontSize: 12, fontWeight: 700, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 6, color: '#22c55e', cursor: 'pointer', flexShrink: 0 }}>✓</button>
+                      )}
+                      <button onClick={() => deleteDeadline(dl.id)} title="Delete" style={{ padding: '4px 10px', fontSize: 12, fontWeight: 700, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', cursor: 'pointer', flexShrink: 0 }}>✕</button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* DOCUMENTS — Prominent full-width section */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, paddingLeft: 4 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E8B84B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span style={{ fontSize: 16, fontWeight: 900, color: '#E8B84B', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                Documents
+              </span>
+            </div>
+            <DocumentsCard deal={deal} />
+          </div>
+
+        </div>
+      )}
+
       {/* ── Mobile-only action strip — deal actions hidden on desktop right col ── */}
       <div className="sm:hidden" style={{ padding: '0 24px 16px', maxWidth: 1400, margin: '0 auto' }}>
         {/* Launch — tracked deals */}
@@ -3079,8 +3222,10 @@ function DealDashboardInner() {
             </div>
           </div>
 
-          {/* Documents Card */}
-          <DocumentsCard deal={deal} />
+          {/* Documents Card — shown in left column only when NOT under contract (UC gets it at top) */}
+          {deal.status !== 'under_contract' && (
+            <DocumentsCard deal={deal} />
+          )}
 
           {/* Notes / Activity Log */}
           <div style={cardStyle}>
@@ -3272,84 +3417,7 @@ function DealDashboardInner() {
           {/* Contacts */}
           <ContactsCard deal={deal} />
 
-          {/* Deadlines (only UC) */}
-          {deal.status === 'under_contract' && (
-            <div style={cardStyle}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <span style={sectionHeadStyle}>Contract Deadlines</span>
-                <button onClick={() => setShowAddDeadline(s => !s)} style={btnStyle('#2dd4bf', 'rgba(45,212,191,0.08)', 'rgba(45,212,191,0.35)')}>
-                  + Add
-                </button>
-              </div>
-
-              {showAddDeadline && (
-                <div style={{
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 8, padding: 14, marginBottom: 14,
-                  display: 'flex', flexDirection: 'column', gap: 10,
-                }}>
-                  <input style={inputStyle} value={newDeadline.label} onChange={e => setNewDeadline(d => ({ ...d, label: e.target.value }))} placeholder="Label (e.g. Inspection)" />
-                  <input type="date" style={inputStyle} value={newDeadline.deadline_date} onChange={e => setNewDeadline(d => ({ ...d, deadline_date: e.target.value }))} />
-                  <select style={inputStyle} value={newDeadline.deadline_type} onChange={e => setNewDeadline(d => ({ ...d, deadline_type: e.target.value as DeadlineType }))}>
-                    {(Object.keys(DEADLINE_TYPE_COLORS) as DeadlineType[]).map(t => (
-                      <option key={t} value={t}>{DEADLINE_TYPE_COLORS[t].label}</option>
-                    ))}
-                  </select>
-                  <input style={inputStyle} value={newDeadline.notes} onChange={e => setNewDeadline(d => ({ ...d, notes: e.target.value }))} placeholder="Notes (optional)" />
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => setShowAddDeadline(false)} style={btnStyle('#9ca3af', 'transparent', 'rgba(156,163,175,0.3)')}>Cancel</button>
-                    <button onClick={addDeadline} disabled={addingDeadline || !newDeadline.label || !newDeadline.deadline_date} style={btnStyle('#000', '#2dd4bf', '#2dd4bf')}>
-                      {addingDeadline ? 'Adding…' : 'Add Deadline'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {deadlines.length === 0 ? (
-                <div style={{ fontSize: 12, color: '#4b5563', textAlign: 'center', padding: '16px 0' }}>No deadlines yet</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {deadlines.map(dl => {
-                    const days = daysUntil(dl.deadline_date)
-                    const satisfied = dl.status === 'satisfied'
-                    const typeInfo = DEADLINE_TYPE_COLORS[dl.deadline_type]
-                    const statusInfo = DEADLINE_STATUS_STYLES[dl.status]
-                    return (
-                      <div key={dl.id} style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '8px 10px',
-                        background: 'rgba(255,255,255,0.02)',
-                        borderRadius: 7,
-                        opacity: satisfied ? 0.6 : 1,
-                      }}>
-                        <div style={{ flex: 1, fontSize: 12, fontWeight: 500, color: satisfied ? '#6b7280' : '#F0F2FF', textDecoration: satisfied ? 'line-through' : 'none', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {dl.label}
-                        </div>
-                        <span style={{ padding: '1px 6px', borderRadius: 20, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', background: typeInfo.bg, color: typeInfo.text, flexShrink: 0 }}>
-                          {typeInfo.label}
-                        </span>
-                        <span style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace', flexShrink: 0 }}>
-                          {formatDate(dl.deadline_date)}
-                        </span>
-                        {!satisfied && (
-                          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'monospace', color: getDaysColor(days, dl.status), flexShrink: 0 }}>
-                            {days < 0 ? `${Math.abs(days)}d ago` : days === 0 ? 'Today' : `${days}d`}
-                          </span>
-                        )}
-                        <span style={{ padding: '1px 6px', borderRadius: 20, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', background: statusInfo.bg, color: statusInfo.text, flexShrink: 0 }}>
-                          {statusInfo.label}
-                        </span>
-                        {!satisfied && (
-                          <button onClick={() => satisfyDeadline(dl.id)} title="Satisfy" style={{ padding: '2px 7px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 5, color: '#22c55e', cursor: 'pointer' }}>✓</button>
-                        )}
-                        <button onClick={() => deleteDeadline(dl.id)} title="Delete" style={{ padding: '2px 7px', fontSize: 11, fontWeight: 700, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 5, color: '#ef4444', cursor: 'pointer' }}>✕</button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+          {/* Deadlines are shown at top of page when UC — no duplicate here */}
 
           {/* Metadata */}
           <div style={{ ...cardStyle, background: 'transparent', border: '1px solid rgba(255,255,255,0.04)' }}>
