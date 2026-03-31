@@ -2830,6 +2830,35 @@ function DealDashboardInner() {
         </div>
       </header>
 
+      {/* ── UNDER CONTRACT BANNER ── */}
+      {deal.status === 'under_contract' && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(45,212,191,0.18) 0%, rgba(20,184,166,0.28) 100%)',
+          border: '1px solid rgba(45,212,191,0.55)',
+          borderLeft: '5px solid #2dd4bf',
+          padding: '14px 28px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+        }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: '#2dd4bf', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+              Under Contract
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(45,212,191,0.65)', marginTop: 2, letterSpacing: '0.05em' }}>
+              {deal.address || deal.name} — monitor deadlines closely
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Quick Glance — full width, top of page ── */}
       <div style={{ padding: '0 24px', maxWidth: 1400, margin: '0 auto' }}>
         <DealGlanceCard deal={deal} />
