@@ -2346,6 +2346,7 @@ function DealDashboardInner() {
   // UC Dialog
   const [showUCDialog, setShowUCDialog] = useState(false)
   const [ucTransactionType, setUCTransactionType] = useState<'sale' | 'lease'>('sale')
+  const [ucAvailableTypes, setUCAvailableTypes] = useState<'sale' | 'lease' | 'both'>('sale')
   const [allContacts, setAllContacts] = useState<{ id: string; name: string; company: string | null; phone: string | null; email: string | null }[]>([])
   const [ucForm, setUCForm] = useState({
     contractPrice: '',
@@ -2353,6 +2354,8 @@ function DealDashboardInner() {
     leaseRateUnit: '$/SF/YR',
     leaseTermMonths: '',
     notes: '',
+    commissionPct: '',
+    commissionAmount: '',
     cobrokeListingOn: false,
     cobrokeBuyerOn: false,
     dualRep: false,
@@ -2481,11 +2484,42 @@ function DealDashboardInner() {
   }
 
   async function openUCDialogWithContacts() {
-    // Default transaction type from deal type
-    const typeStr = (deal?.type || '').toLowerCase()
-    const defaultIsLease = typeStr.includes('lease') || typeStr.includes('tenant')
-    setUCTransactionType(defaultIsLease ? 'lease' : 'sale')
     setShowUCDialog(true)
+
+    // Load deal_economics to determine transaction type + pre-fill commission
+    const { data: econ } = await supabase
+      .from('deal_economics')
+      .select('transaction_type, sale_commission_pct, lease_commission_pct, asking_price, lease_rate_psf, sqft, lease_term_years')
+      .eq('deal_id', deal?.id || '')
+      .maybeSingle()
+
+    // Determine available types from economics, fall back to deal.type
+    let available: 'sale' | 'lease' | 'both' = 'sale'
+    if (econ?.transaction_type === 'lease') available = 'lease'
+    else if (econ?.transaction_type === 'both') available = 'both'
+    else {
+      const typeStr = (deal?.type || '').toLowerCase()
+      if (typeStr.includes('lease') || typeStr.includes('tenant')) available = 'lease'
+    }
+    setUCAvailableTypes(available)
+
+    // Default to sale unless it's lease-only
+    const defaultType = available === 'lease' ? 'lease' : 'sale'
+    setUCTransactionType(defaultType)
+
+    // Pre-fill commission from deal economics
+    if (econ) {
+      const commPct = defaultType === 'lease'
+        ? (econ.lease_commission_pct ?? '')
+        : (econ.sale_commission_pct ?? '')
+      const commAmt = defaultType === 'sale' && econ.asking_price && econ.sale_commission_pct
+        ? String(Math.round(econ.asking_price * (econ.sale_commission_pct / 100) * 0.75))
+        : defaultType === 'lease' && econ.lease_rate_psf && econ.sqft && econ.lease_term_years && econ.lease_commission_pct
+        ? String(Math.round(econ.lease_rate_psf * econ.sqft * econ.lease_term_years * (econ.lease_commission_pct / 100) * 0.75))
+        : ''
+      setUCForm(f => ({ ...f, commissionPct: commPct ? String(commPct) : '', commissionAmount: commAmt }))
+    }
+
     // Load all contacts for autocomplete
     const { data } = await supabase.from('contacts').select('id,name,company,phone,email').order('name')
     if (data) setAllContacts(data as typeof allContacts)
@@ -2514,6 +2548,8 @@ function DealDashboardInner() {
       deal_category: isLease ? 'lease' : 'sale',
       notes: ucForm.notes || null,
       dual_rep: ucForm.dualRep || false,
+      commission_pct: parseFloat(ucForm.commissionPct) || null,
+      commission_amount: parseFloat(ucForm.commissionAmount) || null,
     }
     if (isLease) {
       ucPayload.lease_rate = parseFloat(ucForm.leaseRate)
@@ -2571,7 +2607,7 @@ function DealDashboardInner() {
     setShowUCDialog(false)
     setUCForm({
       contractPrice: '', leaseRate: '', leaseRateUnit: '$/SF/YR', leaseTermMonths: '',
-      notes: '', cobrokeListingOn: false, cobrokeBuyerOn: false, dualRep: false,
+      notes: '', commissionPct: '', commissionAmount: '', cobrokeListingOn: false, cobrokeBuyerOn: false, dualRep: false,
       listingBrokers: [{ name: '', firm: '', pct: '' }],
       buyerBrokers: [{ name: '', firm: '', pct: '' }],
     })
@@ -3367,35 +3403,37 @@ function DealDashboardInner() {
 
             return (
               <>
-                {/* Sale / Lease toggle — always shown so Matthew can pick */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
-                  {(['sale', 'lease'] as const).map(t => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setUCTransactionType(t)}
-                      style={{
-                        flex: 1, padding: '9px', fontSize: 12, fontWeight: 800,
-                        letterSpacing: '0.08em', textTransform: 'uppercase',
-                        background: ucTransactionType === t
-                          ? (t === 'sale' ? 'rgba(45,212,191,0.18)' : 'rgba(167,139,250,0.18)')
-                          : 'rgba(255,255,255,0.04)',
-                        border: `1px solid ${ucTransactionType === t
-                          ? (t === 'sale' ? 'rgba(45,212,191,0.55)' : 'rgba(167,139,250,0.55)')
-                          : 'rgba(255,255,255,0.1)'}`,
-                        borderRadius: 8,
-                        color: ucTransactionType === t
-                          ? (t === 'sale' ? '#2dd4bf' : '#c4b5fd')
-                          : '#6b7280',
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {t === 'sale' ? '🏷 Sale' : '📄 Lease'}
-                    </button>
-                  ))}
-                </div>
+                {/* Sale / Lease toggle — only show when deal supports both */}
+                {ucAvailableTypes === 'both' && (
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                    {(['sale', 'lease'] as const).map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setUCTransactionType(t)}
+                        style={{
+                          flex: 1, padding: '9px', fontSize: 12, fontWeight: 800,
+                          letterSpacing: '0.08em', textTransform: 'uppercase',
+                          background: ucTransactionType === t
+                            ? (t === 'sale' ? 'rgba(45,212,191,0.18)' : 'rgba(167,139,250,0.18)')
+                            : 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${ucTransactionType === t
+                            ? (t === 'sale' ? 'rgba(45,212,191,0.55)' : 'rgba(167,139,250,0.55)')
+                            : 'rgba(255,255,255,0.1)'}`,
+                          borderRadius: 8,
+                          color: ucTransactionType === t
+                            ? (t === 'sale' ? '#2dd4bf' : '#c4b5fd')
+                            : '#6b7280',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {t === 'sale' ? '🏷 Sale' : '📄 Lease'}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Sale fields */}
                 {!isLease && (
@@ -3449,6 +3487,47 @@ function DealDashboardInner() {
                     </div>
                   </>
                 )}
+
+                {/* Commission confirmation */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.6)', marginBottom: 8 }}>
+                    Confirm Commission
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div>
+                      <label style={fLabel}>Commission Rate (%)</label>
+                      <input
+                        type="number" step="0.01" style={fInput}
+                        value={ucForm.commissionPct}
+                        onChange={e => {
+                          const pct = e.target.value
+                          const price = parseFloat(ucForm.contractPrice) || 0
+                          const rate = parseFloat(pct) || 0
+                          const amt = price > 0 && rate > 0 ? String(Math.round(price * (rate / 100) * 0.75)) : ucForm.commissionAmount
+                          setUCForm(f => ({ ...f, commissionPct: pct, commissionAmount: amt }))
+                        }}
+                        placeholder="e.g. 3.0"
+                      />
+                    </div>
+                    <div>
+                      <label style={fLabel}>Matthew&apos;s Commission ($)</label>
+                      <input
+                        type="text" inputMode="numeric" style={{ ...fInput, background: 'rgba(34,197,94,0.06)', color: '#22c55e' }}
+                        value={ucForm.commissionAmount ? '$' + Number(ucForm.commissionAmount).toLocaleString('en-US') : ''}
+                        onChange={e => {
+                          const raw = e.target.value.replace(/[^0-9]/g, '')
+                          setUCForm(f => ({ ...f, commissionAmount: raw }))
+                        }}
+                        placeholder="Auto-calculated"
+                      />
+                      {ucForm.commissionAmount && Number(ucForm.commissionAmount) > 0 && (
+                        <div style={{ fontSize: 13, color: '#22c55e', marginTop: 3, fontWeight: 800 }}>
+                          ${Number(ucForm.commissionAmount).toLocaleString('en-US')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
                 {/* Notes */}
                 <div>
