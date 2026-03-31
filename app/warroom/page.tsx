@@ -770,6 +770,87 @@ function NavRibbon({
         </div>
       </motion.button>
 
+      {/* CONTACTS orbit card — blue, between Portfolio and spacer */}
+      <motion.button
+        className="wr-nav-card"
+        onClick={() => router.push('/warroom/contacts')}
+        whileHover={{ scale: 1.10, y: -6 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 14 }}
+        style={{
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 5,
+          flex: '1 1 0',
+          width: '100%',
+          maxWidth: 160,
+          height: 'clamp(80px, 14vw, 96px)',
+          background: 'linear-gradient(135deg, #0d1a2e 0%, #0f2040 50%, #0a1830 100%)',
+          border: '1px solid rgba(79,142,247,0.35)',
+          borderRadius: 16,
+          cursor: 'pointer',
+          overflow: 'hidden',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(79,142,247,0.1), inset 0 1px 0 rgba(79,142,247,0.08)',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+        }}
+      >
+        {/* Atmospheric glow */}
+        <div style={{
+          position: 'absolute', top: -30, right: -30,
+          width: 100, height: 100, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(79,142,247,0.18) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Orbit icon zone */}
+        <div style={{ position: 'relative', width: 'clamp(40px, 8vw, 54px)', height: 'clamp(40px, 8vw, 54px)', flexShrink: 0 }}>
+          <motion.div
+            style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(79,142,247,0.28)' }}
+            animate={{ scale: [1, 1.45, 1], opacity: [0.45, 0, 0.45] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            style={{ position: 'absolute', inset: 8, borderRadius: '50%', border: '1px solid rgba(79,142,247,0.45)' }}
+            animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.08, 0.6] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.55 }}
+          />
+          <motion.div
+            animate={{ boxShadow: ['0 0 8px rgba(79,142,247,0.25)', '0 0 20px rgba(79,142,247,0.55)', '0 0 8px rgba(79,142,247,0.25)'] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+            style={{
+              position: 'absolute', inset: 16, borderRadius: '50%',
+              background: 'rgba(20,45,90,0.9)',
+              border: '1px solid rgba(79,142,247,0.55)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#4F8EF7',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </motion.div>
+        </div>
+
+        {/* Label */}
+        <div style={{
+          fontSize: 'clamp(10px, 2.2vw, 13px)', fontWeight: 800,
+          color: '#6BA3F7',
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          fontFamily: 'var(--font-body)',
+          textAlign: 'center',
+        }}>
+          Contacts
+        </div>
+      </motion.button>
+
       {/* Spacer — pushes link orbits to the right, hidden on mobile */}
       <div className="hidden sm:block" style={{ flex: 1, minWidth: 24 }} />
 
