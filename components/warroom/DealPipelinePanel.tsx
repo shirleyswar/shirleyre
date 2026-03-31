@@ -318,24 +318,19 @@ export default function DealPipelinePanel() {
     }
   }
 
-  // Sort deals: default = portfolio first (alphabetical), then single addresses alphabetical
-  // User sort overrides default
+  // Sort deals: default = portfolios A-Z → ALL singles A-Z (regardless of tier)
+  // User sort overrides default but portfolios always stay pinned at top
   function sortedDeals(list: Deal[]): Deal[] {
     const topLevel = list.filter(d => !d.parent_deal_id)
     if (sortBy === null) {
-      // Default: portfolios (📁) A-Z → filed deals A-Z → tracked deals A-Z
+      // Default: portfolios (📁) A-Z → everything else A-Z (filed + tracked intermixed by address)
       const portfolios = topLevel.filter(d => d.address?.startsWith('📁')).sort((a,b) => (a.address||'').localeCompare(b.address||''))
-      const filed = topLevel.filter(d => !d.address?.startsWith('📁') && d.tier === 'filed').sort((a,b) => {
+      const singles = topLevel.filter(d => !d.address?.startsWith('📁')).sort((a,b) => {
         const aAddr = (a as any).addr_display || a.address || a.name || ''
         const bAddr = (b as any).addr_display || b.address || b.name || ''
         return aAddr.localeCompare(bAddr)
       })
-      const tracked = topLevel.filter(d => !d.address?.startsWith('📁') && d.tier !== 'filed').sort((a,b) => {
-        const aAddr = (a as any).addr_display || a.address || a.name || ''
-        const bAddr = (b as any).addr_display || b.address || b.name || ''
-        return aAddr.localeCompare(bAddr)
-      })
-      return [...portfolios, ...filed, ...tracked]
+      return [...portfolios, ...singles]
     }
     // Portfolios always stay at the top regardless of sort
     const portfolios = topLevel.filter(d => d.address?.startsWith('📁')).sort((a,b) => (a.address||'').localeCompare(b.address||''))
@@ -475,31 +470,31 @@ export default function DealPipelinePanel() {
                 boxShadow: 'inset 0 -1px 0 rgba(139,92,246,0.3)',
               }}>
                 {([
-                  { label: 'FILES',       cls: 'hidden sm:table-cell', align: 'center', width: 58,        sortable: false },
-                  { label: 'MORE',        cls: '',                      align: 'center', width: 38,        sortable: false },
-                  { label: 'Address',     cls: '',                      align: 'center', width: undefined, sortable: true  },
-                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortable: false },
-                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortable: false },
-                  { label: 'Status',      cls: '',                      align: 'center', width: undefined, sortable: false },
-                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortable: false },
-                  { label: 'Priority',    cls: 'deal-rating-col hidden sm:table-cell', align: 'center', width: undefined, sortable: false },
-                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortable: false },
-                ] as { label: string; cls: string; align: string; width: number | undefined; sortable: boolean }[]).map(h => {
-                  const isActive = h.sortable && sortBy === 'address'
+                  { label: 'FILES',       cls: 'hidden sm:table-cell', align: 'center', width: 58,        sortField: null },
+                  { label: 'MORE',        cls: '',                      align: 'center', width: 38,        sortField: null },
+                  { label: 'Address',     cls: '',                      align: 'center', width: undefined, sortField: 'address' as SortField },
+                  { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: null },
+                  { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: null },
+                  { label: 'Status',      cls: '',                      align: 'center', width: undefined, sortField: null },
+                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: null },
+                  { label: 'Priority',    cls: 'deal-rating-col hidden sm:table-cell', align: 'center', width: undefined, sortField: 'rating' as SortField },
+                  { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: null },
+                ] as { label: string; cls: string; align: string; width: number | undefined; sortField: SortField | null }[]).map(h => {
+                  const isActive = h.sortField !== null && sortBy === h.sortField
                   return (
                   <th key={h.label} className={h.cls}
-                    onClick={h.sortable ? () => handleSort('address') : undefined}
+                    onClick={h.sortField ? () => handleSort(h.sortField!) : undefined}
                     style={{
                       textAlign: h.align as React.CSSProperties['textAlign'],
                       width: h.width, minWidth: h.width, maxWidth: h.width,
                       padding: '8px 4px', fontSize: 9, fontWeight: 800,
                       color: isActive ? '#E8B84B' : 'rgba(167,139,250,0.8)',
                       textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap',
-                      cursor: h.sortable ? 'pointer' : 'default', userSelect: 'none',
+                      cursor: h.sortField ? 'pointer' : 'default', userSelect: 'none',
                       borderRight: h.label === 'FILES' ? '1px solid rgba(139,92,246,0.15)' : undefined,
                     }}>
                     {h.label}
-                    {h.sortable && <span style={{ marginLeft: 3, fontSize: 8, opacity: 0.7 }}>
+                    {h.sortField && <span style={{ marginLeft: 3, fontSize: 8, opacity: 0.7 }}>
                       {isActive ? (sortDir === 'asc' ? '↑' : '↓') : '⇅'}
                     </span>}
                   </th>
