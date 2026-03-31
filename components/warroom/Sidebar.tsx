@@ -289,11 +289,7 @@ function SwordIcon() {
 }
 function PipeIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <line x1="3" y1="12" x2="21" y2="12"/>
-      <line x1="3" y1="18" x2="14" y2="18"/>
-    </svg>
+    <span style={{ fontSize: 15, fontWeight: 900, lineHeight: 1, fontFamily: 'var(--font-body, system-ui, sans-serif)' }}>D</span>
   )
 }
 function DocIcon() {

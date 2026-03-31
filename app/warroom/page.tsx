@@ -1095,15 +1095,50 @@ function SectionView({ children, onBack, title }: { children: React.ReactNode; o
 function OperationsView({ activePanel }: { activePanel: string }) {
   const isVertical = useVerticalMonitor()
 
-  if (isVertical) {
-    // Vertical monitor: single column, panels stacked in order
+  // ── Single-panel focused views ──
+  if (activePanel === 'battleplan') {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.18 }}
-      >
+      <motion.div key="battleplan" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+        <BattlePlanPanel />
+      </motion.div>
+    )
+  }
+  if (activePanel === 'pipeline') {
+    return (
+      <motion.div key="pipeline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+        <DealPipelinePanel />
+      </motion.div>
+    )
+  }
+  if (activePanel === 'contracts') {
+    return (
+      <motion.div key="contracts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <HotPanel />
+          <UnderContractPanel />
+        </div>
+      </motion.div>
+    )
+  }
+  if (activePanel === 'schedule') {
+    return (
+      <motion.div key="schedule" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+        <SchedulePanel />
+      </motion.div>
+    )
+  }
+  if (activePanel === 'ar') {
+    return (
+      <motion.div key="ar" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+        <AccountsReceivablePanel />
+      </motion.div>
+    )
+  }
+
+  // ── Overview (default) — all panels ──
+  if (isVertical) {
+    return (
+      <motion.div key="overview-v" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1080 }}>
           <BattlePlanPanel />
           <SchedulePanel />
@@ -1118,12 +1153,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.18 }}
-    >
+    <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 max-w-[1640px] mx-auto">
 
         {/* Row 1: Battle Plan (2-col) + Schedule (1-col) */}
@@ -1147,12 +1177,12 @@ function OperationsView({ activePanel }: { activePanel: string }) {
           <MoneyMoversPanel />
         </div>
 
-        {/* Row 3: Deal Pipeline (full width) */}
+        {/* Row 4: Deal Pipeline (full width) */}
         <div className="lg:col-span-3 card-reveal card-reveal-5" style={{ position: 'relative', zIndex: 20 }}>
           <DealPipelinePanel />
         </div>
 
-        {/* Row 4: AR + ShirleyCRE Agent Card */}
+        {/* Row 5: AR + ShirleyCRE Agent Card */}
         <div className="card-reveal card-reveal-6" style={{ position: 'relative', zIndex: 10 }}>
           <AccountsReceivablePanel />
         </div>
