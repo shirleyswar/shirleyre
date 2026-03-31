@@ -350,10 +350,15 @@ export default function SchedulePanel() {
   async function fetchContractDeadlines() {
     try {
       const today = todayCST()
+      // Only show deadlines within the next 21 days
+      const cutoff = new Date()
+      cutoff.setDate(cutoff.getDate() + 21)
+      const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const { data } = await supabase
         .from('contract_deadlines')
         .select('id, label, deadline_date, deadline_type, status, deal_id')
         .gte('deadline_date', today)
+        .lte('deadline_date', cutoffStr)
         .neq('status', 'satisfied')
         .order('deadline_date', { ascending: true })
         .limit(30)
