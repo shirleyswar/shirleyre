@@ -909,12 +909,14 @@ export default function UnderContractPanel() {
                         </a>
                       </td>
 
-                      {/* Deal name */}
+                      {/* Deal address (bold header) + client name (smaller below) */}
                       <td style={{ padding: '13px 8px', color: 'var(--text-primary)', fontWeight: 700, maxWidth: 220 }}>
-                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 15 }}>{deal.name}</div>
-                        {deal.address && (
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {deal.address}
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 15, fontWeight: 700, color: '#F0F2FF' }}>
+                          {deal.address || deal.name}
+                        </div>
+                        {deal.address && deal.name && (
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 400 }}>
+                            {deal.name}
                           </div>
                         )}
                       </td>
