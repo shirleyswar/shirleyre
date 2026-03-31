@@ -2812,30 +2812,6 @@ function DealDashboardInner() {
             {typeLabel(deal.type)}
           </span>
 
-          {/* Prospects button */}
-          <button
-            onClick={() => router.push(`/warroom/deal/prospects?id=${deal.id}`)}
-            style={{
-              padding: '6px 14px', fontSize: 12, fontWeight: 700,
-              letterSpacing: '0.06em',
-              background: 'rgba(79,142,247,0.1)',
-              border: '1px solid rgba(79,142,247,0.35)',
-              borderRadius: 8,
-              color: '#4F8EF7',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              flexShrink: 0,
-              display: 'flex', alignItems: 'center', gap: 5,
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            Prospects
-          </button>
-
           {/* Edit toggle */}
           {!editing ? (
             <button onClick={startEdit} style={btnStyle('#E8B84B', 'rgba(232,184,75,0.1)', 'rgba(232,184,75,0.35)')}>
@@ -3302,6 +3278,52 @@ function DealDashboardInner() {
 
         {/* ── RIGHT COLUMN — visible on all screens (stacks below left on mobile) ── */}
         <div className="w-full sm:w-[35%]" style={{ minWidth: 0 }}>
+
+          {/* ── PROSPECTS — big prominent button ── */}
+          <button
+            onClick={() => router.push(`/warroom/deal/prospects?id=${deal.id}`)}
+            style={{
+              width: '100%',
+              marginBottom: 16,
+              padding: '18px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              background: 'linear-gradient(135deg, rgba(79,142,247,0.14) 0%, rgba(59,130,246,0.22) 100%)',
+              border: '1px solid rgba(79,142,247,0.5)',
+              borderRadius: 14,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              boxShadow: '0 0 24px rgba(79,142,247,0.12)',
+              textAlign: 'left',
+            }}
+          >
+            {/* Icon */}
+            <div style={{
+              width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
+              background: 'rgba(79,142,247,0.18)',
+              border: '1px solid rgba(79,142,247,0.45)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F8EF7" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            {/* Text */}
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: '#4F8EF7', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>
+                Prospects
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(79,142,247,0.6)', fontWeight: 600 }}>
+                Buyers · Tenants · Interested Parties
+              </div>
+            </div>
+            {/* Arrow */}
+            <div style={{ marginLeft: 'auto', color: 'rgba(79,142,247,0.5)', fontSize: 18 }}>›</div>
+          </button>
 
           {/* Deal Actions Card */}
           <div style={{
