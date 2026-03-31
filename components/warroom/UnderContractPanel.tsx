@@ -912,9 +912,12 @@ export default function UnderContractPanel() {
                       {/* Deal address (bold header) + client name (smaller below) */}
                       <td style={{ padding: '13px 8px', color: 'var(--text-primary)', fontWeight: 700, maxWidth: 220 }}>
                         <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 15, fontWeight: 700, color: '#F0F2FF' }}>
-                          {deal.address || deal.name}
+                          {((deal as any).addr_display || deal.address?.replace(/^📁\s*/, '') || deal.name || '')
+                            .replace(/,\s*(LA|Louisiana)\s+\d{5}.*$/i, '')
+                            .replace(/,?\s*USA\s*$/i, '')
+                            .trim()}
                         </div>
-                        {deal.address && deal.name && (
+                        {deal.name && (
                           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 400 }}>
                             {deal.name}
                           </div>
