@@ -2345,6 +2345,7 @@ function DealDashboardInner() {
 
   // UC Dialog
   const [showUCDialog, setShowUCDialog] = useState(false)
+  const [ucTransactionType, setUCTransactionType] = useState<'sale' | 'lease'>('sale')
   const [allContacts, setAllContacts] = useState<{ id: string; name: string; company: string | null; phone: string | null; email: string | null }[]>([])
   const [ucForm, setUCForm] = useState({
     contractPrice: '',
@@ -2479,6 +2480,10 @@ function DealDashboardInner() {
   }
 
   async function openUCDialogWithContacts() {
+    // Default transaction type from deal type
+    const typeStr = (deal?.type || '').toLowerCase()
+    const defaultIsLease = typeStr.includes('lease') || typeStr.includes('tenant')
+    setUCTransactionType(defaultIsLease ? 'lease' : 'sale')
     setShowUCDialog(true)
     // Load all contacts for autocomplete
     const { data } = await supabase.from('contacts').select('id,name,company,phone,email').order('name')
@@ -2487,7 +2492,7 @@ function DealDashboardInner() {
 
   async function submitUCDialog() {
     if (!deal) return
-    const isLease = (deal.type || '').toLowerCase().includes('lease')
+    const isLease = ucTransactionType === 'lease'
 
     // Validate required fields
     if (isLease) {
@@ -3354,12 +3359,42 @@ function DealDashboardInner() {
           </div>
 
           {(() => {
-            const isLease = (deal.type || '').toLowerCase().includes('lease')
+            const isLease = ucTransactionType === 'lease'
             const fLabel: React.CSSProperties = { fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b7280', marginBottom: 4, display: 'block' }
             const fInput: React.CSSProperties = { width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '8px 10px', fontSize: 13, color: '#F0F2FF', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', colorScheme: 'dark' }
 
             return (
               <>
+                {/* Sale / Lease toggle — always shown so Matthew can pick */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                  {(['sale', 'lease'] as const).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setUCTransactionType(t)}
+                      style={{
+                        flex: 1, padding: '9px', fontSize: 12, fontWeight: 800,
+                        letterSpacing: '0.08em', textTransform: 'uppercase',
+                        background: ucTransactionType === t
+                          ? (t === 'sale' ? 'rgba(45,212,191,0.18)' : 'rgba(167,139,250,0.18)')
+                          : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${ucTransactionType === t
+                          ? (t === 'sale' ? 'rgba(45,212,191,0.55)' : 'rgba(167,139,250,0.55)')
+                          : 'rgba(255,255,255,0.1)'}`,
+                        borderRadius: 8,
+                        color: ucTransactionType === t
+                          ? (t === 'sale' ? '#2dd4bf' : '#c4b5fd')
+                          : '#6b7280',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {t === 'sale' ? '🏷 Sale' : '📄 Lease'}
+                    </button>
+                  ))}
+                </div>
+
                 {/* Sale fields */}
                 {!isLease && (
                   <div>
