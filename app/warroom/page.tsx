@@ -688,9 +688,9 @@ function NavRibbon({
         )
       })}
 
-      {/* CONTACTS orbit card — blue, between Portfolio and spacer */}
+      {/* CONTACTS orbit card — blue, between Portfolio and spacer — hidden on mobile */}
       <motion.button
-        className="wr-nav-card"
+        className="wr-nav-card hidden sm:flex"
         onClick={() => router.push('/warroom/contacts')}
         whileHover={{ scale: 1.10, y: -6 }}
         whileTap={{ scale: 0.95 }}
@@ -772,8 +772,12 @@ function NavRibbon({
       {/* Spacer — pushes link orbits to the right, hidden on mobile */}
       <div className="hidden sm:block" style={{ flex: 1, minWidth: 24 }} />
 
-      {/* Stats card + LACDB/CREXI — hidden on vertical monitor (moved to sidebar) */}
-      {!isVertical && <StatsNavCard />}
+      {/* Stats card — hidden on mobile and vertical monitor */}
+      {!isVertical && (
+        <div className="hidden sm:block">
+          <StatsNavCard />
+        </div>
+      )}
 
       {/* Teal link orbits — LACDB & CREXI — hidden on mobile and vertical monitor */}
       {[
