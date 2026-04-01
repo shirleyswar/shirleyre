@@ -569,9 +569,15 @@ function DeadlinesSummary({ deadlines, onExpand, isExpanded }: DeadlinesSummaryP
     .map(d => ({ d, days: daysUntil(d.deadline_date) }))
     .sort((a, b) => a.days - b.days)[0]
 
-  const urgentColor = nearest && nearest.days <= 7
-    ? (nearest.days <= 1 ? '#ef4444' : '#fb923c')
+  const urgentColor = nearest && nearest.days <= 3
+    ? '#ef4444'
+    : nearest && nearest.days <= 7
+    ? '#fb923c'
+    : nearest && nearest.days <= 45
+    ? '#E8B84B'
     : 'var(--text-muted)'
+
+  const showCountdown = nearest && nearest.days <= 45
 
   return (
     <button
@@ -584,12 +590,12 @@ function DeadlinesSummary({ deadlines, onExpand, isExpanded }: DeadlinesSummaryP
       <span style={{ fontSize: 13, fontWeight: 700, color: pending.length > 0 ? '#4F8EF7' : 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
         {pending.length}
       </span>
-      {nearest && nearest.days <= 7 && (
+      {showCountdown && (
         <span style={{ fontSize: 11, color: urgentColor, fontWeight: 700, whiteSpace: 'nowrap' }}>
-          {nearest.days <= 0 ? 'PAST' : `${nearest.days}d`} {isExpanded ? '▲' : '▼'}
+          {nearest!.days <= 0 ? 'PAST' : `${nearest!.days}d`} {isExpanded ? '▲' : '▼'}
         </span>
       )}
-      {!(nearest && nearest.days <= 7) && (
+      {!showCountdown && (
         <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
           {isExpanded ? '▲' : '▼'}
         </span>

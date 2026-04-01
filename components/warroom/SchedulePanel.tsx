@@ -350,9 +350,9 @@ export default function SchedulePanel() {
   async function fetchContractDeadlines() {
     try {
       const today = todayCST()
-      // Only show deadlines within the next 21 days
+      // Show deadlines within the next 45 days
       const cutoff = new Date()
-      cutoff.setDate(cutoff.getDate() + 21)
+      cutoff.setDate(cutoff.getDate() + 45)
       const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const { data } = await supabase
         .from('contract_deadlines')
@@ -361,7 +361,7 @@ export default function SchedulePanel() {
         .lte('deadline_date', cutoffStr)
         .neq('status', 'satisfied')
         .order('deadline_date', { ascending: true })
-        .limit(30)
+        .limit(60)
 
       if (!data) return
 
@@ -494,7 +494,7 @@ export default function SchedulePanel() {
     })
     .sort((a, b) => a.date.localeCompare(b.date) || to24h(a.time || '').localeCompare(to24h(b.time || '')))
 
-  // Contract deadlines only — already filtered to ≤21 days out by fetch
+  // Contract deadlines only — already filtered to ≤45 days out by fetch
   const liveDeadlines = contractDeadlines
     .filter(e => e.date >= nowStr.slice(0, 10))
     .sort((a, b) => a.date.localeCompare(b.date))
