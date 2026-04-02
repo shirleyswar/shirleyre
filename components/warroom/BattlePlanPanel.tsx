@@ -969,6 +969,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
     const [ty, tm, td] = todayStr.split('-').map(Number)
     const todayMidnight = new Date(ty, tm - 1, td)
     const diffDays = Math.round((dt.getTime() - todayMidnight.getTime()) / 86400000)
+    if (diffDays === 0) return 'Today'
     if (diffDays >= 0 && diffDays <= 7) {
       // Within next 7 days — full day name only
       return dt.toLocaleDateString('en-US', { weekday: 'long' })  // "Monday"
