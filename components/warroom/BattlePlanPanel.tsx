@@ -54,6 +54,7 @@ export default function BattlePlanPanel() {
   // When user picks "Create Next Flow" we show an input in the modal
   const [nextFlowMode, setNextFlowMode] = useState(false)
   const [nextFlowTitle, setNextFlowTitle] = useState('')
+  const [nextFlowDueDate, setNextFlowDueDate] = useState('')
 
   const dragIdRef = useRef<string | null>(null)
 
@@ -187,6 +188,7 @@ export default function BattlePlanPanel() {
     setPendingComplete(null)
     setNextFlowMode(false)
     setNextFlowTitle('')
+    setNextFlowDueDate('')
   }
 
   // Mark a task complete in DB + UI
@@ -220,6 +222,7 @@ export default function BattlePlanPanel() {
     const dealLabel = deal ? (deal.address || deal.name) : ''
     // Pre-fill with blank so user types their own next action
     setNextFlowTitle('')
+    setNextFlowDueDate('')
     setNextFlowMode(true)
     // hint in placeholder will show deal name
     void dealLabel
@@ -236,6 +239,7 @@ export default function BattlePlanPanel() {
       title: nextFlowTitle.trim(),
       status: 'open',
       deal_id: task.deal_id || null,
+      due_date: nextFlowDueDate || null,
     }
     try { insertData.follow_up_of = task.id } catch {}
     try {
@@ -536,6 +540,15 @@ export default function BattlePlanPanel() {
                   placeholder="What's the next action?"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(20,184,166,0.4)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
                 />
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Due Date</div>
+                  <input
+                    type="date"
+                    value={nextFlowDueDate}
+                    onChange={e => setNextFlowDueDate(e.target.value)}
+                    style={{ fontSize: 13, padding: '7px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(20,184,166,0.3)', borderRadius: 7, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' }}
+                  />
+                </div>
                 {pendingComplete.deal_id && (() => {
                   const d = deals.find(x => x.id === pendingComplete.deal_id)
                   return d ? (
