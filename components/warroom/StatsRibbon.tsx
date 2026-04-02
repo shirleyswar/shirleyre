@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface Stats {
-  totalPipeline: number
+  ucCommission: number
+  ucMissingCommission: string[]   // deal names with no commission_estimated
   activeDeals: number
   arOutstanding: number
   nextClosing: string | null
@@ -18,7 +19,8 @@ function formatCurrency(n: number): string {
 
 export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
   const [stats, setStats] = useState<Stats>({
-    totalPipeline: 0,
+    ucCommission: 0,
+    ucMissingCommission: [],
     activeDeals: 0,
     arOutstanding: 0,
     nextClosing: null,
@@ -30,17 +32,25 @@ export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
       try {
         const { data: deals } = await supabase
           .from('deals')
-          .select('status, value, commission_estimated, commission_collected')
+          .select('id, name, status, commission_estimated, commission_collected')
 
         if (deals) {
-          const active = deals.filter(d => !['closed', 'dead'].includes(d.status))
-          const totalPipeline = active.reduce((sum, d) => sum + (d.commission_estimated || 0), 0)
+          const active = deals.filter(d => !['closed', 'dead', 'expired', 'dormant', 'terminated'].includes(d.status))
           const activeDeals = active.length
+
+          // UC commission — sum commission_estimated for under_contract deals
+          const ucDeals = deals.filter(d => d.status === 'under_contract')
+          const ucCommission = ucDeals.reduce((sum, d) => sum + (d.commission_estimated || 0), 0)
+          // Flag UC deals with no commission_estimated
+          const ucMissingCommission = ucDeals
+            .filter(d => !d.commission_estimated)
+            .map(d => d.name || d.id)
+
           const arOutstanding = active
             .filter(d => d.status === 'pending_payment')
             .reduce((sum, d) => sum + ((d.commission_estimated || 0) - (d.commission_collected || 0)), 0)
 
-          setStats({ totalPipeline, activeDeals, arOutstanding, nextClosing: null })
+          setStats({ ucCommission, ucMissingCommission, activeDeals, arOutstanding, nextClosing: null })
         }
       } catch {
         // DB not yet migrated — show zeroes
@@ -53,11 +63,22 @@ export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
     return () => clearInterval(interval)
   }, [])
 
-  const items: { label: string; value: string; accentColor: string }[] = [
+  const ucFlag = !loading && stats.ucMissingCommission.length > 0
+  const ucValue = loading
+    ? '—'
+    : ucFlag
+      ? `${formatCurrency(stats.ucCommission)} ⚠`
+      : formatCurrency(stats.ucCommission)
+  const ucTitle = ucFlag
+    ? `Missing commission on: ${stats.ucMissingCommission.join(', ')}`
+    : undefined
+
+  const items: { label: string; value: string; accentColor: string; title?: string }[] = [
     {
-      label: 'Total Pipeline',
-      value: loading ? '—' : formatCurrency(stats.totalPipeline),
-      accentColor: 'var(--accent-gold)',
+      label: 'UC Commission',
+      value: ucValue,
+      accentColor: ucFlag ? '#f59e0b' : 'var(--accent-gold)',
+      title: ucTitle,
     },
     {
       label: 'Open Deals',
@@ -65,7 +86,7 @@ export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
       accentColor: 'var(--success)',
     },
     {
-      label: 'AR Outstanding',
+      label: 'A/R',
       value: loading ? '—' : formatCurrency(stats.arOutstanding),
       accentColor: 'var(--accent-blue)',
     },
@@ -91,6 +112,7 @@ export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
         {items.map((item, i) => (
           <div
             key={item.label}
+            title={item.title}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -100,6 +122,7 @@ export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
               paddingRight: 14,
               borderLeft: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
               flexShrink: 0,
+              cursor: item.title ? 'help' : 'default',
             }}
           >
             <div style={{ fontSize: 7, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', color: 'var(--text-dim)', lineHeight: 1, whiteSpace: 'nowrap' }}>
@@ -120,7 +143,8 @@ export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
         <div
           key={item.label}
           className="wr-ticker-item"
-          style={{ borderLeftColor: i === 0 ? 'transparent' : undefined }}
+          title={item.title}
+          style={{ borderLeftColor: i === 0 ? 'transparent' : undefined, cursor: item.title ? 'help' : 'default' }}
         >
           <div className="wr-ticker-label">{item.label}</div>
           <div
