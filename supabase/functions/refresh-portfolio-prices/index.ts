@@ -7,7 +7,7 @@ const SUPABASE_SERVICE  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const YAHOO_QUOTE = (symbol: string) =>
   `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`
 
-const CACHE_MINUTES = 15  // auto-cache: skip if updated within 15 min (prevents accidental rapid-fire)
+const CACHE_MINUTES = 15  // auto-cache: skip if updated within 15 min (prevents rapid-fire)
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -43,15 +43,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Pull distinct symbols from BOTH tables (deduplicated) ──
+    // ── Pull ALL rows from BOTH tables (need id + qty + total_cost per lot) ──
     const [portRes, sleeveRes] = await Promise.all([
-      sb.from('portfolio_positions').select('symbol').not('symbol', 'is', null),
-      sb.from('sleeve_positions').select('symbol').not('symbol', 'is', null),
+      sb.from('portfolio_positions').select('id, symbol, qty, total_cost').not('symbol', 'is', null),
+      sb.from('sleeve_positions').select('id, symbol, qty, total_cost').not('symbol', 'is', null),
     ])
 
+    type PositionRow = { id: string; symbol: string; qty: number | null; total_cost: number | null }
+
+    const portRows: PositionRow[] = (portRes.data ?? []) as PositionRow[]
+    const sleeveRows: PositionRow[] = (sleeveRes.data ?? []) as PositionRow[]
+
+    // Deduplicated symbol list for price fetch
     const allSymbols = Array.from(new Set([
-      ...(portRes.data ?? []).map((r: { symbol: string }) => r.symbol),
-      ...(sleeveRes.data ?? []).map((r: { symbol: string }) => r.symbol),
+      ...portRows.map(r => r.symbol),
+      ...sleeveRows.map(r => r.symbol),
     ])).filter(Boolean) as string[]
 
     if (allSymbols.length === 0) {
@@ -62,8 +68,7 @@ Deno.serve(async (req) => {
     const prices: Record<string, number> = {}
     const errors: string[] = []
 
-    // Batch in groups of 10 (Yahoo rate limit courtesy)
-    const BATCH = 10
+    const BATCH = 10  // Yahoo rate limit courtesy
     for (let i = 0; i < allSymbols.length; i += BATCH) {
       const batch = allSymbols.slice(i, i + BATCH)
       await Promise.all(batch.map(async (sym) => {
@@ -81,32 +86,57 @@ Deno.serve(async (req) => {
           errors.push(`${sym}: ${e instanceof Error ? e.message : String(e)}`)
         }
       }))
-      // Small delay between batches
       if (i + BATCH < allSymbols.length) await new Promise(r => setTimeout(r, 200))
     }
 
     const now = new Date().toISOString()
     let updated = 0
 
-    // ── Write prices back to portfolio_positions ──
-    for (const [sym, price] of Object.entries(prices)) {
+    // ── Helper: compute derived fields from fresh price + lot data ──
+    function computeUpdate(row: PositionRow, price: number) {
+      const qty = row.qty ?? 0
+      const cost = row.total_cost ?? 0
+      const market_value = price * qty
+      const unrealized_gl_dollar = cost > 0 ? market_value - cost : null
+      const unrealized_gl_pct = (cost > 0 && unrealized_gl_dollar !== null)
+        ? (unrealized_gl_dollar / cost) * 100
+        : null
+      return {
+        last_price: price,
+        price_updated_at: now,
+        market_value,
+        unrealized_gl_dollar,
+        unrealized_gl_pct,
+      }
+    }
+
+    // ── Update portfolio_positions — per lot (by id) ──
+    for (const row of portRows) {
+      const price = prices[row.symbol]
+      if (price == null) continue
       const { error } = await sb
         .from('portfolio_positions')
-        .update({ last_price: price, price_updated_at: now })
-        .eq('symbol', sym)
+        .update(computeUpdate(row, price))
+        .eq('id', row.id)
       if (!error) updated++
     }
 
-    // ── Write prices back to sleeve_positions ──
-    for (const [sym, price] of Object.entries(prices)) {
+    // ── Update sleeve_positions — per lot (by id) ──
+    for (const row of sleeveRows) {
+      const price = prices[row.symbol]
+      if (price == null) continue
       await sb
         .from('sleeve_positions')
-        .update({ last_price: price, price_updated_at: now })
-        .eq('symbol', sym)
-      // Don't double-count updated — already counted above
+        .update(computeUpdate(row, price))
+        .eq('id', row.id)
     }
 
-    return json({ updated, errors, symbols: allSymbols.length, pricesFound: Object.keys(prices).length })
+    return json({
+      updated,
+      errors,
+      symbols: allSymbols.length,
+      pricesFound: Object.keys(prices).length,
+    })
 
   } catch (e: unknown) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500)

@@ -531,13 +531,13 @@ function CommissionPanel({ dealId }: { dealId: string }) {
     if (data.lease_term_years) rows.push({ label: 'Lease Term', value: data.lease_term_years + ' yrs' })
     if (leaseGross) rows.push({ label: 'Total Lease Value', value: $$(leaseGross) })
     if (data.lease_commission_pct) rows.push({ label: 'Commission %', value: pct(data.lease_commission_pct) })
-    if (leaseComm) rows.push({ label: "Matthew's Commission", value: $$(leaseComm), highlight: true })
+    if (leaseComm) rows.push({ label: 'Lease Commission', value: $$(leaseComm), highlight: true })
   }
 
   if (isSale) {
     if (data.asking_price) rows.push({ label: 'Sale Price', value: $$(data.asking_price) })
     if (data.sale_commission_pct) rows.push({ label: 'Commission %', value: pct(data.sale_commission_pct) })
-    if (saleComm) rows.push({ label: "Matthew's Commission", value: $$(saleComm), highlight: true })
+    if (saleComm) rows.push({ label: 'Sale Commission', value: $$(saleComm), highlight: true })
   }
 
   if (rows.length === 0) return null
@@ -669,82 +669,91 @@ function DealGlanceCard({ deal }: { deal: Deal }) {
         Quick Glance
       </div>
 
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      {/* SqFt — always, sits above both sections */}
+      {sqft > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <span style={{ ...statLabel }}>SqFt</span>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#E8B84B', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2, marginTop: 2 }}>
+            {fmtSqft(sqft)}
+          </div>
+        </div>
+      )}
 
-        {/* SqFt — always */}
-        {sqft > 0 && (
-          <>
-            <div style={statStyle}>
-              <span style={statLabel}>SqFt</span>
-              <span style={statVal}>{fmtSqft(sqft)}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+        {/* ── LEASE SECTION ── */}
+        {isLease && (
+          <div>
+            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.55)', marginBottom: 8, borderBottom: '1px solid rgba(232,184,75,0.12)', paddingBottom: 4 }}>
+              Lease Details
             </div>
-            {divider}
-          </>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              {econ.lease_rate_psf && (
+                <>
+                  <div style={statStyle}>
+                    <span style={statLabel}>Rent PSF / yr</span>
+                    <span style={statVal}>{$2(econ.lease_rate_psf)}</span>
+                  </div>
+                  {divider}
+                </>
+              )}
+              {baseMonthly != null && (
+                <>
+                  <div style={statStyle}>
+                    <span style={statLabel}>Base Rent / mo</span>
+                    <span style={statVal}>{$(baseMonthly)}</span>
+                  </div>
+                  {divider}
+                </>
+              )}
+              {isNNN && econ.nnn_psf && (
+                <>
+                  <div style={statStyle}>
+                    <span style={statLabel}>NNN / SF / yr</span>
+                    <span style={statVal}>{$2(econ.nnn_psf)}</span>
+                  </div>
+                  {divider}
+                  <div style={statStyle}>
+                    <span style={statLabel}>NNN / mo</span>
+                    <span style={statVal}>{nnnMonthly != null ? $(nnnMonthly) : '—'}</span>
+                  </div>
+                  {divider}
+                  {totalMonthly != null && (
+                    <div style={statStyle}>
+                      <span style={statLabel}>Total NNN / mo</span>
+                      <span style={{ ...statVal, color: '#22c55e' }}>{$(totalMonthly)}</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         )}
 
-        {/* ── LEASE ── */}
-        {isLease && econ.lease_rate_psf && (
-          <>
-            <div style={statStyle}>
-              <span style={statLabel}>Rent PSF / yr</span>
-              <span style={statVal}>{$2(econ.lease_rate_psf)}</span>
-            </div>
-            {divider}
-          </>
-        )}
-
-        {isLease && baseMonthly != null && (
-          <>
-            <div style={statStyle}>
-              <span style={statLabel}>Base Rent / mo</span>
-              <span style={statVal}>{$(baseMonthly)}</span>
-            </div>
-            {divider}
-          </>
-        )}
-
-        {/* NNN only */}
-        {isLease && isNNN && econ.nnn_psf && (
-          <>
-            <div style={statStyle}>
-              <span style={statLabel}>NNN / SF / yr</span>
-              <span style={statVal}>{$2(econ.nnn_psf)}</span>
-            </div>
-            {divider}
-            <div style={statStyle}>
-              <span style={statLabel}>NNN / mo</span>
-              <span style={statVal}>{nnnMonthly != null ? $(nnnMonthly) : '—'}</span>
-            </div>
-            {divider}
-            {totalMonthly != null && (
-              <>
-                <div style={statStyle}>
-                  <span style={statLabel}>Total NNN / mo</span>
-                  <span style={{ ...statVal, color: '#22c55e' }}>{$(totalMonthly)}</span>
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {/* ── SALE ── */}
+        {/* ── SALE SECTION ── */}
         {isSale && econ.asking_price && (
-          <>
-            <div style={statStyle}>
-              <span style={statLabel}>Asking Price</span>
-              <span style={statVal}>{$(econ.asking_price)}</span>
+          <div>
+            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.55)', marginBottom: 8, borderBottom: '1px solid rgba(232,184,75,0.12)', paddingBottom: 4 }}>
+              Sale Details
             </div>
-            {pricePsf != null && (
-              <>
-                {divider}
-                <div style={statStyle}>
-                  <span style={statLabel}>Price / SF</span>
-                  <span style={statVal}>{$2(pricePsf)}</span>
-                </div>
-              </>
-            )}
-          </>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div style={statStyle}>
+                <span style={statLabel}>Asking Price</span>
+                <span style={statVal}>{$(econ.asking_price)}</span>
+              </div>
+              {pricePsf != null && (
+                <>
+                  {divider}
+                  <div style={statStyle}>
+                    <span style={statLabel}>Price / SF</span>
+                    <span style={statVal}>{$2(pricePsf)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
+
       </div>
     </div>
   )
@@ -887,7 +896,7 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
     else if (l.listing_type === 'both') setTransactionType('both')
 
     // Size
-    if (l.sqft) { setSqft(String(l.sqft)); if (mappedType === 'Vacant Land') setAcres((l.sqft / 43560).toFixed(4)) }
+    if (l.sqft) { setSqft(String(l.sqft)); setAcres((l.sqft / 43560).toFixed(4)) }
     else if (l.acres) { setAcres(String(l.acres)); setSqft((l.acres * 43560).toFixed(0)) }
 
     // Price / rate
@@ -914,7 +923,7 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
         setPropertyTypeCustom(data.property_type_custom ?? '')
         setTransactionType((data.transaction_type ?? 'sale') as 'sale' | 'lease' | 'both')
         setSqft(data.sqft != null ? String(data.sqft) : '')
-        if (data.sqft && (data.property_type === 'Vacant Land')) {
+        if (data.sqft) {
           setAcres((data.sqft / 43560).toFixed(4))
         }
         setAskingPrice(data.asking_price != null ? String(data.asking_price) : '')
@@ -1152,16 +1161,46 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
         </div>
       ) : (
         <div style={{ marginBottom: 10 }}>
-          <div style={labelStyle}>Square Footage</div>
-          <input
-            type="number"
-            value={sqft}
-            onChange={e => setSqft(e.target.value)}
-            placeholder="e.g. 5000"
-            style={inputStyle}
-          />
+          <div style={labelStyle}>Land Size</div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Square Feet</div>
+              <input
+                type="number"
+                value={sqft}
+                onChange={e => {
+                  const v = e.target.value
+                  setSqft(v)
+                  const sf = parseFloat(v)
+                  if (!isNaN(sf) && sf > 0) setAcres((sf / 43560).toFixed(4))
+                  else setAcres('')
+                }}
+                placeholder="e.g. 5000"
+                style={inputStyle}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', paddingTop: 18, color: 'rgba(255,255,255,0.25)', fontSize: 14, fontWeight: 700 }}>↔</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Acres</div>
+              <input
+                type="number"
+                value={acres}
+                onChange={e => {
+                  const v = e.target.value
+                  setAcres(v)
+                  const ac = parseFloat(v)
+                  if (!isNaN(ac) && ac > 0) setSqft((ac * 43560).toFixed(0))
+                  else setSqft('')
+                }}
+                placeholder="e.g. 0.11"
+                style={inputStyle}
+              />
+            </div>
+          </div>
           {sqftNum > 0 && (
-            <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtSqft(sqftNum)}</div>
+            <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+              {sqftNum.toLocaleString()} SF &nbsp;·&nbsp; {(sqftNum / 43560).toFixed(4)} acres
+            </div>
           )}
         </div>
       )}
@@ -1204,7 +1243,7 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
               <input readOnly value={pricePsf != null ? '$' + pricePsf.toFixed(2) : '—'} style={calcInputStyle} />
             </div>
             <div style={colStyle}>
-              <div style={labelStyle}>Matthew&apos;s Commission</div>
+              <div style={labelStyle}>Sale Commission</div>
               <input readOnly value={formatMoney(saleCommission)} style={calcInputStyle} />
             </div>
           </div>
@@ -1322,7 +1361,7 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
               <input readOnly value={formatMoney(leaseGrossValue)} style={calcInputStyle} />
             </div>
             <div style={colStyle}>
-              <div style={labelStyle}>Matthew&apos;s Commission</div>
+              <div style={labelStyle}>Lease Commission</div>
               <input readOnly value={formatMoney(leaseCommission)} style={calcInputStyle} />
             </div>
           </div>
