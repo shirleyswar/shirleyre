@@ -2990,83 +2990,108 @@ function DealDashboardInner() {
 
       {/* ── Header ── */}
       <header style={{
-        background: '#13171D',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        padding: '14px 24px',
+        background: 'linear-gradient(180deg, #0D1118 0%, #111720 100%)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        padding: '0 28px',
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
+        gap: 20,
         flexWrap: 'wrap',
         position: 'sticky',
         top: 0,
         zIndex: 100,
+        minHeight: 64,
+        boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.4)',
       }}>
         {/* Back */}
         <button
           onClick={() => router.push('/warroom')}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 8,
-            padding: '6px 14px',
-            color: '#9ca3af',
-            fontSize: 12,
+            display: 'flex', alignItems: 'center', gap: 5,
+            background: 'transparent',
+            border: 'none',
+            padding: '4px 0',
+            color: 'rgba(255,255,255,0.3)',
+            fontSize: 11,
             fontWeight: 700,
             cursor: 'pointer',
-            letterSpacing: '0.06em',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
             flexShrink: 0,
             fontFamily: 'inherit',
+            transition: 'color 0.15s',
           }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
         >
-          ← Pipeline
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Pipeline
         </button>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
 
         {/* Address / Name */}
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{
-            fontSize: 'clamp(16px, 2.5vw, 22px)',
-            fontWeight: 800,
-            color: '#E8B84B',
+            fontSize: 'clamp(14px, 2vw, 18px)',
+            fontWeight: 700,
+            color: '#F0F2FF',
             lineHeight: 1.2,
+            letterSpacing: '-0.01em',
           }}>
-            {deal.address || deal.name}
+            {(deal.address || deal.name || '').replace(/,\s*(LA|Louisiana)\s+\d{5}.*$/i, '').replace(/,?\s*USA\s*$/i, '').trim()}
           </div>
           {deal.name && deal.address && (
-            <div style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{deal.name}</div>
+            <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2, letterSpacing: '0.02em' }}>{deal.name}</div>
           )}
         </div>
 
         {/* Badges */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginLeft: 'auto' }}>
+          {/* Status */}
           <span style={{
-            padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-            letterSpacing: '0.08em', textTransform: 'uppercase',
+            padding: '4px 12px', borderRadius: 6, fontSize: 10, fontWeight: 800,
+            letterSpacing: '0.12em', textTransform: 'uppercase',
             background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`,
           }}>
             {STATUS_LABELS[deal.status]}
           </span>
+
+          {/* Filed / Tracked */}
           <span style={{
-            padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-            background: deal.tier === 'filed' ? 'rgba(232,184,75,0.12)' : 'rgba(107,114,128,0.12)',
-            color: deal.tier === 'filed' ? '#E8B84B' : '#9ca3af',
-            border: `1px solid ${deal.tier === 'filed' ? 'rgba(232,184,75,0.35)' : 'rgba(107,114,128,0.3)'}`,
+            padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            background: deal.tier === 'filed' ? 'rgba(232,184,75,0.1)' : 'rgba(107,114,128,0.08)',
+            color: deal.tier === 'filed' ? '#E8B84B' : '#6b7280',
+            border: `1px solid ${deal.tier === 'filed' ? 'rgba(232,184,75,0.25)' : 'rgba(107,114,128,0.2)'}`,
           }}>
             {deal.tier === 'filed' ? '★ Filed' : 'Tracked'}
           </span>
+
+          {/* Type badge — only when not UC */}
           {deal.status !== 'under_contract' && (
             <span style={{
-              padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-              color: '#9ca3af', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+              padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 600,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              color: '#6b7280', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
             }}>
               {typeLabel(deal.type)}
             </span>
           )}
 
+          {/* Divider */}
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.07)' }} />
+
           {/* Edit toggle */}
           {!editing ? (
-            <button onClick={startEdit} style={btnStyle('#E8B84B', 'rgba(232,184,75,0.1)', 'rgba(232,184,75,0.35)')}>
+            <button onClick={startEdit} style={{
+              padding: '5px 14px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+              background: 'rgba(232,184,75,0.08)', border: '1px solid rgba(232,184,75,0.25)',
+              color: '#E8B84B', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.06em',
+            }}>
               Edit
             </button>
           ) : (
@@ -3096,34 +3121,39 @@ function DealDashboardInner() {
       {deal.status === 'under_contract' && (
         <div style={{ padding: '0 24px', maxWidth: 1400, margin: '0 auto' }}>
 
-          {/* CONTRACT DEADLINES — Prominent full-width card */}
+          {/* CONTRACT DEADLINES */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(45,212,191,0.08) 0%, rgba(20,184,166,0.14) 100%)',
-            border: '2px solid rgba(45,212,191,0.45)',
-            borderRadius: 14,
+            background: 'linear-gradient(135deg, #0a1628 0%, #0d1f3c 50%, #091520 100%)',
+            border: '1.5px solid rgba(45,212,191,0.3)',
+            borderRadius: 16,
             padding: '20px 24px',
             marginBottom: 16,
-            boxShadow: '0 0 32px rgba(45,212,191,0.12)',
+            boxShadow: '0 0 0 1px rgba(45,212,191,0.06), 0 8px 40px rgba(0,0,0,0.5)',
+            position: 'relative', overflow: 'hidden',
           }}>
+            {/* Glow */}
+            <div style={{ position: 'absolute', top: -60, right: -60, width: 220, height: 220, background: 'radial-gradient(circle, rgba(45,212,191,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <span style={{ fontSize: 16, fontWeight: 900, color: '#2dd4bf', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                  Contract Deadlines
-                </span>
+                <div style={{ width: 4, height: 22, borderRadius: 2, background: '#2dd4bf', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(45,212,191,0.6)', marginBottom: 1 }}>
+                    Contract Deadlines
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.04em' }}>
+                    {deadlines.filter(d => d.status === 'pending').length} pending · {deadlines.filter(d => d.status === 'satisfied').length} satisfied
+                  </div>
+                </div>
               </div>
               <button
                 onClick={() => setShowAddDeadline(s => !s)}
                 style={{
-                  padding: '7px 16px', fontSize: 12, fontWeight: 700,
-                  background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.5)',
-                  borderRadius: 8, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit',
-                  letterSpacing: '0.06em',
+                  padding: '6px 16px', fontSize: 11, fontWeight: 700,
+                  background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.3)',
+                  borderRadius: 7, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit',
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
                 }}
               >
                 + Add
@@ -3133,7 +3163,7 @@ function DealDashboardInner() {
             {/* Add Deadline Form */}
             {showAddDeadline && (
               <div style={{
-                background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(45,212,191,0.2)',
+                background: 'rgba(45,212,191,0.04)', border: '1px solid rgba(45,212,191,0.15)',
                 borderRadius: 10, padding: 16, marginBottom: 16,
                 display: 'flex', flexDirection: 'column', gap: 10,
               }}>
@@ -3158,79 +3188,71 @@ function DealDashboardInner() {
               </div>
             )}
 
-            {/* Deadline rows */}
+            {/* Deadline list — clean rows */}
             {deadlines.length === 0 ? (
-              <div style={{ fontSize: 13, color: 'rgba(45,212,191,0.45)', textAlign: 'center', padding: '24px 0' }}>
-                No deadlines yet — add your first deadline above
+              <div style={{ fontSize: 13, color: 'rgba(45,212,191,0.3)', textAlign: 'center', padding: '28px 0', letterSpacing: '0.04em' }}>
+                No deadlines yet
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
-                {deadlines.map(dl => {
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {deadlines.map((dl, idx) => {
                   const days = daysUntil(dl.deadline_date)
                   const satisfied = dl.status === 'satisfied'
-                  const daysColor = satisfied ? '#6b7280'
+                  const daysColor = satisfied ? '#374151'
                     : days < 0 ? '#ef4444'
-                    : days === 0 ? '#ef4444'
-                    : days <= 3 ? '#ef4444'
-                    : days <= 7 ? '#fb923c'
-                    : '#9ca3af'
+                    : days === 0 ? '#22c55e'
+                    : days <= 3 ? '#fb923c'
+                    : days <= 7 ? '#E8B84B'
+                    : '#4F8EF7'
                   const daysLabel = days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'TODAY' : `${days}d`
+                  const isLast = idx === deadlines.length - 1
                   return (
                     <div key={dl.id} style={{
-                      display: 'flex', flexDirection: 'column', gap: 0,
-                      padding: '14px 16px',
-                      background: 'rgba(0,0,0,0.25)',
-                      border: `1px solid ${satisfied ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.09)'}`,
-                      borderRadius: 10,
-                      opacity: satisfied ? 0.55 : 1,
+                      display: 'flex', alignItems: 'center', gap: 16,
+                      padding: '13px 4px',
+                      borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                      opacity: satisfied ? 0.45 : 1,
                     }}>
-                      {/* DATE — big, prominent */}
-                      <div style={{
-                        fontSize: 17, fontWeight: 900,
-                        color: satisfied ? '#6b7280' : '#F0F2FF',
-                        letterSpacing: '-0.01em',
-                        textDecoration: satisfied ? 'line-through' : 'none',
-                        marginBottom: 4,
-                        lineHeight: 1.1,
-                      }}>
-                        {formatDate(dl.deadline_date)}
+                      {/* Date pill */}
+                      <div style={{ width: 110, flexShrink: 0 }}>
+                        <div style={{
+                          fontSize: 13, fontWeight: 700,
+                          color: satisfied ? '#4b5563' : '#F0F2FF',
+                          textDecoration: satisfied ? 'line-through' : 'none',
+                          letterSpacing: '-0.01em',
+                        }}>
+                          {formatDate(dl.deadline_date)}
+                        </div>
                       </div>
 
-                      {/* TITLE — full text, wraps freely */}
-                      <div style={{
-                        fontSize: 13, fontWeight: 600,
-                        color: satisfied ? '#4b5563' : '#9ca3af',
-                        lineHeight: 1.4,
-                        textDecoration: satisfied ? 'line-through' : 'none',
-                        marginBottom: 10,
-                        wordBreak: 'break-word',
-                      }}>
+                      {/* Label */}
+                      <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: satisfied ? '#374151' : '#9ca3af', textDecoration: satisfied ? 'line-through' : 'none', lineHeight: 1.4 }}>
                         {dl.label}
                       </div>
 
-                      {/* BOTTOM ROW: countdown + actions */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {/* Days badge */}
-                        {!satisfied ? (
-                          <span style={{
-                            fontSize: 12, fontWeight: 800,
-                            color: daysColor,
-                            fontFamily: 'monospace',
-                            flex: 1,
-                          }}>
-                            {daysLabel}
-                          </span>
+                      {/* Countdown / status */}
+                      <div style={{ width: 90, flexShrink: 0, textAlign: 'right' }}>
+                        {satisfied ? (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: '#22c55e', letterSpacing: '0.1em', textTransform: 'uppercase' }}>✓ Done</span>
                         ) : (
-                          <span style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', letterSpacing: '0.06em', textTransform: 'uppercase', flex: 1 }}>
-                            ✓ Satisfied
-                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: daysColor, fontFamily: 'monospace' }}>{daysLabel}</span>
                         )}
+                      </div>
 
-                        {/* Action buttons */}
+                      {/* Actions */}
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                         {!satisfied && (
-                          <button onClick={() => satisfyDeadline(dl.id)} title="Mark satisfied" style={{ padding: '5px 12px', fontSize: 14, fontWeight: 700, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 6, color: '#22c55e', cursor: 'pointer', flexShrink: 0 }}>✓</button>
+                          <button onClick={() => satisfyDeadline(dl.id)} title="Mark satisfied" style={{
+                            width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+                            borderRadius: 6, color: '#22c55e', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                          }}>✓</button>
                         )}
-                        <button onClick={() => deleteDeadline(dl.id)} title="Delete" style={{ padding: '5px 12px', fontSize: 14, fontWeight: 700, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', cursor: 'pointer', flexShrink: 0 }}>✕</button>
+                        <button onClick={() => deleteDeadline(dl.id)} title="Delete" style={{
+                          width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
+                          borderRadius: 6, color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                        }}>✕</button>
                       </div>
                     </div>
                   )
