@@ -920,15 +920,15 @@ function SoldTab() {
 
   return (
     <div>
-      {/* Header */}
+      {/* Header — matches SleeveTab style */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 16, fontWeight: 800, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase' }}>SOLD</span>
+        <span style={{ fontSize: 16, fontWeight: 800, color: P.purple, letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: `0 0 20px rgba(139,92,246,0.4)` }}>SOLD</span>
         <span style={{ fontSize: 11, color: P.muted }}>Directed buy scorecard</span>
         <div style={{ flex: 1 }} />
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(156,163,175,0.1)', border: '1px solid rgba(156,163,175,0.3)', borderRadius: 8, color: '#9ca3af', cursor: 'pointer', opacity: uploading ? 0.5 : 1 }}>
+          style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', opacity: uploading ? 0.5 : 1 }}>
           {uploading ? 'Loading…' : '↑ Upload Sold .xlsx'}
         </button>
         <input ref={fileInputRef} type="file" accept=".xlsx,.xls"
@@ -945,8 +945,8 @@ function SoldTab() {
           onDragLeave={() => setDragOver(false)}
           onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
           onClick={() => fileInputRef.current?.click()}
-          style={{ border: `2px dashed ${dragOver ? P.purple : 'rgba(156,163,175,0.25)'}`, borderRadius: 12, padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? P.purpleFaint : 'transparent', transition: 'all 0.15s', marginBottom: 16 }}>
-          <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.3 }}>📊</div>
+          style={{ border: `2px dashed ${dragOver ? P.purple : P.purpleBorder}`, borderRadius: 12, padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? P.purpleFaint : 'transparent', transition: 'all 0.15s', marginBottom: 16 }}>
+          <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.5 }}>📊</div>
           <div style={{ fontSize: 13, color: P.text, fontWeight: 600, marginBottom: 6 }}>Drop your Morgan Stanley activity export here</div>
           <div style={{ fontSize: 12, color: P.muted }}>Expected: Activity Date · Symbol · Description · Quantity · Price($) · Amount($)</div>
         </div>
