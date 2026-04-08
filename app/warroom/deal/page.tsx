@@ -528,16 +528,22 @@ function UCCommissionHero({ dealId }: { dealId: string }) {
     commissionCalc = uc.contract_price * (uc.commission_pct / 100) * 0.75
   }
 
-  const stats: { label: string; value: string; sub?: string; accent?: boolean }[] = []
+  const pricePsf = uc.contract_price && sqft && sqft > 0
+    ? uc.contract_price / sqft : null
+
+  const stats: { label: string; value: string; sub?: string; accent?: boolean; dim?: boolean }[] = []
 
   if (isLease) {
+    if (sqft) stats.push({ label: 'SqFt', value: sqft.toLocaleString('en-US') + ' SF', dim: true })
     if (uc.lease_rate) stats.push({ label: 'Lease Rate', value: `$${uc.lease_rate.toFixed(2)} ${uc.lease_rate_unit ?? 'PSF/YR'}` })
     if (uc.lease_term_months) stats.push({ label: 'Term', value: `${uc.lease_term_months} mo` })
     if (grossValue) stats.push({ label: 'Gross Lease Value', value: $$(grossValue) })
     if (uc.commission_pct) stats.push({ label: 'Commission Rate', value: uc.commission_pct.toFixed(2) + '%' })
     if (commissionCalc) stats.push({ label: 'My Commission', value: $$(commissionCalc), accent: true })
   } else {
+    if (sqft) stats.push({ label: 'SqFt', value: sqft.toLocaleString('en-US') + ' SF', dim: true })
     if (uc.contract_price) stats.push({ label: 'Contract Price', value: $$(uc.contract_price) })
+    if (pricePsf) stats.push({ label: 'Price / SF', value: '$' + pricePsf.toFixed(2), dim: true })
     if (uc.commission_pct) stats.push({ label: 'Commission Rate', value: uc.commission_pct.toFixed(2) + '%' })
     if (commissionCalc) stats.push({ label: 'My Commission', value: $$(commissionCalc), accent: true, sub: `${uc.contract_price ? $$(uc.contract_price) : ''} × ${uc.commission_pct?.toFixed(2)}% × 75%` })
   }
@@ -595,7 +601,7 @@ function UCCommissionHero({ dealId }: { dealId: string }) {
       <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', flexWrap: 'wrap' }}>
         {stats.map((s, i) => (
           <div key={s.label} style={{
-            flex: s.accent ? '1 1 180px' : '1 1 120px',
+            flex: s.accent ? '1 1 180px' : '1 1 110px',
             padding: '14px 20px',
             borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
             display: 'flex', flexDirection: 'column', gap: 4,
@@ -606,9 +612,9 @@ function UCCommissionHero({ dealId }: { dealId: string }) {
               {s.label}
             </div>
             <div style={{
-              fontSize: s.accent ? 28 : 18,
-              fontWeight: 800,
-              color: s.accent ? '#22c55e' : '#F0F2FF',
+              fontSize: s.accent ? 28 : s.dim ? 15 : 18,
+              fontWeight: s.dim ? 600 : 800,
+              color: s.accent ? '#22c55e' : s.dim ? 'rgba(255,255,255,0.5)' : '#F0F2FF',
               fontVariantNumeric: 'tabular-nums',
               lineHeight: 1.1,
               letterSpacing: s.accent ? '-0.02em' : '-0.01em',
@@ -3080,9 +3086,12 @@ function DealDashboardInner() {
 
 
 
-      {/* ── Quick Glance — full width, top of page ── */}
+      {/* ── Hero / Quick Glance — top of page ── */}
       <div style={{ padding: '0 24px', maxWidth: 1400, margin: '0 auto' }}>
-        <DealGlanceCard deal={deal} />
+        {deal.status === 'under_contract'
+          ? <UCCommissionHero dealId={deal.id} />
+          : <DealGlanceCard deal={deal} />
+        }
       </div>
 
       {/* ── UC PRIORITY SECTIONS: Deadlines + Documents (top of page, full width) ── */}
@@ -3231,9 +3240,6 @@ function DealDashboardInner() {
               </div>
             )}
           </div>
-
-          {/* UC COMMISSION HERO — full-width, top of page when under contract */}
-          <UCCommissionHero dealId={deal.id} />
 
           {/* DOCUMENTS — Prominent full-width section */}
           <div style={{ marginBottom: 16 }}>
