@@ -608,13 +608,13 @@ function UCCommissionHero({ dealId }: { dealId: string }) {
             background: s.accent ? 'rgba(34,197,94,0.04)' : 'transparent',
             borderRadius: s.accent ? 10 : 0,
           }}>
-            <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: s.accent ? 'rgba(34,197,94,0.6)' : 'rgba(255,255,255,0.3)' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: s.accent ? 'rgba(34,197,94,0.6)' : 'rgba(255,255,255,0.3)' }}>
               {s.label}
             </div>
             <div style={{
-              fontSize: s.accent ? 28 : s.dim ? 15 : 18,
-              fontWeight: s.dim ? 600 : 800,
-              color: s.accent ? '#22c55e' : s.dim ? 'rgba(255,255,255,0.5)' : '#F0F2FF',
+              fontSize: s.accent ? 28 : 18,
+              fontWeight: s.accent ? 800 : s.dim ? 600 : 700,
+              color: s.accent ? '#22c55e' : s.dim ? 'rgba(255,255,255,0.45)' : '#F0F2FF',
               fontVariantNumeric: 'tabular-nums',
               lineHeight: 1.1,
               letterSpacing: s.accent ? '-0.02em' : '-0.01em',
@@ -3290,19 +3290,20 @@ function DealDashboardInner() {
                       opacity: satisfied ? 0.45 : 1,
                     }}>
                       {/* Date pill */}
-                      <div style={{ width: 110, flexShrink: 0 }}>
+                      <div style={{ width: 148, flexShrink: 0 }}>
                         <div style={{
                           fontSize: 13, fontWeight: 700,
                           color: satisfied ? '#4b5563' : '#F0F2FF',
                           textDecoration: satisfied ? 'line-through' : 'none',
                           letterSpacing: '-0.01em',
+                          whiteSpace: 'nowrap',
                         }}>
                           {formatDate(dl.deadline_date)}
                         </div>
                       </div>
 
                       {/* Label */}
-                      <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: satisfied ? '#374151' : '#9ca3af', textDecoration: satisfied ? 'line-through' : 'none', lineHeight: 1.4 }}>
+                      <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: satisfied ? '#374151' : '#c4c9d4', textDecoration: satisfied ? 'line-through' : 'none', lineHeight: 1.4 }}>
                         {dl.label}
                       </div>
 
