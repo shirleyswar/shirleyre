@@ -897,14 +897,14 @@ export default function UnderContractPanel() {
                 // Contract price from uc_details, fallback to deal.value
                 const contractPrice = uc?.contract_price ?? deal.value ?? null
 
-                // My commission: uc_details commission_amount, or calc, or fallback
+                // My commission — always recalculate: contract price × commission % × 75%
+                // Never trust stored commission_amount (may have been calculated incorrectly)
                 let myCommission: number | null = null
-                if (uc?.commission_amount) {
-                  myCommission = uc.commission_amount
-                } else if (uc?.commission_pct && contractPrice && uc.deal_category !== 'lease') {
+                if (uc?.commission_pct && contractPrice && uc.deal_category !== 'lease') {
                   myCommission = Math.round(contractPrice * (uc.commission_pct / 100) * 0.75)
-                } else if (deal.commission_estimated) {
-                  myCommission = deal.commission_estimated
+                } else if (uc?.commission_pct && uc.lease_rate && uc.lease_term_months) {
+                  // Lease: rate × sqft (unknown here, skip) — show stored amount if present
+                  if (uc.commission_amount) myCommission = uc.commission_amount
                 }
 
                 // Next pending deadline (soonest by date)

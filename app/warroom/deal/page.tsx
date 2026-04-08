@@ -694,12 +694,10 @@ function CommissionPanel({ dealId, dealStatus }: { dealId: string; dealStatus?: 
       if (uc.lease_rate) rows.push({ label: 'Contract Lease Rate', value: `$${uc.lease_rate.toFixed(2)} ${uc.lease_rate_unit ?? 'PSF/YR'}` })
       if (uc.lease_term_months) rows.push({ label: 'Lease Term', value: `${uc.lease_term_months} mo` })
       if (uc.commission_pct) rows.push({ label: 'Commission %', value: pct(uc.commission_pct) })
-      if (uc.commission_amount) {
-        rows.push({ label: 'Lease Commission', value: $$(uc.commission_amount), highlight: true })
-      } else if (uc.commission_pct && uc.lease_rate && uc.lease_term_months) {
-        // Fallback: calc from sqft in deal_economics if available
-        const sqft = econ?.sqft ?? 0
-        const gross = sqft > 0 ? uc.lease_rate * sqft * (uc.lease_term_months / 12) : null
+      if (uc.commission_pct && uc.lease_rate && uc.lease_term_months) {
+        // Always recalculate: gross lease value × commission % × 75%
+        const sqftVal = econ?.sqft ?? 0
+        const gross = sqftVal > 0 ? uc.lease_rate * sqftVal * (uc.lease_term_months / 12) : null
         const calc = gross ? gross * (uc.commission_pct / 100) * 0.75 : null
         if (calc) rows.push({ label: 'Lease Commission', value: $$(calc), highlight: true })
       }
