@@ -483,6 +483,152 @@ function RevertStatusButton({
   )
 }
 
+// ─── UC Commission Hero — full-width banner at top of page when under contract ─
+
+function UCCommissionHero({ dealId }: { dealId: string }) {
+  const [uc, setUc] = useState<{
+    deal_category: string | null
+    contract_price: number | null
+    commission_pct: number | null
+    lease_rate: number | null
+    lease_rate_unit: string | null
+    lease_term_months: number | null
+  } | null>(null)
+
+  const [sqft, setSqft] = useState<number | null>(null)
+
+  useEffect(() => {
+    supabase
+      .from('uc_details')
+      .select('deal_category,contract_price,commission_pct,lease_rate,lease_rate_unit,lease_term_months')
+      .eq('deal_id', dealId)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setUc(data as any) })
+
+    supabase
+      .from('deal_economics')
+      .select('sqft')
+      .eq('deal_id', dealId)
+      .maybeSingle()
+      .then(({ data }) => { if (data?.sqft) setSqft(data.sqft) })
+  }, [dealId])
+
+  if (!uc) return null
+
+  const isLease = uc.deal_category === 'lease'
+  const $$ = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+  // Calculate commission — always contract_price × pct × 0.75 (or lease gross × pct × 0.75)
+  let commissionCalc: number | null = null
+  let grossValue: number | null = null
+  if (isLease && uc.lease_rate && uc.lease_term_months && sqft) {
+    grossValue = uc.lease_rate * sqft * (uc.lease_term_months / 12)
+    if (uc.commission_pct) commissionCalc = grossValue * (uc.commission_pct / 100) * 0.75
+  } else if (!isLease && uc.contract_price && uc.commission_pct) {
+    commissionCalc = uc.contract_price * (uc.commission_pct / 100) * 0.75
+  }
+
+  const stats: { label: string; value: string; sub?: string; accent?: boolean }[] = []
+
+  if (isLease) {
+    if (uc.lease_rate) stats.push({ label: 'Lease Rate', value: `$${uc.lease_rate.toFixed(2)} ${uc.lease_rate_unit ?? 'PSF/YR'}` })
+    if (uc.lease_term_months) stats.push({ label: 'Term', value: `${uc.lease_term_months} mo` })
+    if (grossValue) stats.push({ label: 'Gross Lease Value', value: $$(grossValue) })
+    if (uc.commission_pct) stats.push({ label: 'Commission Rate', value: uc.commission_pct.toFixed(2) + '%' })
+    if (commissionCalc) stats.push({ label: 'My Commission', value: $$(commissionCalc), accent: true })
+  } else {
+    if (uc.contract_price) stats.push({ label: 'Contract Price', value: $$(uc.contract_price) })
+    if (uc.commission_pct) stats.push({ label: 'Commission Rate', value: uc.commission_pct.toFixed(2) + '%' })
+    if (commissionCalc) stats.push({ label: 'My Commission', value: $$(commissionCalc), accent: true, sub: `${uc.contract_price ? $$(uc.contract_price) : ''} × ${uc.commission_pct?.toFixed(2)}% × 75%` })
+  }
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, #0a1628 0%, #0d1f3c 50%, #091520 100%)',
+      border: '1.5px solid rgba(59,130,246,0.5)',
+      borderRadius: 16,
+      padding: '22px 28px',
+      marginBottom: 20,
+      boxShadow: '0 0 0 1px rgba(59,130,246,0.1), 0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(59,130,246,0.06)',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {/* Subtle glow background */}
+      <div style={{
+        position: 'absolute', top: -40, right: -40, width: 200, height: 200,
+        background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: -40, left: 60, width: 160, height: 160,
+        background: 'radial-gradient(circle, rgba(34,197,94,0.06) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 6, height: 28, borderRadius: 3,
+            background: 'linear-gradient(180deg, #3b82f6 0%, #22c55e 100%)',
+            flexShrink: 0,
+          }} />
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(59,130,246,0.7)', fontFamily: 'var(--font-body)', marginBottom: 2 }}>
+              {isLease ? 'Lease' : 'Sale'} Commission
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em' }}>
+              Under Contract · 75% House Split Applied
+            </div>
+          </div>
+        </div>
+        <div style={{
+          fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase',
+          color: '#3b82f6', background: 'rgba(59,130,246,0.12)',
+          border: '1px solid rgba(59,130,246,0.4)', borderRadius: 6, padding: '4px 10px',
+        }}>
+          Under Contract
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', flexWrap: 'wrap' }}>
+        {stats.map((s, i) => (
+          <div key={s.label} style={{
+            flex: s.accent ? '1 1 180px' : '1 1 120px',
+            padding: '14px 20px',
+            borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+            display: 'flex', flexDirection: 'column', gap: 4,
+            background: s.accent ? 'rgba(34,197,94,0.04)' : 'transparent',
+            borderRadius: s.accent ? 10 : 0,
+          }}>
+            <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: s.accent ? 'rgba(34,197,94,0.6)' : 'rgba(255,255,255,0.3)' }}>
+              {s.label}
+            </div>
+            <div style={{
+              fontSize: s.accent ? 28 : 18,
+              fontWeight: 800,
+              color: s.accent ? '#22c55e' : '#F0F2FF',
+              fontVariantNumeric: 'tabular-nums',
+              lineHeight: 1.1,
+              letterSpacing: s.accent ? '-0.02em' : '-0.01em',
+              fontFamily: 'var(--font-body)',
+              textShadow: s.accent ? '0 0 24px rgba(34,197,94,0.3)' : 'none',
+            }}>
+              {s.value}
+            </div>
+            {s.sub && (
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-body)', letterSpacing: '0.02em', marginTop: 2 }}>
+                {s.sub}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Commission Panel (right column, below Deal Actions) ─────────────────────
 
 function CommissionPanel({ dealId, dealStatus }: { dealId: string; dealStatus?: string }) {
@@ -555,11 +701,12 @@ function CommissionPanel({ dealId, dealStatus }: { dealId: string; dealStatus?: 
       // Sale contract
       if (uc.contract_price) rows.push({ label: 'Contract Price', value: $$(uc.contract_price) })
       if (uc.commission_pct) rows.push({ label: 'Commission %', value: pct(uc.commission_pct) })
-      if (uc.commission_amount) {
-        rows.push({ label: 'Sale Commission', value: $$(uc.commission_amount), highlight: true })
-      } else if (uc.contract_price && uc.commission_pct) {
+      if (uc.contract_price && uc.commission_pct) {
+        // Always recalculate: contract price × commission % × 75% house split
         const calc = uc.contract_price * (uc.commission_pct / 100) * 0.75
         rows.push({ label: 'Sale Commission', value: $$(calc), highlight: true })
+      } else if (uc.commission_amount) {
+        rows.push({ label: 'Sale Commission', value: $$(uc.commission_amount), highlight: true })
       }
     }
   } else if (econ) {
@@ -3109,6 +3256,9 @@ function DealDashboardInner() {
               </div>
             )}
           </div>
+
+          {/* UC COMMISSION HERO — full-width, top of page when under contract */}
+          <UCCommissionHero dealId={deal.id} />
 
           {/* DOCUMENTS — Prominent full-width section */}
           <div style={{ marginBottom: 16 }}>
