@@ -3051,12 +3051,14 @@ function DealDashboardInner() {
           }}>
             {deal.tier === 'filed' ? '★ Filed' : 'Tracked'}
           </span>
-          <span style={{
-            padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-            color: '#9ca3af', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-          }}>
-            {typeLabel(deal.type)}
-          </span>
+          {deal.status !== 'under_contract' && (
+            <span style={{
+              padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+              color: '#9ca3af', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              {typeLabel(deal.type)}
+            </span>
+          )}
 
           {/* Edit toggle */}
           {!editing ? (
