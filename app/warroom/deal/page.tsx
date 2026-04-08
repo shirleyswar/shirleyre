@@ -1072,6 +1072,11 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
   const [transactionType, setTransactionType] = useState<'sale' | 'lease' | 'both'>('sale')
   const [sqft, setSqft] = useState('')
   const [acres, setAcres] = useState('')
+  const [showLandSize, setShowLandSize] = useState(false)
+  const [landSqft, setLandSqft] = useState('')
+  const [landAcres, setLandAcres] = useState('')
+  const [laydownSqft, setLaydownSqft] = useState('')
+  const [laydownAcres, setLaydownAcres] = useState('')
   const [askingPrice, setAskingPrice] = useState('')
   const [saleCommPct, setSaleCommPct] = useState('3.0')
   const [leaseRatePsf, setLeaseRatePsf] = useState('')
@@ -1107,8 +1112,13 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
     else if (l.listing_type === 'both') setTransactionType('both')
 
     // Size
-    if (l.sqft) { setSqft(String(l.sqft)); setAcres((l.sqft / 43560).toFixed(4)) }
-    else if (l.acres) { setAcres(String(l.acres)); setSqft((l.acres * 43560).toFixed(0)) }
+    if (mappedType === 'Vacant Land') {
+      if (l.sqft) { setSqft(String(l.sqft)); setAcres((l.sqft / 43560).toFixed(4)) }
+      else if (l.acres) { setAcres(String(l.acres)); setSqft((l.acres * 43560).toFixed(0)) }
+    } else {
+      // Non-land: sqft = building sqft only, no acre autofill
+      if (l.sqft) setSqft(String(l.sqft))
+    }
 
     // Price / rate
     if (l.price) setAskingPrice(String(l.price))
@@ -1134,8 +1144,20 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
         setPropertyTypeCustom(data.property_type_custom ?? '')
         setTransactionType((data.transaction_type ?? 'sale') as 'sale' | 'lease' | 'both')
         setSqft(data.sqft != null ? String(data.sqft) : '')
-        if (data.sqft) {
+        // Acres autofill only for Vacant Land
+        if (data.sqft && data.property_type === 'Vacant Land') {
           setAcres((data.sqft / 43560).toFixed(4))
+        }
+        // Land size / laydown fields
+        if (data.land_sqft) {
+          setLandSqft(String(data.land_sqft))
+          setLandAcres((data.land_sqft / 43560).toFixed(4))
+          setShowLandSize(true)
+        }
+        if (data.laydown_sqft) {
+          setLaydownSqft(String(data.laydown_sqft))
+          setLaydownAcres((data.laydown_sqft / 43560).toFixed(4))
+          setShowLandSize(true)
         }
         setAskingPrice(data.asking_price != null ? String(data.asking_price) : '')
         setSaleCommPct(data.sale_commission_pct != null ? String(data.sale_commission_pct) : '3.0')
@@ -1191,6 +1213,8 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
         lease_term_years: leaseTermYearsNum || null,
         lease_commission_pct: leaseCommPctNum,
         nnn_psf: leaseType === 'NNN' ? (parseFloat(nnnPsf) || null) : null,
+        land_sqft: (showLandSize && propertyType !== 'Vacant Land') ? (parseFloat(landSqft) || null) : null,
+        laydown_sqft: (showLandSize && propertyType !== 'Vacant Land') ? (parseFloat(laydownSqft) || null) : null,
         updated_at: new Date().toISOString(),
       }
       if (econId) {
@@ -1371,49 +1395,101 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
           )}
         </div>
       ) : (
-        <div style={{ marginBottom: 10 }}>
-          <div style={labelStyle}>Land Size</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Square Feet</div>
-              <input
-                type="number"
-                value={sqft}
-                onChange={e => {
-                  const v = e.target.value
-                  setSqft(v)
-                  const sf = parseFloat(v)
-                  if (!isNaN(sf) && sf > 0) setAcres((sf / 43560).toFixed(4))
-                  else setAcres('')
-                }}
-                placeholder="e.g. 5000"
-                style={inputStyle}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', paddingTop: 18, color: 'rgba(255,255,255,0.25)', fontSize: 14, fontWeight: 700 }}>↔</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Acres</div>
-              <input
-                type="number"
-                value={acres}
-                onChange={e => {
-                  const v = e.target.value
-                  setAcres(v)
-                  const ac = parseFloat(v)
-                  if (!isNaN(ac) && ac > 0) setSqft((ac * 43560).toFixed(0))
-                  else setSqft('')
-                }}
-                placeholder="e.g. 0.11"
-                style={inputStyle}
-              />
-            </div>
+        <>
+          {/* Building Square Footage — no acre autofill */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={labelStyle}>Building Square Footage</div>
+            <input
+              type="number"
+              value={sqft}
+              onChange={e => setSqft(e.target.value)}
+              placeholder="e.g. 36840"
+              style={inputStyle}
+            />
+            {sqftNum > 0 && (
+              <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                {sqftNum.toLocaleString()} SF
+              </div>
+            )}
           </div>
-          {sqftNum > 0 && (
-            <div style={{ fontSize: 12, color: '#E8B84B', marginTop: 4, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-              {sqftNum.toLocaleString()} SF &nbsp;·&nbsp; {(sqftNum / 43560).toFixed(4)} acres
-            </div>
-          )}
-        </div>
+
+          {/* Land Size — optional checkbox */}
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: showLandSize ? 10 : 0 }}>
+              <input
+                type="checkbox"
+                checked={showLandSize}
+                onChange={e => setShowLandSize(e.target.checked)}
+                style={{ width: 14, height: 14, accentColor: '#E8B84B', cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: showLandSize ? '#E8B84B' : '#6b7280' }}>
+                Include Land Size
+              </span>
+            </label>
+
+            {showLandSize && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '12px 14px', background: 'rgba(232,184,75,0.04)', border: '1px solid rgba(232,184,75,0.15)', borderRadius: 8 }}>
+                {/* Total Land Size */}
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>Total Land Size</div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Sq Ft</div>
+                      <input type="number" value={landSqft} onChange={e => {
+                        const v = e.target.value; setLandSqft(v)
+                        const sf = parseFloat(v)
+                        if (!isNaN(sf) && sf > 0) setLandAcres((sf / 43560).toFixed(4)); else setLandAcres('')
+                      }} placeholder="e.g. 87120" style={inputStyle} />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', paddingTop: 18, color: 'rgba(255,255,255,0.2)', fontSize: 13, fontWeight: 700 }}>↔</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Acres</div>
+                      <input type="number" value={landAcres} onChange={e => {
+                        const v = e.target.value; setLandAcres(v)
+                        const ac = parseFloat(v)
+                        if (!isNaN(ac) && ac > 0) setLandSqft((ac * 43560).toFixed(0)); else setLandSqft('')
+                      }} placeholder="e.g. 2.00" style={inputStyle} />
+                    </div>
+                  </div>
+                  {parseFloat(landSqft) > 0 && (
+                    <div style={{ fontSize: 11, color: '#E8B84B', marginTop: 3, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                      {parseFloat(landSqft).toLocaleString()} SF · {(parseFloat(landSqft) / 43560).toFixed(4)} ac
+                    </div>
+                  )}
+                </div>
+
+                {/* Laydown Yard Size */}
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>Laydown Yard</div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Sq Ft</div>
+                      <input type="number" value={laydownSqft} onChange={e => {
+                        const v = e.target.value; setLaydownSqft(v)
+                        const sf = parseFloat(v)
+                        if (!isNaN(sf) && sf > 0) setLaydownAcres((sf / 43560).toFixed(4)); else setLaydownAcres('')
+                      }} placeholder="e.g. 43560" style={inputStyle} />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', paddingTop: 18, color: 'rgba(255,255,255,0.2)', fontSize: 13, fontWeight: 700 }}>↔</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Acres</div>
+                      <input type="number" value={laydownAcres} onChange={e => {
+                        const v = e.target.value; setLaydownAcres(v)
+                        const ac = parseFloat(v)
+                        if (!isNaN(ac) && ac > 0) setLaydownSqft((ac * 43560).toFixed(0)); else setLaydownSqft('')
+                      }} placeholder="e.g. 1.00" style={inputStyle} />
+                    </div>
+                  </div>
+                  {parseFloat(laydownSqft) > 0 && (
+                    <div style={{ fontSize: 11, color: '#E8B84B', marginTop: 3, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                      {parseFloat(laydownSqft).toLocaleString()} SF · {(parseFloat(laydownSqft) / 43560).toFixed(4)} ac
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Sale section */}
