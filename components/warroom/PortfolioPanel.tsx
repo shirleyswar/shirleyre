@@ -258,24 +258,39 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
 
     const pct = (v: unknown) => { const n = parseNum(v); return n !== null ? n * 100 : null }
 
-    return rows.map(r => ({
-      name:                  String(r[colMap['name']] ?? ''),
-      symbol:                String(r[colMap['symbol']] ?? '').trim().toUpperCase(),
-      acquired:              parseDate(r[colMap['acquired']]),
-      period:                String(r[colMap['period']] ?? ''),
-      qty:                   parseNum(r[colMap['qty']]),
-      market_value:          parseNum(r[colMap['market_value']]),
-      total_cost:            parseNum(r[colMap['total_cost']]),
-      unrealized_gl_pct:     pct(r[colMap['unrealized_gl_pct']]),
-      unrealized_gl_dollar:  parseNum(r[colMap['unrealized_gl_dollar']]),
-      years_held:            parseNum(r[colMap['years_held']]),
-      annualized_return_pct: pct(r[colMap['annualized_return_pct']]),
-      ytd_pct:               null,
-      rolling_12mo_pct:      null,
-      rolling_36mo_pct:      null,
-      last_price:            null,
-      price_updated_at:      null,
-    }))
+    return rows.map(r => {
+      const mv        = parseNum(r[colMap['market_value']])
+      const cost      = parseNum(r[colMap['total_cost']])
+      const yrsHeld   = parseNum(r[colMap['years_held']])
+
+      // Always recalculate annualized return from first principles:
+      // (market_value / cost) ^ (1 / years_held) - 1
+      // This is accurate and consistent — the file's ANN. RETURN uses MS's
+      // internal IRR methodology across tranches and isn't reliable here.
+      let annReturn: number | null = null
+      if (mv != null && cost != null && cost > 0 && yrsHeld != null && yrsHeld > 0) {
+        annReturn = (Math.pow(mv / cost, 1 / yrsHeld) - 1) * 100
+      }
+
+      return {
+        name:                  String(r[colMap['name']] ?? ''),
+        symbol:                String(r[colMap['symbol']] ?? '').trim().toUpperCase(),
+        acquired:              parseDate(r[colMap['acquired']]),
+        period:                String(r[colMap['period']] ?? ''),
+        qty:                   parseNum(r[colMap['qty']]),
+        market_value:          mv,
+        total_cost:            cost,
+        unrealized_gl_pct:     pct(r[colMap['unrealized_gl_pct']]),
+        unrealized_gl_dollar:  parseNum(r[colMap['unrealized_gl_dollar']]),
+        years_held:            yrsHeld,
+        annualized_return_pct: annReturn,
+        ytd_pct:               null,
+        rolling_12mo_pct:      null,
+        rolling_36mo_pct:      null,
+        last_price:            null,
+        price_updated_at:      null,
+      }
+    })
   } catch (e: unknown) {
     return 'Parse error: ' + (e instanceof Error ? e.message : String(e))
   }
