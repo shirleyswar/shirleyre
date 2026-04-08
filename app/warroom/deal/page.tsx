@@ -485,8 +485,12 @@ function RevertStatusButton({
 
 // ─── Commission Panel (right column, below Deal Actions) ─────────────────────
 
-function CommissionPanel({ dealId }: { dealId: string }) {
-  const [data, setData] = useState<{
+function CommissionPanel({ dealId, dealStatus }: { dealId: string; dealStatus?: string }) {
+  // Under contract / pending payment / closed → read from uc_details
+  const isContracted = ['under_contract', 'pending_payment', 'closed'].includes(dealStatus ?? '')
+
+  // Listing-mode data (deal_economics)
+  const [econ, setEcon] = useState<{
     transaction_type: string | null
     sqft: number | null
     asking_price: number | null
@@ -497,47 +501,91 @@ function CommissionPanel({ dealId }: { dealId: string }) {
     nnn_psf: number | null
   } | null>(null)
 
+  // Contract-mode data (uc_details)
+  const [uc, setUc] = useState<{
+    deal_category: string | null
+    contract_price: number | null
+    commission_pct: number | null
+    commission_amount: number | null
+    lease_rate: number | null
+    lease_rate_unit: string | null
+    lease_term_months: number | null
+  } | null>(null)
+
   useEffect(() => {
     supabase
       .from('deal_economics')
       .select('transaction_type,sqft,asking_price,lease_rate_psf,lease_term_years,lease_commission_pct,sale_commission_pct,nnn_psf')
       .eq('deal_id', dealId)
       .maybeSingle()
-      .then(({ data: d }) => { if (d) setData(d as any) })
+      .then(({ data: d }) => { if (d) setEcon(d as any) })
+
+    supabase
+      .from('uc_details')
+      .select('deal_category,contract_price,commission_pct,commission_amount,lease_rate,lease_rate_unit,lease_term_months')
+      .eq('deal_id', dealId)
+      .maybeSingle()
+      .then(({ data: d }) => { if (d) setUc(d as any) })
   }, [dealId])
-
-  if (!data) return null
-
-  const sqft = data.sqft ?? 0
-  const isLease = data.transaction_type === 'lease' || data.transaction_type === 'both'
-  const isSale  = data.transaction_type === 'sale'  || data.transaction_type === 'both'
-
-  // Lease commission
-  const leaseGross = sqft > 0 && data.lease_rate_psf && data.lease_term_years
-    ? data.lease_rate_psf * sqft * data.lease_term_years : null
-  const leaseComm = leaseGross && data.lease_commission_pct
-    ? leaseGross * (data.lease_commission_pct / 100) * 0.75 : null
-
-  // Sale commission
-  const saleComm = data.asking_price && data.sale_commission_pct
-    ? data.asking_price * (data.sale_commission_pct / 100) * 0.75 : null
 
   const $$ = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
   const pct = (n: number) => n.toFixed(2) + '%'
 
   const rows: { label: string; value: string; highlight?: boolean }[] = []
 
-  if (isLease) {
-    if (data.lease_term_years) rows.push({ label: 'Lease Term', value: data.lease_term_years + ' yrs' })
-    if (leaseGross) rows.push({ label: 'Total Lease Value', value: $$(leaseGross) })
-    if (data.lease_commission_pct) rows.push({ label: 'Commission %', value: pct(data.lease_commission_pct) })
-    if (leaseComm) rows.push({ label: 'Lease Commission', value: $$(leaseComm), highlight: true })
-  }
+  // ── CONTRACT MODE: pull from uc_details ──
+  if (isContracted && uc) {
+    const isLease = uc.deal_category === 'lease'
 
-  if (isSale) {
-    if (data.asking_price) rows.push({ label: 'Sale Price', value: $$(data.asking_price) })
-    if (data.sale_commission_pct) rows.push({ label: 'Commission %', value: pct(data.sale_commission_pct) })
-    if (saleComm) rows.push({ label: 'Sale Commission', value: $$(saleComm), highlight: true })
+    if (isLease) {
+      // Lease contract
+      if (uc.lease_rate) rows.push({ label: 'Contract Lease Rate', value: `$${uc.lease_rate.toFixed(2)} ${uc.lease_rate_unit ?? 'PSF/YR'}` })
+      if (uc.lease_term_months) rows.push({ label: 'Lease Term', value: `${uc.lease_term_months} mo` })
+      if (uc.commission_pct) rows.push({ label: 'Commission %', value: pct(uc.commission_pct) })
+      if (uc.commission_amount) {
+        rows.push({ label: 'Lease Commission', value: $$(uc.commission_amount), highlight: true })
+      } else if (uc.commission_pct && uc.lease_rate && uc.lease_term_months) {
+        // Fallback: calc from sqft in deal_economics if available
+        const sqft = econ?.sqft ?? 0
+        const gross = sqft > 0 ? uc.lease_rate * sqft * (uc.lease_term_months / 12) : null
+        const calc = gross ? gross * (uc.commission_pct / 100) * 0.75 : null
+        if (calc) rows.push({ label: 'Lease Commission', value: $$(calc), highlight: true })
+      }
+    } else {
+      // Sale contract
+      if (uc.contract_price) rows.push({ label: 'Contract Price', value: $$(uc.contract_price) })
+      if (uc.commission_pct) rows.push({ label: 'Commission %', value: pct(uc.commission_pct) })
+      if (uc.commission_amount) {
+        rows.push({ label: 'Sale Commission', value: $$(uc.commission_amount), highlight: true })
+      } else if (uc.contract_price && uc.commission_pct) {
+        const calc = uc.contract_price * (uc.commission_pct / 100) * 0.75
+        rows.push({ label: 'Sale Commission', value: $$(calc), highlight: true })
+      }
+    }
+  } else if (econ) {
+    // ── LISTING MODE: pull from deal_economics ──
+    const sqft = econ.sqft ?? 0
+    const isLease = econ.transaction_type === 'lease' || econ.transaction_type === 'both'
+    const isSale  = econ.transaction_type === 'sale'  || econ.transaction_type === 'both'
+
+    const leaseGross = sqft > 0 && econ.lease_rate_psf && econ.lease_term_years
+      ? econ.lease_rate_psf * sqft * econ.lease_term_years : null
+    const leaseComm = leaseGross && econ.lease_commission_pct
+      ? leaseGross * (econ.lease_commission_pct / 100) * 0.75 : null
+    const saleComm = econ.asking_price && econ.sale_commission_pct
+      ? econ.asking_price * (econ.sale_commission_pct / 100) * 0.75 : null
+
+    if (isLease) {
+      if (econ.lease_term_years) rows.push({ label: 'Lease Term', value: econ.lease_term_years + ' yrs' })
+      if (leaseGross) rows.push({ label: 'Total Lease Value', value: $$(leaseGross) })
+      if (econ.lease_commission_pct) rows.push({ label: 'Commission %', value: pct(econ.lease_commission_pct) })
+      if (leaseComm) rows.push({ label: 'Lease Commission', value: $$(leaseComm), highlight: true })
+    }
+    if (isSale) {
+      if (econ.asking_price) rows.push({ label: 'Sale Price', value: $$(econ.asking_price) })
+      if (econ.sale_commission_pct) rows.push({ label: 'Commission %', value: pct(econ.sale_commission_pct) })
+      if (saleComm) rows.push({ label: 'Sale Commission', value: $$(saleComm), highlight: true })
+    }
   }
 
   if (rows.length === 0) return null
@@ -545,17 +593,29 @@ function CommissionPanel({ dealId }: { dealId: string }) {
   return (
     <div style={{
       background: '#1A1E25',
-      border: '1px solid rgba(255,255,255,0.06)',
+      border: isContracted ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(255,255,255,0.06)',
       borderRadius: 12,
       padding: '14px 16px',
       marginBottom: 16,
     }}>
-      <div style={{
-        fontSize: 9, fontWeight: 800, letterSpacing: '0.18em',
-        textTransform: 'uppercase', color: 'rgba(212,168,71,0.55)',
-        marginBottom: 14, fontFamily: 'var(--font-body)',
-      }}>
-        Commission
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{
+          fontSize: 9, fontWeight: 800, letterSpacing: '0.18em',
+          textTransform: 'uppercase', color: 'rgba(212,168,71,0.55)',
+          fontFamily: 'var(--font-body)',
+        }}>
+          Commission
+        </div>
+        {isContracted && (
+          <div style={{
+            fontSize: 8, fontWeight: 800, letterSpacing: '0.14em',
+            textTransform: 'uppercase', color: '#3b82f6',
+            background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)',
+            borderRadius: 4, padding: '2px 7px',
+          }}>
+            Under Contract
+          </div>
+        )}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
         {rows.map((row, i) => (
@@ -3518,7 +3578,7 @@ function DealDashboardInner() {
           </div>
 
           {/* Commission Panel */}
-          <CommissionPanel dealId={deal.id} />
+          <CommissionPanel dealId={deal.id} dealStatus={deal.status} />
 
           {/* Contacts */}
           <ContactsCard deal={deal} />
