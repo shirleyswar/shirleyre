@@ -3771,17 +3771,18 @@ function DealDashboardInner() {
                         }}
                         placeholder="e.g. 3.0"
                       />
+                      {ucForm.commissionPct && parseFloat(ucForm.commissionPct) > 0 && (
+                        <div style={{ fontSize: 13, color: '#E8B84B', marginTop: 3, fontWeight: 800 }}>
+                          {parseFloat(ucForm.commissionPct).toFixed(2)}%
+                        </div>
+                      )}
                     </div>
                     <div>
-                      <label style={fLabel}>Matthew&apos;s Commission ($)</label>
+                      <label style={fLabel}>My Commission ($)</label>
                       <input
-                        type="text" inputMode="numeric" style={{ ...fInput, background: 'rgba(34,197,94,0.06)', color: '#22c55e' }}
-                        value={ucForm.commissionAmount ? '$' + Number(ucForm.commissionAmount).toLocaleString('en-US') : ''}
-                        onChange={e => {
-                          const raw = e.target.value.replace(/[^0-9]/g, '')
-                          setUCForm(f => ({ ...f, commissionAmount: raw }))
-                        }}
-                        placeholder="Auto-calculated"
+                        type="text" readOnly style={{ ...fInput, background: 'rgba(34,197,94,0.06)', color: '#22c55e', cursor: 'default' }}
+                        value={ucForm.commissionAmount && Number(ucForm.commissionAmount) > 0 ? '$' + Number(ucForm.commissionAmount).toLocaleString('en-US') : ''}
+                        placeholder="Auto-calculated (rate × price × 75%)"
                       />
                       {ucForm.commissionAmount && Number(ucForm.commissionAmount) > 0 && (
                         <div style={{ fontSize: 13, color: '#22c55e', marginTop: 3, fontWeight: 800 }}>

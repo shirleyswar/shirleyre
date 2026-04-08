@@ -780,11 +780,23 @@ function ContactsCell({ dealId, dealName }: { dealId: string; dealName: string }
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
+interface UCDetails {
+  deal_id: string
+  deal_category: string | null
+  contract_price: number | null
+  commission_pct: number | null
+  commission_amount: number | null
+  lease_rate: number | null
+  lease_rate_unit: string | null
+  lease_term_months: number | null
+}
+
 export default function UnderContractPanel() {
   const [deals, setDeals] = useState<ContractDeal[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedDeal, setExpandedDeal] = useState<string | null>(null)
   const [dealDeadlines, setDealDeadlines] = useState<Record<string, ContractDeadline[]>>({})
+  const [ucDetails, setUcDetails] = useState<Record<string, UCDetails>>({})
 
   useEffect(() => {
     async function fetchDeals() {
@@ -795,10 +807,25 @@ export default function UnderContractPanel() {
           .eq('status', 'under_contract')
           .order('updated_at', { ascending: false })
         if (data) {
-          setDeals((data as Deal[]).map(d => ({
+          const dealList = (data as Deal[]).map(d => ({
             ...d,
             days_since_contract: daysDiff(d.updated_at),
-          })))
+          }))
+          setDeals(dealList)
+
+          // Fetch uc_details for all loaded deals
+          if (dealList.length > 0) {
+            const ids = dealList.map(d => d.id)
+            const { data: ucData } = await supabase
+              .from('uc_details')
+              .select('deal_id,deal_category,contract_price,commission_pct,commission_amount,lease_rate,lease_rate_unit,lease_term_months')
+              .in('deal_id', ids)
+            if (ucData) {
+              const map: Record<string, UCDetails> = {}
+              for (const row of ucData as UCDetails[]) map[row.deal_id] = row
+              setUcDetails(map)
+            }
+          }
         }
       } catch {
         setDeals(PLACEHOLDER_DEALS)
@@ -846,9 +873,9 @@ export default function UnderContractPanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr>
-                {['', '↗', 'Deal', 'Stage', 'Value', 'Commission', 'Day', '', 'Deadlines', 'Contacts', 'Files'].map((h, i) => (
+                {['', '↗', 'Deal', 'Contract Price', 'My Commission', 'Next Deadline', 'Contacts', 'Files'].map((h, i) => (
                   <th key={i} style={{
-                    textAlign: i <= 1 ? 'center' : i >= 6 ? 'center' : 'left',
+                    textAlign: i <= 1 ? 'center' : i >= 5 ? 'center' : 'left',
                     padding: '7px 8px',
                     fontSize: 10,
                     fontWeight: 800,
@@ -863,12 +890,32 @@ export default function UnderContractPanel() {
             </thead>
             <tbody>
               {deals.map((deal, i) => {
-                const seed = deal.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + (deal.value || 0)
-                const sparkId = `spark-uc-${deal.id}`
-                const W = 56, H = 24
-                const { linePath, areaPath } = buildSparkPaths(generateSparkline(seed), W, H)
                 const isExpanded = expandedDeal === deal.id
                 const deadlines = dealDeadlines[deal.id] || []
+                const uc = ucDetails[deal.id]
+
+                // Contract price from uc_details, fallback to deal.value
+                const contractPrice = uc?.contract_price ?? deal.value ?? null
+
+                // My commission: uc_details commission_amount, or calc, or fallback
+                let myCommission: number | null = null
+                if (uc?.commission_amount) {
+                  myCommission = uc.commission_amount
+                } else if (uc?.commission_pct && contractPrice && uc.deal_category !== 'lease') {
+                  myCommission = Math.round(contractPrice * (uc.commission_pct / 100) * 0.75)
+                } else if (deal.commission_estimated) {
+                  myCommission = deal.commission_estimated
+                }
+
+                // Next pending deadline (soonest by date)
+                const pendingDeadlines = deadlines.filter(d => d.status === 'pending')
+                const nextDeadline = pendingDeadlines
+                  .sort((a, b) => a.deadline_date.localeCompare(b.deadline_date))[0] ?? null
+                const nextDays = nextDeadline ? daysUntil(nextDeadline.deadline_date) : null
+                const deadlineColor = nextDays == null ? 'var(--text-dim)'
+                  : nextDays < 0 ? '#ef4444'
+                  : nextDays === 0 ? '#22c55e'
+                  : '#4F8EF7'
 
                 return (
                   <>
@@ -915,7 +962,7 @@ export default function UnderContractPanel() {
                         </a>
                       </td>
 
-                      {/* Deal address (bold header) + client name (smaller below) */}
+                      {/* Deal address + client name */}
                       <td style={{ padding: '13px 8px', color: 'var(--text-primary)', fontWeight: 700, maxWidth: 220 }}>
                         <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 15, fontWeight: 700, color: '#F0F2FF' }}>
                           {((deal as any).addr_display || deal.address?.replace(/^📁\s*/, '') || deal.name || '')
@@ -930,51 +977,38 @@ export default function UnderContractPanel() {
                         )}
                       </td>
 
-                      {/* Stage (deal type) */}
-                      <td style={{ padding: '13px 8px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 12, textTransform: 'capitalize' }}>
-                        {deal.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      {/* Contract Price */}
+                      <td style={{ padding: '13px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 600, color: '#F0F2FF' }}>
+                        {contractPrice ? formatCurrency(contractPrice) : '—'}
                       </td>
 
-                      {/* Value */}
-                      <td style={{ padding: '13px 8px', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 600 }}>
-                        {deal.value ? formatCurrency(deal.value) : '—'}
-                      </td>
-
-                      {/* Commission */}
+                      {/* My Commission */}
                       <td style={{ padding: '13px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 15 }}>
                         <span style={{ color: '#22c55e', fontWeight: 800 }}>
-                          {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
+                          {myCommission ? formatCurrency(myCommission) : '—'}
                         </span>
                       </td>
 
-                      {/* Day counter */}
-                      <td style={{ padding: '13px 8px', fontVariantNumeric: 'tabular-nums', textAlign: 'center', fontSize: 14 }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--text-secondary)' }}>
-                          {deal.days_since_contract ?? '—'}
-                        </span>
-                      </td>
-
-                      {/* Sparkline */}
-                      <td style={{ padding: '6px 8px 6px 4px', width: 64 }} onClick={e => e.stopPropagation()}>
-                        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }} aria-hidden="true">
-                          <defs>
-                            <linearGradient id={sparkId} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#4F8EF7" stopOpacity="0.15" />
-                              <stop offset="100%" stopColor="#4F8EF7" stopOpacity="0" />
-                            </linearGradient>
-                          </defs>
-                          <path d={areaPath} fill={`url(#${sparkId})`} />
-                          <path d={linePath} fill="none" stroke="#4F8EF7" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </td>
-
-                      {/* Deadlines summary */}
+                      {/* Next Deadline */}
                       <td style={{ padding: '6px 8px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                        <DeadlinesSummary
-                          deadlines={deadlines}
-                          onExpand={() => handleToggleExpand(deal.id)}
-                          isExpanded={isExpanded}
-                        />
+                        {nextDeadline ? (
+                          <button
+                            onClick={() => handleToggleExpand(deal.id)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', textAlign: 'center' }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: deadlineColor, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                              {nextDeadline.label.length > 14 ? nextDeadline.label.slice(0, 14) + '…' : nextDeadline.label}
+                            </div>
+                            <div style={{ fontSize: 11, color: deadlineColor, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                              {nextDays! < 0 ? `${Math.abs(nextDays!)}d overdue` : nextDays === 0 ? 'TODAY' : `${nextDays}d`}
+                            </div>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleExpand(deal.id)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#2dd4bf', padding: '2px 4px', fontWeight: 600 }}>
+                            + Add
+                          </button>
+                        )}
                       </td>
 
                       {/* Contacts */}
@@ -995,7 +1029,7 @@ export default function UnderContractPanel() {
                     {/* Expanded subpanel */}
                     {isExpanded && (
                       <tr key={`${deal.id}-expand`} style={{ borderBottom: i < deals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                        <td colSpan={11} style={{ padding: '0 10px 10px' }}>
+                        <td colSpan={8} style={{ padding: '0 10px 10px' }}>
                           <DealSubpanel
                             deal={deal}
                             onDeadlinesChange={handleDeadlinesChange}

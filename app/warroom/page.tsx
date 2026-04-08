@@ -889,11 +889,13 @@ function StatsNavCard() {
         const { supabase } = await import('@/lib/supabase')
         const { data } = await supabase.from('deals').select('status,commission_estimated,commission_collected')
         if (data) {
+          const ucDeals = data.filter((d: any) => d.status === 'under_contract')
+          const pipeline = ucDeals.reduce((s: number, d: any) => s + (d.commission_estimated || 0), 0)
+          const ucCount = ucDeals.length
           const active = data.filter((d: any) => !['closed','dead','expired','dormant','terminated'].includes(d.status))
-          const pipeline = active.reduce((s: number, d: any) => s + (d.commission_estimated || 0), 0)
           const ar = active.filter((d: any) => d.status === 'pending_payment')
             .reduce((s: number, d: any) => s + ((d.commission_estimated || 0) - (d.commission_collected || 0)), 0)
-          setStats({ pipeline, openDeals: active.length, ar })
+          setStats({ pipeline, openDeals: ucCount, ar })
         }
       } catch {}
       setLoading(false)
@@ -911,7 +913,7 @@ function StatsNavCard() {
 
   const items = [
     { label: 'Pipeline', value: loading ? '—' : fmt(stats.pipeline), color: '#E8B84B' },
-    { label: 'Open', value: loading ? '—' : String(stats.openDeals), color: '#22C55E' },
+    { label: 'UC', value: loading ? '—' : String(stats.openDeals), color: '#22C55E' },
     { label: 'A/R', value: loading ? '—' : fmt(stats.ar), color: '#60A5FA' },
   ]
 
