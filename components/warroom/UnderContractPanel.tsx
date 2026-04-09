@@ -13,9 +13,7 @@ function daysDiff(from: string) {
 }
 
 function formatCurrency(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
-  return `$${n.toFixed(0)}`
+  return `$${Math.round(n).toLocaleString('en-US')}`
 }
 
 function formatDate(dateStr: string) {
@@ -873,9 +871,17 @@ export default function UnderContractPanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr>
-                {['', '↗', 'Deal', 'Contract Price', 'My Commission', 'Next Deadline', 'Contacts', 'Files'].map((h, i) => (
+                {[
+                  { label: '',              align: 'center' },
+                  { label: '↗',            align: 'center' },
+                  { label: 'Address',       align: 'left'   },
+                  { label: 'Client / ID',   align: 'left'   },
+                  { label: 'Price',         align: 'right'  },
+                  { label: 'Commission',    align: 'right'  },
+                  { label: 'Next Deadline', align: 'center' },
+                ].map((h, i) => (
                   <th key={i} style={{
-                    textAlign: i <= 1 ? 'center' : i >= 5 ? 'center' : 'left',
+                    textAlign: h.align as React.CSSProperties['textAlign'],
                     padding: '7px 8px',
                     fontSize: 10,
                     fontWeight: 800,
@@ -884,7 +890,7 @@ export default function UnderContractPanel() {
                     letterSpacing: '0.12em',
                     whiteSpace: 'nowrap',
                     borderBottom: '1px solid rgba(45,212,191,0.15)',
-                  }}>{h}</th>
+                  }}>{h.label}</th>
                 ))}
               </tr>
             </thead>
@@ -962,29 +968,31 @@ export default function UnderContractPanel() {
                         </a>
                       </td>
 
-                      {/* Deal address + client name */}
-                      <td style={{ padding: '13px 8px', color: 'var(--text-primary)', fontWeight: 700, maxWidth: 220 }}>
-                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 15, fontWeight: 700, color: '#F0F2FF' }}>
+                      {/* Address */}
+                      <td style={{ padding: '13px 8px', maxWidth: 220 }}>
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)' }}>
                           {((deal as any).addr_display || deal.address?.replace(/^📁\s*/, '') || deal.name || '')
                             .replace(/,\s*(LA|Louisiana)\s+\d{5}.*$/i, '')
                             .replace(/,?\s*USA\s*$/i, '')
                             .trim()}
                         </div>
-                        {deal.name && (
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 400 }}>
-                            {deal.name}
-                          </div>
-                        )}
+                      </td>
+
+                      {/* Client / ID */}
+                      <td style={{ padding: '13px 8px', maxWidth: 160 }}>
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontWeight: 400 }}>
+                          {deal.name || '—'}
+                        </div>
                       </td>
 
                       {/* Contract Price */}
-                      <td style={{ padding: '13px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 600, color: '#F0F2FF' }}>
+                      <td style={{ padding: '13px 8px', whiteSpace: 'nowrap', textAlign: 'right', fontSize: 14, fontWeight: 600, color: '#F0F2FF', fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums' }}>
                         {contractPrice ? formatCurrency(contractPrice) : '—'}
                       </td>
 
                       {/* My Commission */}
-                      <td style={{ padding: '13px 8px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 15 }}>
-                        <span style={{ color: '#22c55e', fontWeight: 800 }}>
+                      <td style={{ padding: '13px 8px', whiteSpace: 'nowrap', textAlign: 'right', fontSize: 14, fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums' }}>
+                        <span style={{ color: '#22c55e', fontWeight: 700 }}>
                           {myCommission ? formatCurrency(myCommission) : '—'}
                         </span>
                       </td>
@@ -1011,25 +1019,12 @@ export default function UnderContractPanel() {
                         )}
                       </td>
 
-                      {/* Contacts */}
-                      <td style={{ padding: '6px 8px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                        <ContactsCell dealId={deal.id} dealName={deal.name} />
-                      </td>
-
-                      {/* Dropbox */}
-                      <td style={{ padding: '6px 8px' }} onClick={e => e.stopPropagation()}>
-                        <DropboxCell
-                          dealId={deal.id}
-                          url={deal.dropbox_link}
-                          onSaved={(id, url) => setDeals(prev => prev.map(d => d.id === id ? { ...d, dropbox_link: url } : d))}
-                        />
-                      </td>
                     </tr>
 
                     {/* Expanded subpanel */}
                     {isExpanded && (
                       <tr key={`${deal.id}-expand`} style={{ borderBottom: i < deals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                        <td colSpan={8} style={{ padding: '0 10px 10px' }}>
+                        <td colSpan={7} style={{ padding: '0 10px 10px' }}>
                           <DealSubpanel
                             deal={deal}
                             onDeadlinesChange={handleDeadlinesChange}
