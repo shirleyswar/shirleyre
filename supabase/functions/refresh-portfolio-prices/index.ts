@@ -54,20 +54,10 @@ Deno.serve(async (req) => {
     const portRows: PositionRow[] = (portRes.data ?? []) as PositionRow[]
     const sleeveRows: PositionRow[] = (sleeveRes.data ?? []) as PositionRow[]
 
-    // ── Also pull sold_positions for "if held today" current prices ──
-    const soldRes = await sb
-      .from('sold_positions')
-      .select('id, symbol, qty')
-      .not('symbol', 'is', null)
-
-    type SoldRow = { id: string; symbol: string; qty: number | null }
-    const soldRows: SoldRow[] = (soldRes.data ?? []) as SoldRow[]
-
     // Deduplicated symbol list for price fetch
     const allSymbols = Array.from(new Set([
       ...portRows.map(r => r.symbol),
       ...sleeveRows.map(r => r.symbol),
-      ...soldRows.map(r => r.symbol),
     ])).filter(Boolean) as string[]
 
     if (allSymbols.length === 0) {
@@ -138,21 +128,6 @@ Deno.serve(async (req) => {
       await sb
         .from('sleeve_positions')
         .update(computeUpdate(row, price))
-        .eq('id', row.id)
-    }
-
-    // ── Update sold_positions — current_price + current_value ("if held today") ──
-    for (const row of soldRows) {
-      const price = prices[row.symbol]
-      if (price == null) continue
-      const qty = row.qty ?? 0
-      await sb
-        .from('sold_positions')
-        .update({
-          current_price: price,
-          current_value: price * qty,
-          price_updated_at: now,
-        })
         .eq('id', row.id)
     }
 

@@ -932,59 +932,54 @@ function SoldTab() {
   }
 
   const [sleevePositions, setSleevePositions] = useState<Position[]>([])
+  const [currentPrices, setCurrentPrices] = useState<Record<string, number>>({})
   const [pricesLoading, setPricesLoading] = useState(false)
   const [pricesUpdated, setPricesUpdated] = useState<string | null>(null)
 
-  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
-  const EF_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co/functions/v1/refresh-portfolio-prices'
-
   // Load sleeve positions for basket B
   useEffect(() => {
-    supabase.from('sleeve_positions').select('symbol,market_value,qty,last_price,price_updated_at,unrealized_gl_pct')
+    supabase.from('sleeve_positions').select('symbol,market_value,qty,last_price,price_updated_at')
       .order('market_value', { ascending: false })
       .then(({ data }) => { if (data) setSleevePositions(data as Position[]) })
   }, [])
 
-  // Set pricesUpdated from existing DB data on load
-  useEffect(() => {
-    if (positions.length > 0) {
-      const dates = positions.map(p => (p as any).price_updated_at).filter(Boolean) as string[]
-      if (dates.length > 0) {
-        const latest = dates.sort().reverse()[0]
-        setPricesUpdated(new Date(latest).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' }) + ' CST')
-      }
-    }
-  }, [positions.length])
-
-  async function refreshPrices() {
+  async function fetchCurrentPrices(syms: string[]) {
     setPricesLoading(true)
+    const prices: Record<string, number> = {}
+    // Use Yahoo Finance via our edge function which already handles this
+    const SUPABASE_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
+    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
     try {
-      const res = await fetch(EF_URL, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + ANON_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ force: true }),
-      })
-      const json = await res.json()
-      if (json.pricesFound > 0) {
-        // Reload sold positions with fresh current_value from DB
-        await fetchSold()
-        supabase.from('sleeve_positions').select('symbol,market_value,qty,last_price,price_updated_at,unrealized_gl_pct')
-          .order('market_value', { ascending: false })
-          .then(({ data }) => { if (data) setSleevePositions(data as Position[]) })
-        setPricesUpdated(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' }) + ' CST')
-      }
+      // Fetch each symbol from Yahoo
+      await Promise.all(syms.map(async sym => {
+        try {
+          const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`)
+          const data = await res.json()
+          const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice
+          if (price) prices[sym] = price
+        } catch {}
+      }))
     } catch {}
+    setCurrentPrices(prices)
+    setPricesUpdated(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' }) + ' CST')
     setPricesLoading(false)
   }
 
+  useEffect(() => {
+    if (positions.length > 0) {
+      const syms = Array.from(new Set(positions.map(p => p.symbol).filter(Boolean))) as string[]
+      fetchCurrentPrices(syms)
+    }
+  }, [positions.length])
+
   if (loading) return <SkeletonTable />
 
-  // ── Basket calculations — use current_value from DB (set by edge function) ──
+  // ── Basket calculations ──
   const soldTotal = positions.reduce((s, p) => s + (p.market_value ?? 0), 0)
   const ifHeldTotal = positions.reduce((s, p) => {
-    // current_value = qty × current_price, refreshed server-side
-    const cv = (p as any).current_value
-    return s + (cv != null ? cv : (p.market_value ?? 0))
+    const cp = currentPrices[p.symbol ?? '']
+    const qty = p.qty ?? 0
+    return s + (cp && qty ? cp * qty : p.market_value ?? 0)
   }, 0)
   const sleeveTotal = sleevePositions.reduce((s, p) => s + (p.market_value ?? 0), 0)
   const swapAlpha = sleeveTotal - ifHeldTotal
@@ -1001,10 +996,10 @@ function SoldTab() {
         <span style={{ fontSize: 11, color: P.muted }}>Basket A (sold) vs Basket B (sleeve)</span>
         <div style={{ flex: 1 }} />
         {pricesUpdated && <span style={{ fontSize: 10, color: P.muted, fontFamily: 'monospace' }}>Prices as of {pricesUpdated}</span>}
-        <button onClick={refreshPrices}
+        <button onClick={() => { const syms = Array.from(new Set(positions.map(p => p.symbol).filter(Boolean))) as string[]; fetchCurrentPrices(syms) }}
           disabled={pricesLoading}
           style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 8, color: P.green, cursor: pricesLoading ? 'not-allowed' : 'pointer', opacity: pricesLoading ? 0.5 : 1 }}>
-          {pricesLoading ? '⟳ Refreshing…' : '⟳ Refresh Prices'}
+          {pricesLoading ? '⟳ Loading…' : '⟳ Refresh Prices'}
         </button>
         <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
           style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', opacity: uploading ? 0.5 : 1 }}>
@@ -1085,21 +1080,20 @@ function SoldTab() {
                 </thead>
                 <tbody>
                   {positions.map(p => {
+                    const cp = currentPrices[p.symbol ?? '']
+                    const qty = p.qty ?? 0
                     const proceeds = p.market_value ?? 0
-                    const cv = (p as any).current_value
-                    const cp = (p as any).current_price
-                    const ifHeld = cv != null ? cv : proceeds
-                    const diff = cv != null ? ifHeld - proceeds : 0
-                    const hasPrice = cv != null
+                    const ifHeld = (cp && qty) ? cp * qty : proceeds
+                    const diff = ifHeld - proceeds
                     return (
                       <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                         onMouseLeave={e => e.currentTarget.style.background = ''}>
                         <td style={{ padding: '8px 6px', fontWeight: 700, color: P.text }}>{p.symbol}</td>
-                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', color: P.muted }}>{fmtDollar(proceeds)}</td>
-                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', color: hasPrice ? P.text : P.muted }}>{hasPrice ? fmtDollar(ifHeld) : '—'}</td>
-                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: hasPrice ? pctColor2(diff) : P.muted }}>
-                          {hasPrice ? (diff >= 0 ? '+' : '-') + fmtDollar(diff) : '—'}
+                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', color: P.muted }}>{ fmtDollar(proceeds)}</td>
+                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', color: cp ? P.text : P.muted }}>{cp ? fmtDollar(ifHeld) : '—'}</td>
+                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: pctColor2(diff) }}>
+                          {cp ? (diff >= 0 ? '+' : '-') + fmtDollar(diff) : '—'}
                         </td>
                       </tr>
                     )
