@@ -1071,15 +1071,15 @@ function SoldTab() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {/* ── BASKET A: What you gave up ── */}
-            <div style={{ background: P.bgCard, border: '1px solid ' + P.border, borderRadius: 12, padding: '16px 18px' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(239,68,68,0.6)', marginBottom: 14 }}>
-                {'Basket A \u2014 Sold'}
+            <div style={{ background: P.bgCard, border: '1px solid ' + P.purpleBorder, borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(239,68,68,0.7)', padding: '12px 14px 8px' }}>
+                Basket A — Sold
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    {['Symbol', 'Sold For', 'If Held', 'Diff'].map((h, i) => (
-                      <th key={h} style={{ padding: '4px 6px', textAlign: i === 0 ? 'left' : 'right', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>{h}</th>
+                  <tr style={{ borderBottom: '1px solid ' + P.purpleBorder, background: P.purpleFaint }}>
+                    {['Symbol', 'Sold For', 'If Held', 'Diff'].map(h => (
+                      <th key={h} style={{ padding: '8px 10px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1087,29 +1087,28 @@ function SoldTab() {
                   {positions.map(p => {
                     const proceeds = p.market_value ?? 0
                     const cv = (p as any).current_value
-                    const cp = (p as any).current_price
                     const ifHeld = cv != null ? cv : proceeds
                     const diff = cv != null ? ifHeld - proceeds : 0
                     const hasPrice = cv != null
                     return (
-                      <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                      <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.1s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,92,246,0.06)'}
                         onMouseLeave={e => e.currentTarget.style.background = ''}>
-                        <td style={{ padding: '8px 6px', fontWeight: 700, color: P.text }}>{p.symbol}</td>
-                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', color: P.muted }}>{fmtDollar(proceeds)}</td>
-                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', color: hasPrice ? P.text : P.muted }}>{hasPrice ? fmtDollar(ifHeld) : '—'}</td>
-                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: hasPrice ? pctColor2(diff) : P.muted }}>
+                        <td style={{ padding: '11px 10px', textAlign: 'center', fontWeight: 700, color: P.text }}>{p.symbol}</td>
+                        <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', color: P.muted }}>{fmtDollar(proceeds)}</td>
+                        <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', color: hasPrice ? P.text : P.muted }}>{hasPrice ? fmtDollar(ifHeld) : '—'}</td>
+                        <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, color: hasPrice ? pctColor2(diff) : P.muted }}>
                           {hasPrice ? (diff >= 0 ? '+' : '-') + fmtDollar(diff) : '—'}
                         </td>
                       </tr>
                     )
                   })}
-                  <tr style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <td style={{ padding: '8px 6px', fontWeight: 800, color: P.text, fontSize: 11 }}>TOTAL</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: P.text }}>{ fmtDollar(soldTotal)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: P.text }}>{ fmtDollar(ifHeldTotal)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, color: pctColor2(ifHeldTotal - soldTotal) }}>
-                      {(ifHeldTotal - soldTotal) >= 0 ? '+' : '-'}{ fmtDollar(ifHeldTotal - soldTotal)}
+                  <tr style={{ borderTop: '1px solid ' + P.purpleBorder, background: P.purpleFaint }}>
+                    <td style={{ padding: '10px', textAlign: 'center', fontWeight: 800, color: P.text, fontSize: 12 }}>TOTAL</td>
+                    <td style={{ padding: '10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, color: P.text }}>{fmtDollar(soldTotal)}</td>
+                    <td style={{ padding: '10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, color: P.text }}>{fmtDollar(ifHeldTotal)}</td>
+                    <td style={{ padding: '10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 800, color: pctColor2(ifHeldTotal - soldTotal) }}>
+                      {(ifHeldTotal - soldTotal) >= 0 ? '+' : '-'}{fmtDollar(ifHeldTotal - soldTotal)}
                     </td>
                   </tr>
                 </tbody>
@@ -1117,34 +1116,37 @@ function SoldTab() {
             </div>
 
             {/* ── BASKET B: What you got ── */}
-            <div style={{ background: P.bgCard, border: '1px solid ' + P.border, borderRadius: 12, padding: '16px 18px' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.6)', marginBottom: 14 }}>
-                {'Basket B \u2014 Sleeve (Current)'}
+            <div style={{ background: P.bgCard, border: '1px solid ' + P.purpleBorder, borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.7)', padding: '12px 14px 8px' }}>
+                Basket B — Sleeve (Current)
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    {['Symbol', 'Current Value', 'G/L %'].map((h, i) => (
-                      <th key={h} style={{ padding: '4px 6px', textAlign: i === 0 ? 'left' : 'right', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>{h}</th>
+                  <tr style={{ borderBottom: '1px solid ' + P.purpleBorder, background: P.purpleFaint }}>
+                    {['Symbol', 'Mkt Value', 'G/L $', 'G/L %'].map(h => (
+                      <th key={h} style={{ padding: '8px 10px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {sleevePositions.map(p => (
-                    <tr key={p.symbol} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                    <tr key={p.symbol} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.1s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,92,246,0.06)'}
                       onMouseLeave={e => e.currentTarget.style.background = ''}>
-                      <td style={{ padding: '8px 6px', fontWeight: 700, color: P.text }}>{p.symbol}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 600, color: P.text }}>{ fmtDollar( p.market_value ?? 0)}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: pctColor2(p.unrealized_gl_pct ?? 0) }}>
+                      <td style={{ padding: '11px 10px', textAlign: 'center', fontWeight: 700, color: P.text }}>{p.symbol}</td>
+                      <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, color: P.text }}>{fmtDollar(p.market_value ?? 0)}</td>
+                      <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 600, color: pctColor2(p.unrealized_gl_dollar ?? 0) }}>
+                        {p.unrealized_gl_dollar != null ? (p.unrealized_gl_dollar >= 0 ? '+' : '-') + fmtDollar(p.unrealized_gl_dollar) : '—'}
+                      </td>
+                      <td style={{ padding: '11px 10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, color: pctColor2(p.unrealized_gl_pct ?? 0) }}>
                         {p.unrealized_gl_pct != null ? (p.unrealized_gl_pct >= 0 ? '+' : '') + p.unrealized_gl_pct.toFixed(1) + '%' : '—'}
                       </td>
                     </tr>
                   ))}
-                  <tr style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <td style={{ padding: '8px 6px', fontWeight: 800, color: P.text, fontSize: 11 }}>TOTAL</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, color: P.green }}>{ fmtDollar(sleeveTotal)}</td>
-                    <td />
+                  <tr style={{ borderTop: '1px solid ' + P.purpleBorder, background: P.purpleFaint }}>
+                    <td style={{ padding: '10px', textAlign: 'center', fontWeight: 800, color: P.text, fontSize: 12 }}>TOTAL</td>
+                    <td style={{ padding: '10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 800, color: P.green }}>{fmtDollar(sleeveTotal)}</td>
+                    <td colSpan={2} />
                   </tr>
                 </tbody>
               </table>
