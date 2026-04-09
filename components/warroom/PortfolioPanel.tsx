@@ -931,77 +931,18 @@ function SoldTab() {
     setPositions(prev => prev.map(p => p.id === id ? { ...p, total_cost: cost, years_held: yrs, annualized_return_pct: ann } : p))
   }
 
-  const [sleevePositions, setSleevePositions] = useState<Position[]>([])
-  const [currentPrices, setCurrentPrices] = useState<Record<string, number>>({})
-  const [pricesLoading, setPricesLoading] = useState(false)
-  const [pricesUpdated, setPricesUpdated] = useState<string | null>(null)
-
-  // Load sleeve positions for basket B
-  useEffect(() => {
-    supabase.from('sleeve_positions').select('symbol,market_value,qty,last_price,price_updated_at')
-      .order('market_value', { ascending: false })
-      .then(({ data }) => { if (data) setSleevePositions(data as Position[]) })
-  }, [])
-
-  async function fetchCurrentPrices(syms: string[]) {
-    setPricesLoading(true)
-    const prices: Record<string, number> = {}
-    // Use Yahoo Finance via our edge function which already handles this
-    const SUPABASE_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
-    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
-    try {
-      // Fetch each symbol from Yahoo
-      await Promise.all(syms.map(async sym => {
-        try {
-          const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`)
-          const data = await res.json()
-          const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice
-          if (price) prices[sym] = price
-        } catch {}
-      }))
-    } catch {}
-    setCurrentPrices(prices)
-    setPricesUpdated(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' }) + ' CST')
-    setPricesLoading(false)
-  }
-
-  useEffect(() => {
-    if (positions.length > 0) {
-      const syms = Array.from(new Set(positions.map(p => p.symbol).filter(Boolean))) as string[]
-      fetchCurrentPrices(syms)
-    }
-  }, [positions.length])
-
   if (loading) return <SkeletonTable />
-
-  // ── Basket calculations ──
-  const soldTotal = positions.reduce((s, p) => s + (p.market_value ?? 0), 0)
-  const ifHeldTotal = positions.reduce((s, p) => {
-    const cp = currentPrices[p.symbol ?? '']
-    const qty = p.qty ?? 0
-    return s + (cp && qty ? cp * qty : p.market_value ?? 0)
-  }, 0)
-  const sleeveTotal = sleevePositions.reduce((s, p) => s + (p.market_value ?? 0), 0)
-  const swapAlpha = sleeveTotal - ifHeldTotal
-  const isWin = swapAlpha >= 0
-
-  const fmtDollar = (n: number) => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-  const pctColor2 = (n: number) => n >= 0 ? P.green : P.red
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 16, fontWeight: 800, color: P.purple, letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: `0 0 20px rgba(139,92,246,0.4)` }}>SWAP SCORECARD</span>
-        <span style={{ fontSize: 11, color: P.muted }}>Basket A (sold) vs Basket B (sleeve)</span>
+      {/* Header — matches SleeveTab style */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 16, fontWeight: 800, color: P.purple, letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: `0 0 20px rgba(139,92,246,0.4)` }}>SOLD</span>
+        <span style={{ fontSize: 11, color: P.muted }}>Directed buy scorecard</span>
         <div style={{ flex: 1 }} />
-        {pricesUpdated && <span style={{ fontSize: 10, color: P.muted, fontFamily: 'monospace' }}>Prices as of {pricesUpdated}</span>}
-        <button onClick={() => { const syms = Array.from(new Set(positions.map(p => p.symbol).filter(Boolean))) as string[]; fetchCurrentPrices(syms) }}
-          disabled={pricesLoading}
-          style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 8, color: P.green, cursor: pricesLoading ? 'not-allowed' : 'pointer', opacity: pricesLoading ? 0.5 : 1 }}>
-          {pricesLoading ? '⟳ Loading…' : '⟳ Refresh Prices'}
-        </button>
-        <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
           style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', opacity: uploading ? 0.5 : 1 }}>
           {uploading ? 'Loading…' : '↑ Upload Sold .xlsx'}
         </button>
@@ -1014,7 +955,9 @@ function SoldTab() {
       {uploadError && <div style={{ marginBottom: 12, fontSize: 12, color: P.red,   fontFamily: 'monospace' }}>{uploadError}</div>}
 
       {positions.length === 0 ? (
-        <div onDragOver={e => { e.preventDefault(); setDragOver(true) }} onDragLeave={() => setDragOver(false)}
+        <div
+          onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+          onDragLeave={() => setDragOver(false)}
           onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
           onClick={() => fileInputRef.current?.click()}
           style={{ border: `2px dashed ${dragOver ? P.purple : P.purpleBorder}`, borderRadius: 12, padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? P.purpleFaint : 'transparent', transition: 'all 0.15s', marginBottom: 16 }}>
@@ -1024,126 +967,8 @@ function SoldTab() {
         </div>
       ) : (
         <>
-          {/* ── THE VERDICT hero ── */}
-          <div style={{
-            background: isWin
-              ? 'linear-gradient(135deg, #0a1f0f 0%, #0d2a14 100%)'
-              : 'linear-gradient(135deg, #1f0a0a 0%, #2a0d0d 100%)',
-            border: '1.5px solid ' + (isWin ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'),
-            borderRadius: 16, padding: '20px 24px', marginBottom: 20,
-            boxShadow: '0 0 40px ' + (isWin ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)'),
-            position: 'relative', overflow: 'hidden',
-          }}>
-            <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, background: 'radial-gradient(circle, ' + (isWin ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)') + ' 0%, transparent 70%)', pointerEvents: 'none' }} />
-
-            <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: isWin ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)', marginBottom: 14 }}>
-              The Verdict — Swap Alpha
-            </div>
-
-            <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap' }}>
-              {[
-                { label: 'Sold (proceeds)', value: fmtDollar(soldTotal), dim: true },
-                { label: 'Basket A if held today', value: fmtDollar(ifHeldTotal), dim: true },
-                { label: 'Basket B (Sleeve) today', value: fmtDollar(sleeveTotal), dim: true },
-                { label: isWin ? 'Alpha Created' : 'Opportunity Cost', value: (isWin ? '+' : '-') + fmtDollar(swapAlpha), accent: true },
-              ].map((s, i) => (
-                <div key={s.label} style={{
-                  flex: s.accent ? '1 1 160px' : '1 1 120px',
-                  padding: '10px 20px',
-                  borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                  display: 'flex', flexDirection: 'column', gap: 4,
-                  background: s.accent ? (isWin ? 'rgba(34,197,94,0.04)' : 'rgba(239,68,68,0.04)') : 'transparent',
-                  borderRadius: s.accent ? 10 : 0,
-                }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: s.accent ? (isWin ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)') : 'rgba(255,255,255,0.3)' }}>{s.label}</div>
-                  <div style={{ fontSize: s.accent ? 26 : 17, fontWeight: s.accent ? 800 : 600, color: s.accent ? (isWin ? '#22c55e' : '#ef4444') : 'rgba(255,255,255,0.5)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', textShadow: s.accent ? (isWin ? '0 0 20px rgba(34,197,94,0.3)' : '0 0 20px rgba(239,68,68,0.3)') : 'none' }}>
-                    {s.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            {/* ── BASKET A: What you gave up ── */}
-            <div style={{ background: P.bgCard, border: '1px solid ' + P.border, borderRadius: 12, padding: '16px 18px' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(239,68,68,0.6)', marginBottom: 14 }}>
-                {'Basket A \u2014 Sold'}
-              </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    {['Symbol', 'Sold For', 'If Held', 'Diff'].map((h, i) => (
-                      <th key={h} style={{ padding: '4px 6px', textAlign: i === 0 ? 'left' : 'right', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {positions.map(p => {
-                    const cp = currentPrices[p.symbol ?? '']
-                    const qty = p.qty ?? 0
-                    const proceeds = p.market_value ?? 0
-                    const ifHeld = (cp && qty) ? cp * qty : proceeds
-                    const diff = ifHeld - proceeds
-                    return (
-                      <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                        onMouseLeave={e => e.currentTarget.style.background = ''}>
-                        <td style={{ padding: '8px 6px', fontWeight: 700, color: P.text }}>{p.symbol}</td>
-                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', color: P.muted }}>{ fmtDollar(proceeds)}</td>
-                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', color: cp ? P.text : P.muted }}>{cp ? fmtDollar(ifHeld) : '—'}</td>
-                        <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: pctColor2(diff) }}>
-                          {cp ? (diff >= 0 ? '+' : '-') + fmtDollar(diff) : '—'}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                  <tr style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <td style={{ padding: '8px 6px', fontWeight: 800, color: P.text, fontSize: 11 }}>TOTAL</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: P.text }}>{ fmtDollar(soldTotal)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: P.text }}>{ fmtDollar(ifHeldTotal)}</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, color: pctColor2(ifHeldTotal - soldTotal) }}>
-                      {(ifHeldTotal - soldTotal) >= 0 ? '+' : '-'}{ fmtDollar(ifHeldTotal - soldTotal)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* ── BASKET B: What you got ── */}
-            <div style={{ background: P.bgCard, border: '1px solid ' + P.border, borderRadius: 12, padding: '16px 18px' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.6)', marginBottom: 14 }}>
-                {'Basket B \u2014 Sleeve (Current)'}
-              </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    {['Symbol', 'Current Value', 'G/L %'].map((h, i) => (
-                      <th key={h} style={{ padding: '4px 6px', textAlign: i === 0 ? 'left' : 'right', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sleevePositions.map(p => (
-                    <tr key={p.symbol} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                      onMouseLeave={e => e.currentTarget.style.background = ''}>
-                      <td style={{ padding: '8px 6px', fontWeight: 700, color: P.text }}>{p.symbol}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 600, color: P.text }}>{ fmtDollar( p.market_value ?? 0)}</td>
-                      <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: pctColor2(p.unrealized_gl_pct ?? 0) }}>
-                        {p.unrealized_gl_pct != null ? (p.unrealized_gl_pct >= 0 ? '+' : '') + p.unrealized_gl_pct.toFixed(1) + '%' : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <td style={{ padding: '8px 6px', fontWeight: 800, color: P.text, fontSize: 11 }}>TOTAL</td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, color: P.green }}>{ fmtDollar(sleeveTotal)}</td>
-                    <td />
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <SoldKpiCards positions={positions} />
+          <SoldTable positions={positions} onCostUpdate={handleCostUpdate} />
         </>
       )}
     </div>
