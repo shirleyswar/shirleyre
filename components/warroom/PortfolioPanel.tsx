@@ -43,7 +43,7 @@ interface ConsolidatedRow {
 
 type SortField = keyof Position | 'symbol_display'
 type SortDir = 'asc' | 'desc'
-type Tab = 'portfolio' | 'tranches'
+type Tab = 'portfolio' | 'sleeve' | 'sold'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function fmt$(n: number | null): string {
@@ -1412,32 +1412,33 @@ function PortfolioTab() {
 }
 
 // ─── Root PortfolioPanel ──────────────────────────────────────────────────────
-
 export default function PortfolioPanel() {
   const [tab, setTab] = useState<Tab>('portfolio')
 
   const tabs: { id: Tab; label: string; color: string }[] = [
     { id: 'portfolio', label: 'Portfolio', color: P.purple },
-    { id: 'tranches',  label: 'Tranches',  color: '#a78bfa' },
+    { id: 'sleeve',    label: 'Sleeve',    color: '#a78bfa' },
+    { id: 'sold',      label: 'Sold',      color: '#9ca3af' },
   ]
 
   return (
     <div className="wr-card">
       {/* Tab strip */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 20, borderBottom: '1px solid ' + P.purpleBorder, paddingBottom: 0 }}>
+      <div style={{ display: 'flex', gap: 2, marginBottom: 20, borderBottom: `1px solid ${P.purpleBorder}`, paddingBottom: 0 }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             padding: '8px 18px', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
             background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
             color: tab === t.id ? t.color : P.muted,
-            borderBottom: tab === t.id ? '2px solid ' + t.color : '2px solid transparent',
+            borderBottom: tab === t.id ? `2px solid ${t.color}` : '2px solid transparent',
             marginBottom: -1, transition: 'all 0.15s',
           }}>{t.label}</button>
         ))}
       </div>
 
       {tab === 'portfolio' && <PortfolioTab />}
-      {tab === 'tranches'  && <TranchesTab />}
+      {tab === 'sleeve'    && <SleeveTab />}
+      {tab === 'sold'      && <SoldTab />}
     </div>
   )
 }
@@ -1446,337 +1447,6 @@ function SkeletonTable() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {[1,2,3,4,5].map(i => <div key={i} className="skeleton" style={{ height: 40 }} />)}
-    </div>
-  )
-}
-
-// ─── Tranches Tab ─────────────────────────────────────────────────────────────
-
-interface Tranche {
-  id: string
-  name: string
-  type: 'buy' | 'sell'
-  notes: string | null
-  created_at: string
-}
-
-interface TranchePosition extends Position {
-  tranche_id: string | null
-  current_price?: number | null
-  current_value?: number | null
-}
-
-function TranchesTab() {
-  const [tranches, setTranches] = useState<Tranche[]>([])
-  const [positions, setPositions] = useState<TranchePosition[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [pricesUpdated, setPricesUpdated] = useState<string | null>(null)
-
-  // New tranche form
-  const [showNewForm, setShowNewForm] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newType, setNewType] = useState<'buy' | 'sell'>('buy')
-  const [newNotes, setNewNotes] = useState('')
-  const [creating, setCreating] = useState(false)
-
-  // Upload state
-  const [uploadingTranche, setUploadingTranche] = useState<string | null>(null)
-  const [uploadMsg, setUploadMsg] = useState<string | null>(null)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
-
-  // Scorecard
-  const [scoreSellId, setScoreSellId] = useState<string>('all')
-  const [scoreBuyId, setScoreBuyId] = useState<string>('all')
-
-  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
-  const EF_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co/functions/v1/refresh-portfolio-prices'
-
-  async function load() {
-    setLoading(true)
-    const [{ data: tr }, { data: sold }, { data: bought }] = await Promise.all([
-      supabase.from('tranches').select('*').order('created_at'),
-      supabase.from('sold_positions').select('*').order('market_value', { ascending: false }),
-      supabase.from('sleeve_positions').select('*').order('market_value', { ascending: false }),
-    ])
-    setTranches((tr ?? []) as Tranche[])
-    const allPos: TranchePosition[] = [
-      ...((sold ?? []) as TranchePosition[]).map(p => ({ ...p, _table: 'sell' as const })),
-      ...((bought ?? []) as TranchePosition[]).map(p => ({ ...p, _table: 'buy' as const })),
-    ]
-    setPositions(allPos)
-    const dates = allPos.map(p => p.price_updated_at).filter(Boolean) as string[]
-    if (dates.length) setPricesUpdated(new Date(dates.sort().reverse()[0]).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' }) + ' CST')
-    setLoading(false)
-  }
-
-  useEffect(() => { load() }, [])
-
-  async function refreshPrices() {
-    setRefreshing(true)
-    try {
-      await fetch(EF_URL, { method: 'POST', headers: { 'Authorization': 'Bearer ' + ANON_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ force: true }) })
-      await load()
-      setPricesUpdated(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' }) + ' CST')
-    } catch {}
-    setRefreshing(false)
-  }
-
-  async function createTranche() {
-    if (!newName.trim()) return
-    setCreating(true)
-    const { data } = await supabase.from('tranches').insert({ name: newName.trim(), type: newType, notes: newNotes.trim() || null }).select().single()
-    if (data) {
-      setTranches(prev => [...prev, data as Tranche])
-      setNewName(''); setNewType('buy'); setNewNotes(''); setShowNewForm(false)
-    }
-    setCreating(false)
-  }
-
-  async function deleteTranche(id: string) {
-    if (!confirm('Delete this tranche and all its positions?')) return
-    const t = tranches.find(t => t.id === id)
-    if (!t) return
-    const table = t.type === 'sell' ? 'sold_positions' : 'sleeve_positions'
-    await supabase.from(table).delete().eq('tranche_id', id)
-    await supabase.from('tranches').delete().eq('id', id)
-    await load()
-  }
-
-  async function handleUpload(file: File, tranche: Tranche) {
-    setUploadingTranche(tranche.id); setUploadMsg(null); setUploadError(null)
-    if (!file.name.match(/\.xlsx?$/i)) { setUploadError('Please upload an .xlsx file.'); setUploadingTranche(null); return }
-
-    let rows: Record<string, unknown>[] | string
-    if (tranche.type === 'sell') {
-      rows = await parseSoldXlsx(file)
-    } else {
-      rows = await parseXlsx(file, SLEEVE_COL_MAP)
-    }
-    if (typeof rows === 'string') { setUploadError(rows); setUploadingTranche(null); return }
-
-    const table = tranche.type === 'sell' ? 'sold_positions' : 'sleeve_positions'
-    // Clear existing rows for this tranche then re-insert
-    await supabase.from(table).delete().eq('tranche_id', tranche.id)
-
-    const batch = new Date().toISOString()
-    const inserts = (rows as Record<string, unknown>[]).map(r => ({ ...r, tranche_id: tranche.id, upload_batch: batch }))
-    for (let i = 0; i < inserts.length; i += 50) {
-      const { error } = await supabase.from(table).insert(inserts.slice(i, i + 50))
-      if (error) { setUploadError('Insert failed: ' + error.message); setUploadingTranche(null); return }
-    }
-
-    setUploadMsg(`✓ ${inserts.length} positions loaded into ${tranche.type === 'sell' ? 'Sell' : 'Buy'}: ${tranche.name}`)
-    await load()
-    setUploadingTranche(null)
-  }
-
-  if (loading) return <SkeletonTable />
-
-  const sellTranches = tranches.filter(t => t.type === 'sell')
-  const buyTranches  = tranches.filter(t => t.type === 'buy')
-
-  const posForTranche = (id: string) => positions.filter(p => p.tranche_id === id)
-
-  // Scorecard calc
-  const scoreSellPos = scoreSellId === 'all'
-    ? positions.filter(p => sellTranches.some(t => t.id === p.tranche_id))
-    : positions.filter(p => p.tranche_id === scoreSellId)
-  const scoreBuyPos = scoreBuyId === 'all'
-    ? positions.filter(p => buyTranches.some(t => t.id === p.tranche_id))
-    : positions.filter(p => p.tranche_id === scoreBuyId)
-
-  const sellProceeds  = scoreSellPos.reduce((s, p) => s + (p.market_value ?? 0), 0)
-  const sellIfHeld    = scoreSellPos.reduce((s, p) => s + ((p.current_value ?? p.market_value) ?? 0), 0)
-  const buyNow        = scoreBuyPos.reduce((s, p) => s + (p.market_value ?? 0), 0)
-  const swapAlpha     = buyNow - sellIfHeld
-  const isWin         = swapAlpha >= 0
-
-  const fd = (n: number) => '$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })
-  const pc = (n: number) => n >= 0 ? P.green : P.red
-  const selStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '5px 10px', fontSize: 11, color: P.text, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' }
-
-  return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 16, fontWeight: 800, color: P.purple, letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: '0 0 20px rgba(139,92,246,0.4)' }}>TRANCHES</span>
-        <span style={{ fontSize: 11, color: P.muted }}>Sell & buy groups · swap scorecard</span>
-        <div style={{ flex: 1 }} />
-        {pricesUpdated && <span style={{ fontSize: 10, color: P.muted, fontFamily: 'monospace' }}>Prices: {pricesUpdated}</span>}
-        <button onClick={refreshPrices} disabled={refreshing}
-          style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 8, color: P.green, cursor: refreshing ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1 }}>
-          {refreshing ? '⟳ Refreshing…' : '⟳ Refresh Prices'}
-        </button>
-        <button onClick={() => setShowNewForm(s => !s)}
-          style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: P.purpleFaint, border: '1px solid ' + P.purpleBorder, borderRadius: 8, color: P.purple, cursor: 'pointer' }}>
-          + New Tranche
-        </button>
-      </div>
-
-      {uploadMsg   && <div style={{ marginBottom: 12, fontSize: 12, color: P.green, fontFamily: 'monospace' }}>{uploadMsg}</div>}
-      {uploadError && <div style={{ marginBottom: 12, fontSize: 12, color: P.red,   fontFamily: 'monospace' }}>{uploadError}</div>}
-
-      {/* New Tranche Form */}
-      {showNewForm && (
-        <div style={{ background: P.purpleFaint, border: '1px solid ' + P.purpleBorder, borderRadius: 10, padding: 16, marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div>
-            <div style={{ fontSize: 9, fontWeight: 700, color: P.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Name (Mo/Yr)</div>
-            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Apr/26"
-              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid ' + P.purpleBorder, borderRadius: 6, padding: '6px 10px', fontSize: 13, color: P.text, fontFamily: 'inherit', outline: 'none', width: 100 }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 9, fontWeight: 700, color: P.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Type</div>
-            <select value={newType} onChange={e => setNewType(e.target.value as 'buy' | 'sell')} style={{ ...selStyle, width: 80 }}>
-              <option value="buy">Buy</option>
-              <option value="sell">Sell</option>
-            </select>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: P.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Notes (optional)</div>
-            <input value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="e.g. Spring rotation"
-              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid ' + P.purpleBorder, borderRadius: 6, padding: '6px 10px', fontSize: 13, color: P.text, fontFamily: 'inherit', outline: 'none', width: '100%' }} />
-          </div>
-          <button onClick={createTranche} disabled={creating || !newName.trim()}
-            style={{ padding: '7px 18px', fontSize: 12, fontWeight: 700, background: P.purple, border: 'none', borderRadius: 7, color: '#fff', cursor: 'pointer', opacity: creating ? 0.5 : 1 }}>
-            {creating ? 'Creating…' : 'Create'}
-          </button>
-          <button onClick={() => setShowNewForm(false)}
-            style={{ padding: '7px 14px', fontSize: 12, fontWeight: 600, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, color: P.muted, cursor: 'pointer' }}>
-            Cancel
-          </button>
-        </div>
-      )}
-
-      {/* Tranche Grid — Sell | Buy */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-        {/* SELL TRANCHES */}
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(239,68,68,0.7)', marginBottom: 10 }}>Sell Tranches</div>
-          {sellTranches.length === 0 && <div style={{ fontSize: 12, color: P.muted, fontStyle: 'italic' }}>No sell tranches yet.</div>}
-          {sellTranches.map(t => {
-            const pos = posForTranche(t.id)
-            const total = pos.reduce((s, p) => s + (p.market_value ?? 0), 0)
-            const ifHeld = pos.reduce((s, p) => s + ((p.current_value ?? p.market_value) ?? 0), 0)
-            const isUploading = uploadingTranche === t.id
-            return (
-              <div key={t.id} style={{ background: P.bgCard, border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '12px 14px', marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: '#ef4444' }}>Sell: {t.name}</span>
-                  <span style={{ fontSize: 10, color: P.muted }}>{pos.length} positions</span>
-                  <div style={{ flex: 1 }} />
-                  <button onClick={() => fileRefs.current[t.id]?.click()} disabled={isUploading}
-                    style={{ padding: '3px 10px', fontSize: 10, fontWeight: 700, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 5, color: '#ef4444', cursor: 'pointer', opacity: isUploading ? 0.5 : 1 }}>
-                    {isUploading ? '⟳' : '↑ Upload'}
-                  </button>
-                  <button onClick={() => deleteTranche(t.id)} style={{ padding: '3px 8px', fontSize: 10, fontWeight: 700, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 5, color: 'rgba(239,68,68,0.5)', cursor: 'pointer' }}>✕</button>
-                  <input ref={el => { fileRefs.current[t.id] = el }} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
-                    onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f, t); e.target.value = '' }} />
-                </div>
-                {pos.length > 0 && (
-                  <div style={{ display: 'flex', gap: 16 }}>
-                    <div><div style={{ fontSize: 8, color: P.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Proceeds</div><div style={{ fontSize: 14, fontWeight: 700, color: P.text, fontFamily: 'monospace' }}>{fd(total)}</div></div>
-                    <div><div style={{ fontSize: 8, color: P.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>If Held Today</div><div style={{ fontSize: 14, fontWeight: 700, color: pc(ifHeld - total), fontFamily: 'monospace' }}>{fd(ifHeld)}</div></div>
-                    <div><div style={{ fontSize: 8, color: P.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Exit Alpha</div><div style={{ fontSize: 14, fontWeight: 800, color: pc(total - ifHeld), fontFamily: 'monospace' }}>{(total - ifHeld) >= 0 ? '+' : '-'}{fd(total - ifHeld)}</div></div>
-                  </div>
-                )}
-                {t.notes && <div style={{ fontSize: 10, color: P.muted, marginTop: 6, fontStyle: 'italic' }}>{t.notes}</div>}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* BUY TRANCHES */}
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.7)', marginBottom: 10 }}>Buy Tranches</div>
-          {buyTranches.length === 0 && <div style={{ fontSize: 12, color: P.muted, fontStyle: 'italic' }}>No buy tranches yet.</div>}
-          {buyTranches.map(t => {
-            const pos = posForTranche(t.id)
-            const total = pos.reduce((s, p) => s + (p.market_value ?? 0), 0)
-            const gl = pos.reduce((s, p) => s + (p.unrealized_gl_dollar ?? 0), 0)
-            const glPct = pos.reduce((s, p) => s + (p.total_cost ?? 0), 0) > 0
-              ? (gl / pos.reduce((s, p) => s + (p.total_cost ?? 0), 0)) * 100 : null
-            const isUploading = uploadingTranche === t.id
-            return (
-              <div key={t.id} style={{ background: P.bgCard, border: '1px solid rgba(34,197,94,0.2)', borderRadius: 10, padding: '12px 14px', marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: '#22c55e' }}>Buy: {t.name}</span>
-                  <span style={{ fontSize: 10, color: P.muted }}>{pos.length} positions</span>
-                  <div style={{ flex: 1 }} />
-                  <button onClick={() => fileRefs.current[t.id]?.click()} disabled={isUploading}
-                    style={{ padding: '3px 10px', fontSize: 10, fontWeight: 700, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 5, color: '#22c55e', cursor: 'pointer', opacity: isUploading ? 0.5 : 1 }}>
-                    {isUploading ? '⟳' : '↑ Upload'}
-                  </button>
-                  <button onClick={() => deleteTranche(t.id)} style={{ padding: '3px 8px', fontSize: 10, fontWeight: 700, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 5, color: 'rgba(34,197,94,0.5)', cursor: 'pointer' }}>✕</button>
-                  <input ref={el => { fileRefs.current[t.id] = el }} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
-                    onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f, t); e.target.value = '' }} />
-                </div>
-                {pos.length > 0 && (
-                  <div style={{ display: 'flex', gap: 16 }}>
-                    <div><div style={{ fontSize: 8, color: P.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Current Value</div><div style={{ fontSize: 14, fontWeight: 700, color: '#22c55e', fontFamily: 'monospace' }}>{fd(total)}</div></div>
-                    <div><div style={{ fontSize: 8, color: P.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>G/L $</div><div style={{ fontSize: 14, fontWeight: 700, color: pc(gl), fontFamily: 'monospace' }}>{gl >= 0 ? '+' : '-'}{fd(gl)}</div></div>
-                    {glPct != null && <div><div style={{ fontSize: 8, color: P.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>G/L %</div><div style={{ fontSize: 14, fontWeight: 800, color: pc(glPct), fontFamily: 'monospace' }}>{glPct >= 0 ? '+' : ''}{glPct.toFixed(1)}%</div></div>}
-                  </div>
-                )}
-                {t.notes && <div style={{ fontSize: 10, color: P.muted, marginTop: 6, fontStyle: 'italic' }}>{t.notes}</div>}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* ── SWAP SCORECARD ── */}
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.7)' }}>Swap Scorecard</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 10, color: P.muted }}>Sell:</span>
-            <select value={scoreSellId} onChange={e => setScoreSellId(e.target.value)} style={selStyle}>
-              <option value="all">All Sell Tranches</option>
-              {sellTranches.map(t => <option key={t.id} value={t.id}>Sell: {t.name}</option>)}
-            </select>
-          </div>
-          <span style={{ fontSize: 12, color: P.muted }}>vs</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 10, color: P.muted }}>Buy:</span>
-            <select value={scoreBuyId} onChange={e => setScoreBuyId(e.target.value)} style={selStyle}>
-              <option value="all">All Buy Tranches</option>
-              {buyTranches.map(t => <option key={t.id} value={t.id}>Buy: {t.name}</option>)}
-            </select>
-          </div>
-        </div>
-
-        <div style={{
-          background: isWin ? 'linear-gradient(135deg, #0a1f0f 0%, #0d2a14 100%)' : 'linear-gradient(135deg, #1f0a0a 0%, #2a0d0d 100%)',
-          border: '1.5px solid ' + (isWin ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'),
-          borderRadius: 14, padding: '18px 22px',
-        }}>
-          <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap' }}>
-            {[
-              { label: 'Sold (proceeds)',       value: fd(sellProceeds),               dim: true  },
-              { label: 'Basket A if held today', value: fd(sellIfHeld),                dim: true  },
-              { label: 'Basket B today',         value: fd(buyNow),                    dim: true  },
-              { label: isWin ? 'Alpha Created' : 'Opportunity Cost',
-                value: (isWin ? '+' : '-') + fd(swapAlpha), accent: true },
-            ].map((s, i) => (
-              <div key={s.label} style={{
-                flex: s.accent ? '1 1 160px' : '1 1 120px',
-                padding: '10px 18px',
-                borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                display: 'flex', flexDirection: 'column', gap: 3,
-                background: s.accent ? (isWin ? 'rgba(34,197,94,0.04)' : 'rgba(239,68,68,0.04)') : 'transparent',
-                borderRadius: s.accent ? 8 : 0,
-              }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: s.accent ? (isWin ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)') : 'rgba(255,255,255,0.3)' }}>{s.label}</div>
-                <div style={{ fontSize: s.accent ? 24 : 16, fontWeight: s.accent ? 800 : 600, color: s.accent ? (isWin ? '#22c55e' : '#ef4444') : 'rgba(255,255,255,0.5)', fontVariantNumeric: 'tabular-nums' }}>
-                  {s.value}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
