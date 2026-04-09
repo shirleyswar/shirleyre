@@ -608,7 +608,7 @@ function UCCommissionHero({ dealId }: { dealId: string }) {
             background: s.accent ? 'rgba(34,197,94,0.04)' : 'transparent',
             borderRadius: s.accent ? 10 : 0,
           }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: s.accent ? 'rgba(34,197,94,0.6)' : 'rgba(255,255,255,0.3)' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: s.accent ? 'rgba(34,197,94,0.6)' : 'rgba(255,255,255,0.3)', minHeight: 28, display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
               {s.label}
             </div>
             <div style={{
@@ -853,6 +853,9 @@ function DealGlanceCard({ deal }: { deal: Deal }) {
     textTransform: 'uppercase',
     color: '#4b5563',
     whiteSpace: 'nowrap',
+    minHeight: 20,
+    display: 'flex',
+    alignItems: 'flex-end',
   }
   const statVal: React.CSSProperties = {
     fontSize: 16,
