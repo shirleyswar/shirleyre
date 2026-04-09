@@ -48,9 +48,12 @@ type Tab = 'portfolio' | 'sleeve' | 'sold'
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function fmt$(n: number | null): string {
   if (n === null || n === undefined) return '—'
-  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
-  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
-  return `$${n.toFixed(0)}`
+  // Round to nearest $100, format with commas
+  const rounded = Math.round(n / 100) * 100
+  const abs = Math.abs(rounded)
+  const sign = rounded < 0 ? '-' : ''
+  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(2)}M`
+  return `${sign}$${abs.toLocaleString('en-US')}`
 }
 function fmtPct(n: number | null): string {
   if (n === null || n === undefined) return '—'
@@ -990,7 +993,10 @@ function SoldTab() {
   const swapAlpha = sleeveTotal - ifHeldTotal
   const isWin = swapAlpha >= 0
 
-  const fmtDollar = (n: number) => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  const fmtDollar = (n: number) => {
+    const rounded = Math.round(Math.abs(n) / 100) * 100
+    return '$' + rounded.toLocaleString('en-US')
+  }
   const pctColor2 = (n: number) => n >= 0 ? P.green : P.red
 
   return (
