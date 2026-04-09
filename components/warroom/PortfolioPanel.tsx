@@ -985,12 +985,17 @@ function SoldTab() {
   // ── Basket calculations — use current_value from DB (set by edge function) ──
   const soldTotal = positions.reduce((s, p) => s + (p.market_value ?? 0), 0)
   const ifHeldTotal = positions.reduce((s, p) => {
-    // current_value = qty × current_price, refreshed server-side
     const cv = (p as any).current_value
     return s + (cv != null ? cv : (p.market_value ?? 0))
   }, 0)
-  const sleeveTotal = sleevePositions.reduce((s, p) => s + (p.market_value ?? 0), 0)
-  const swapAlpha = sleeveTotal - ifHeldTotal
+  const sleeveTotal    = sleevePositions.reduce((s, p) => s + (p.market_value ?? 0), 0)
+  const sleeveCostTotal = sleevePositions.reduce((s, p) => s + (p.total_cost ?? 0), 0)
+  const extraCapital   = Math.max(0, sleeveCostTotal - soldTotal)  // additional cash deployed beyond proceeds
+
+  // True alpha = sleeve today vs (what sold basket would be worth + extra capital deployed)
+  // i.e. did the swap + extra capital beat just holding the old basket + keeping the cash?
+  const swapAlpha = sleeveTotal - ifHeldTotal - extraCapital
+  const sleeveGL  = sleeveTotal - sleeveCostTotal  // simple G/L on what was actually invested
   const isWin = swapAlpha >= 0
 
   const fmtDollar = (n: number) => {
@@ -1053,10 +1058,13 @@ function SoldTab() {
 
             <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap' }}>
               {[
-                { label: 'Sold (proceeds)', value: fmtDollar(soldTotal), dim: true },
-                { label: 'Basket A if held today', value: fmtDollar(ifHeldTotal), dim: true },
-                { label: 'Basket B (Sleeve) today', value: fmtDollar(sleeveTotal), dim: true },
-                { label: isWin ? 'Alpha Created' : 'Opportunity Cost', value: (isWin ? '+' : '-') + fmtDollar(swapAlpha), accent: true },
+                { label: 'Sold (proceeds)',           value: fmtDollar(soldTotal),       dim: true },
+                { label: 'Extra capital deployed',    value: extraCapital > 0 ? fmtDollar(extraCapital) : '—', dim: true },
+                { label: 'Total cost basis',          value: fmtDollar(sleeveCostTotal), dim: true },
+                { label: 'Basket A if held today',    value: fmtDollar(ifHeldTotal),     dim: true },
+                { label: 'Sleeve today',              value: fmtDollar(sleeveTotal),     dim: true },
+                { label: 'Sleeve G/L',                value: (sleeveGL >= 0 ? '+' : '-') + fmtDollar(sleeveGL), dim: true },
+                { label: isWin ? 'True Swap Alpha' : 'Swap Cost', value: (isWin ? '+' : '-') + fmtDollar(swapAlpha), accent: true },
               ].map((s, i) => (
                 <div key={s.label} style={{
                   flex: s.accent ? '1 1 160px' : '1 1 120px',
