@@ -146,17 +146,24 @@
   .topbar-btn.primary:hover { background: var(--gold-l); }
 
   /* ═══════════════════════════════════════════════════
-     MAIN GRID — 4 panels
+     MAIN GRID — 5 panels (3 rows)
   ═══════════════════════════════════════════════════ */
   #main {
     flex: 1; display: grid;
     grid-template-columns: 1fr 340px;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
     gap: 1px;
     background: var(--border2);
     overflow: hidden;
     min-height: 0;
   }
+
+  /* Panel grid placement */
+  #panel-deals    { grid-row: 1 / 3; grid-column: 1; }
+  #panel-movers   { grid-row: 1;     grid-column: 2; }
+  #panel-tasks    { grid-row: 2;     grid-column: 2; }
+  #panel-clients  { grid-row: 3;     grid-column: 1; }
+  #panel-contacts { grid-row: 3;     grid-column: 2; }
 
   /* ═══════════════════════════════════════════════════
      PANELS
@@ -301,6 +308,124 @@
   }
   .cb-ehvp { color: var(--gold-l); border: 1px solid rgba(224,176,96,0.4); background: rgba(224,176,96,0.08); }
   .cb-hvp  { color: var(--s-pipeline); border: 1px solid rgba(201,147,58,0.3); background: rgba(201,147,58,0.06); }
+
+  /* ═══════════════════════════════════════════════════
+     CLIENT LEADS PANEL
+  ═══════════════════════════════════════════════════ */
+  .client-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radius);
+    background: var(--bg3); border: 1px solid transparent;
+    cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .client-row:hover { border-color: var(--border); background: rgba(14,28,33,0.95); }
+
+  /* Status bar reuse */
+  .client-bar-active   { background: var(--s-active); }
+  .client-bar-pipeline { background: var(--s-pipeline); }
+  .client-bar-hot      { background: #f97316; } /* orange */
+  .client-bar-matched  { background: var(--s-contract); }
+  .client-bar-closed   { background: var(--s-closed); }
+
+  .client-info { flex: 1; min-width: 0; }
+  .client-name { font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .client-meta { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.05em; margin-top: 2px; }
+  .client-budget { font-family: var(--font-mono); font-size: 12px; color: var(--gold); font-weight: 700; white-space: nowrap; }
+
+  .client-arrow {
+    width: 26px; height: 26px; border-radius: 6px; flex: 0 0 26px;
+    background: rgba(201,147,58,0.08); border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold); font-size: 13px; transition: all 0.15s;
+    cursor: pointer;
+  }
+  .client-arrow:hover { background: rgba(201,147,58,0.2); border-color: var(--border); }
+
+  /* ── Client Detail Overlay ── */
+  #client-detail-overlay {
+    position: fixed; inset: 0; z-index: 800;
+    background: rgba(6,13,15,0.7); backdrop-filter: blur(3px);
+    display: flex; align-items: stretch; justify-content: flex-end;
+  }
+  #client-detail-overlay.hidden { display: none; }
+
+  #client-detail-panel {
+    width: 100%; max-width: 560px;
+    background: var(--bg2); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    transform: translateX(100%); transition: transform 0.25s ease;
+    overflow: hidden;
+  }
+  #client-detail-overlay:not(.hidden) #client-detail-panel {
+    transform: translateX(0);
+  }
+
+  .cdp-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border2);
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .cdp-avatar {
+    width: 44px; height: 44px; border-radius: 10px; flex: 0 0 44px;
+    background: rgba(201,147,58,0.12); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 800; font-size: 16px;
+    color: var(--gold);
+  }
+  .cdp-title-block { flex: 1; min-width: 0; }
+  .cdp-name { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--text); }
+  .cdp-sub  { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 3px; }
+  .cdp-close {
+    width: 30px; height: 30px; border-radius: 6px; flex: 0 0 30px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    color: var(--muted); cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .cdp-close:hover { color: var(--text); border-color: var(--border); }
+
+  .cdp-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  .cdp-section-title {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 10px;
+  }
+  .cdp-field { display: flex; gap: 10px; margin-bottom: 8px; }
+  .cdp-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; min-width: 90px; padding-top: 1px; }
+  .cdp-value { font-size: 13px; color: var(--text); flex: 1; line-height: 1.5; }
+  .cdp-value.empty { color: var(--dim); font-style: italic; }
+
+  .cdp-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px;
+    padding: 3px 9px; border-radius: 100px; margin: 2px 3px 2px 0;
+    border: 1px solid var(--border); color: var(--text); background: var(--bg3);
+  }
+  .cdp-tag.prop-type { color: var(--gold-l); border-color: rgba(224,176,96,0.4); background: rgba(224,176,96,0.07); }
+  .cdp-tag.location  { color: #7dd3fc; border-color: rgba(125,211,252,0.3); background: rgba(125,211,252,0.06); }
+
+  .cdp-footer {
+    padding: 16px 24px; border-top: 1px solid var(--border2);
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+
+  /* ── Edit mode inside client detail ── */
+  .cdp-edit-mode .cdp-body .cdp-view { display: none; }
+  .cdp-edit-mode .cdp-body .cdp-edit { display: flex !important; }
+  .cdp-view-mode .cdp-body .cdp-edit { display: none !important; }
+  .cdp-view-mode .cdp-body .cdp-view { display: flex; }
+
+  .cdp-section { display: flex; flex-direction: column; }
+
+  /* Client status badge */
+  .client-status-badge {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+    padding: 2px 7px; border-radius: 100px; text-transform: uppercase; white-space: nowrap;
+  }
+  .csb-pipeline { color: var(--s-pipeline); border: 1px solid rgba(201,147,58,0.3); background: rgba(201,147,58,0.06); }
+  .csb-active   { color: var(--s-active);   border: 1px solid rgba(34,197,94,0.3);  background: rgba(34,197,94,0.06); }
+  .csb-hot      { color: #f97316;           border: 1px solid rgba(249,115,22,0.3); background: rgba(249,115,22,0.06); }
+  .csb-matched  { color: var(--s-contract); border: 1px solid rgba(59,130,246,0.3); background: rgba(59,130,246,0.06); }
+  .csb-closed   { color: var(--s-closed);   border: 1px solid rgba(107,114,128,0.3);background: rgba(107,114,128,0.06); }
 
   /* ═══════════════════════════════════════════════════
      MODALS
@@ -517,6 +642,7 @@
   <button class="topbar-btn primary" onclick="openModal('deal')">+ Deal</button>
   <button class="topbar-btn" onclick="openModal('task')">+ Task</button>
   <button class="topbar-btn" onclick="openModal('contact')">+ Contact</button>
+  <button class="topbar-btn" onclick="openModal('client')">+ Client</button>
 </div>
 
 <!-- ═══════════════════════════════════════════════════
@@ -573,7 +699,7 @@
     </div>
   </div>
 
-  <!-- CONTACTS — bottom right -->
+  <!-- CONTACTS — row 3 right -->
   <div class="panel" id="panel-contacts">
     <div class="panel-header">
       <div class="panel-title">Contacts</div>
@@ -584,6 +710,21 @@
       <div class="empty-state">
         <div class="empty-icon">&#9786;</div>
         <div class="empty-text loading-dots">Loading contacts</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLIENT LEADS — row 3 left -->
+  <div class="panel" id="panel-clients">
+    <div class="panel-header">
+      <div class="panel-title">Client Leads — Buyer / Tenant Needs</div>
+      <div class="panel-count" id="client-count">0</div>
+      <div class="panel-action" onclick="openModal('client')">+ Add</div>
+    </div>
+    <div class="panel-body" id="clients-list">
+      <div class="empty-state">
+        <div class="empty-icon">&#128269;</div>
+        <div class="empty-text loading-dots">Loading clients</div>
       </div>
     </div>
   </div>
@@ -786,6 +927,243 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════
+     ADD CLIENT MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-client">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <div class="modal-title" id="client-modal-title">New Client Lead</div>
+      <button class="modal-close" onclick="closeModal('client')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="client-edit-id">
+
+      <!-- Contact Info -->
+      <div style="font-family:'Syne Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Contact Info</div>
+      <div class="form-field">
+        <div class="form-label">Client Name *</div>
+        <input class="form-input" id="client-name" placeholder="e.g. John & Susan Dupre" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Phone</div>
+          <input class="form-input" id="client-phone" placeholder="225-000-0000">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Email</div>
+          <input class="form-input" id="client-email" placeholder="name@example.com" type="email">
+        </div>
+      </div>
+      <div class="form-field">
+        <div class="form-label">Company / Organization</div>
+        <input class="form-input" id="client-company" placeholder="e.g. Dupre Industries">
+      </div>
+
+      <!-- Needs -->
+      <div style="font-family:'Syne Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-top:6px;margin-bottom:4px;">Property Needs</div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Property Type *</div>
+          <select class="form-select" id="client-prop-type">
+            <option value="">Select type</option>
+            <option value="Office">Office</option>
+            <option value="Retail">Retail</option>
+            <option value="Industrial">Industrial</option>
+            <option value="Medical">Medical</option>
+            <option value="Land">Land</option>
+            <option value="Multi-Family">Multi-Family</option>
+            <option value="Mixed Use">Mixed Use</option>
+            <option value="Flex">Flex / Warehouse</option>
+            <option value="NNN Investment">NNN Investment</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <div class="form-label">Transaction Type</div>
+          <select class="form-select" id="client-txn-type">
+            <option value="Purchase">Purchase</option>
+            <option value="Lease">Lease</option>
+            <option value="Either">Either</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Min Size (SF)</div>
+          <input class="form-input" id="client-size-min" type="number" placeholder="e.g. 2000">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Max Size (SF)</div>
+          <input class="form-input" id="client-size-max" type="number" placeholder="e.g. 5000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Min Budget ($)</div>
+          <input class="form-input" id="client-budget-min" type="number" placeholder="e.g. 500000">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Max Budget ($)</div>
+          <input class="form-input" id="client-budget-max" type="number" placeholder="e.g. 1200000">
+        </div>
+      </div>
+      <div class="form-field">
+        <div class="form-label">Target Locations / Markets</div>
+        <input class="form-input" id="client-locations" placeholder="e.g. Mid City, Perkins corridor, Baton Rouge, Ascension Parish">
+      </div>
+      <div class="form-field">
+        <div class="form-label">Timeline</div>
+        <input class="form-input" id="client-timeline" placeholder="e.g. 90 days, ASAP, Q3 2025">
+      </div>
+      <div class="form-field">
+        <div class="form-label">Must-Haves / Key Requirements</div>
+        <textarea class="form-textarea" id="client-must-haves" placeholder="e.g. Drive-through, corner lot, loading dock, min 14ft clear height, good parking ratio..."></textarea>
+      </div>
+
+      <!-- Status & Priority -->
+      <div class="form-row">
+        <div class="form-field">
+          <div class="form-label">Status</div>
+          <select class="form-select" id="client-status">
+            <option value="pipeline">Pipeline</option>
+            <option value="active">Active Search</option>
+            <option value="hot">Hot — Urgent</option>
+            <option value="matched">Property Matched</option>
+            <option value="closed">Closed / Placed</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <div class="form-label">Priority</div>
+          <select class="form-select" id="client-priority">
+            <option value="">— None —</option>
+            <option value="1">1 — High</option>
+            <option value="2">2 — Medium</option>
+            <option value="3">3 — Low</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <div class="form-label">Internal Notes</div>
+        <textarea class="form-textarea" id="client-notes" placeholder="Relationship context, referral source, deal history..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('client')">Cancel</button>
+      <button class="btn-save" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     CLIENT DETAIL OVERLAY
+═══════════════════════════════════════════════════ -->
+<div id="client-detail-overlay" class="hidden" onclick="handleClientOverlayClick(event)">
+  <div id="client-detail-panel" class="cdp-view-mode">
+    <div class="cdp-header">
+      <div class="cdp-avatar" id="cdp-avatar">--</div>
+      <div class="cdp-title-block">
+        <div class="cdp-name" id="cdp-name">—</div>
+        <div class="cdp-sub" id="cdp-sub">Client Lead</div>
+      </div>
+      <button class="cdp-close" onclick="closeClientDetail()">&#10005;</button>
+    </div>
+
+    <div class="cdp-body" id="cdp-body">
+      <!-- ── VIEW MODE ── -->
+      <div class="cdp-section cdp-view">
+        <div class="cdp-section-title">Contact Info</div>
+        <div class="cdp-field"><div class="cdp-label">Phone</div><div class="cdp-value" id="cdv-phone">—</div></div>
+        <div class="cdp-field"><div class="cdp-label">Email</div><div class="cdp-value" id="cdv-email">—</div></div>
+        <div class="cdp-field"><div class="cdp-label">Company</div><div class="cdp-value" id="cdv-company">—</div></div>
+        <div class="cdp-field"><div class="cdp-label">Status</div><div class="cdp-value" id="cdv-status">—</div></div>
+      </div>
+
+      <div class="cdp-section cdp-view">
+        <div class="cdp-section-title">Property Needs</div>
+        <div class="cdp-field"><div class="cdp-label">Prop Type</div><div class="cdp-value" id="cdv-prop-type">—</div></div>
+        <div class="cdp-field"><div class="cdp-label">Transaction</div><div class="cdp-value" id="cdv-txn-type">—</div></div>
+        <div class="cdp-field"><div class="cdp-label">Size Range</div><div class="cdp-value" id="cdv-size">—</div></div>
+        <div class="cdp-field"><div class="cdp-label">Budget</div><div class="cdp-value" id="cdv-budget">—</div></div>
+        <div class="cdp-field"><div class="cdp-label">Locations</div><div class="cdp-value" id="cdv-locations">—</div></div>
+        <div class="cdp-field"><div class="cdp-label">Timeline</div><div class="cdp-value" id="cdv-timeline">—</div></div>
+        <div class="cdp-field"><div class="cdp-label">Must-Haves</div><div class="cdp-value" id="cdv-must-haves" style="white-space:pre-wrap;">—</div></div>
+      </div>
+
+      <div class="cdp-section cdp-view">
+        <div class="cdp-section-title">Notes</div>
+        <div class="cdp-value" id="cdv-notes" style="white-space:pre-wrap;font-size:13px;color:var(--text);">—</div>
+      </div>
+
+      <!-- ── EDIT MODE ── -->
+      <div class="cdp-section cdp-edit" style="display:none;flex-direction:column;gap:12px;">
+        <div style="font-family:'Syne Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Contact Info</div>
+        <div class="form-field"><div class="form-label">Client Name *</div><input class="form-input" id="cde-name" autocomplete="off"></div>
+        <div class="form-row">
+          <div class="form-field"><div class="form-label">Phone</div><input class="form-input" id="cde-phone"></div>
+          <div class="form-field"><div class="form-label">Email</div><input class="form-input" id="cde-email" type="email"></div>
+        </div>
+        <div class="form-field"><div class="form-label">Company</div><input class="form-input" id="cde-company"></div>
+
+        <div style="font-family:'Syne Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-top:4px;">Property Needs</div>
+        <div class="form-row">
+          <div class="form-field"><div class="form-label">Property Type</div>
+            <select class="form-select" id="cde-prop-type">
+              <option value="">Select</option>
+              <option value="Office">Office</option><option value="Retail">Retail</option>
+              <option value="Industrial">Industrial</option><option value="Medical">Medical</option>
+              <option value="Land">Land</option><option value="Multi-Family">Multi-Family</option>
+              <option value="Mixed Use">Mixed Use</option><option value="Flex">Flex / Warehouse</option>
+              <option value="NNN Investment">NNN Investment</option><option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-field"><div class="form-label">Transaction Type</div>
+            <select class="form-select" id="cde-txn-type">
+              <option value="Purchase">Purchase</option><option value="Lease">Lease</option><option value="Either">Either</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><div class="form-label">Min Size (SF)</div><input class="form-input" id="cde-size-min" type="number"></div>
+          <div class="form-field"><div class="form-label">Max Size (SF)</div><input class="form-input" id="cde-size-max" type="number"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><div class="form-label">Min Budget ($)</div><input class="form-input" id="cde-budget-min" type="number"></div>
+          <div class="form-field"><div class="form-label">Max Budget ($)</div><input class="form-input" id="cde-budget-max" type="number"></div>
+        </div>
+        <div class="form-field"><div class="form-label">Target Locations</div><input class="form-input" id="cde-locations"></div>
+        <div class="form-field"><div class="form-label">Timeline</div><input class="form-input" id="cde-timeline"></div>
+        <div class="form-field"><div class="form-label">Must-Haves</div><textarea class="form-textarea" id="cde-must-haves"></textarea></div>
+        <div class="form-row">
+          <div class="form-field"><div class="form-label">Status</div>
+            <select class="form-select" id="cde-status">
+              <option value="pipeline">Pipeline</option><option value="active">Active Search</option>
+              <option value="hot">Hot — Urgent</option><option value="matched">Property Matched</option>
+              <option value="closed">Closed / Placed</option>
+            </select>
+          </div>
+          <div class="form-field"><div class="form-label">Priority</div>
+            <select class="form-select" id="cde-priority">
+              <option value="">— None —</option><option value="1">1 — High</option>
+              <option value="2">2 — Medium</option><option value="3">3 — Low</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field"><div class="form-label">Notes</div><textarea class="form-textarea" id="cde-notes"></textarea></div>
+      </div>
+    </div>
+
+    <div class="cdp-footer">
+      <button class="btn-cancel" id="cdp-delete-btn" onclick="deleteClientFromDetail()" style="color:var(--s-dead);border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.06);">Delete</button>
+      <div style="flex:1;"></div>
+      <button class="btn-cancel" id="cdp-edit-btn"   onclick="toggleClientEdit()">Edit</button>
+      <button class="btn-save"   id="cdp-save-btn"   onclick="saveClientEdit()" style="display:none;">Save Changes</button>
+      <button class="btn-cancel" id="cdp-cancel-btn" onclick="cancelClientEdit()" style="display:none;">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast container -->
 <div id="toast-container"></div>
 
@@ -947,10 +1325,11 @@ let state = {
   deals: [],
   tasks: [],
   contacts: [],
+  clients_leads: [],
   loaded: false
 };
 let pinBuffer = '';
-let tablesExist = { deals: false, tasks: false, contacts: false };
+let tablesExist = { deals: false, tasks: false, contacts: false, client_leads: false };
 
 // ──────────────────────────────────────────────────────────────
 // PIN SYSTEM
@@ -1071,7 +1450,7 @@ async function sbDelete(table, id) {
 // ──────────────────────────────────────────────────────────────
 async function checkTables() {
   // Try fetching each table; 404/PGRST205 means table doesn't exist
-  for (const t of ['deals', 'tasks', 'contacts']) {
+  for (const t of ['deals', 'tasks', 'contacts', 'client_leads']) {
     const r = await sbGet(t, '?limit=1');
     tablesExist[t] = r.ok || (r.status !== 404 && !(r.data?.code === 'PGRST205'));
   }
@@ -1087,14 +1466,16 @@ async function loadAll() {
   await checkTables();
 
   const results = await Promise.allSettled([
-    tablesExist.deals    ? sbGet('deals',    '?order=created_at.asc') : Promise.resolve({ ok: false, data: [] }),
-    tablesExist.tasks    ? sbGet('tasks',    '?order=created_at.asc') : Promise.resolve({ ok: false, data: [] }),
-    tablesExist.contacts ? sbGet('contacts', '?order=priority.desc,created_at.asc') : Promise.resolve({ ok: false, data: [] }),
+    tablesExist.deals        ? sbGet('deals',        '?order=created_at.asc') : Promise.resolve({ ok: false, data: [] }),
+    tablesExist.tasks        ? sbGet('tasks',        '?order=created_at.asc') : Promise.resolve({ ok: false, data: [] }),
+    tablesExist.contacts     ? sbGet('contacts',     '?order=priority.desc,created_at.asc') : Promise.resolve({ ok: false, data: [] }),
+    tablesExist.client_leads ? sbGet('client_leads', '?order=created_at.asc') : Promise.resolve({ ok: false, data: [] }),
   ]);
 
-  state.deals    = (results[0].status === 'fulfilled' && results[0].value.ok) ? (results[0].value.data || []) : [];
-  state.tasks    = (results[1].status === 'fulfilled' && results[1].value.ok) ? (results[1].value.data || []) : [];
-  state.contacts = (results[2].status === 'fulfilled' && results[2].value.ok) ? (results[2].value.data || []) : [];
+  state.deals         = (results[0].status === 'fulfilled' && results[0].value.ok) ? (results[0].value.data || []) : [];
+  state.tasks         = (results[1].status === 'fulfilled' && results[1].value.ok) ? (results[1].value.data || []) : [];
+  state.contacts      = (results[2].status === 'fulfilled' && results[2].value.ok) ? (results[2].value.data || []) : [];
+  state.clients_leads = (results[3].status === 'fulfilled' && results[3].value.ok) ? (results[3].value.data || []) : [];
   state.loaded = true;
 
   renderAll();
@@ -1137,6 +1518,7 @@ function renderAll() {
   renderMovers();
   renderTasks();
   renderContacts();
+  renderClients();
   updateStatusPills();
   updateDealDatalist();
 }
@@ -1861,6 +2243,25 @@ function openModal(type) {
     document.getElementById('contact-email').value = '';
     document.getElementById('contact-role').value = '';
     document.getElementById('contact-notes').value = '';
+  } else if (type === 'client') {
+    document.getElementById('client-edit-id').value = '';
+    document.getElementById('client-modal-title').textContent = 'New Client Lead';
+    document.getElementById('client-name').value = '';
+    document.getElementById('client-phone').value = '';
+    document.getElementById('client-email').value = '';
+    document.getElementById('client-company').value = '';
+    document.getElementById('client-prop-type').value = '';
+    document.getElementById('client-txn-type').value = 'Purchase';
+    document.getElementById('client-size-min').value = '';
+    document.getElementById('client-size-max').value = '';
+    document.getElementById('client-budget-min').value = '';
+    document.getElementById('client-budget-max').value = '';
+    document.getElementById('client-locations').value = '';
+    document.getElementById('client-timeline').value = '';
+    document.getElementById('client-must-haves').value = '';
+    document.getElementById('client-status').value = 'pipeline';
+    document.getElementById('client-priority').value = '';
+    document.getElementById('client-notes').value = '';
   }
   document.getElementById('modal-' + type).classList.remove('hidden');
   // Focus first input
@@ -2020,6 +2421,301 @@ async function init() {
   // Reminder check every 60 seconds
   setInterval(checkReminders, 60000);
 }
+
+// ──────────────────────────────────────────────────────────────
+// CLIENT LEADS
+// ──────────────────────────────────────────────────────────────
+
+const CLIENT_STATUS_LABELS = {
+  pipeline: 'Pipeline',
+  active:   'Active Search',
+  hot:      'Hot — Urgent',
+  matched:  'Matched',
+  closed:   'Closed',
+};
+
+const CLIENT_STATUS_BAR = {
+  pipeline: 'client-bar-pipeline',
+  active:   'client-bar-active',
+  hot:      'client-bar-hot',
+  matched:  'client-bar-matched',
+  closed:   'client-bar-closed',
+};
+
+const CLIENT_STATUS_BADGE = {
+  pipeline: 'csb-pipeline',
+  active:   'csb-active',
+  hot:      'csb-hot',
+  matched:  'csb-matched',
+  closed:   'csb-closed',
+};
+
+// Track current open client in the detail panel
+let currentClientId = null;
+
+function renderClients() {
+  const list  = document.getElementById('clients-list');
+  const count = document.getElementById('client-count');
+  if (!list) return;
+
+  const clients = (state.clients_leads || []).filter(c => c.status !== 'closed');
+  count.textContent = clients.length;
+
+  if (!clients.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#128269;</div><div class="empty-text">No client leads — add one above</div></div>`;
+    return;
+  }
+
+  // Sort: hot first, then active, then pipeline, then by priority
+  const ORDER = { hot: 0, active: 1, pipeline: 2, matched: 3 };
+  const sorted = [...clients].sort((a, b) => {
+    const ao = ORDER[a.status] ?? 4;
+    const bo = ORDER[b.status] ?? 4;
+    if (ao !== bo) return ao - bo;
+    const ap = a.priority != null ? Number(a.priority) : 9;
+    const bp = b.priority != null ? Number(b.priority) : 9;
+    return ap - bp;
+  });
+
+  list.innerHTML = sorted.map(c => {
+    const budgetLabel = buildBudgetLabel(c);
+    const metaParts = [];
+    if (c.prop_type) metaParts.push(c.prop_type);
+    if (c.txn_type) metaParts.push(c.txn_type);
+    if (c.timeline) metaParts.push(c.timeline);
+    if (c.size_min || c.size_max) {
+      const sMin = c.size_min ? Number(c.size_min).toLocaleString() : '?';
+      const sMax = c.size_max ? Number(c.size_max).toLocaleString() : '?';
+      metaParts.push(`${sMin}–${sMax} SF`);
+    }
+
+    return `
+      <div class="client-row" id="clr-${c.id}" onclick="openClientDetail('${c.id}')">
+        <div class="deal-status-bar ${CLIENT_STATUS_BAR[c.status] || 'client-bar-pipeline'}"></div>
+        <div class="client-info">
+          <div class="client-name">${escHtml(c.name)}</div>
+          <div class="client-meta">${escHtml(metaParts.join(' · '))}${c.locations ? ' · <span style="color:#7dd3fc">' + escHtml(c.locations) + '</span>' : ''} <span style="color:var(--dim);font-size:9px;margin-left:4px;">${CLIENT_STATUS_LABELS[c.status] || c.status || ''}</span></div>
+        </div>
+        ${budgetLabel ? `<div class="client-budget">${budgetLabel}</div>` : ''}
+        <div class="client-arrow" onclick="openClientDetail('${c.id}');event.stopPropagation()">&#8594;</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function buildBudgetLabel(c) {
+  if (!c.budget_min && !c.budget_max) return '';
+  if (c.budget_max) return '$' + shortMoney(c.budget_max);
+  return '$' + shortMoney(c.budget_min) + '+';
+}
+
+function shortMoney(val) {
+  const n = Number(val);
+  if (!n) return '—';
+  if (n >= 1000000) return (n / 1000000).toFixed(n % 1000000 === 0 ? 0 : 1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+  return n.toLocaleString();
+}
+
+// ── Client Detail Panel ────────────────────────────────────────
+
+function openClientDetail(id) {
+  const c = (state.clients_leads || []).find(x => x.id === id);
+  if (!c) return;
+  currentClientId = id;
+
+  // Populate view fields
+  const initials = c.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  document.getElementById('cdp-avatar').textContent = initials;
+  document.getElementById('cdp-name').textContent = c.name;
+
+  const subParts = [];
+  if (c.prop_type) subParts.push(c.prop_type);
+  if (c.txn_type)  subParts.push(c.txn_type);
+  document.getElementById('cdp-sub').textContent = subParts.join(' · ') || 'Client Lead';
+
+  setOrEmpty('cdv-phone',    c.phone);
+  setOrEmpty('cdv-email',    c.email);
+  setOrEmpty('cdv-company',  c.company);
+
+  const statusBadge = document.getElementById('cdv-status');
+  const badgeClass = CLIENT_STATUS_BADGE[c.status] || 'csb-pipeline';
+  statusBadge.innerHTML = `<span class="client-status-badge ${badgeClass}">${CLIENT_STATUS_LABELS[c.status] || c.status}</span>`;
+
+  setOrEmpty('cdv-prop-type', c.prop_type);
+  setOrEmpty('cdv-txn-type',  c.txn_type);
+
+  const sizeEl = document.getElementById('cdv-size');
+  if (c.size_min || c.size_max) {
+    sizeEl.textContent = (c.size_min ? Number(c.size_min).toLocaleString() : '?') + ' – ' + (c.size_max ? Number(c.size_max).toLocaleString() : '?') + ' SF';
+    sizeEl.classList.remove('empty');
+  } else { sizeEl.textContent = '—'; sizeEl.classList.add('empty'); }
+
+  const budgetEl = document.getElementById('cdv-budget');
+  if (c.budget_min || c.budget_max) {
+    const lo = c.budget_min ? '$' + Number(c.budget_min).toLocaleString() : '?';
+    const hi = c.budget_max ? '$' + Number(c.budget_max).toLocaleString() : '?';
+    budgetEl.textContent = lo + ' – ' + hi;
+    budgetEl.classList.remove('empty');
+  } else { budgetEl.textContent = '—'; budgetEl.classList.add('empty'); }
+
+  setOrEmpty('cdv-locations',  c.locations);
+  setOrEmpty('cdv-timeline',   c.timeline);
+  setOrEmpty('cdv-must-haves', c.must_haves);
+  setOrEmpty('cdv-notes',      c.notes);
+
+  // Ensure view mode
+  setClientDetailMode('view');
+
+  document.getElementById('client-detail-overlay').classList.remove('hidden');
+}
+
+function setOrEmpty(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (val) {
+    el.textContent = val;
+    el.classList.remove('empty');
+  } else {
+    el.textContent = '—';
+    el.classList.add('empty');
+  }
+}
+
+function closeClientDetail() {
+  document.getElementById('client-detail-overlay').classList.add('hidden');
+  currentClientId = null;
+}
+
+function handleClientOverlayClick(e) {
+  if (e.target === document.getElementById('client-detail-overlay')) closeClientDetail();
+}
+
+function setClientDetailMode(mode) {
+  const panel = document.getElementById('client-detail-panel');
+  panel.className = mode === 'edit' ? 'cdp-edit-mode' : 'cdp-view-mode';
+  document.getElementById('cdp-edit-btn').style.display   = mode === 'view' ? '' : 'none';
+  document.getElementById('cdp-save-btn').style.display   = mode === 'edit' ? '' : 'none';
+  document.getElementById('cdp-cancel-btn').style.display = mode === 'edit' ? '' : 'none';
+}
+
+function toggleClientEdit() {
+  const c = (state.clients_leads || []).find(x => x.id === currentClientId);
+  if (!c) return;
+
+  // Populate edit fields
+  document.getElementById('cde-name').value       = c.name || '';
+  document.getElementById('cde-phone').value      = c.phone || '';
+  document.getElementById('cde-email').value      = c.email || '';
+  document.getElementById('cde-company').value    = c.company || '';
+  document.getElementById('cde-prop-type').value  = c.prop_type || '';
+  document.getElementById('cde-txn-type').value   = c.txn_type || 'Purchase';
+  document.getElementById('cde-size-min').value   = c.size_min || '';
+  document.getElementById('cde-size-max').value   = c.size_max || '';
+  document.getElementById('cde-budget-min').value = c.budget_min || '';
+  document.getElementById('cde-budget-max').value = c.budget_max || '';
+  document.getElementById('cde-locations').value  = c.locations || '';
+  document.getElementById('cde-timeline').value   = c.timeline || '';
+  document.getElementById('cde-must-haves').value = c.must_haves || '';
+  document.getElementById('cde-status').value     = c.status || 'pipeline';
+  document.getElementById('cde-priority').value   = c.priority != null ? String(c.priority) : '';
+  document.getElementById('cde-notes').value      = c.notes || '';
+
+  setClientDetailMode('edit');
+}
+
+function cancelClientEdit() {
+  setClientDetailMode('view');
+}
+
+async function saveClientEdit() {
+  const name = document.getElementById('cde-name').value.trim();
+  if (!name) { toast('Client name is required', 'error'); return; }
+
+  const payload = buildClientPayload('cde');
+  payload.updated_at = new Date().toISOString();
+
+  setSyncStatus('Saving');
+  const r = await sbUpdate('client_leads', currentClientId, payload);
+  if (r.ok) {
+    const idx = (state.clients_leads || []).findIndex(c => c.id === currentClientId);
+    if (idx !== -1) state.clients_leads[idx] = { ...state.clients_leads[idx], ...payload };
+    toast('Client updated', 'success');
+    renderClients();
+    // Refresh the view panel
+    openClientDetail(currentClientId);
+  } else {
+    toast('Save failed', 'error');
+  }
+  setSyncStatus('Live');
+}
+
+async function deleteClientFromDetail() {
+  if (!currentClientId) return;
+  const c = (state.clients_leads || []).find(x => x.id === currentClientId);
+  if (!confirm(`Delete client "${c?.name}"? This cannot be undone.`)) return;
+  await sbDelete('client_leads', currentClientId);
+  state.clients_leads = (state.clients_leads || []).filter(x => x.id !== currentClientId);
+  closeClientDetail();
+  renderClients();
+  toast('Client lead deleted');
+}
+
+// ── Save new client from modal ─────────────────────────────────
+
+function buildClientPayload(prefix) {
+  return {
+    name:       document.getElementById(`${prefix}-name`).value.trim() || null,
+    phone:      document.getElementById(`${prefix}-phone`).value.trim() || null,
+    email:      document.getElementById(`${prefix}-email`).value.trim() || null,
+    company:    document.getElementById(`${prefix}-company`).value.trim() || null,
+    prop_type:  document.getElementById(`${prefix}-prop-type`).value || null,
+    txn_type:   document.getElementById(`${prefix}-txn-type`).value || null,
+    size_min:   parseInt(document.getElementById(`${prefix}-size-min`).value) || null,
+    size_max:   parseInt(document.getElementById(`${prefix}-size-max`).value) || null,
+    budget_min: parseFloat(document.getElementById(`${prefix}-budget-min`).value) || null,
+    budget_max: parseFloat(document.getElementById(`${prefix}-budget-max`).value) || null,
+    locations:  document.getElementById(`${prefix}-locations`).value.trim() || null,
+    timeline:   document.getElementById(`${prefix}-timeline`).value.trim() || null,
+    must_haves: document.getElementById(`${prefix}-must-haves`).value.trim() || null,
+    status:     document.getElementById(`${prefix}-status`).value || 'pipeline',
+    priority:   document.getElementById(`${prefix}-priority`).value ? parseInt(document.getElementById(`${prefix}-priority`).value) : null,
+    notes:      document.getElementById(`${prefix}-notes`).value.trim() || null,
+  };
+}
+
+async function saveClient() {
+  const name = document.getElementById('client-name').value.trim();
+  if (!name) { toast('Client name is required', 'error'); return; }
+
+  const editId = document.getElementById('client-edit-id').value;
+  const payload = buildClientPayload('client');
+
+  setSyncStatus('Saving');
+  if (editId) {
+    payload.updated_at = new Date().toISOString();
+    const r = await sbUpdate('client_leads', editId, payload);
+    if (r.ok) {
+      const idx = (state.clients_leads || []).findIndex(c => c.id === editId);
+      if (idx !== -1) state.clients_leads[idx] = { ...state.clients_leads[idx], ...payload };
+      toast('Client updated', 'success');
+    } else { toast('Save failed', 'error'); }
+  } else {
+    const r = await sbInsert('client_leads', payload);
+    if (r.ok) {
+      const newClient = Array.isArray(r.data) ? r.data[0] : r.data;
+      state.clients_leads = state.clients_leads || [];
+      state.clients_leads.push(newClient);
+      toast('Client lead added', 'success');
+    } else { toast('Save failed — run migration to add client_leads table', 'error'); }
+  }
+  setSyncStatus('Live');
+  closeModal('client');
+  renderClients();
+}
+
+// ── Load clients in loadAll ────────────────────────────────────
+// (patch into existing loadAll — we'll hook it via renderAll override)
 
 // Check session on load
 if (checkSession()) {

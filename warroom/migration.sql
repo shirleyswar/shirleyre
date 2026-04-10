@@ -149,6 +149,42 @@ ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS is_life boolean DEFAULT false;
 ALTER TABLE public.deal_economics ADD COLUMN IF NOT EXISTS nnn_psf numeric;
 -- ──────────────────────────────────────────────────────────────────────────────
 
+-- ─── CLIENT LEADS TABLE (2026-04-09) ─────────────────────────────────────────
+-- Stores buyer/tenant client leads who have property requirements but no specific address yet
+-- Run in Supabase SQL editor:
+-- https://supabase.com/dashboard/project/mtkyyaorvensylrfbhxv/sql/new
+CREATE TABLE IF NOT EXISTS public.client_leads (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text NOT NULL,                       -- Client / prospect name
+  phone text,
+  email text,
+  company text,
+  prop_type text,                           -- Office, Retail, Industrial, Medical, Land, etc.
+  txn_type text DEFAULT 'Purchase',         -- Purchase, Lease, Either
+  size_min numeric,                         -- Minimum SF requirement
+  size_max numeric,                         -- Maximum SF requirement
+  budget_min numeric,                       -- Budget floor
+  budget_max numeric,                       -- Budget ceiling
+  locations text,                           -- Target markets / corridors
+  timeline text,                            -- e.g. "90 days", "Q3 2025"
+  must_haves text,                          -- Key requirements (free text)
+  status text DEFAULT 'pipeline',           -- pipeline, active, hot, matched, closed
+  priority smallint,                        -- 1=High, 2=Medium, 3=Low
+  notes text,                               -- Internal relationship notes
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.client_leads ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all for anon" ON public.client_leads FOR ALL TO anon USING (true) WITH CHECK (true);
+
+GRANT USAGE ON SCHEMA public TO anon;
+GRANT ALL ON public.client_leads TO anon;
+
+-- Notify PostgREST to reload schema
+NOTIFY pgrst, 'reload schema';
+-- ──────────────────────────────────────────────────────────────────────────────
+
 -- ─── TASK SCHEDULING + EMAIL REMINDERS (2026-03-29) ──────────────────────────
 -- Run in Supabase SQL editor:
 -- https://supabase.com/dashboard/project/mtkyyaorvensylrfbhxv/sql/new
