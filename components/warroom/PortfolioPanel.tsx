@@ -853,6 +853,8 @@ function SoldTab() {
   const [uploadMsg, setUploadMsg] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [dragOver, setDragOver]   = useState(false)
+  const [manualExtraCash, setManualExtraCash] = useState<number>(0)
+  const [extraCashInput, setExtraCashInput]   = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { fetchSold() }, [])
@@ -990,7 +992,9 @@ function SoldTab() {
   }, 0)
   const sleeveTotal    = sleevePositions.reduce((s, p) => s + (p.market_value ?? 0), 0)
   const sleeveCostTotal = sleevePositions.reduce((s, p) => s + (p.total_cost ?? 0), 0)
-  const extraCapital   = Math.max(0, sleeveCostTotal - soldTotal)  // additional cash deployed beyond proceeds
+  // extraCapital: auto-calculated from cost basis difference, OR manual override if user entered a value
+  const autoExtraCapital = Math.max(0, sleeveCostTotal - soldTotal)
+  const extraCapital     = manualExtraCash > 0 ? manualExtraCash : autoExtraCapital
 
   // True alpha = sleeve today vs (what sold basket would be worth + extra capital deployed)
   // i.e. did the swap + extra capital beat just holding the old basket + keeping the cash?
@@ -1052,8 +1056,44 @@ function SoldTab() {
           }}>
             <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, background: 'radial-gradient(circle, ' + (isWin ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)') + ' 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-            <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: isWin ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)', marginBottom: 14 }}>
-              The Verdict — Swap Alpha
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: isWin ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)' }}>
+                The Verdict — Swap Alpha
+              </div>
+              {/* Manual extra cash input */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  Extra cash deployed:
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>$</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={autoExtraCapital > 0 ? autoExtraCapital.toLocaleString() : '0'}
+                    value={extraCashInput}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/[^0-9]/g, '')
+                      setExtraCashInput(raw)
+                      setManualExtraCash(raw === '' ? 0 : parseInt(raw, 10))
+                    }}
+                    style={{
+                      width: 80, fontSize: 11, padding: '3px 7px',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: 5, color: '#F0F2FF', outline: 'none',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  />
+                  {manualExtraCash > 0 && (
+                    <button
+                      onClick={() => { setManualExtraCash(0); setExtraCashInput('') }}
+                      style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 12, padding: '0 2px' }}
+                      title="Clear manual override"
+                    >✕</button>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap' }}>
