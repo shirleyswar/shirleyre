@@ -451,13 +451,21 @@
     background: rgba(6,13,15,0.85); backdrop-filter: blur(4px);
     display: flex; align-items: center; justify-content: center;
     padding: 24px;
+    /* Mobile: keep centered in viewport regardless of scroll position */
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
   }
   .modal-overlay.hidden { display: none; }
+  /* Prevent layout shift (screen shake) when modal opens/closes */
+  body.modal-open { overflow: hidden; padding-right: 0 !important; }
   .modal {
     background: var(--bg2); border: 1px solid var(--border);
     border-radius: var(--radius-lg); width: 100%; max-width: 520px;
     box-shadow: 0 24px 64px rgba(0,0,0,0.6);
     overflow: hidden;
+    /* Ensure modal stays in view on mobile */
+    position: relative;
+    margin: auto;
   }
   .modal-header {
     padding: 20px 24px 16px;
@@ -2351,6 +2359,10 @@ function openModal(type) {
     document.getElementById('client-notes').value = '';
   }
   document.getElementById('modal-' + type).classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  // On mobile: scroll the overlay itself to top so modal is centered in viewport
+  const overlay = document.getElementById('modal-' + type);
+  if (overlay) overlay.scrollTop = 0;
   // Focus first input
   setTimeout(() => {
     const first = document.querySelector(`#modal-${type} .form-input, #modal-${type} .form-textarea`);
@@ -2360,6 +2372,9 @@ function openModal(type) {
 
 function closeModal(type) {
   document.getElementById('modal-' + type).classList.add('hidden');
+  // Remove modal-open from body only if no other modals are visible
+  const anyOpen = document.querySelectorAll('.modal-overlay:not(.hidden)').length > 0;
+  if (!anyOpen) document.body.classList.remove('modal-open');
   if (type === 'landed') {
     document.getElementById('landed-deal-id').value = '';
     document.getElementById('landed-deal-value').value = '';
@@ -2388,6 +2403,8 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
     if (e.target === overlay) {
       overlay.classList.add('hidden');
+      const anyOpen = document.querySelectorAll('.modal-overlay:not(.hidden)').length > 0;
+      if (!anyOpen) document.body.classList.remove('modal-open');
     }
   });
 });
