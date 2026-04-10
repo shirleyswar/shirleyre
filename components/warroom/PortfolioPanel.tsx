@@ -991,9 +991,8 @@ function SoldTab() {
   }, 0)
   const sleeveTotal    = sleevePositions.reduce((s, p) => s + (p.market_value ?? 0), 0)
   const sleeveCostTotal = sleevePositions.reduce((s, p) => s + (p.total_cost ?? 0), 0)
-  // $3,500 in additional cash was deployed into Basket B (sleeve) beyond the Basket A proceeds — hardcoded
-  const autoExtraCapital = Math.max(0, sleeveCostTotal - soldTotal)
-  const extraCapital     = 3500
+  // $3,500 in additional cash was deployed into Basket B (sleeve) beyond Basket A proceeds — hardcoded permanent
+  const extraCapital = 3500
 
   // True alpha = sleeve today vs (what sold basket would be worth + extra capital deployed)
   // i.e. did the swap + extra capital beat just holding the old basket + keeping the cash?
