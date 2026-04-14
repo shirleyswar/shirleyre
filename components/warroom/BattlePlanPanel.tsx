@@ -484,58 +484,58 @@ export default function BattlePlanPanel() {
           ))
 
           return (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.06)' }}>
-                  <th style={{ width: 90, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
-                    onClick={() => setPrioritySortDir(d => d === 'desc' ? 'asc' : 'desc')}>
-                    Priority {prioritySortDir === 'desc' ? '↓' : '↑'}
-                  </th>
-                  <th style={{ width: 28, padding: '7px 6px' }}></th>
-                  <th className="hidden sm:table-cell" style={{ width: 150, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ID / Contact</th>
-                  <th className="hidden sm:table-cell" style={{ width: 86, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Deadline</th>
-                  <th style={{ padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
-                  <th style={{ width: 36, padding: '7px 6px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {renderRows(urgentTasks)}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {urgentTasks.length > 0 && (
+                <SectionDivider
+                  label={urgentTasks.some(t => t.due_date && t.due_date < today) ? 'Overdue / Today' : 'Due Today'}
+                  count={urgentTasks.length}
+                  color={urgentTasks.some(t => t.due_date && t.due_date < today) ? '#ef4444' : '#fb923c'}
+                  subtitle={[
+                    urgentTasks.filter(t => t.due_date && t.due_date < today).length > 0
+                      ? `${urgentTasks.filter(t => t.due_date && t.due_date < today).length} overdue` : null,
+                    urgentTasks.filter(t => t.due_date === today).length > 0
+                      ? `${urgentTasks.filter(t => t.due_date === today).length} due today` : null,
+                  ].filter(Boolean).join(' · ') || undefined}
+                />
+              )}
+              {renderRows(urgentTasks)}
 
-                {/* ── Collapse bar ── */}
-                {futureTasks.length > 0 && (
-                  <tr>
-                    <td colSpan={6} style={{ padding: '2px 0' }}>
-                      <button
-                        onClick={() => setFutureExpanded(e => !e)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          background: 'rgba(255,255,255,0.03)',
-                          border: 'none',
-                          borderTop: '1px solid rgba(255,255,255,0.07)',
-                          borderBottom: '1px solid rgba(255,255,255,0.07)',
-                          color: 'rgba(255,255,255,0.35)',
-                          fontSize: 11,
-                          fontFamily: 'var(--font-body)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          letterSpacing: '0.04em',
-                          transition: 'background 0.15s',
-                        }}
-                      >
-                        <span>{futureTasks.length} more deal{futureTasks.length !== 1 ? 's' : ''} — no deadline / future</span>
-                        <span style={{ fontSize: 10, transition: 'transform 0.2s', display: 'inline-block', transform: futureExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-                      </button>
-                    </td>
-                  </tr>
-                )}
+              {/* ── Collapse bar ── */}
+              {futureTasks.length > 0 && (
+                <button
+                  onClick={() => setFutureExpanded(e => !e)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 16px',
+                    background: 'rgba(255,255,255,0.025)',
+                    border: 'none',
+                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    color: 'rgba(255,255,255,0.38)',
+                    fontSize: 11,
+                    fontFamily: 'var(--font-body)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    letterSpacing: '0.04em',
+                    marginTop: 4,
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  <span>{futureTasks.length} item{futureTasks.length !== 1 ? 's' : ''} · no deadline / future</span>
+                  <span style={{ fontSize: 10, transition: 'transform 0.2s', display: 'inline-block', transform: futureExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                </button>
+              )}
 
-                {/* Future tasks — hidden unless expanded */}
-                {futureExpanded && renderRows(futureTasks)}
-              </tbody>
-            </table>
+              {/* Future tasks — hidden unless expanded */}
+              {futureExpanded && (
+                <>
+                  <SectionDivider label="Upcoming" count={futureTasks.length} color="#4F8EF7" />
+                  {renderRows(futureTasks)}
+                </>
+              )}
+            </div>
           )
         })()}
         </>
@@ -648,7 +648,42 @@ export default function BattlePlanPanel() {
   )
 }
 
-// ─── Task Row ────────────────────────────────────────────────────────────────
+// ─── Section Divider — styled like the commission card header ────────────────
+function SectionDivider({ label, count, color, subtitle }: { label: string; count: number; color: string; subtitle?: string }) {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      padding: '8px 14px 8px 16px',
+      background: `${color}12`,
+      borderLeft: `3px solid ${color}`,
+      borderRadius: '0 6px 6px 0',
+      marginBottom: 2,
+      marginTop: 4,
+    }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color, fontFamily: 'monospace', lineHeight: 1 }}>
+          {label}
+        </div>
+        {subtitle && (
+          <div style={{ fontSize: 10, color: `${color}99`, marginTop: 2, fontFamily: 'monospace' }}>
+            {subtitle}
+          </div>
+        )}
+      </div>
+      <div style={{
+        fontSize: 11, fontWeight: 800, color,
+        background: `${color}18`, border: `1px solid ${color}40`,
+        borderRadius: 999, padding: '1px 9px', fontFamily: 'monospace',
+      }}>
+        {count}
+      </div>
+    </div>
+  )
+}
+
+// ─── Task Row — card-strip design ────────────────────────────────────────────
 
 interface TaskRowProps {
   onPointerDragStart?: (e: React.PointerEvent) => void
@@ -673,7 +708,6 @@ interface TaskRowProps {
 function TaskRow({
   task, deal, completing, dragOverId, draggingId,
   onComplete, onUpdate,
-  onDragStart, onDragOver, onDrop, onDragEnd,
   onPointerDragStart, onPointerDragMove, onPointerDragEnd,
   deals, entityNames,
 }: TaskRowProps) {
@@ -692,113 +726,90 @@ function TaskRow({
   const isDragging   = draggingId === task.id
   const isLong = task.title.length > 48
 
+  // Determine accent color from urgency / category
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  const isOverdue = task.due_date && task.due_date < today
+  const isDueToday = task.due_date === today
+  const accentColor = task.is_life
+    ? '#f87171'
+    : task.is_entity
+    ? '#4ade80'
+    : isOverdue
+    ? '#ef4444'
+    : isDueToday
+    ? '#fb923c'
+    : '#8B5CF6'
+
   async function saveEdit() {
     if (editTitle.trim()) {
       const updatePayload: Record<string, unknown> = { title: editTitle.trim(), deal_id: editDealId || null, contact_name: editContactName.trim() || null, is_family: editIsFamily || null, is_entity: editIsEntity || null, is_life: editIsLife || null, due_date: editDueDate || null }
-      // Also persist due_date directly to DB since onUpdate may not handle it
       await supabase.from('tasks').update({ due_date: editDueDate || null } as Record<string, unknown>).eq('id', task.id)
       onUpdate(updatePayload as Partial<BattlePlanTask>)
     }
     setEditing(false)
   }
 
-  // Short deal label for the Deal column — abbreviate to ~14 chars
-  const dealLabel = deal ? (deal.address || deal.name || '') : ''
-  const dealShort = dealLabel.length > 18 ? dealLabel.slice(0, 16) + '…' : dealLabel
-
-  // Row index for alternating tint — use sort_order or fallback
-  const isEven = (task.sort_order ?? 0) % 2 === 0
-
   return (
-    <tr
+    <div
       data-task-id={task.id}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: isDragging
-          ? 'rgba(232,184,75,0.03)'
-          : isDragTarget
-          ? 'rgba(232,184,75,0.12)'
-          : task.is_entity
-          ? (hovered ? 'rgba(34,197,94,0.10)' : 'rgba(34,197,94,0.06)')
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 0,
+        background: isDragTarget
+          ? 'rgba(232,184,75,0.10)'
           : hovered
-          ? 'rgba(139,92,246,0.07)'
-          : isEven ? 'rgba(255,255,255,0.015)' : 'transparent',
-        borderBottom: isDragTarget ? '2px solid rgba(232,184,75,0.8)' : '1px solid rgba(255,255,255,0.04)',
-        borderLeft: isDragTarget
-          ? '3px solid #E8B84B'
-          : task.is_entity
-          ? '2px solid rgba(34,197,94,0.5)'
-          : hovered ? '2px solid rgba(139,92,246,0.6)' : '2px solid transparent',
-        opacity: completing ? 0.35 : isDragging ? 0.4 : 1,
-        transition: 'all 0.08s',
+          ? `${accentColor}0D`
+          : 'rgba(255,255,255,0.018)',
+        borderLeft: `3px solid ${isDragTarget ? '#E8B84B' : hovered ? accentColor : `${accentColor}50`}`,
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        opacity: completing ? 0.3 : isDragging ? 0.35 : 1,
+        transition: 'all 0.1s ease',
+        borderRadius: '0 6px 6px 0',
+        marginBottom: 2,
       }}
     >
-      {/* Col 1: Priority stars — far left */}
-      <td style={{ width: 90, padding: '6px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
-        <BpStarPicker
-          value={task.bp_priority ?? null}
-          onChange={async (v) => {
-            await supabase.from('tasks').update({ bp_priority: v } as Record<string, unknown>).eq('id', task.id)
-            onUpdate({ bp_priority: v })
-          }}
-        />
-      </td>
-
-      {/* Col 2: Checkbox */}
-      <td style={{ width: 28, padding: '10px 6px', verticalAlign: 'middle' }}>
+      {/* Left: checkbox */}
+      <div style={{ padding: '14px 10px 14px 12px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
         <button
           onClick={onComplete}
           onMouseEnter={() => setCircleHovered(true)}
           onMouseLeave={() => setCircleHovered(false)}
           style={{
-            width: 16, height: 16, borderRadius: 3,
-            border: `1.5px solid ${circleHovered ? 'var(--accent-gold)' : 'rgba(232,184,75,0.4)'}`,
-            background: circleHovered ? 'rgba(232,184,75,0.15)' : 'transparent',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s',
+            width: 18, height: 18, borderRadius: 4,
+            border: `1.5px solid ${circleHovered ? accentColor : `${accentColor}60`}`,
+            background: circleHovered ? `${accentColor}25` : 'transparent',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s', flexShrink: 0,
           }}
         >
           {circleHovered && (
-            <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-              <path d="M2 5l2.5 2.5L8 3" stroke="var(--accent-gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M2 5l2.5 2.5L8 3" stroke={accentColor} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </button>
-      </td>
+      </div>
 
-      {/* Col 3: ID / Contact badge — moved before Action Item */}
-      <td className="hidden sm:table-cell" style={{ width: 150, padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
-        <ContactBadge contactName={task.contact_name ?? null} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
-      </td>
-
-      {/* Col 4: Deadline */}
-      <td className="hidden sm:table-cell" style={{ width: 86, padding: '10px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
-        <DeadlinePicker
-          value={task.due_date ?? null}
-          onChange={async (d) => {
-            await supabase.from('tasks').update({ due_date: d } as Record<string, unknown>).eq('id', task.id)
-            onUpdate({ due_date: d })
-          }}
-        />
-      </td>
-
-      {/* Col 5: Title */}
-      <td style={{ padding: '10px 8px', verticalAlign: 'middle' }}>
+      {/* Center: main content */}
+      <div style={{ flex: 1, padding: '12px 8px 12px 0', minWidth: 0 }}>
         {editing ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input
               autoFocus
               value={editTitle}
               onChange={e => setEditTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false) }}
-              style={{ width: '100%', background: 'transparent', border: '1px solid var(--accent-gold)', borderRadius: 4, padding: '4px 8px', fontSize: 13, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)' }}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${accentColor}`, borderRadius: 6, padding: '6px 10px', fontSize: 13, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
             />
             <input
               value={editContactName}
               onChange={e => setEditContactName(e.target.value)}
               list="bp-contact-list-edit"
               placeholder="ID / Contact..."
-              style={{ width: '100%', background: 'transparent', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 4, padding: '4px 8px', fontSize: 13, color: 'var(--accent-gold)', outline: 'none', fontFamily: 'var(--font-body)' }}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--accent-gold)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
             />
             <datalist id="bp-contact-list-edit">
               {Array.from(new Set([...deals.map(d => d.name), ...entityNames].filter(Boolean))).map(n => (
@@ -825,77 +836,84 @@ function TaskRow({
               </label>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={saveEdit} style={{ padding: '3px 10px', background: 'var(--accent-gold)', color: '#0D0F14', border: 'none', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
-              <button onClick={() => setEditing(false)} style={{ padding: '3px 10px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', borderRadius: 4, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={saveEdit} style={{ padding: '4px 12px', background: accentColor, color: '#0D0F14', border: 'none', borderRadius: 5, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Save</button>
+              <button onClick={() => setEditing(false)} style={{ padding: '4px 12px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', borderRadius: 5, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
             </div>
           </div>
         ) : (
-          <div>
-            {/* Title — clamp to 2 lines unless expanded */}
-            {task.is_family && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: 6, verticalAlign: 'middle' }}>
-                <FamilyIcon active={true} />
-              </span>
-            )}
-            <span
-              onClick={() => isLong && setExpanded(e => !e)}
-              style={{
-                fontSize: 13,
-                fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'],
-                color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
-                textDecoration: completing ? 'line-through' : 'none',
-                transition: 'all 0.3s',
-                lineHeight: 1.4,
-                display: '-webkit-box',
-                WebkitLineClamp: expanded ? undefined : 2,
-                WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
-                overflow: expanded ? 'visible' : 'hidden',
-                cursor: isLong ? 'pointer' : 'default',
-                wordBreak: 'break-word',
-              } as React.CSSProperties}
-            >
-              {task.title}
-            </span>
-            {/* Expand/collapse hint for long items */}
-            {isLong && (
-              <button
-                onClick={() => setExpanded(e => !e)}
+          <>
+            {/* Row 1: contact badge + deadline */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
+              <ContactBadge contactName={task.contact_name ?? null} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
+              {task.due_date && (
+                <DeadlinePicker
+                  value={task.due_date ?? null}
+                  onChange={async (d) => {
+                    await supabase.from('tasks').update({ due_date: d } as Record<string, unknown>).eq('id', task.id)
+                    onUpdate({ due_date: d })
+                  }}
+                />
+              )}
+              {!task.due_date && hovered && (
+                <DeadlinePicker
+                  value={null}
+                  onChange={async (d) => {
+                    await supabase.from('tasks').update({ due_date: d } as Record<string, unknown>).eq('id', task.id)
+                    onUpdate({ due_date: d })
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Row 2: title */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+              {task.is_family && (
+                <span style={{ flexShrink: 0, marginTop: 1 }}><FamilyIcon active={true} /></span>
+              )}
+              <span
+                onClick={() => isLong && setExpanded(e => !e)}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  fontSize: 10,
-                  color: 'rgba(232,184,75,0.55)',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  letterSpacing: '0.04em',
-                  marginTop: 2,
-                  display: 'block',
-                }}
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
+                  textDecoration: completing ? 'line-through' : 'none',
+                  lineHeight: 1.45,
+                  display: '-webkit-box',
+                  WebkitLineClamp: expanded ? undefined : 2,
+                  WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+                  overflow: expanded ? 'visible' : 'hidden',
+                  cursor: isLong ? 'pointer' : 'default',
+                  wordBreak: 'break-word',
+                  transition: 'color 0.2s',
+                } as React.CSSProperties}
               >
+                {task.title}
+              </span>
+            </div>
+            {isLong && (
+              <button onClick={() => setExpanded(e => !e)} style={{ background: 'none', border: 'none', padding: 0, fontSize: 10, color: `${accentColor}80`, cursor: 'pointer', fontFamily: 'var(--font-body)', marginTop: 3 }}>
                 {expanded ? '▲ less' : '▼ more'}
               </button>
             )}
-            {/* Contact tag inline under title on mobile */}
-            {task.contact_name && (
-              <div className="sm:hidden" style={{ marginTop: 3 }}>
-                <span style={{ fontSize: 10, color: 'var(--accent-gold)', fontFamily: 'monospace' }}>
-                  {task.contact_name}
-                </span>
-              </div>
-            )}
-          </div>
+          </>
         )}
-      </td>
+      </div>
 
-      {/* Col 6: Edit + drag handle */}
-      <td style={{ width: 36, padding: '10px 6px', verticalAlign: 'middle' }}>
+      {/* Right: priority stars + actions */}
+      <div style={{ padding: '12px 10px 12px 6px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+        <BpStarPicker
+          value={task.bp_priority ?? null}
+          onChange={async (v) => {
+            await supabase.from('tasks').update({ bp_priority: v } as Record<string, unknown>).eq('id', task.id)
+            onUpdate({ bp_priority: v })
+          }}
+        />
         {!editing && hovered && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
               onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditIsEntity(!!task.is_entity); setEditIsLife(!!task.is_life); setEditDueDate(task.due_date ?? ''); setEditing(true) }}
               title="Edit"
-              style={{ padding: '2px 5px', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.65 }}
+              style={{ padding: '3px 6px', background: 'transparent', border: `1px solid ${accentColor}40`, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.8 }}
             >
               <PencilIcon />
             </button>
@@ -904,13 +922,13 @@ function TaskRow({
               onPointerMove={onPointerDragMove}
               onPointerUp={onPointerDragEnd}
               onPointerCancel={onPointerDragEnd}
-              style={{ fontSize: 16, color: 'var(--text-muted)', cursor: 'grab', opacity: 0.7, userSelect: 'none', touchAction: 'none', padding: '2px 4px' }}>
+              style={{ fontSize: 15, color: 'var(--text-muted)', cursor: 'grab', opacity: 0.6, userSelect: 'none', touchAction: 'none', padding: '2px 4px' }}>
               ⠿
             </span>
           </div>
         )}
-      </td>
-    </tr>
+      </div>
+    </div>
   )
 }
 
