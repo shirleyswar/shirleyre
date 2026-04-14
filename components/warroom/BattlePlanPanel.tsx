@@ -487,6 +487,31 @@ export default function BattlePlanPanel() {
 
           return (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* ── Column headers ── */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '110px 1fr 130px 90px',
+                gap: '0 12px',
+                padding: '5px 12px 5px 42px',
+                borderBottom: '1px solid rgba(139,92,246,0.2)',
+                marginBottom: 2,
+              }}>
+                {[
+                  { label: 'DUE DATE', align: 'center' },
+                  { label: 'TASK',     align: 'left' },
+                  { label: 'ID',       align: 'center' },
+                  { label: 'PRIORITY', align: 'center' },
+                ].map(col => (
+                  <div key={col.label} style={{
+                    fontSize: 9, fontWeight: 800, letterSpacing: '0.14em',
+                    textTransform: 'uppercase', color: 'rgba(139,92,246,0.55)',
+                    fontFamily: 'monospace', textAlign: col.align as React.CSSProperties['textAlign'],
+                  }}>
+                    {col.label}
+                  </div>
+                ))}
+              </div>
+
               {urgentTasks.length > 0 && (
                 <SectionDivider
                   label={urgentTasks.some(t => t.due_date && t.due_date < today) ? 'Overdue / Today' : 'Due Today'}
@@ -844,10 +869,21 @@ function TaskRow({
             </div>
           </div>
         ) : (
-          /* ── 4-column layout: TASK | DUE DATE | ID | PRIORITY ── */
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: '0 12px', alignItems: 'center', width: '100%' }}>
+          /* ── 4-column layout: DUE DATE | TASK | ID | PRIORITY ── */
+          <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr 130px 90px', gap: '0 12px', alignItems: 'center', width: '100%' }}>
 
-            {/* Col 1: TASK */}
+            {/* Col 1: DUE DATE — centered */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <DeadlinePicker
+                value={task.due_date ?? null}
+                onChange={async (d) => {
+                  await supabase.from('tasks').update({ due_date: d } as Record<string, unknown>).eq('id', task.id)
+                  onUpdate({ due_date: d })
+                }}
+              />
+            </div>
+
+            {/* Col 2: TASK — left aligned */}
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
                 {task.is_family && <span style={{ flexShrink: 0, marginTop: 2 }}><FamilyIcon active={true} /></span>}
@@ -865,6 +901,7 @@ function TaskRow({
                     overflow: expanded ? 'visible' : 'hidden',
                     cursor: isLong ? 'pointer' : 'default',
                     wordBreak: 'break-word',
+                    textAlign: 'left',
                   } as React.CSSProperties}
                 >
                   {task.title}
@@ -877,24 +914,13 @@ function TaskRow({
               )}
             </div>
 
-            {/* Col 2: DUE DATE */}
-            <div style={{ flexShrink: 0 }}>
-              <DeadlinePicker
-                value={task.due_date ?? null}
-                onChange={async (d) => {
-                  await supabase.from('tasks').update({ due_date: d } as Record<string, unknown>).eq('id', task.id)
-                  onUpdate({ due_date: d })
-                }}
-              />
-            </div>
-
-            {/* Col 3: ID / Contact */}
-            <div style={{ flexShrink: 0 }}>
+            {/* Col 3: ID — centered */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
               <ContactBadge contactName={task.contact_name ?? null} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
             </div>
 
-            {/* Col 4: PRIORITY — stars */}
-            <div style={{ flexShrink: 0 }}>
+            {/* Col 4: PRIORITY — centered */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
               <BpStarPicker
                 value={task.bp_priority ?? null}
                 onChange={async (v) => {

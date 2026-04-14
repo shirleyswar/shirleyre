@@ -142,7 +142,7 @@ export default function WarRoomPage() {
         {/* StatsRibbon now lives inline in header */}
 
         {/* ── DASHBOARD BODY ── */}
-        <main ref={mainScrollRef as React.RefObject<HTMLElement>} style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 28px', position: 'relative' }}>
+        <main ref={mainScrollRef as React.RefObject<HTMLElement>} style={{ flex: 1, overflowY: 'auto', padding: '18px 24px 28px 20px', position: 'relative', scrollbarGutter: 'stable' }}>
 
           {/* Pull-to-refresh indicator — mobile only */}
           {(pullY > 4 || refreshing) && (
