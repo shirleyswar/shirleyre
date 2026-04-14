@@ -238,30 +238,102 @@ export default function AccountsReceivablePanel() {
 
   const totalMsOutstanding = receivable.reduce((s, item) => s + msBal(item), 0)
 
+  const totalMsPortionGross = items.reduce((s, i) => s + (i.sr_portion_amount ?? 0), 0)
+  const totalMsCollected   = items.reduce((s, i) => s + (i.payments_total ?? i.paid_to_date ?? 0), 0)
+  const pctCollected = totalMsPortionGross > 0 ? Math.min(100, (totalMsCollected / totalMsPortionGross) * 100) : 0
+
   return (
-    <div className="wr-card h-full min-h-[200px]">
-      {/* Header */}
-      <div className="wr-card-header">
-        <span style={{ color: 'var(--accent-violet)', display: 'flex' }}><DollarIcon /></span>
-        <span className="wr-card-title">RECEIVABLES</span>
-        <span className="wr-panel-line" />
-        <span className="wr-panel-stat" style={{
-          color: totalMsOutstanding > 0 ? 'var(--accent-violet)' : 'var(--success)',
-          fontSize: 16,
-        }}>
-          {loading ? '—' : fmt(totalMsOutstanding)}
-        </span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+      {/* ── HERO ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0e0820 0%, #130a2e 40%, #0a0618 100%)',
+        border: '1.5px solid rgba(167,139,250,0.35)',
+        borderRadius: 16,
+        padding: '24px 28px',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: '0 0 0 1px rgba(167,139,250,0.08), 0 8px 40px rgba(0,0,0,0.6), 0 0 80px rgba(139,92,246,0.08)',
+      }}>
+        {/* Background glows */}
+        <div style={{ position: 'absolute', top: -60, right: -40, width: 280, height: 280, background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -40, left: 40, width: 200, height: 200, background: 'radial-gradient(circle, rgba(192,132,252,0.07) 0%, transparent 65%)', pointerEvents: 'none' }} />
+
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 6, height: 32, borderRadius: 3, background: 'linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%)', flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)', marginBottom: 3 }}>
+                Receivables
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.04em' }}>
+                {receivable.length} active · {collected.length} collected
+              </div>
+            </div>
+          </div>
+          <div style={{
+            fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase',
+            color: '#a78bfa', background: 'rgba(139,92,246,0.12)',
+            border: '1px solid rgba(167,139,250,0.35)', borderRadius: 6, padding: '5px 12px',
+          }}>
+            {receivable.length > 0 ? 'Pending' : '✓ Clear'}
+          </div>
+        </div>
+
+        {/* Stats strip */}
+        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', flexWrap: 'wrap' }}>
+          {/* MS Outstanding — hero stat */}
+          <div style={{
+            flex: '1 1 200px', padding: '16px 24px',
+            background: 'rgba(139,92,246,0.06)', borderRadius: 12,
+            border: '1px solid rgba(167,139,250,0.15)',
+            marginRight: 12,
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.5)', marginBottom: 6 }}>
+              MS Outstanding
+            </div>
+            <div style={{
+              fontSize: 36, fontWeight: 800, color: '#C084FC',
+              fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.03em', lineHeight: 1,
+              textShadow: '0 0 32px rgba(192,132,252,0.4)',
+            }}>
+              {loading ? '—' : fmt(totalMsOutstanding)}
+            </div>
+            {/* Progress bar toward full collection */}
+            {totalMsPortionGross > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Collected</span>
+                  <span style={{ fontSize: 9, color: pctCollected >= 100 ? '#22c55e' : 'rgba(167,139,250,0.6)', fontWeight: 700, fontFamily: 'monospace' }}>{pctCollected.toFixed(0)}%</span>
+                </div>
+                <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
+                  <div style={{ height: 3, width: `${pctCollected}%`, background: pctCollected >= 100 ? '#22c55e' : 'linear-gradient(90deg, #7c3aed, #a78bfa)', borderRadius: 2, transition: 'width 0.5s ease' }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Supporting stats */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: '0 0 auto' }}>
+            <div style={{ padding: '12px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)', minWidth: 160 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: 4 }}>MS Gross</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>
+                {loading ? '—' : fmt(totalMsPortionGross)}
+              </div>
+            </div>
+            <div style={{ padding: '12px 20px', background: 'rgba(34,197,94,0.04)', borderRadius: 10, border: '1px solid rgba(34,197,94,0.15)', minWidth: 160 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.45)', marginBottom: 4 }}>Collected</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#22c55e', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>
+                {loading ? '—' : fmt(totalMsCollected)}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* MS Outstanding big number */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
-          MS Portion Outstanding
-        </div>
-        <div className="wr-big-number" style={{ color: totalMsOutstanding > 0 ? '#C084FC' : 'var(--success)' }}>
-          {loading ? '—' : fmt(totalMsOutstanding)}
-        </div>
-      </div>
+      {/* ── TABLE CARD ── */}
+      <div className="wr-card" style={{ padding: '16px 20px' }}>
 
       {/* Body */}
       {loading ? (
@@ -404,6 +476,7 @@ export default function AccountsReceivablePanel() {
               })}
         </div>
       )}
+      </div>
 
       {/* ── Log Payment Modal ── */}
       {payModal !== null && typeof document !== 'undefined' && createPortal(
