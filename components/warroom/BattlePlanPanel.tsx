@@ -1068,37 +1068,32 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
 
   if (isOverdue) {
     return (
-      <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: 3,
-          padding: '2px 7px',
-          background: 'rgba(239,68,68,0.15)',
-          border: '1px solid rgba(239,68,68,0.45)',
-          borderRadius: 4, fontSize: 9, fontWeight: 800,
-          color: '#ef4444', whiteSpace: 'nowrap', letterSpacing: '0.08em',
-          textTransform: 'uppercase', fontFamily: 'monospace',
-        }}>
-          ⚠ OVERDUE
-        </span>
-        <span style={{ fontSize: 9, color: 'rgba(239,68,68,0.6)', fontFamily: 'monospace' }}>{fmtDate(value)}</span>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 3,
+        padding: '2px 7px',
+        background: 'rgba(239,68,68,0.15)',
+        border: '1px solid rgba(239,68,68,0.45)',
+        borderRadius: 4, fontSize: 9, fontWeight: 800,
+        color: '#ef4444', whiteSpace: 'nowrap', letterSpacing: '0.08em',
+        textTransform: 'uppercase', fontFamily: 'monospace',
+      }}>
+        ⚠ OVERDUE
       </span>
     )
   }
 
   if (isToday) {
     return (
-      <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-          padding: '2px 7px',
-          background: 'rgba(251,146,60,0.15)',
-          border: '1px solid rgba(251,146,60,0.45)',
-          borderRadius: 4, fontSize: 9, fontWeight: 800,
-          color: '#fb923c', whiteSpace: 'nowrap', letterSpacing: '0.08em',
-          textTransform: 'uppercase', fontFamily: 'monospace',
-        }}>
-          <span style={{ fontSize: 7, lineHeight: 1 }}>●</span> TODAY
-        </span>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        padding: '2px 7px',
+        background: 'rgba(34,197,94,0.15)',
+        border: '1px solid rgba(34,197,94,0.45)',
+        borderRadius: 4, fontSize: 9, fontWeight: 800,
+        color: '#22c55e', whiteSpace: 'nowrap', letterSpacing: '0.08em',
+        textTransform: 'uppercase', fontFamily: 'monospace',
+      }}>
+        <span style={{ fontSize: 7, lineHeight: 1 }}>●</span> TODAY
       </span>
     )
   }
