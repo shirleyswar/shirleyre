@@ -276,140 +276,136 @@ export default function AccountsReceivablePanel() {
           ✓ Nothing outstanding
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-            <thead>
-              <tr>
-                {['', 'Deal', 'SR Portion', 'MS Portion', 'MS Collected', 'MS Balance', 'Status', ''].map((col, i) => (
-                  <th key={i} style={{
-                    padding: '4px 8px', textAlign: 'left', fontSize: 9, fontWeight: 700,
-                    letterSpacing: '0.1em', textTransform: 'uppercase', color: '#4b5563',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)', whiteSpace: 'nowrap',
-                  }}>{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map(item => {
+        <div style={{ width: '100%' }}>
+          {/* Column headers — commission card style */}
+          <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 100px 100px 100px 90px', gap: '0 8px', padding: '6px 8px', borderBottom: '1px solid rgba(167,139,250,0.15)', marginBottom: 4 }}>
+            {['', 'DEAL', 'MS PORTION', 'COLLECTED', 'BALANCE', 'STATUS'].map((h, i) => (
+              <div key={i} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.45)', fontFamily: 'monospace', textAlign: i === 0 ? 'left' : i === 1 ? 'left' : 'right' }}>
+                {h}
+              </div>
+            ))}
+          </div>
+
+          {sorted.map(item => {
                 const isCollected = item.status === 'collected'
                 const msPaid = item.payments_total ?? item.paid_to_date ?? 0
                 const msBalance = msBal(item)
                 const msTotal = item.sr_portion_amount ?? 0
-                const srTotal = item.commission_amount ?? 0
                 const pctPaid = msTotal > 0 ? Math.min(100, (msPaid / msTotal) * 100) : 0
                 const itemPayments = payments[item.id] ?? []
                 const isExpanded = expandedId === item.id
 
                 return (
-                  <>
-                    <tr
-                      key={item.id}
-                      style={{ opacity: isCollected ? 0.6 : 1, cursor: 'pointer' }}
+                  <div key={item.id}>
+                    {/* Main row */}
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '28px 1fr 100px 100px 100px 90px',
+                        gap: '0 8px',
+                        padding: '10px 8px',
+                        borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        opacity: isCollected ? 0.6 : 1,
+                        cursor: 'pointer',
+                        alignItems: 'center',
+                        borderLeft: isCollected ? '2px solid rgba(107,114,128,0.3)' : '2px solid rgba(167,139,250,0.5)',
+                        borderRadius: '0 4px 4px 0',
+                        transition: 'background 0.1s',
+                      }}
                       onClick={() => setExpandedId(isExpanded ? null : item.id)}
                     >
                       {/* Arrow link */}
-                      <td style={{ padding: '8px 8px', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
+                      <div onClick={e => e.stopPropagation()}>
                         <a href={`/warroom/deal?id=${item.deal_id}`} style={{ color: '#a78bfa', textDecoration: 'none', fontSize: 14, fontWeight: 700 }} title="Open deal">↗</a>
-                      </td>
-                      {/* Deal name */}
-                      <td style={{ padding: '8px 8px', color: '#F0F2FF', fontWeight: 600, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      </div>
+
+                      {/* Deal name + progress bar */}
+                      <div style={{ minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', transition: 'color 0.1s' }}>{isExpanded ? '▾' : '▸'}</span>
-                          {item.deals?.name ?? '—'}
+                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>{isExpanded ? '▾' : '▸'}</span>
+                          <span style={{
+                            fontSize: 13, fontWeight: 700, color: '#F0F2FF',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            letterSpacing: '-0.01em',
+                          }}>
+                            {item.deals?.name ?? '—'}
+                          </span>
                         </div>
-                        {/* Progress bar */}
                         {!isCollected && msTotal > 0 && (
-                          <div style={{ marginTop: 4, height: 2, background: 'rgba(255,255,255,0.08)', borderRadius: 1, width: '100%' }}>
+                          <div style={{ marginTop: 5, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 1 }}>
                             <div style={{ height: 2, width: `${pctPaid}%`, background: pctPaid >= 100 ? '#22c55e' : '#a78bfa', borderRadius: 1, transition: 'width 0.3s' }} />
                           </div>
                         )}
-                      </td>
-                      {/* SR Portion (display only) */}
-                      <td style={{ padding: '8px 8px', color: '#6b7280', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                        {fmt(srTotal)}
-                      </td>
-                      {/* MS Portion total */}
-                      <td style={{ padding: '8px 8px', color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                      </div>
+
+                      {/* MS Portion */}
+                      <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>
                         {fmt(msTotal)}
-                      </td>
+                      </div>
+
                       {/* MS Collected */}
-                      <td style={{ padding: '8px 8px', color: '#22c55e', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                      <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 600, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums' }}>
                         {msPaid > 0 ? fmt(msPaid) : '—'}
-                      </td>
+                      </div>
+
                       {/* MS Balance */}
-                      <td style={{ padding: '8px 8px', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: isCollected ? '#6b7280' : '#C084FC', whiteSpace: 'nowrap' }}>
-                        {isCollected ? '—' : fmt(msBalance)}
-                      </td>
-                      {/* Status badge */}
-                      <td style={{ padding: '8px 8px' }}>
-                        <span style={{
-                          padding: '2px 8px', borderRadius: 20, fontSize: 9, fontWeight: 700,
-                          letterSpacing: '0.08em', textTransform: 'uppercase',
-                          background: isCollected ? 'rgba(107,114,128,0.15)' : 'rgba(34,197,94,0.12)',
-                          color: isCollected ? '#6b7280' : '#22c55e',
-                        }}>
-                          {isCollected ? 'Collected' : 'Receivable'}
-                        </span>
-                      </td>
-                      {/* Action buttons */}
-                      <td style={{ padding: '8px 8px', whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
-                        {!isCollected && (
-                          <div style={{ display: 'flex', gap: 5 }}>
+                      <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 800, color: isCollected ? '#6b7280' : '#C084FC', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', textShadow: isCollected ? 'none' : '0 0 16px rgba(192,132,252,0.3)' }}>
+                        {isCollected ? <span style={{ fontSize: 11, fontWeight: 600 }}>✓ Done</span> : fmt(msBalance)}
+                      </div>
+
+                      {/* Status + actions */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
+                        {!isCollected ? (
+                          <>
                             <button
                               onClick={() => openPayModal(item)}
-                              style={{ padding: '3px 8px', fontSize: 10, fontWeight: 700, background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 5, color: '#a78bfa', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              style={{ padding: '3px 7px', fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 4, color: '#a78bfa', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase' }}
                             >
-                              + Payment
+                              + Pay
                             </button>
                             <button
                               onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }}
-                              style={{ padding: '3px 8px', fontSize: 10, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 5, color: '#22c55e', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              style={{ padding: '3px 7px', fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 4, color: '#22c55e', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase' }}
                             >
                               Full ✓
                             </button>
-                          </div>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#22c55e', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Collected</span>
                         )}
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
 
                     {/* ── Expanded payment history ── */}
                     {isExpanded && (
-                      <tr key={`${item.id}-exp`}>
-                        <td colSpan={8} style={{ padding: '0 12px 10px 36px', background: 'rgba(139,92,246,0.04)' }}>
-                          {itemPayments.length === 0 ? (
-                            <div style={{ fontSize: 11, color: '#6b7280', padding: '8px 0', fontStyle: 'italic' }}>No payments logged yet.</div>
-                          ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
-                              <thead>
-                                <tr>
-                                  {['Date', 'Amount', 'Note'].map(h => (
-                                    <th key={h} style={{ padding: '4px 8px', textAlign: 'left', fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#4b5563', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {itemPayments.map(p => (
-                                  <tr key={p.id}>
-                                    <td style={{ padding: '5px 8px', color: '#9ca3af', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                                      {new Date(p.paid_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </td>
-                                    <td style={{ padding: '5px 8px', color: '#22c55e', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                                      {fmt(p.amount)}
-                                    </td>
-                                    <td style={{ padding: '5px 8px', color: '#6b7280' }}>{p.note ?? '—'}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          )}
-                        </td>
-                      </tr>
+                      <div style={{ padding: '8px 8px 12px 44px', background: 'rgba(139,92,246,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {itemPayments.length === 0 ? (
+                          <div style={{ fontSize: 11, color: '#6b7280', fontStyle: 'italic' }}>No payments logged yet.</div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '120px 100px 1fr', gap: '0 12px', marginBottom: 4 }}>
+                              {['Date', 'Amount', 'Note'].map(h => (
+                                <div key={h} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', fontFamily: 'monospace' }}>{h}</div>
+                              ))}
+                            </div>
+                            {itemPayments.map(p => (
+                              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '120px 100px 1fr', gap: '0 12px', padding: '4px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                                <div style={{ fontSize: 12, color: '#9ca3af', fontFamily: 'monospace' }}>
+                                  {new Date(p.paid_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </div>
+                                <div style={{ fontSize: 13, color: '#22c55e', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                                  {fmt(p.amount)}
+                                </div>
+                                <div style={{ fontSize: 12, color: '#6b7280' }}>{p.note ?? '—'}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </>
+                  </div>
                 )
               })}
-            </tbody>
-          </table>
         </div>
       )}
 

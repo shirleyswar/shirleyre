@@ -3287,51 +3287,61 @@ function DealDashboardInner() {
                   const isLast = idx === deadlines.length - 1
                   return (
                     <div key={dl.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 16,
-                      padding: '13px 4px',
+                      display: 'flex', alignItems: 'center', gap: 0,
+                      padding: '0',
                       borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.04)',
                       opacity: satisfied ? 0.45 : 1,
                     }}>
-                      {/* Date pill */}
-                      <div style={{ width: 148, flexShrink: 0 }}>
+                      {/* Date — commission card style: label on top, value below */}
+                      <div style={{ flex: '0 0 160px', padding: '14px 20px 14px 0', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 4 }}>
+                          Date
+                        </div>
                         <div style={{
-                          fontSize: 13, fontWeight: 700,
+                          fontSize: 15, fontWeight: 700,
                           color: satisfied ? '#4b5563' : '#F0F2FF',
                           textDecoration: satisfied ? 'line-through' : 'none',
-                          letterSpacing: '-0.01em',
-                          whiteSpace: 'nowrap',
+                          letterSpacing: '-0.01em', whiteSpace: 'nowrap',
                         }}>
                           {formatDate(dl.deadline_date)}
                         </div>
                       </div>
 
-                      {/* Label */}
-                      <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: satisfied ? '#374151' : '#c4c9d4', textDecoration: satisfied ? 'line-through' : 'none', lineHeight: 1.4 }}>
-                        {dl.label}
+                      {/* Label — matches commission card value style */}
+                      <div style={{ flex: 1, padding: '14px 20px', borderRight: '1px solid rgba(255,255,255,0.06)', minWidth: 0 }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 4 }}>
+                          Milestone
+                        </div>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: satisfied ? '#374151' : '#c4c9d4', textDecoration: satisfied ? 'line-through' : 'none', lineHeight: 1.3 }}>
+                          {dl.label}
+                        </div>
                       </div>
 
-                      {/* Countdown / status */}
-                      <div style={{ width: 90, flexShrink: 0, textAlign: 'right' }}>
+                      {/* Countdown */}
+                      <div style={{ flex: '0 0 120px', padding: '14px 20px', textAlign: 'right', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 4 }}>
+                          Status
+                        </div>
                         {satisfied ? (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: '#22c55e', letterSpacing: '0.1em', textTransform: 'uppercase' }}>✓ Done</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: '#22c55e', letterSpacing: '0.08em', textTransform: 'uppercase' }}>✓ Done</span>
                         ) : (
-                          <span style={{ fontSize: 12, fontWeight: 800, color: daysColor, fontFamily: 'monospace' }}>{daysLabel}</span>
+                          <span style={{ fontSize: 15, fontWeight: 800, color: daysColor, fontFamily: 'monospace', letterSpacing: '-0.01em' }}>{daysLabel}</span>
                         )}
                       </div>
 
                       {/* Actions */}
-                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <div style={{ flex: '0 0 80px', display: 'flex', gap: 6, padding: '14px 0 14px 16px', justifyContent: 'flex-end' }}>
                         {!satisfied && (
                           <button onClick={() => satisfyDeadline(dl.id)} title="Mark satisfied" style={{
-                            width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
-                            borderRadius: 6, color: '#22c55e', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                            borderRadius: 6, color: '#22c55e', cursor: 'pointer', fontSize: 14, fontWeight: 700,
                           }}>✓</button>
                         )}
                         <button onClick={() => deleteDeadline(dl.id)} title="Delete" style={{
-                          width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
                           background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
-                          borderRadius: 6, color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                          borderRadius: 6, color: '#ef4444', cursor: 'pointer', fontSize: 14, fontWeight: 700,
                         }}>✕</button>
                       </div>
                     </div>
