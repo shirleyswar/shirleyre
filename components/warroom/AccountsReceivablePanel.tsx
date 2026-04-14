@@ -249,7 +249,7 @@ export default function AccountsReceivablePanel() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr>
-                {['', 'Deal', 'Type', 'Invoice #', 'Commission', 'SR Portion', 'Co-Broker', 'Total Due', 'Status', ''].map((col, i) => (
+                {['', 'Deal', 'SR Portion', 'MS Portion', 'Total Due', 'Status', ''].map((col, i) => (
                   <th key={i} style={{
                     padding: '4px 8px',
                     textAlign: 'left',
@@ -293,28 +293,16 @@ export default function AccountsReceivablePanel() {
                       </a>
                     </td>
                     {/* Deal */}
-                    <td style={{ padding: '7px 8px', color: '#F0F2FF', fontWeight: 500, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '7px 8px', color: '#F0F2FF', fontWeight: 500, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.deals?.name ?? '—'}
                     </td>
-                    {/* Type */}
-                    <td style={{ padding: '7px 8px', color: '#9ca3af', whiteSpace: 'nowrap' }}>
-                      {dealTypeLabel(item.deal_type)}
-                    </td>
-                    {/* Invoice # */}
-                    <td style={{ padding: '7px 8px', color: '#9ca3af', fontFamily: 'monospace', fontSize: 11 }}>
-                      {item.invoice_number ?? '—'}
-                    </td>
-                    {/* Commission */}
+                    {/* SR Portion (was Commission) */}
                     <td style={{ padding: '7px 8px', color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                       {formatMoney(item.commission_amount)}
                     </td>
-                    {/* SR Portion */}
+                    {/* MS Portion (was SR Portion) */}
                     <td style={{ padding: '7px 8px', color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                       {formatMoney(item.sr_portion_amount)}
-                    </td>
-                    {/* Co-Broker */}
-                    <td style={{ padding: '7px 8px', color: '#9ca3af', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.co_broker && item.co_broker_name ? item.co_broker_name : ''}
                     </td>
                     {/* Total Due */}
                     <td style={{ padding: '7px 8px', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: isCollected ? '#6b7280' : '#C084FC', whiteSpace: 'nowrap' }}>
