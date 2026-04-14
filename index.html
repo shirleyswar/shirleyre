@@ -21,7 +21,7 @@
     --card-hover: rgba(255,255,255,0.06);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; scrollbar-gutter: stable; }
   body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; font-weight: 400; overflow-x: hidden; }
   #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
   .glow-top { position: fixed; top: -30vh; left: 50%; transform: translateX(-50%); width: 80vw; height: 70vh; background: radial-gradient(ellipse, rgba(232,160,32,0.07) 0%, transparent 65%); pointer-events: none; z-index: 0; }
@@ -189,8 +189,8 @@
     .features-wrap { padding: 48px 24px; }
     .features-grid { grid-template-columns: 1fr; }
   }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
-  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.55s ease, transform 0.55s ease; will-change: opacity, transform; }
   .reveal.visible { opacity: 1; transform: translateY(0); }
   @media (max-width: 900px) {
     nav { padding: 20px 24px; } nav.scrolled { padding: 16px 24px; } .nav-links, .nav-cta { display: none; }
@@ -529,7 +529,7 @@ document.addEventListener('keydown', (e) => {
   const reveals = document.querySelectorAll('.reveal');
   const observer = new IntersectionObserver(entries => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
   reveals.forEach(el => observer.observe(el));
 </script>
 
