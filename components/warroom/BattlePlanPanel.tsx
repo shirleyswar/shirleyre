@@ -844,93 +844,89 @@ function TaskRow({
             </div>
           </div>
         ) : (
-          <>
-            {/* Row 1: contact badge + deadline */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
+          /* ── 4-column layout: TASK | DUE DATE | ID | PRIORITY ── */
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: '0 12px', alignItems: 'center', width: '100%' }}>
+
+            {/* Col 1: TASK */}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+                {task.is_family && <span style={{ flexShrink: 0, marginTop: 2 }}><FamilyIcon active={true} /></span>}
+                <span
+                  onClick={() => isLong && setExpanded(e => !e)}
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
+                    textDecoration: completing ? 'line-through' : 'none',
+                    lineHeight: 1.4,
+                    display: '-webkit-box',
+                    WebkitLineClamp: expanded ? undefined : 2,
+                    WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+                    overflow: expanded ? 'visible' : 'hidden',
+                    cursor: isLong ? 'pointer' : 'default',
+                    wordBreak: 'break-word',
+                  } as React.CSSProperties}
+                >
+                  {task.title}
+                </span>
+              </div>
+              {isLong && (
+                <button onClick={() => setExpanded(e => !e)} style={{ background: 'none', border: 'none', padding: 0, fontSize: 10, color: `${accentColor}80`, cursor: 'pointer', fontFamily: 'var(--font-body)', marginTop: 2 }}>
+                  {expanded ? '▲ less' : '▼ more'}
+                </button>
+              )}
+            </div>
+
+            {/* Col 2: DUE DATE */}
+            <div style={{ flexShrink: 0 }}>
+              <DeadlinePicker
+                value={task.due_date ?? null}
+                onChange={async (d) => {
+                  await supabase.from('tasks').update({ due_date: d } as Record<string, unknown>).eq('id', task.id)
+                  onUpdate({ due_date: d })
+                }}
+              />
+            </div>
+
+            {/* Col 3: ID / Contact */}
+            <div style={{ flexShrink: 0 }}>
               <ContactBadge contactName={task.contact_name ?? null} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
-              {task.due_date && (
-                <DeadlinePicker
-                  value={task.due_date ?? null}
-                  onChange={async (d) => {
-                    await supabase.from('tasks').update({ due_date: d } as Record<string, unknown>).eq('id', task.id)
-                    onUpdate({ due_date: d })
-                  }}
-                />
-              )}
-              {!task.due_date && hovered && (
-                <DeadlinePicker
-                  value={null}
-                  onChange={async (d) => {
-                    await supabase.from('tasks').update({ due_date: d } as Record<string, unknown>).eq('id', task.id)
-                    onUpdate({ due_date: d })
-                  }}
-                />
-              )}
             </div>
 
-            {/* Row 2: title */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-              {task.is_family && (
-                <span style={{ flexShrink: 0, marginTop: 1 }}><FamilyIcon active={true} /></span>
-              )}
-              <span
-                onClick={() => isLong && setExpanded(e => !e)}
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
-                  textDecoration: completing ? 'line-through' : 'none',
-                  lineHeight: 1.45,
-                  display: '-webkit-box',
-                  WebkitLineClamp: expanded ? undefined : 2,
-                  WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
-                  overflow: expanded ? 'visible' : 'hidden',
-                  cursor: isLong ? 'pointer' : 'default',
-                  wordBreak: 'break-word',
-                  transition: 'color 0.2s',
-                } as React.CSSProperties}
-              >
-                {task.title}
-              </span>
+            {/* Col 4: PRIORITY — stars */}
+            <div style={{ flexShrink: 0 }}>
+              <BpStarPicker
+                value={task.bp_priority ?? null}
+                onChange={async (v) => {
+                  await supabase.from('tasks').update({ bp_priority: v } as Record<string, unknown>).eq('id', task.id)
+                  onUpdate({ bp_priority: v })
+                }}
+              />
             </div>
-            {isLong && (
-              <button onClick={() => setExpanded(e => !e)} style={{ background: 'none', border: 'none', padding: 0, fontSize: 10, color: `${accentColor}80`, cursor: 'pointer', fontFamily: 'var(--font-body)', marginTop: 3 }}>
-                {expanded ? '▲ less' : '▼ more'}
-              </button>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Right: priority stars + actions */}
-      <div style={{ padding: '12px 10px 12px 6px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-        <BpStarPicker
-          value={task.bp_priority ?? null}
-          onChange={async (v) => {
-            await supabase.from('tasks').update({ bp_priority: v } as Record<string, unknown>).eq('id', task.id)
-            onUpdate({ bp_priority: v })
-          }}
-        />
-        {!editing && hovered && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <button
-              onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditIsEntity(!!task.is_entity); setEditIsLife(!!task.is_life); setEditDueDate(task.due_date ?? ''); setEditing(true) }}
-              title="Edit"
-              style={{ padding: '3px 6px', background: 'transparent', border: `1px solid ${accentColor}40`, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.8 }}
-            >
-              <PencilIcon />
-            </button>
-            <span
-              onPointerDown={onPointerDragStart}
-              onPointerMove={onPointerDragMove}
-              onPointerUp={onPointerDragEnd}
-              onPointerCancel={onPointerDragEnd}
-              style={{ fontSize: 15, color: 'var(--text-muted)', cursor: 'grab', opacity: 0.6, userSelect: 'none', touchAction: 'none', padding: '2px 4px' }}>
-              ⠿
-            </span>
           </div>
         )}
       </div>
+
+      {/* Right: edit + drag (only on hover) */}
+      {!editing && hovered && (
+        <div style={{ padding: '12px 8px 12px 4px', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <button
+            onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditIsEntity(!!task.is_entity); setEditIsLife(!!task.is_life); setEditDueDate(task.due_date ?? ''); setEditing(true) }}
+            title="Edit"
+            style={{ padding: '3px 6px', background: 'transparent', border: `1px solid ${accentColor}40`, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.8 }}
+          >
+            <PencilIcon />
+          </button>
+          <span
+            onPointerDown={onPointerDragStart}
+            onPointerMove={onPointerDragMove}
+            onPointerUp={onPointerDragEnd}
+            onPointerCancel={onPointerDragEnd}
+            style={{ fontSize: 15, color: 'var(--text-muted)', cursor: 'grab', opacity: 0.6, userSelect: 'none', touchAction: 'none', padding: '2px 4px' }}>
+            ⠿
+          </span>
+        </div>
+      )}
     </div>
   )
 }

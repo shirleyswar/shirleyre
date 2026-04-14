@@ -101,6 +101,21 @@ export default function ClientsPanel() {
       }).select().single()
       if (data && !error) {
         setClients(prev => [data as Client, ...prev])
+        // Auto-add to Contacts table
+        try {
+          await supabase.from('contacts').insert({
+            name: newName.trim(),
+            phone: newPhone.trim() || null,
+            email: newEmail.trim() || null,
+            role: newType, // buyer / tenant / investor / other
+            notes: [
+              newPropType ? `Property: ${newPropType}` : null,
+              newLocationPref ? `Location: ${newLocationPref}` : null,
+              newNotes.trim() || null,
+            ].filter(Boolean).join(' · ') || null,
+            priority: newPriority === 'hot' ? 'hvp' : 'standard',
+          })
+        } catch {} // non-blocking — client saved regardless
         resetForm()
         setShowAdd(false)
       }
