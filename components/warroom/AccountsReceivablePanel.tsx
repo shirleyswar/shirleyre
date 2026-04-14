@@ -278,9 +278,9 @@ export default function AccountsReceivablePanel() {
       ) : (
         <div style={{ width: '100%' }}>
           {/* Column headers — commission card style */}
-          <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 100px 100px 100px 90px', gap: '0 8px', padding: '6px 8px', borderBottom: '1px solid rgba(167,139,250,0.15)', marginBottom: 4 }}>
-            {['', 'DEAL', 'MS PORTION', 'COLLECTED', 'BALANCE', 'STATUS'].map((h, i) => (
-              <div key={i} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.45)', fontFamily: 'monospace', textAlign: i === 0 ? 'left' : i === 1 ? 'left' : 'right' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 110px 110px 110px', gap: '0 8px', padding: '6px 8px', borderBottom: '1px solid rgba(167,139,250,0.15)', marginBottom: 4 }}>
+            {['', 'DEAL', 'MS PORTION', 'COLLECTED', 'BALANCE'].map((h, i) => (
+              <div key={i} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.45)', fontFamily: 'monospace', textAlign: i <= 1 ? 'left' : 'right' }}>
                 {h}
               </div>
             ))}
@@ -301,7 +301,7 @@ export default function AccountsReceivablePanel() {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '28px 1fr 100px 100px 100px 90px',
+                        gridTemplateColumns: '28px 1fr 110px 110px 110px',
                         gap: '0 8px',
                         padding: '10px 8px',
                         borderBottom: '1px solid rgba(255,255,255,0.04)',
@@ -348,30 +348,26 @@ export default function AccountsReceivablePanel() {
                         {msPaid > 0 ? fmt(msPaid) : '—'}
                       </div>
 
-                      {/* MS Balance */}
-                      <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 800, color: isCollected ? '#6b7280' : '#C084FC', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', textShadow: isCollected ? 'none' : '0 0 16px rgba(192,132,252,0.3)' }}>
-                        {isCollected ? <span style={{ fontSize: 11, fontWeight: 600 }}>✓ Done</span> : fmt(msBalance)}
-                      </div>
-
-                      {/* Status + actions */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
-                        {!isCollected ? (
-                          <>
+                      {/* MS Balance + actions stacked */}
+                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }} onClick={e => e.stopPropagation()}>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', textShadow: isCollected ? 'none' : '0 0 16px rgba(192,132,252,0.3)' }}>
+                          {isCollected ? '✓ Done' : fmt(msBalance)}
+                        </div>
+                        {!isCollected && (
+                          <div style={{ display: 'flex', gap: 4 }}>
                             <button
                               onClick={() => openPayModal(item)}
-                              style={{ padding: '3px 7px', fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 4, color: '#a78bfa', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase' }}
+                              style={{ padding: '3px 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.04em', background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 4, color: '#a78bfa', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit' }}
                             >
                               + Pay
                             </button>
                             <button
                               onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }}
-                              style={{ padding: '3px 7px', fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 4, color: '#22c55e', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase' }}
+                              style={{ padding: '3px 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.04em', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 4, color: '#22c55e', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit' }}
                             >
                               Full ✓
                             </button>
-                          </>
-                        ) : (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#22c55e', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Collected</span>
+                          </div>
                         )}
                       </div>
                     </div>
