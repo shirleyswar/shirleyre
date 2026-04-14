@@ -16,6 +16,7 @@ import DealPipelinePanel from '@/components/warroom/DealPipelinePanel'
 import AccountsReceivablePanel from '@/components/warroom/AccountsReceivablePanel'
 import ClientsPanel from '@/components/warroom/ClientsPanel'
 import ShirleyCREAgentCard from '@/components/warroom/ShirleyCREAgentCard'
+import WinLogPanel from '@/components/warroom/WinLogPanel'
 import LifePanel from '@/components/warroom/LifePanel'
 import EntitiesPanel from '@/components/warroom/EntitiesPanel'
 import PortfolioPanel from '@/components/warroom/PortfolioPanel'
@@ -1056,6 +1057,14 @@ function OperationsView({ activePanel }: { activePanel: string }) {
     return (
       <motion.div key="ar" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
         <AccountsReceivablePanel />
+      </motion.div>
+    )
+  }
+
+  if (activePanel === 'winlog') {
+    return (
+      <motion.div key="winlog" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+        <WinLogPanel />
       </motion.div>
     )
   }
