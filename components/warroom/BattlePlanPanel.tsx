@@ -320,6 +320,9 @@ export default function BattlePlanPanel() {
 
   const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'in_progress')
 
+  // ── Collapse bar state ───────────────────────────────────────────────────
+  const [futureExpanded, setFutureExpanded] = useState(false)
+
   return (
     <div className="wr-card">
       <div className="wr-card-header">
@@ -426,74 +429,116 @@ export default function BattlePlanPanel() {
       ) : openTasks.length === 0 ? (
         <EmptyState />
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{
-              borderBottom: '1px solid rgba(139,92,246,0.35)',
-              background: 'rgba(139,92,246,0.06)',
-            }}>
-              <th style={{ width: 90, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
-                onClick={() => setPrioritySortDir(d => d === 'desc' ? 'asc' : 'desc')}>
-                Priority {prioritySortDir === 'desc' ? '↓' : '↑'}
-              </th>
-              <th style={{ width: 28, padding: '7px 6px' }}></th>
-              <th className="hidden sm:table-cell" style={{ width: 150, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ID / Contact</th>
-              <th className="hidden sm:table-cell" style={{ width: 86, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Deadline</th>
-              <th style={{ padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
-              <th style={{ width: 36, padding: '7px 6px' }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {(() => {
-                let sorted = [...tasks.filter(t => t.status === 'open' || t.status === 'in_progress')]
-                  .sort((a, b) => {
-                    // PRIMARY: deadline (soonest first; no deadline goes to bottom)
-                    const aDate = a.due_date ?? null
-                    const bDate = b.due_date ?? null
-                    if (aDate && bDate && aDate !== bDate) return aDate.localeCompare(bDate)
-                    if (aDate && !bDate) return -1
-                    if (!aDate && bDate) return 1
-                    // SECONDARY: priority (high first)
-                    const ap = a.bp_priority ?? 0
-                    const bp = b.bp_priority ?? 0
-                    return prioritySortDir === 'desc' ? bp - ap : ap - bp
-                  })
-                // Live preview reorder while dragging
-                if (draggingId && dragOverId && draggingId !== dragOverId) {
-                  const fromIdx = sorted.findIndex(t => t.id === draggingId)
-                  const toIdx = sorted.findIndex(t => t.id === dragOverId)
-                  if (fromIdx !== -1 && toIdx !== -1) {
-                    const preview = [...sorted]
-                    const [item] = preview.splice(fromIdx, 1)
-                    preview.splice(toIdx, 0, item)
-                    sorted = preview
-                  }
-                }
-                return sorted.map(task => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    deal={deals.find(d => d.id === task.deal_id) || null}
-                    completing={completingIds.has(task.id)}
-                    showFollowUp={showFollowUpFor === task.id}
-                    dragOverId={dragOverId}
-                    draggingId={draggingId}
-                    onComplete={() => completeTask(task)}
-                    onUpdate={(updates) => updateTask(task.id, updates)}
-                    onDragStart={() => handleDragStart()}
-                    onDragOver={(e) => handleDragOver(e)}
-                    onDrop={(e) => handleDrop(e)}
-                    onDragEnd={handleDragEnd}
-                    onPointerDragStart={(e) => handlePointerDragStart(e, task.id)}
-                    onPointerDragMove={handlePointerDragMove}
-                    onPointerDragEnd={handlePointerDragEnd}
-                    deals={deals}
-                    entityNames={entityNames}
-                  />
-                ))
-              })()}
-          </tbody>
-        </table>
+        <>
+        {(() => {
+          const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+
+          let sorted = [...openTasks].sort((a, b) => {
+            const aDate = a.due_date ?? null
+            const bDate = b.due_date ?? null
+            if (aDate && bDate && aDate !== bDate) return aDate.localeCompare(bDate)
+            if (aDate && !bDate) return -1
+            if (!aDate && bDate) return 1
+            const ap = a.bp_priority ?? 0
+            const bp = b.bp_priority ?? 0
+            return prioritySortDir === 'desc' ? bp - ap : ap - bp
+          })
+
+          // Live drag preview
+          if (draggingId && dragOverId && draggingId !== dragOverId) {
+            const fromIdx = sorted.findIndex(t => t.id === draggingId)
+            const toIdx = sorted.findIndex(t => t.id === dragOverId)
+            if (fromIdx !== -1 && toIdx !== -1) {
+              const preview = [...sorted]
+              const [item] = preview.splice(fromIdx, 1)
+              preview.splice(toIdx, 0, item)
+              sorted = preview
+            }
+          }
+
+          // Split into urgent (overdue + today) vs future/no-deadline
+          const urgentTasks = sorted.filter(t => t.due_date && t.due_date <= today)
+          const futureTasks = sorted.filter(t => !t.due_date || t.due_date > today)
+
+          const renderRows = (taskList: BattlePlanTask[]) => taskList.map(task => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              deal={deals.find(d => d.id === task.deal_id) || null}
+              completing={completingIds.has(task.id)}
+              showFollowUp={showFollowUpFor === task.id}
+              dragOverId={dragOverId}
+              draggingId={draggingId}
+              onComplete={() => completeTask(task)}
+              onUpdate={(updates) => updateTask(task.id, updates)}
+              onDragStart={() => handleDragStart()}
+              onDragOver={(e) => handleDragOver(e)}
+              onDrop={(e) => handleDrop(e)}
+              onDragEnd={handleDragEnd}
+              onPointerDragStart={(e) => handlePointerDragStart(e, task.id)}
+              onPointerDragMove={handlePointerDragMove}
+              onPointerDragEnd={handlePointerDragEnd}
+              deals={deals}
+              entityNames={entityNames}
+            />
+          ))
+
+          return (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.06)' }}>
+                  <th style={{ width: 90, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                    onClick={() => setPrioritySortDir(d => d === 'desc' ? 'asc' : 'desc')}>
+                    Priority {prioritySortDir === 'desc' ? '↓' : '↑'}
+                  </th>
+                  <th style={{ width: 28, padding: '7px 6px' }}></th>
+                  <th className="hidden sm:table-cell" style={{ width: 150, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ID / Contact</th>
+                  <th className="hidden sm:table-cell" style={{ width: 86, padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Deadline</th>
+                  <th style={{ padding: '7px 8px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Action Item</th>
+                  <th style={{ width: 36, padding: '7px 6px' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {renderRows(urgentTasks)}
+
+                {/* ── Collapse bar ── */}
+                {futureTasks.length > 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '2px 0' }}>
+                      <button
+                        onClick={() => setFutureExpanded(e => !e)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          background: 'rgba(255,255,255,0.03)',
+                          border: 'none',
+                          borderTop: '1px solid rgba(255,255,255,0.07)',
+                          borderBottom: '1px solid rgba(255,255,255,0.07)',
+                          color: 'rgba(255,255,255,0.35)',
+                          fontSize: 11,
+                          fontFamily: 'var(--font-body)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          letterSpacing: '0.04em',
+                          transition: 'background 0.15s',
+                        }}
+                      >
+                        <span>{futureTasks.length} more deal{futureTasks.length !== 1 ? 's' : ''} — no deadline / future</span>
+                        <span style={{ fontSize: 10, transition: 'transform 0.2s', display: 'inline-block', transform: futureExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                      </button>
+                    </td>
+                  </tr>
+                )}
+
+                {/* Future tasks — hidden unless expanded */}
+                {futureExpanded && renderRows(futureTasks)}
+              </tbody>
+            </table>
+          )
+        })()}
+        </>
       )}
 
       {/* ── Completion Modal ── */}
@@ -1003,7 +1048,44 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
     )
   }
 
-  const color = isOverdue ? '#ef4444' : isToday ? '#22c55e' : '#4F8EF7'
+  if (isOverdue) {
+    return (
+      <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 3,
+          padding: '2px 7px',
+          background: 'rgba(239,68,68,0.15)',
+          border: '1px solid rgba(239,68,68,0.45)',
+          borderRadius: 4, fontSize: 9, fontWeight: 800,
+          color: '#ef4444', whiteSpace: 'nowrap', letterSpacing: '0.08em',
+          textTransform: 'uppercase', fontFamily: 'monospace',
+        }}>
+          ⚠ OVERDUE
+        </span>
+        <span style={{ fontSize: 9, color: 'rgba(239,68,68,0.6)', fontFamily: 'monospace' }}>{fmtDate(value)}</span>
+      </span>
+    )
+  }
+
+  if (isToday) {
+    return (
+      <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          padding: '2px 7px',
+          background: 'rgba(251,146,60,0.15)',
+          border: '1px solid rgba(251,146,60,0.45)',
+          borderRadius: 4, fontSize: 9, fontWeight: 800,
+          color: '#fb923c', whiteSpace: 'nowrap', letterSpacing: '0.08em',
+          textTransform: 'uppercase', fontFamily: 'monospace',
+        }}>
+          <span style={{ fontSize: 7, lineHeight: 1 }}>●</span> TODAY
+        </span>
+      </span>
+    )
+  }
+
+  const color = '#4F8EF7'
   return (
     <span
       title={value}
