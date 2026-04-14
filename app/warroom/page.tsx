@@ -14,6 +14,7 @@ import UnderContractPanel from '@/components/warroom/UnderContractPanel'
 import MoneyMoversPanel from '@/components/warroom/MoneyMoversPanel'
 import DealPipelinePanel from '@/components/warroom/DealPipelinePanel'
 import AccountsReceivablePanel from '@/components/warroom/AccountsReceivablePanel'
+import ClientsPanel from '@/components/warroom/ClientsPanel'
 import ShirleyCREAgentCard from '@/components/warroom/ShirleyCREAgentCard'
 import LifePanel from '@/components/warroom/LifePanel'
 import EntitiesPanel from '@/components/warroom/EntitiesPanel'
@@ -1070,6 +1071,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
           <UnderContractPanel />
           <MoneyMoversPanel />
           <DealPipelinePanel />
+          <ClientsPanel />
           <AccountsReceivablePanel />
         </div>
       </motion.div>
@@ -1106,7 +1108,12 @@ function OperationsView({ activePanel }: { activePanel: string }) {
           <DealPipelinePanel />
         </div>
 
-        {/* Row 5: AR + ShirleyCRE Agent Card */}
+        {/* Row 5: Clients (full width) */}
+        <div className="lg:col-span-3 card-reveal card-reveal-5" style={{ position: 'relative', zIndex: 15 }}>
+          <ClientsPanel />
+        </div>
+
+        {/* Row 6: AR + ShirleyCRE Agent Card */}
         <div className="card-reveal card-reveal-6" style={{ position: 'relative', zIndex: 10 }}>
           <AccountsReceivablePanel />
         </div>
