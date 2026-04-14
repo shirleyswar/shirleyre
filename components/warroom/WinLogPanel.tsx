@@ -44,7 +44,8 @@ export default function WinLogPanel() {
 
       if (error || !data) { setLoading(false); return }
 
-      const ids = (data as CollectedItem[]).map(i => i.id)
+      const rows = data as unknown as CollectedItem[]
+      const ids = rows.map(i => i.id)
       let payMap: Record<string, CollectedItem['payments']> = {}
       if (ids.length > 0) {
         const { data: pData } = await supabase
@@ -60,7 +61,7 @@ export default function WinLogPanel() {
         }
       }
 
-      const enriched = (data as CollectedItem[]).map(item => ({
+      const enriched = rows.map(item => ({
         ...item,
         payments: payMap[item.id] ?? [],
         payments_total: (payMap[item.id] ?? []).reduce((s, p) => s + p.amount, 0),
