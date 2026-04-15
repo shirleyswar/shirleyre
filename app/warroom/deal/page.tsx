@@ -3682,13 +3682,17 @@ function DealDashboardInner() {
         {/* ── RIGHT COLUMN — visible on all screens (stacks below left on mobile) ── */}
         <div className="w-full sm:w-[35%]" style={{ minWidth: 0 }}>
 
-          {/* Deal Actions Card */}
+          {/* ── 2-col inner layout: action buttons left, prospects/commission right ── */}
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
+
+          {/* LEFT: Deal Actions — auto-width, compact */}
           <div style={{
             background: '#1A1E25',
             border: '1px solid rgba(255,255,255,0.06)',
             borderRadius: 12,
-            padding: '14px 16px',
-            marginBottom: 16,
+            padding: '12px 14px',
+            flexShrink: 0,
+            minWidth: 160,
           }}>
             {/* Header */}
             <div style={{
@@ -3697,7 +3701,7 @@ function DealDashboardInner() {
               letterSpacing: '0.18em',
               textTransform: 'uppercase',
               color: 'rgba(232,184,75,0.5)',
-              marginBottom: 12,
+              marginBottom: 10,
               fontFamily: 'var(--font-body)',
             }}>
               Deal Actions
@@ -3854,12 +3858,15 @@ function DealDashboardInner() {
             </div>
           </div>
 
+          {/* RIGHT sub-column: Prospects + Commission */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+
           {/* ── PROSPECTS — button ── */}
           <button
             onClick={() => router.push(`/warroom/deal/prospects?id=${deal.id}`)}
             style={{
               width: '100%',
-              marginBottom: 16,
+              marginBottom: 0,
               padding: '12px 16px',
               display: 'flex',
               alignItems: 'center',
@@ -3899,6 +3906,9 @@ function DealDashboardInner() {
 
           {/* Commission Panel */}
           <CommissionPanel dealId={deal.id} dealStatus={deal.status} />
+
+          </div>{/* end RIGHT sub-column */}
+          </div>{/* end 2-col inner layout */}
 
           {/* Contacts */}
           <ContactsCard deal={deal} />
