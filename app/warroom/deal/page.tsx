@@ -354,8 +354,8 @@ function ActionBtn({
         onClick={onClick}
         style={{
           width: '100%',
-          padding: '16px 20px',
-          fontSize: 14,
+          padding: '11px 16px',
+          fontSize: 12,
           fontWeight: 900,
           letterSpacing: '0.1em',
           textTransform: 'uppercase',
@@ -2725,6 +2725,7 @@ function DealDashboardInner() {
     leaseRate: '',
     leaseRateUnit: '$/SF/YR',
     leaseTermMonths: '',
+    leaseTermYears: '',
     notes: '',
     commissionPct: '',
     commissionAmount: '',
@@ -2903,7 +2904,7 @@ function DealDashboardInner() {
 
     // Validate required fields
     if (isLease) {
-      if (!ucForm.leaseRate || !ucForm.leaseTermMonths) {
+      if (!ucForm.leaseRate || !ucForm.leaseTermYears) {
         alert('Lease rate and term are required')
         return
       }
@@ -2925,8 +2926,8 @@ function DealDashboardInner() {
     }
     if (isLease) {
       ucPayload.lease_rate = parseFloat(ucForm.leaseRate)
-      ucPayload.lease_rate_unit = ucForm.leaseRateUnit
-      ucPayload.lease_term_months = parseInt(ucForm.leaseTermMonths)
+      ucPayload.lease_rate_unit = '$/MO'
+      ucPayload.lease_term_months = Math.round((parseFloat(ucForm.leaseTermYears) || 0) * 12)
     } else {
       ucPayload.contract_price = parseFloat(ucForm.contractPrice)
     }
@@ -2966,7 +2967,7 @@ function DealDashboardInner() {
 
     // Activity log
     const desc = isLease
-      ? `Under Contract — Lease: ${ucForm.leaseRate} ${ucForm.leaseRateUnit}, ${ucForm.leaseTermMonths} months`
+      ? `Under Contract — Lease: $${parseFloat(ucForm.leaseRate).toLocaleString()} /mo, ${ucForm.leaseTermYears} yrs`
       : `Under Contract — Sale: $${parseFloat(ucForm.contractPrice).toLocaleString()}`
     await supabase.from('activity_log').insert({
       deal_id: deal.id,
@@ -2978,7 +2979,7 @@ function DealDashboardInner() {
     // Reset and close
     setShowUCDialog(false)
     setUCForm({
-      contractPrice: '', leaseRate: '', leaseRateUnit: '$/SF/YR', leaseTermMonths: '',
+      contractPrice: '', leaseRate: '', leaseRateUnit: '$/SF/YR', leaseTermMonths: '', leaseTermYears: '',
       notes: '', commissionPct: '', commissionAmount: '', cobrokeListingOn: false, cobrokeBuyerOn: false, dualRep: false,
       listingBrokers: [{ name: '', firm: '', pct: '' }],
       buyerBrokers: [{ name: '', firm: '', pct: '' }],
@@ -3681,52 +3682,6 @@ function DealDashboardInner() {
         {/* ── RIGHT COLUMN — visible on all screens (stacks below left on mobile) ── */}
         <div className="w-full sm:w-[35%]" style={{ minWidth: 0 }}>
 
-          {/* ── PROSPECTS — big prominent button ── */}
-          <button
-            onClick={() => router.push(`/warroom/deal/prospects?id=${deal.id}`)}
-            style={{
-              width: '100%',
-              marginBottom: 16,
-              padding: '18px 20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              background: 'linear-gradient(135deg, rgba(79,142,247,0.14) 0%, rgba(59,130,246,0.22) 100%)',
-              border: '1px solid rgba(79,142,247,0.5)',
-              borderRadius: 14,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              boxShadow: '0 0 24px rgba(79,142,247,0.12)',
-              textAlign: 'left',
-            }}
-          >
-            {/* Icon */}
-            <div style={{
-              width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
-              background: 'rgba(79,142,247,0.18)',
-              border: '1px solid rgba(79,142,247,0.45)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F8EF7" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-            </div>
-            {/* Text */}
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: '#4F8EF7', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>
-                Prospects
-              </div>
-              <div style={{ fontSize: 11, color: 'rgba(79,142,247,0.6)', fontWeight: 600 }}>
-                Buyers · Tenants · Interested Parties
-              </div>
-            </div>
-            {/* Arrow */}
-            <div style={{ marginLeft: 'auto', color: 'rgba(79,142,247,0.5)', fontSize: 18 }}>›</div>
-          </button>
-
           {/* Deal Actions Card */}
           <div style={{
             background: '#1A1E25',
@@ -3899,6 +3854,49 @@ function DealDashboardInner() {
             </div>
           </div>
 
+          {/* ── PROSPECTS — button ── */}
+          <button
+            onClick={() => router.push(`/warroom/deal/prospects?id=${deal.id}`)}
+            style={{
+              width: '100%',
+              marginBottom: 16,
+              padding: '12px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              background: 'linear-gradient(135deg, rgba(79,142,247,0.14) 0%, rgba(59,130,246,0.22) 100%)',
+              border: '1px solid rgba(79,142,247,0.5)',
+              borderRadius: 14,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              boxShadow: '0 0 24px rgba(79,142,247,0.12)',
+              textAlign: 'left',
+            }}
+          >
+            {/* Icon */}
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+              background: 'rgba(79,142,247,0.18)',
+              border: '1px solid rgba(79,142,247,0.45)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F8EF7" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            {/* Text */}
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 900, color: '#4F8EF7', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Prospects
+              </div>
+            </div>
+            {/* Arrow */}
+            <div style={{ marginLeft: 'auto', color: 'rgba(79,142,247,0.5)', fontSize: 18 }}>›</div>
+          </button>
+
           {/* Commission Panel */}
           <CommissionPanel dealId={deal.id} dealStatus={deal.status} />
 
@@ -4049,27 +4047,40 @@ function DealDashboardInner() {
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       <div>
-                        <label style={fLabel}>Lease Rate *</label>
+                        <label style={fLabel}>Monthly Base Rent ($) *</label>
                         <input type="number" step="0.01" style={fInput} value={ucForm.leaseRate}
-                          onChange={e => setUCForm(f => ({ ...f, leaseRate: e.target.value }))}
-                          placeholder="e.g. 22.50" autoFocus />
+                          onChange={e => {
+                            const monthly = e.target.value
+                            const years = parseFloat(ucForm.leaseTermYears) || 0
+                            const pct = parseFloat(ucForm.commissionPct) || 0
+                            const vol = (parseFloat(monthly) || 0) * 12 * years
+                            const amt = vol > 0 && pct > 0 ? String(Math.round(vol * (pct / 100) * 0.75)) : ucForm.commissionAmount
+                            setUCForm(f => ({ ...f, leaseRate: monthly, commissionAmount: amt }))
+                          }}
+                          placeholder="e.g. 4500" autoFocus />
                       </div>
                       <div>
-                        <label style={fLabel}>Rate Unit *</label>
-                        <select style={fInput} value={ucForm.leaseRateUnit}
-                          onChange={e => setUCForm(f => ({ ...f, leaseRateUnit: e.target.value }))}>
-                          <option>$/SF/YR</option>
-                          <option>$/SF/MO</option>
-                          <option>$/MO</option>
-                        </select>
+                        <label style={fLabel}>Term (years) *</label>
+                        <input type="number" step="0.5" style={fInput} value={ucForm.leaseTermYears}
+                          onChange={e => {
+                            const years = e.target.value
+                            const monthly = parseFloat(ucForm.leaseRate) || 0
+                            const pct = parseFloat(ucForm.commissionPct) || 0
+                            const vol = monthly * 12 * (parseFloat(years) || 0)
+                            const amt = vol > 0 && pct > 0 ? String(Math.round(vol * (pct / 100) * 0.75)) : ucForm.commissionAmount
+                            setUCForm(f => ({ ...f, leaseTermYears: years, commissionAmount: amt }))
+                          }}
+                          placeholder="e.g. 3" />
                       </div>
                     </div>
-                    <div>
-                      <label style={fLabel}>Lease Term (months) *</label>
-                      <input type="number" style={fInput} value={ucForm.leaseTermMonths}
-                        onChange={e => setUCForm(f => ({ ...f, leaseTermMonths: e.target.value }))}
-                        placeholder="e.g. 60" />
-                    </div>
+                    {ucForm.leaseRate && ucForm.leaseTermYears && (() => {
+                      const vol = (parseFloat(ucForm.leaseRate) || 0) * 12 * (parseFloat(ucForm.leaseTermYears) || 0)
+                      return vol > 0 ? (
+                        <div style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, marginTop: -6 }}>
+                          Deal Volume: ${vol.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                        </div>
+                      ) : null
+                    })()}
                   </>
                 )}
 
@@ -4273,6 +4284,8 @@ function EarnedModal({ deal, onClose, onSaved }: {
     reimbursable_amount: '',
     deposit_retainage: '',
   })
+  const [leaseMonthly, setLeaseMonthly] = useState('')
+  const [leaseYears, setLeaseYears] = useState('')
   const [pin, setPin] = useState('')
   const [pinErr, setPinErr] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -4426,22 +4439,57 @@ function EarnedModal({ deal, onClose, onSaved }: {
           {deal.name} — Creates AR item and marks deal as earned.
         </div>
 
-        {/* Gross Deal Value */}
-        <div>
-          <label style={fLabel}>Gross Deal Value ($) *</label>
-          <input
-            type="number"
-            style={fInput}
-            value={form.gross_deal_value}
-            onChange={e => handleGrossOrPctChange('gross_deal_value', e.target.value)}
-            placeholder="e.g. 1250000"
-          />
-          {num(form.gross_deal_value) > 0 && (
-            <div style={{ fontSize: 11, color: '#E8B84B', marginTop: 3, fontWeight: 600 }}>
-              ${num(form.gross_deal_value).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+        {/* Gross Deal Value — manual for sale, auto-calc for lease */}
+        {(form.deal_type === 'full_service_lease' || form.deal_type === 'lease' || form.deal_type === 'nnn_lease' || form.deal_type === 'modified_gross_lease') ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={fLabel}>Monthly Base Rent ($) *</label>
+                <input type="number" step="0.01" style={fInput} value={leaseMonthly}
+                  onChange={e => {
+                    setLeaseMonthly(e.target.value)
+                    const vol = (parseFloat(e.target.value) || 0) * 12 * (parseFloat(leaseYears) || 0)
+                    if (vol > 0) handleGrossOrPctChange('gross_deal_value', String(vol))
+                  }}
+                  placeholder="e.g. 4500" />
+              </div>
+              <div>
+                <label style={fLabel}>Term (years) *</label>
+                <input type="number" step="0.5" style={fInput} value={leaseYears}
+                  onChange={e => {
+                    setLeaseYears(e.target.value)
+                    const vol = (parseFloat(leaseMonthly) || 0) * 12 * (parseFloat(e.target.value) || 0)
+                    if (vol > 0) handleGrossOrPctChange('gross_deal_value', String(vol))
+                  }}
+                  placeholder="e.g. 3" />
+              </div>
             </div>
-          )}
-        </div>
+            {leaseMonthly && leaseYears && (() => {
+              const vol = (parseFloat(leaseMonthly) || 0) * 12 * (parseFloat(leaseYears) || 0)
+              return vol > 0 ? (
+                <div style={{ fontSize: 12, color: '#E8B84B', fontWeight: 700 }}>
+                  Deal Volume: ${vol.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                </div>
+              ) : null
+            })()}
+          </div>
+        ) : (
+          <div>
+            <label style={fLabel}>Gross Deal Value ($) *</label>
+            <input
+              type="number"
+              style={fInput}
+              value={form.gross_deal_value}
+              onChange={e => handleGrossOrPctChange('gross_deal_value', e.target.value)}
+              placeholder="e.g. 1250000"
+            />
+            {num(form.gross_deal_value) > 0 && (
+              <div style={{ fontSize: 11, color: '#E8B84B', marginTop: 3, fontWeight: 600 }}>
+                ${num(form.gross_deal_value).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Deal Type */}
         <div>
