@@ -243,7 +243,7 @@ export default function AccountsReceivablePanel() {
   const pctCollected = totalMsPortionGross > 0 ? Math.min(100, (totalMsCollected / totalMsPortionGross) * 100) : 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div>
 
       {/* ── HERO — matches Sale Commission card style ── */}
       <div style={{
@@ -329,33 +329,25 @@ export default function AccountsReceivablePanel() {
             )}
           </div>
         </div>
-      </div>
-
-      {/* ── TABLE CARD ── */}
-      <div className="wr-card" style={{ padding: '16px 20px' }}>
-
-      {/* Body */}
-      {loading ? (
-        <div className="skeleton" style={{ height: 60 }} />
-      ) : tableError ? (
-        <div style={{ padding: 16, background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 8 }}>
-          <div style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, marginBottom: 8 }}>Database Setup Required</div>
-          <div style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.6 }}>Run the AR setup SQL in Supabase to enable this panel.</div>
-        </div>
-      ) : sorted.length === 0 ? (
-        <div style={{ fontSize: 13, color: 'var(--success)', textAlign: 'center', padding: '12px 0' }}>
-          ✓ Nothing outstanding
-        </div>
-      ) : (
-        <div style={{ width: '100%' }}>
-          {/* Column headers — commission card style */}
-          <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 110px 110px 110px', gap: '0 8px', padding: '6px 8px', borderBottom: '1px solid rgba(167,139,250,0.15)', marginBottom: 4 }}>
-            {['', 'DEAL', 'MS PORTION', 'COLLECTED', 'BALANCE'].map((h, i) => (
-              <div key={i} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.45)', fontFamily: 'monospace', textAlign: i <= 1 ? 'left' : 'right' }}>
-                {h}
-              </div>
-            ))}
-          </div>
+        {/* ── Deal rows — inside the hero card ── */}
+        {(loading || tableError || sorted.length > 0) && (
+          <div style={{ marginTop: 20, borderTop: '1px solid rgba(167,139,250,0.12)', paddingTop: 16 }}>
+            {loading ? (
+              <div className="skeleton" style={{ height: 52, borderRadius: 8 }} />
+            ) : tableError ? (
+              <div style={{ fontSize: 12, color: '#9ca3af' }}>Run the AR setup SQL in Supabase to enable rows.</div>
+            ) : sorted.length === 0 ? (
+              <div style={{ fontSize: 13, color: '#22c55e', textAlign: 'center', padding: '8px 0' }}>✓ Nothing outstanding</div>
+            ) : (
+              <div style={{ width: '100%' }}>
+                {/* Column headers */}
+                <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 100px 100px', gap: '0 8px', padding: '4px 6px', marginBottom: 4 }}>
+                  {['', 'DEAL', 'MS PORTION', 'BALANCE'].map((h, i) => (
+                    <div key={i} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: i <= 1 ? 'left' : 'right' }}>
+                      {h}
+                    </div>
+                  ))}
+                </div>
 
           {sorted.map(item => {
                 const isCollected = item.status === 'collected'
@@ -368,74 +360,60 @@ export default function AccountsReceivablePanel() {
 
                 return (
                   <div key={item.id}>
-                    {/* Main row */}
+                    {/* Main row — 4 cols: arrow | deal | ms portion | balance+actions */}
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '28px 1fr 110px 110px 110px',
+                        gridTemplateColumns: '24px 1fr 100px 100px',
                         gap: '0 8px',
-                        padding: '10px 8px',
-                        borderBottom: '1px solid rgba(255,255,255,0.04)',
-                        opacity: isCollected ? 0.6 : 1,
+                        padding: '11px 6px',
+                        borderBottom: '1px solid rgba(255,255,255,0.05)',
+                        opacity: isCollected ? 0.55 : 1,
                         cursor: 'pointer',
                         alignItems: 'center',
-                        borderLeft: isCollected ? '2px solid rgba(107,114,128,0.3)' : '2px solid rgba(167,139,250,0.5)',
+                        borderLeft: isCollected ? '2px solid rgba(107,114,128,0.25)' : '2px solid rgba(167,139,250,0.5)',
                         borderRadius: '0 4px 4px 0',
-                        transition: 'background 0.1s',
                       }}
                       onClick={() => setExpandedId(isExpanded ? null : item.id)}
                     >
-                      {/* Arrow link */}
+                      {/* Arrow */}
                       <div onClick={e => e.stopPropagation()}>
-                        <a href={`/warroom/deal?id=${item.deal_id}`} style={{ color: '#a78bfa', textDecoration: 'none', fontSize: 14, fontWeight: 700 }} title="Open deal">↗</a>
+                        <a href={`/warroom/deal?id=${item.deal_id}`} style={{ color: '#a78bfa', textDecoration: 'none', fontSize: 14, fontWeight: 700 }}>↗</a>
                       </div>
 
                       {/* Deal name + progress bar */}
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>{isExpanded ? '▾' : '▸'}</span>
-                          <span style={{
-                            fontSize: 13, fontWeight: 700, color: '#F0F2FF',
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                            letterSpacing: '-0.01em',
-                          }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>{isExpanded ? '▾' : '▸'}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#F0F2FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
                             {item.deals?.name ?? '—'}
                           </span>
                         </div>
                         {!isCollected && msTotal > 0 && (
-                          <div style={{ marginTop: 5, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 1 }}>
+                          <div style={{ marginTop: 4, height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
                             <div style={{ height: 2, width: `${pctPaid}%`, background: pctPaid >= 100 ? '#22c55e' : '#a78bfa', borderRadius: 1, transition: 'width 0.3s' }} />
                           </div>
                         )}
                       </div>
 
                       {/* MS Portion */}
-                      <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>
+                      <div style={{ textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.55)', fontVariantNumeric: 'tabular-nums' }}>
                         {fmt(msTotal)}
                       </div>
 
-                      {/* MS Collected */}
-                      <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 600, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums' }}>
-                        {msPaid > 0 ? fmt(msPaid) : '—'}
-                      </div>
-
-                      {/* MS Balance + actions stacked */}
-                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }} onClick={e => e.stopPropagation()}>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', textShadow: isCollected ? 'none' : '0 0 16px rgba(192,132,252,0.3)' }}>
-                          {isCollected ? '✓ Done' : fmt(msBalance)}
+                      {/* Balance + collect buttons */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }} onClick={e => e.stopPropagation()}>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', textShadow: isCollected ? 'none' : '0 0 14px rgba(192,132,252,0.3)' }}>
+                          {isCollected ? '✓' : fmt(msBalance)}
                         </div>
                         {!isCollected && (
-                          <div style={{ display: 'flex', gap: 4 }}>
-                            <button
-                              onClick={() => openPayModal(item)}
-                              style={{ padding: '3px 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.04em', background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 4, color: '#a78bfa', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit' }}
-                            >
+                          <div style={{ display: 'flex', gap: 3 }}>
+                            <button onClick={() => openPayModal(item)}
+                              style={{ padding: '3px 7px', fontSize: 9, fontWeight: 800, background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 4, color: '#a78bfa', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit' }}>
                               + Pay
                             </button>
-                            <button
-                              onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }}
-                              style={{ padding: '3px 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.04em', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 4, color: '#22c55e', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit' }}
-                            >
+                            <button onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }}
+                              style={{ padding: '3px 7px', fontSize: 9, fontWeight: 800, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 4, color: '#22c55e', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit' }}>
                               Full ✓
                             </button>
                           </div>
@@ -443,27 +421,25 @@ export default function AccountsReceivablePanel() {
                       </div>
                     </div>
 
-                    {/* ── Expanded payment history ── */}
+                    {/* Payment history — expanded */}
                     {isExpanded && (
-                      <div style={{ padding: '8px 8px 12px 44px', background: 'rgba(139,92,246,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ padding: '8px 6px 10px 32px', background: 'rgba(139,92,246,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         {itemPayments.length === 0 ? (
                           <div style={{ fontSize: 11, color: '#6b7280', fontStyle: 'italic' }}>No payments logged yet.</div>
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '120px 100px 1fr', gap: '0 12px', marginBottom: 4 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '100px 90px 1fr', gap: '0 10px', marginBottom: 4 }}>
                               {['Date', 'Amount', 'Note'].map(h => (
-                                <div key={h} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', fontFamily: 'monospace' }}>{h}</div>
+                                <div key={h} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', fontFamily: 'monospace' }}>{h}</div>
                               ))}
                             </div>
                             {itemPayments.map(p => (
-                              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '120px 100px 1fr', gap: '0 12px', padding: '4px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                                <div style={{ fontSize: 12, color: '#9ca3af', fontFamily: 'monospace' }}>
+                              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '100px 90px 1fr', gap: '0 10px', padding: '3px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                                <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>
                                   {new Date(p.paid_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </div>
-                                <div style={{ fontSize: 13, color: '#22c55e', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                                  {fmt(p.amount)}
-                                </div>
-                                <div style={{ fontSize: 12, color: '#6b7280' }}>{p.note ?? '—'}</div>
+                                <div style={{ fontSize: 12, color: '#22c55e', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(p.amount)}</div>
+                                <div style={{ fontSize: 11, color: '#6b7280' }}>{p.note ?? '—'}</div>
                               </div>
                             ))}
                           </div>
@@ -473,8 +449,10 @@ export default function AccountsReceivablePanel() {
                   </div>
                 )
               })}
-        </div>
-      )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Log Payment Modal ── */}
