@@ -1124,11 +1124,13 @@ function OperationsView({ activePanel }: { activePanel: string }) {
           <ClientsPanel />
         </div>
 
-        {/* Row 6: AR + ShirleyCRE Agent Card */}
-        <div className="card-reveal card-reveal-6" style={{ position: 'relative', zIndex: 10 }}>
+        {/* Row 6: AR — full width */}
+        <div className="lg:col-span-3 card-reveal card-reveal-6" style={{ position: 'relative', zIndex: 10 }}>
           <AccountsReceivablePanel />
         </div>
-        <div className="card-reveal card-reveal-7" style={{ position: 'relative', zIndex: 10 }}>
+
+        {/* Row 7: ShirleyCRE Agent Card — full width below */}
+        <div className="lg:col-span-3 card-reveal card-reveal-7" style={{ position: 'relative', zIndex: 10 }}>
           <ShirleyCREAgentCard />
         </div>
       </div>

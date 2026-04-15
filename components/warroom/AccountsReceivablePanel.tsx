@@ -271,19 +271,21 @@ export default function AccountsReceivablePanel() {
               </div>
             </div>
           </div>
-          <div style={{
-            fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase',
-            color: '#a78bfa', background: 'rgba(139,92,246,0.12)',
-            border: '1px solid rgba(167,139,250,0.4)', borderRadius: 6, padding: '4px 10px',
-          }}>
-            {receivable.length > 0 ? 'Pending' : '✓ Clear'}
-          </div>
+          {receivable.length === 0 && (
+            <div style={{
+              fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase',
+              color: '#22c55e', background: 'rgba(34,197,94,0.08)',
+              border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, padding: '4px 10px',
+            }}>
+              ✓ Clear
+            </div>
+          )}
         </div>
 
         {/* Stats strip — label-over-value columns with dividers, hero stat last */}
         <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', flexWrap: 'wrap' }}>
           {[
-            { label: 'Active Deals',   value: loading ? '—' : String(receivable.length), dim: true },
+            { label: 'Deals',   value: loading ? '—' : String(receivable.length), dim: true },
             { label: 'MS Gross',       value: loading ? '—' : fmt(totalMsPortionGross) },
             { label: 'Collected',      value: loading ? '—' : fmt(totalMsCollected) },
           ].map((s, i) => (
@@ -407,13 +409,31 @@ export default function AccountsReceivablePanel() {
                           {isCollected ? '✓' : fmt(msBalance)}
                         </div>
                         {!isCollected && (
-                          <div style={{ display: 'flex', gap: 3 }}>
+                          <div style={{ display: 'flex', gap: 6 }}>
                             <button onClick={() => openPayModal(item)}
-                              style={{ padding: '3px 7px', fontSize: 9, fontWeight: 800, background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 4, color: '#a78bfa', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit' }}>
+                              style={{
+                                padding: '7px 14px', fontSize: 12, fontWeight: 800,
+                                background: 'rgba(167,139,250,0.18)',
+                                border: '1.5px solid rgba(167,139,250,0.55)',
+                                borderRadius: 7, color: '#c4b5fd', cursor: 'pointer',
+                                whiteSpace: 'nowrap', textTransform: 'uppercase',
+                                fontFamily: 'inherit', letterSpacing: '0.06em',
+                                boxShadow: '0 0 12px rgba(167,139,250,0.15)',
+                                transition: 'all 0.15s',
+                              }}>
                               + Pay
                             </button>
                             <button onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }}
-                              style={{ padding: '3px 7px', fontSize: 9, fontWeight: 800, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 4, color: '#22c55e', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit' }}>
+                              style={{
+                                padding: '7px 14px', fontSize: 12, fontWeight: 800,
+                                background: 'rgba(34,197,94,0.15)',
+                                border: '1.5px solid rgba(34,197,94,0.5)',
+                                borderRadius: 7, color: '#4ade80', cursor: 'pointer',
+                                whiteSpace: 'nowrap', textTransform: 'uppercase',
+                                fontFamily: 'inherit', letterSpacing: '0.06em',
+                                boxShadow: '0 0 12px rgba(34,197,94,0.15)',
+                                transition: 'all 0.15s',
+                              }}>
                               Full ✓
                             </button>
                           </div>
