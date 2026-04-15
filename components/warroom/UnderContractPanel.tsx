@@ -879,6 +879,7 @@ export default function UnderContractPanel() {
                   { label: 'Price',         align: 'right'  },
                   { label: 'Commission',    align: 'right'  },
                   { label: 'Next Deadline', align: 'center' },
+                  { label: '',              align: 'center' },
                 ].map((h, i) => (
                   <th key={i} style={{
                     textAlign: h.align as React.CSSProperties['textAlign'],
@@ -1019,12 +1020,45 @@ export default function UnderContractPanel() {
                         )}
                       </td>
 
+                      {/* LANDED hero button */}
+                      <td style={{ padding: '6px 10px 6px 4px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                        <a
+                          href={`/warroom/deal?id=${deal.id}`}
+                          onClick={e => e.stopPropagation()}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            gap: 6,
+                            padding: '9px 16px',
+                            fontSize: 12, fontWeight: 900,
+                            letterSpacing: '0.1em', textTransform: 'uppercase',
+                            textDecoration: 'none',
+                            background: 'linear-gradient(135deg, rgba(34,197,94,0.28) 0%, rgba(21,128,61,0.38) 100%)',
+                            border: '2px solid rgba(34,197,94,0.75)',
+                            borderRadius: 10,
+                            color: '#bbf7d0',
+                            boxShadow: '0 0 20px rgba(34,197,94,0.25), 0 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
+                            whiteSpace: 'nowrap',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => {
+                            (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 0 32px rgba(34,197,94,0.45), 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15)'
+                            ;(e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 0 20px rgba(34,197,94,0.25), 0 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
+                            ;(e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'
+                          }}
+                        >
+                          ✓ LANDED
+                        </a>
+                      </td>
+
                     </tr>
 
                     {/* Expanded subpanel */}
                     {isExpanded && (
                       <tr key={`${deal.id}-expand`} style={{ borderBottom: i < deals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                        <td colSpan={7} style={{ padding: '0 10px 10px' }}>
+                        <td colSpan={8} style={{ padding: '0 10px 10px' }}>
                           <DealSubpanel
                             deal={deal}
                             onDeadlinesChange={handleDeadlinesChange}
