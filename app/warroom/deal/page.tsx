@@ -847,6 +847,8 @@ function DealGlanceCard({ deal }: { deal: Deal }) {
     flexDirection: 'column',
     gap: 2,
     minWidth: 0,
+    padding: '0 16px 0 0',
+    marginRight: 4,
   }
   const statLabel: React.CSSProperties = {
     fontSize: 8,
@@ -885,89 +887,79 @@ function DealGlanceCard({ deal }: { deal: Deal }) {
         Quick Glance
       </div>
 
-      {/* SqFt — always, sits above both sections */}
-      {sqft > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          <span style={{ ...statLabel }}>SqFt</span>
-          <div style={{ fontSize: 16, fontWeight: 800, color: '#E8B84B', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2, marginTop: 2 }}>
-            {fmtSqft(sqft)}
-          </div>
-        </div>
-      )}
+      {/* ── All stats in one horizontal row ── */}
+      <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', flexWrap: 'nowrap', overflowX: 'auto' }}>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-        {/* ── LEASE SECTION ── */}
-        {isLease && (
-          <div>
-            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.55)', marginBottom: 8, borderBottom: '1px solid rgba(232,184,75,0.12)', paddingBottom: 4 }}>
-              Lease Details
+        {/* SqFt */}
+        {sqft > 0 && (
+          <>
+            <div style={statStyle}>
+              <span style={statLabel}>SqFt</span>
+              <span style={statVal}>{fmtSqft(sqft)}</span>
             </div>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {econ.lease_rate_psf && (
-                <>
-                  <div style={statStyle}>
-                    <span style={statLabel}>Rent PSF / yr</span>
-                    <span style={statVal}>{$2(econ.lease_rate_psf)}</span>
-                  </div>
-                  {divider}
-                </>
-              )}
-              {baseMonthly != null && (
-                <>
-                  <div style={statStyle}>
-                    <span style={statLabel}>Base Rent / mo</span>
-                    <span style={statVal}>{$(baseMonthly)}</span>
-                  </div>
-                  {divider}
-                </>
-              )}
-              {isNNN && econ.nnn_psf && (
-                <>
-                  <div style={statStyle}>
-                    <span style={statLabel}>NNN / SF / yr</span>
-                    <span style={statVal}>{$2(econ.nnn_psf)}</span>
-                  </div>
-                  {divider}
-                  <div style={statStyle}>
-                    <span style={statLabel}>NNN / mo</span>
-                    <span style={statVal}>{nnnMonthly != null ? $(nnnMonthly) : '—'}</span>
-                  </div>
-                  {divider}
-                  {totalMonthly != null && (
-                    <div style={statStyle}>
-                      <span style={statLabel}>Total NNN / mo</span>
-                      <span style={{ ...statVal, color: '#22c55e' }}>{$(totalMonthly)}</span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
+            {divider}
+          </>
         )}
 
-        {/* ── SALE SECTION ── */}
+        {/* Lease stats */}
+        {isLease && econ.lease_rate_psf && (
+          <>
+            <div style={statStyle}>
+              <span style={statLabel}>Rent PSF / yr</span>
+              <span style={statVal}>{$2(econ.lease_rate_psf)}</span>
+            </div>
+            {divider}
+          </>
+        )}
+        {isLease && baseMonthly != null && (
+          <>
+            <div style={statStyle}>
+              <span style={statLabel}>Base Rent / mo</span>
+              <span style={statVal}>{$(baseMonthly)}</span>
+            </div>
+            {divider}
+          </>
+        )}
+        {isLease && isNNN && econ.nnn_psf && (
+          <>
+            <div style={statStyle}>
+              <span style={statLabel}>NNN / SF / yr</span>
+              <span style={statVal}>{$2(econ.nnn_psf)}</span>
+            </div>
+            {divider}
+            <div style={statStyle}>
+              <span style={statLabel}>NNN / mo</span>
+              <span style={statVal}>{nnnMonthly != null ? $(nnnMonthly) : '—'}</span>
+            </div>
+            {totalMonthly != null && (
+              <>
+                {divider}
+                <div style={statStyle}>
+                  <span style={statLabel}>Total NNN / mo</span>
+                  <span style={{ ...statVal, color: '#22c55e' }}>{$(totalMonthly)}</span>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Sale stats */}
         {isSale && econ.asking_price && (
-          <div>
-            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.55)', marginBottom: 8, borderBottom: '1px solid rgba(232,184,75,0.12)', paddingBottom: 4 }}>
-              Sale Details
+          <>
+            <div style={statStyle}>
+              <span style={statLabel}>Asking Price</span>
+              <span style={statVal}>{$(econ.asking_price)}</span>
             </div>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <div style={statStyle}>
-                <span style={statLabel}>Asking Price</span>
-                <span style={statVal}>{$(econ.asking_price)}</span>
-              </div>
-              {pricePsf != null && (
-                <>
-                  {divider}
-                  <div style={statStyle}>
-                    <span style={statLabel}>Price / SF</span>
-                    <span style={statVal}>{$2(pricePsf)}</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+            {pricePsf != null && (
+              <>
+                {divider}
+                <div style={statStyle}>
+                  <span style={statLabel}>Price / SF</span>
+                  <span style={statVal}>{$2(pricePsf)}</span>
+                </div>
+              </>
+            )}
+          </>
         )}
 
       </div>
