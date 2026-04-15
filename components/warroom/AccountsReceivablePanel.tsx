@@ -282,49 +282,40 @@ export default function AccountsReceivablePanel() {
           )}
         </div>
 
-        {/* Stats strip — same grid as deal rows so columns lock */}
-        {/* grid: [24px arrow] [1fr deal] [160px ms-gross/buttons] [140px collected] [180px outstanding] */}
-        <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 160px 140px 180px', gap: '0 8px', padding: '0 6px' }}>
-
-          {/* col1: spacer (arrow col) */}
-          <div />
-
-          {/* col2: Deals */}
-          <div style={{ padding: '12px 0 12px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>Deals</div>
-            <div style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.45)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
-              {loading ? '—' : String(receivable.length)}
+        {/* Stats strip — 4 equal flex cols: Deals · MS Gross · Collected · Outstanding */}
+        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch' }}>
+          {[
+            { label: 'Deals',     value: loading ? '—' : String(receivable.length), dim: true },
+            { label: 'MS Gross',  value: loading ? '—' : fmt(totalMsPortionGross) },
+            { label: 'Collected', value: loading ? '—' : fmt(totalMsCollected) },
+          ].map((s, i) => (
+            <div key={s.label} style={{
+              flex: '1 1 0',
+              padding: '12px 20px',
+              borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+              display: 'flex', flexDirection: 'column', gap: 4,
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: s.dim ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.3)', marginBottom: 2 }}>
+                {s.label}
+              </div>
+              <div style={{ fontSize: 20, fontWeight: s.dim ? 600 : 700, color: s.dim ? 'rgba(255,255,255,0.45)' : '#F0F2FF', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+                {s.value}
+              </div>
             </div>
-          </div>
-
-          {/* col3: MS Gross */}
-          <div style={{ padding: '12px 0', borderLeft: '1px solid rgba(255,255,255,0.06)', paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>MS Gross</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
-              {loading ? '—' : fmt(totalMsPortionGross)}
-            </div>
-          </div>
-
-          {/* col4: Collected */}
-          <div style={{ padding: '12px 0', borderLeft: '1px solid rgba(255,255,255,0.06)', paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>Collected</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
-              {loading ? '—' : fmt(totalMsCollected)}
-            </div>
-          </div>
-
-          {/* col5: Outstanding */}
+          ))}
+          {/* Outstanding — accent */}
           <div style={{
-            padding: '12px 16px',
+            flex: '1 1 0',
+            padding: '12px 20px',
             borderLeft: '1px solid rgba(255,255,255,0.06)',
             background: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.05)' : 'rgba(34,197,94,0.04)',
             borderRadius: 10,
             display: 'flex', flexDirection: 'column', gap: 4,
           }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.6)' : 'rgba(34,197,94,0.6)' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.6)' : 'rgba(34,197,94,0.6)', marginBottom: 2 }}>
               Outstanding
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: totalMsOutstanding > 0 ? '#C084FC' : '#22c55e', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: totalMsOutstanding > 0 ? '#C084FC' : '#22c55e', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
               {loading ? '—' : fmt(totalMsOutstanding)}
             </div>
             {totalMsPortionGross > 0 && (
@@ -345,19 +336,12 @@ export default function AccountsReceivablePanel() {
               <div style={{ fontSize: 13, color: '#22c55e', textAlign: 'center', padding: '8px 0' }}>✓ Nothing outstanding</div>
             ) : (
               <div style={{ width: '100%' }}>
-                {/* Column headers — same grid as stats strip */}
-                <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 160px 140px 180px', gap: '0 8px', padding: '4px 6px', marginBottom: 4, alignItems: 'center' }}>
-                  {[
-                    { label: '',             align: 'left'  },
-                    { label: 'DEAL',         align: 'left'  },
-                    { label: '',             align: 'left'  },
-                    { label: 'COLLECTED',    align: 'right' },
-                    { label: 'OUTSTANDING',  align: 'right' },
-                  ].map((h, i) => (
-                    <div key={i} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: h.align as any }}>
-                      {h.label}
-                    </div>
-                  ))}
+                {/* Column headers — mirrors 4-zone stats strip */}
+                <div style={{ display: 'flex', padding: '4px 0', marginBottom: 4 }}>
+                  <div style={{ flex: '2 1 0', paddingLeft: 32, fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace' }}>DEAL</div>
+                  <div style={{ flex: '1 1 0', fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace' }}></div>
+                  <div style={{ flex: '1 1 0', fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: 'right' }}>COLLECTED</div>
+                  <div style={{ flex: '1 1 0', fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: 'right', paddingRight: 4 }}>OUTSTANDING</div>
                 </div>
 
           {sorted.map(item => {
@@ -374,26 +358,24 @@ export default function AccountsReceivablePanel() {
                     {/* Main row — 4 cols: arrow | deal | ms portion | balance+actions */}
                     <div
                       style={{
-                        display: 'grid',
-                        gridTemplateColumns: '24px 1fr 160px 140px 180px',
-                        gap: '0 8px',
-                        padding: '10px 6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '10px 0',
                         borderBottom: '1px solid rgba(255,255,255,0.05)',
                         opacity: isCollected ? 0.55 : 1,
                         cursor: 'pointer',
-                        alignItems: 'center',
                         borderLeft: isCollected ? '2px solid rgba(107,114,128,0.25)' : '2px solid rgba(167,139,250,0.5)',
-                        borderRadius: '0 4px 4px 0',
+                        paddingLeft: 6,
                       }}
                       onClick={() => setExpandedId(isExpanded ? null : item.id)}
                     >
-                      {/* col1: Arrow */}
-                      <div onClick={e => e.stopPropagation()}>
+                      {/* Arrow — fixed width */}
+                      <div style={{ width: 24, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                         <a href={`/warroom/deal?id=${item.deal_id}`} style={{ color: '#a78bfa', textDecoration: 'none', fontSize: 14, fontWeight: 700 }}>↗</a>
                       </div>
 
-                      {/* col2: Deal name + progress bar */}
-                      <div style={{ minWidth: 0 }}>
+                      {/* Zone 1 (Deals): Deal name — flex 2 */}
+                      <div style={{ flex: '2 1 0', minWidth: 0, paddingRight: 12 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>{isExpanded ? '▾' : '▸'}</span>
                           <span style={{ fontSize: 13, fontWeight: 700, color: '#F0F2FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
@@ -407,13 +389,13 @@ export default function AccountsReceivablePanel() {
                         )}
                       </div>
 
-                      {/* col3: Buttons (under MS Gross) */}
-                      <div style={{ display: 'flex', gap: 5, paddingLeft: 4 }} onClick={e => e.stopPropagation()}>
-                        {!isCollected ? (
+                      {/* Zone 2 (MS Gross): Buttons — flex 1 */}
+                      <div style={{ flex: '1 1 0', display: 'flex', gap: 5, paddingRight: 8 }} onClick={e => e.stopPropagation()}>
+                        {!isCollected && (
                           <>
                             <button onClick={() => openPayModal(item)}
                               style={{
-                                flex: 1, padding: '7px 0', fontSize: 11, fontWeight: 800,
+                                flex: 1, padding: '7px 4px', fontSize: 11, fontWeight: 800,
                                 background: 'rgba(167,139,250,0.18)',
                                 border: '1.5px solid rgba(167,139,250,0.55)',
                                 borderRadius: 6, color: '#c4b5fd', cursor: 'pointer',
@@ -424,7 +406,7 @@ export default function AccountsReceivablePanel() {
                             </button>
                             <button onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }}
                               style={{
-                                flex: 1, padding: '7px 0', fontSize: 11, fontWeight: 800,
+                                flex: 1, padding: '7px 4px', fontSize: 11, fontWeight: 800,
                                 background: 'rgba(34,197,94,0.15)',
                                 border: '1.5px solid rgba(34,197,94,0.5)',
                                 borderRadius: 6, color: '#4ade80', cursor: 'pointer',
@@ -434,16 +416,16 @@ export default function AccountsReceivablePanel() {
                               Full ✓
                             </button>
                           </>
-                        ) : <div />}
+                        )}
                       </div>
 
-                      {/* col4: Collected */}
-                      <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 700, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                      {/* Zone 3 (Collected): amount — flex 1 */}
+                      <div style={{ flex: '1 1 0', textAlign: 'right', fontSize: 13, fontWeight: 700, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', paddingRight: 8 }}>
                         {fmt(msPaid)}
                       </div>
 
-                      {/* col5: Outstanding */}
-                      <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', letterSpacing: '-0.01em', paddingRight: 4 }}>
+                      {/* Zone 4 (Outstanding): balance — flex 1 */}
+                      <div style={{ flex: '1 1 0', textAlign: 'right', fontSize: 13, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', letterSpacing: '-0.01em', paddingRight: 4 }}>
                         {isCollected ? '✓ Done' : fmt(msBalance)}
                       </div>
                     </div>
