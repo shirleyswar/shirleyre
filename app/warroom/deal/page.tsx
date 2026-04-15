@@ -336,7 +336,7 @@ function PinModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: ()
 // ─── Action Button ────────────────────────────────────────────────────────────
 
 function ActionBtn({
-  label, color, bg, border, onClick, icon, dim, glow,
+  label, color, bg, border, onClick, icon, dim, glow, hero,
 }: {
   label: string
   color: string
@@ -346,7 +346,47 @@ function ActionBtn({
   icon?: React.ReactNode
   dim?: boolean
   glow?: boolean
+  hero?: boolean
 }) {
+  if (hero) {
+    return (
+      <button
+        onClick={onClick}
+        style={{
+          width: '100%',
+          padding: '16px 20px',
+          fontSize: 14,
+          fontWeight: 900,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          background: bg,
+          border: `2px solid ${border}`,
+          borderRadius: 12,
+          color,
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+          transition: 'all 0.15s',
+          boxShadow: `0 0 28px ${border}55, 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)`,
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.boxShadow = `0 0 40px ${border}88, 0 6px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15)`
+          e.currentTarget.style.transform = 'translateY(-1px)'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.boxShadow = `0 0 28px ${border}55, 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)`
+          e.currentTarget.style.transform = 'translateY(0)'
+        }}
+      >
+        {icon}
+        {label}
+      </button>
+    )
+  }
+
   return (
     <button
       onClick={onClick}
@@ -367,12 +407,12 @@ function ActionBtn({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 7,
-        opacity: dim ? 0.8 : 1,
+        opacity: dim ? 0.65 : 1,
         transition: 'opacity 0.15s, background 0.15s, box-shadow 0.15s',
-        boxShadow: glow ? `0 0 20px ${border}66, inset 0 1px 0 rgba(255,255,255,0.08)` : 'inset 0 1px 0 rgba(255,255,255,0.05)',
+        boxShadow: glow ? `0 0 16px ${border}44, inset 0 1px 0 rgba(255,255,255,0.06)` : 'none',
       }}
-      onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.background = bg.replace(/[\d.]+\)$/, '0.22)') }}
-      onMouseLeave={e => { e.currentTarget.style.opacity = dim ? '0.8' : '1'; e.currentTarget.style.background = bg }}
+      onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+      onMouseLeave={e => { e.currentTarget.style.opacity = dim ? '0.65' : '1' }}
     >
       {icon}
       {label}
@@ -3411,17 +3451,17 @@ function DealDashboardInner() {
           <button
             onClick={() => pinGate(() => doStatusChange('hot'))}
             style={{
-              width: '100%', padding: '14px 16px', fontSize: 13, fontWeight: 800,
-              letterSpacing: '0.12em', textTransform: 'uppercase',
-              background: 'linear-gradient(135deg, rgba(251,146,60,0.25) 0%, rgba(234,88,12,0.35) 100%)',
-              border: '1.5px solid rgba(251,146,60,0.7)',
-              borderRadius: 12, color: '#fb923c', cursor: 'pointer', fontFamily: 'inherit',
-              boxShadow: '0 0 24px rgba(251,146,60,0.3), inset 0 1px 0 rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%', padding: '16px 20px', fontSize: 14, fontWeight: 900,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              background: 'linear-gradient(135deg, rgba(251,146,60,0.28) 0%, rgba(234,88,12,0.38) 100%)',
+              border: '2px solid rgba(251,146,60,0.75)',
+              borderRadius: 12, color: '#fed7aa', cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 0 28px rgba(251,146,60,0.4), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               marginBottom: 10,
             }}
           >
-            <span style={{ fontSize: 16 }}>🔥</span> → HOT
+            🔥 Move to Hot
           </button>
         )}
         {/* → Under Contract */}
@@ -3429,17 +3469,17 @@ function DealDashboardInner() {
           <button
             onClick={() => pinGate(() => openUCDialogWithContacts())}
             style={{
-              width: '100%', padding: '14px 16px', fontSize: 13, fontWeight: 800,
-              letterSpacing: '0.12em', textTransform: 'uppercase',
-              background: 'linear-gradient(135deg, rgba(45,212,191,0.2) 0%, rgba(13,148,136,0.32) 100%)',
-              border: '1.5px solid rgba(45,212,191,0.7)',
-              borderRadius: 12, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit',
-              boxShadow: '0 0 24px rgba(45,212,191,0.25), inset 0 1px 0 rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%', padding: '16px 20px', fontSize: 14, fontWeight: 900,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              background: 'linear-gradient(135deg, rgba(45,212,191,0.25) 0%, rgba(13,148,136,0.35) 100%)',
+              border: '2px solid rgba(45,212,191,0.75)',
+              borderRadius: 12, color: '#99f6e4', cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 0 28px rgba(45,212,191,0.35), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               marginBottom: 10,
             }}
           >
-            <span style={{ fontSize: 15 }}>📋</span> → UNDER CONTRACT
+            📋 Under Contract
           </button>
         )}
       </div>
@@ -3710,66 +3750,65 @@ function DealDashboardInner() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
 
-              {/* Launch */}
+              {/* Launch — tracked tier only */}
               {deal.tier === 'tracked' && (
                 <ActionBtn
-                  label="Launch"
-                  color="#A78BFA"
-                  bg="rgba(139,92,246,0.12)"
-                  border="rgba(139,92,246,0.4)"
+                  label="🚀 Launch Deal"
+                  color="#c4b5fd"
+                  bg="linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.4) 100%)"
+                  border="rgba(167,139,250,0.7)"
                   onClick={() => pinGate(() => doLaunch())}
-                  icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 3A10.5 10.5 0 0 1 21 14.5"/><path d="M3 9.5A10.5 10.5 0 0 1 14.5 21"/><path d="m3 16 5 5"/><path d="M3 16h5v5"/><circle cx="17" cy="7" r="3"/></svg>}
+                  hero
                 />
               )}
 
               {/* → Hot */}
               {deal.tier === 'filed' && deal.status === 'active' && (
                 <ActionBtn
-                  label="🔥 → Hot"
-                  color="#fb923c"
-                  bg="rgba(251,146,60,0.15)"
-                  border="rgba(251,146,60,0.6)"
+                  label="🔥 Move to Hot"
+                  color="#fed7aa"
+                  bg="linear-gradient(135deg, rgba(251,146,60,0.28) 0%, rgba(234,88,12,0.38) 100%)"
+                  border="rgba(251,146,60,0.75)"
                   onClick={() => pinGate(() => doStatusChange('hot'))}
-                  glow
+                  hero
                 />
               )}
 
               {/* → Under Contract */}
               {deal.tier === 'filed' && (deal.status === 'active' || deal.status === 'hot') && (
                 <ActionBtn
-                  label="📋 → Under Contract"
-                  color="#2dd4bf"
-                  bg="rgba(45,212,191,0.15)"
-                  border="rgba(45,212,191,0.6)"
+                  label="📋 Under Contract"
+                  color="#99f6e4"
+                  bg="linear-gradient(135deg, rgba(45,212,191,0.25) 0%, rgba(13,148,136,0.35) 100%)"
+                  border="rgba(45,212,191,0.75)"
                   onClick={() => pinGate(() => openUCDialogWithContacts())}
-                  glow
+                  hero
                 />
               )}
 
               {/* LANDED — under_contract only */}
               {deal.status === 'under_contract' && (
                 <ActionBtn
-                  label="LANDED"
-                  color="#22c55e"
-                  bg="rgba(34,197,94,0.12)"
-                  border="rgba(34,197,94,0.45)"
+                  label="✓ LANDED"
+                  color="#bbf7d0"
+                  bg="linear-gradient(135deg, rgba(34,197,94,0.28) 0%, rgba(21,128,61,0.38) 100%)"
+                  border="rgba(34,197,94,0.75)"
                   onClick={() => pinGate(() => doLanded())}
-                  icon={
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  }
+                  hero
                 />
               )}
 
               {/* ── Money Mover flag ── */}
-              <div style={{ marginTop: 4, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 <ActionBtn
-                  label={(deal as any).is_money_mover ? '💰 Money Mover ✓' : '💰 Add to Money Movers'}
-                  color="#E8B84B"
-                  bg={(deal as any).is_money_mover ? 'rgba(232,184,75,0.18)' : 'rgba(232,184,75,0.08)'}
-                  border={(deal as any).is_money_mover ? 'rgba(232,184,75,0.7)' : 'rgba(232,184,75,0.35)'}
-                  glow={(deal as any).is_money_mover}
+                  label={(deal as any).is_money_mover ? '💰 Money Mover ✓' : '💰 Money Mover'}
+                  color={(deal as any).is_money_mover ? '#fde68a' : '#d4b96a'}
+                  bg={(deal as any).is_money_mover
+                    ? 'linear-gradient(135deg, rgba(232,184,75,0.3) 0%, rgba(180,130,30,0.4) 100%)'
+                    : 'rgba(232,184,75,0.08)'}
+                  border={(deal as any).is_money_mover ? 'rgba(232,184,75,0.8)' : 'rgba(232,184,75,0.3)'}
+                  hero={(deal as any).is_money_mover}
+                  glow={!(deal as any).is_money_mover}
                   onClick={async () => {
                     const newVal = !(deal as any).is_money_mover
                     const { data, error } = await supabase.from('deals')
