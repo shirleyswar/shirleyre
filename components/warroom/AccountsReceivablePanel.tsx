@@ -285,47 +285,46 @@ export default function AccountsReceivablePanel() {
         {/* Stats strip — label-over-value columns with dividers, hero stat last */}
         <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', flexWrap: 'wrap' }}>
           {[
-            { label: 'Deals',   value: loading ? '—' : String(receivable.length), dim: true },
-            { label: 'MS Gross',       value: loading ? '—' : fmt(totalMsPortionGross) },
-            { label: 'Collected',      value: loading ? '—' : fmt(totalMsCollected) },
+            { label: 'Deals',        value: loading ? '—' : String(receivable.length), dim: true },
+            { label: 'MS Gross',     value: loading ? '—' : fmt(totalMsPortionGross) },
+            { label: 'Collected',    value: loading ? '—' : fmt(totalMsCollected) },
           ].map((s, i) => (
             <div key={s.label} style={{
-              flex: '1 1 110px',
-              padding: '14px 20px',
+              flex: '1 1 120px',
+              padding: '12px 20px',
               borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
               display: 'flex', flexDirection: 'column', gap: 4,
             }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: s.dim ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.3)', minHeight: 28, display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: s.dim ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.3)', marginBottom: 2 }}>
                 {s.label}
               </div>
-              <div style={{ fontSize: 18, fontWeight: s.dim ? 600 : 700, color: s.dim ? 'rgba(255,255,255,0.45)' : '#F0F2FF', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+              <div style={{ fontSize: 20, fontWeight: s.dim ? 600 : 700, color: s.dim ? 'rgba(255,255,255,0.45)' : '#F0F2FF', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
                 {s.value}
               </div>
             </div>
           ))}
 
-          {/* Hero stat — MS Outstanding, green accent like "My Commission" */}
+          {/* MS Outstanding — same scale, accent color only */}
           <div style={{
             flex: '1 1 180px',
-            padding: '14px 20px',
+            padding: '12px 20px',
             borderLeft: '1px solid rgba(255,255,255,0.06)',
             background: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.05)' : 'rgba(34,197,94,0.04)',
             borderRadius: 10,
             display: 'flex', flexDirection: 'column', gap: 4,
           }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.6)' : 'rgba(34,197,94,0.6)', minHeight: 28, display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.6)' : 'rgba(34,197,94,0.6)', marginBottom: 2 }}>
               MS Outstanding
             </div>
             <div style={{
-              fontSize: 28, fontWeight: 800,
+              fontSize: 20, fontWeight: 800,
               color: totalMsOutstanding > 0 ? '#C084FC' : '#22c55e',
-              fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1.1,
-              textShadow: totalMsOutstanding > 0 ? '0 0 24px rgba(192,132,252,0.3)' : '0 0 24px rgba(34,197,94,0.3)',
+              fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', lineHeight: 1.1,
             }}>
               {loading ? '—' : fmt(totalMsOutstanding)}
             </div>
             {totalMsPortionGross > 0 && (
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-body)', letterSpacing: '0.02em', marginTop: 2 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.02em', marginTop: 2 }}>
                 {pctCollected.toFixed(0)}% collected
               </div>
             )}
@@ -343,7 +342,7 @@ export default function AccountsReceivablePanel() {
             ) : (
               <div style={{ width: '100%' }}>
                 {/* Column headers */}
-                <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 100px 100px', gap: '0 8px', padding: '4px 6px', marginBottom: 4 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 110px 160px', gap: '0 8px', padding: '4px 6px', marginBottom: 4 }}>
                   {['', 'DEAL', 'MS PORTION', 'BALANCE'].map((h, i) => (
                     <div key={i} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: i <= 1 ? 'left' : 'right' }}>
                       {h}
@@ -366,7 +365,7 @@ export default function AccountsReceivablePanel() {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '24px 1fr 100px 100px',
+                        gridTemplateColumns: '24px 1fr 110px 160px',
                         gap: '0 8px',
                         padding: '11px 6px',
                         borderBottom: '1px solid rgba(255,255,255,0.05)',
@@ -404,35 +403,31 @@ export default function AccountsReceivablePanel() {
                       </div>
 
                       {/* Balance + collect buttons */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }} onClick={e => e.stopPropagation()}>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', textShadow: isCollected ? 'none' : '0 0 14px rgba(192,132,252,0.3)' }}>
-                          {isCollected ? '✓' : fmt(msBalance)}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }} onClick={e => e.stopPropagation()}>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
+                          {isCollected ? '✓ Collected' : fmt(msBalance)}
                         </div>
                         {!isCollected && (
-                          <div style={{ display: 'flex', gap: 6 }}>
+                          <div style={{ display: 'flex', gap: 5 }}>
                             <button onClick={() => openPayModal(item)}
                               style={{
-                                padding: '7px 14px', fontSize: 12, fontWeight: 800,
+                                padding: '6px 12px', fontSize: 11, fontWeight: 800,
                                 background: 'rgba(167,139,250,0.18)',
                                 border: '1.5px solid rgba(167,139,250,0.55)',
-                                borderRadius: 7, color: '#c4b5fd', cursor: 'pointer',
+                                borderRadius: 6, color: '#c4b5fd', cursor: 'pointer',
                                 whiteSpace: 'nowrap', textTransform: 'uppercase',
-                                fontFamily: 'inherit', letterSpacing: '0.06em',
-                                boxShadow: '0 0 12px rgba(167,139,250,0.15)',
-                                transition: 'all 0.15s',
+                                fontFamily: 'inherit', letterSpacing: '0.05em',
                               }}>
                               + Pay
                             </button>
                             <button onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }}
                               style={{
-                                padding: '7px 14px', fontSize: 12, fontWeight: 800,
+                                padding: '6px 12px', fontSize: 11, fontWeight: 800,
                                 background: 'rgba(34,197,94,0.15)',
                                 border: '1.5px solid rgba(34,197,94,0.5)',
-                                borderRadius: 7, color: '#4ade80', cursor: 'pointer',
+                                borderRadius: 6, color: '#4ade80', cursor: 'pointer',
                                 whiteSpace: 'nowrap', textTransform: 'uppercase',
-                                fontFamily: 'inherit', letterSpacing: '0.06em',
-                                boxShadow: '0 0 12px rgba(34,197,94,0.15)',
-                                transition: 'all 0.15s',
+                                fontFamily: 'inherit', letterSpacing: '0.05em',
                               }}>
                               Full ✓
                             </button>
