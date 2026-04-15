@@ -49,14 +49,22 @@ export default function MoneyMoversPanel() {
   useEffect(() => {
     async function fetchDeals() {
       try {
-        const { data } = await supabase
-          .from('deals')
-          .select('*')
-          .not('status', 'in', '("closed","dead")')
-          .not('commission_estimated', 'is', null)
-          .order('commission_estimated', { ascending: false })
-          .limit(5)
-        if (data) setDeals(data as Deal[])
+        // Flagged money movers first, then top commission deals
+        const [flaggedRes, topRes] = await Promise.all([
+          supabase.from('deals').select('*').eq('is_money_mover', true)
+            .not('status', 'in', '("closed","dead","expired","dormant","terminated")'),
+          supabase.from('deals').select('*')
+            .not('status', 'in', '("closed","dead","expired","dormant","terminated")')
+            .not('commission_estimated', 'is', null)
+            .order('commission_estimated', { ascending: false })
+            .limit(8),
+        ])
+        const flagged: Deal[] = (flaggedRes.data ?? []) as Deal[]
+        const top: Deal[] = (topRes.data ?? []) as Deal[]
+        // Merge: flagged first, then top by commission, dedupe, max 6
+        const flaggedIds = new Set(flagged.map((d: Deal) => d.id))
+        const merged = [...flagged, ...top.filter((d: Deal) => !flaggedIds.has(d.id))].slice(0, 6)
+        setDeals(merged)
       } catch {
         setDeals(PLACEHOLDER_DEALS)
       } finally {
@@ -145,7 +153,8 @@ function DealRow({ deal, rank }: { deal: Deal; rank: number }) {
 
       {/* Deal name + type */}
       <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 5 }}>
+          {(deal as any).is_money_mover && <span style={{ fontSize: 11, flexShrink: 0 }}>💰</span>}
           {deal.name}
         </div>
         <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, textTransform: 'capitalize' }}>

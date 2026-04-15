@@ -3770,6 +3770,24 @@ function DealDashboardInner() {
                 />
               )}
 
+              {/* ── Money Mover flag ── */}
+              <div style={{ marginTop: 4, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                <ActionBtn
+                  label={(deal as any).is_money_mover ? '💰 Money Mover ✓' : '💰 Add to Money Movers'}
+                  color="#E8B84B"
+                  bg={(deal as any).is_money_mover ? 'rgba(232,184,75,0.18)' : 'rgba(232,184,75,0.08)'}
+                  border={(deal as any).is_money_mover ? 'rgba(232,184,75,0.7)' : 'rgba(232,184,75,0.35)'}
+                  glow={(deal as any).is_money_mover}
+                  onClick={async () => {
+                    const newVal = !(deal as any).is_money_mover
+                    const { data, error } = await supabase.from('deals')
+                      .update({ is_money_mover: newVal, updated_at: new Date().toISOString() })
+                      .eq('id', deal.id).select().single()
+                    if (!error && data) setDeal(data as Deal)
+                  }}
+                />
+              </div>
+
               {/* Earned — Commission section */}
               {deal.tier === 'filed' && (
                 <div style={{ marginTop: 4, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
