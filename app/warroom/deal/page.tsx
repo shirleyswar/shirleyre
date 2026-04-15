@@ -336,7 +336,7 @@ function PinModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: ()
 // ─── Action Button ────────────────────────────────────────────────────────────
 
 function ActionBtn({
-  label, color, bg, border, onClick, icon, dim,
+  label, color, bg, border, onClick, icon, dim, glow,
 }: {
   label: string
   color: string
@@ -345,31 +345,33 @@ function ActionBtn({
   onClick: () => void
   icon?: React.ReactNode
   dim?: boolean
+  glow?: boolean
 }) {
   return (
     <button
       onClick={onClick}
       style={{
         width: '100%',
-        padding: '8px 12px',
-        fontSize: 10,
+        padding: '11px 14px',
+        fontSize: 11,
         fontWeight: 800,
-        letterSpacing: '0.14em',
+        letterSpacing: '0.12em',
         textTransform: 'uppercase',
         background: bg,
-        border: `1px solid ${border}`,
-        borderRadius: 8,
+        border: `1.5px solid ${border}`,
+        borderRadius: 10,
         color,
         cursor: 'pointer',
         fontFamily: 'inherit',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 6,
+        gap: 7,
         opacity: dim ? 0.8 : 1,
-        transition: 'opacity 0.15s, background 0.15s',
+        transition: 'opacity 0.15s, background 0.15s, box-shadow 0.15s',
+        boxShadow: glow ? `0 0 20px ${border}66, inset 0 1px 0 rgba(255,255,255,0.08)` : 'inset 0 1px 0 rgba(255,255,255,0.05)',
       }}
-      onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.background = bg.replace(/[\d.]+\)$/, '0.18)') }}
+      onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.background = bg.replace(/[\d.]+\)$/, '0.22)') }}
       onMouseLeave={e => { e.currentTarget.style.opacity = dim ? '0.8' : '1'; e.currentTarget.style.background = bg }}
     >
       {icon}
@@ -1220,11 +1222,20 @@ function DealEconomicsCard({ deal, lacdbAutoFill }: { deal: Deal; lacdbAutoFill?
         laydown_sqft: (showLandSize && propertyType !== 'Vacant Land') ? (parseFloat(laydownSqft) || null) : null,
         updated_at: new Date().toISOString(),
       }
+      let saveError = null
       if (econId) {
-        await supabase.from('deal_economics').update(payload).eq('id', econId)
+        const { error } = await supabase.from('deal_economics').update(payload).eq('id', econId)
+        saveError = error
       } else {
-        const { data } = await supabase.from('deal_economics').insert(payload).select().single()
-        if (data) setEconId(data.id)
+        const { data, error } = await supabase.from('deal_economics').insert(payload).select().single()
+        saveError = error
+        if (data && !error) setEconId(data.id)
+      }
+      if (saveError) {
+        // Fallback: try upsert in case of constraint conflict
+        const { data: ud } = await supabase.from('deal_economics')
+          .upsert({ ...payload }, { onConflict: 'deal_id' }).select().single()
+        if (ud && !econId) setEconId((ud as any).id)
       }
       setSaved(true)
       setTimeout(() => { setSaved(false); setCollapsed(true) }, 1000)
@@ -2946,6 +2957,7 @@ function DealDashboardInner() {
     if (!deal) return
     const updates: Partial<Deal> & { updated_at: string } = {
       tier: 'filed',
+      status: 'active',  // ensure deal goes active when launched
       updated_at: new Date().toISOString(),
     }
     const { data, error } = await supabase
@@ -3406,18 +3418,36 @@ function DealDashboardInner() {
         {deal.tier === 'filed' && deal.status === 'active' && (
           <button
             onClick={() => pinGate(() => doStatusChange('hot'))}
-            style={{ width: '100%', padding: '11px', fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.4)', borderRadius: 10, color: '#fb923c', cursor: 'pointer', fontFamily: 'inherit', marginBottom: 8 }}
+            style={{
+              width: '100%', padding: '14px 16px', fontSize: 13, fontWeight: 800,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              background: 'linear-gradient(135deg, rgba(251,146,60,0.25) 0%, rgba(234,88,12,0.35) 100%)',
+              border: '1.5px solid rgba(251,146,60,0.7)',
+              borderRadius: 12, color: '#fb923c', cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 0 24px rgba(251,146,60,0.3), inset 0 1px 0 rgba(255,255,255,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              marginBottom: 10,
+            }}
           >
-            → Hot
+            <span style={{ fontSize: 16 }}>🔥</span> → HOT
           </button>
         )}
         {/* → Under Contract */}
         {deal.tier === 'filed' && (deal.status === 'active' || deal.status === 'hot') && (
           <button
             onClick={() => pinGate(() => openUCDialogWithContacts())}
-            style={{ width: '100%', padding: '11px', fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.4)', borderRadius: 10, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit', marginBottom: 8 }}
+            style={{
+              width: '100%', padding: '14px 16px', fontSize: 13, fontWeight: 800,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              background: 'linear-gradient(135deg, rgba(45,212,191,0.2) 0%, rgba(13,148,136,0.32) 100%)',
+              border: '1.5px solid rgba(45,212,191,0.7)',
+              borderRadius: 12, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 0 24px rgba(45,212,191,0.25), inset 0 1px 0 rgba(255,255,255,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              marginBottom: 10,
+            }}
           >
-            → Under Contract
+            <span style={{ fontSize: 15 }}>📋</span> → UNDER CONTRACT
           </button>
         )}
       </div>
@@ -3703,22 +3733,24 @@ function DealDashboardInner() {
               {/* → Hot */}
               {deal.tier === 'filed' && deal.status === 'active' && (
                 <ActionBtn
-                  label="→ Hot"
+                  label="🔥 → Hot"
                   color="#fb923c"
-                  bg="rgba(251,146,60,0.08)"
-                  border="rgba(251,146,60,0.35)"
+                  bg="rgba(251,146,60,0.15)"
+                  border="rgba(251,146,60,0.6)"
                   onClick={() => pinGate(() => doStatusChange('hot'))}
+                  glow
                 />
               )}
 
               {/* → Under Contract */}
               {deal.tier === 'filed' && (deal.status === 'active' || deal.status === 'hot') && (
                 <ActionBtn
-                  label="→ Under Contract"
+                  label="📋 → Under Contract"
                   color="#2dd4bf"
-                  bg="rgba(45,212,191,0.08)"
-                  border="rgba(45,212,191,0.35)"
+                  bg="rgba(45,212,191,0.15)"
+                  border="rgba(45,212,191,0.6)"
                   onClick={() => pinGate(() => openUCDialogWithContacts())}
+                  glow
                 />
               )}
 
