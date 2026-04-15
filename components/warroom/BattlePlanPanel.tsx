@@ -487,22 +487,29 @@ export default function BattlePlanPanel() {
 
           return (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Mobile-responsive grid styles */}
+              <style>{`
+                .bp-grid { display: grid; grid-template-columns: 110px 1fr 130px 90px; gap: 0 12px; align-items: center; width: 100%; }
+                .bp-header { display: grid; grid-template-columns: 110px 1fr 130px 90px; gap: 0 12px; padding: 5px 12px 5px 42px; border-bottom: 1px solid rgba(139,92,246,0.2); margin-bottom: 2px; }
+                .bp-col-id, .bp-col-priority { display: flex; }
+                .bp-col-id-hdr, .bp-col-priority-hdr { display: block; }
+                @media (max-width: 640px) {
+                  .bp-grid { grid-template-columns: 100px 1fr; }
+                  .bp-header { grid-template-columns: 100px 1fr; padding-left: 38px; }
+                  .bp-col-id, .bp-col-priority { display: none !important; }
+                  .bp-col-id-hdr, .bp-col-priority-hdr { display: none !important; }
+                }
+              `}</style>
+
               {/* ── Column headers ── */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '110px 1fr 130px 90px',
-                gap: '0 12px',
-                padding: '5px 12px 5px 42px',
-                borderBottom: '1px solid rgba(139,92,246,0.2)',
-                marginBottom: 2,
-              }}>
+              <div className="bp-header">
                 {[
-                  { label: 'DUE DATE', align: 'center' },
-                  { label: 'TASK',     align: 'left' },
-                  { label: 'ID',       align: 'center' },
-                  { label: 'PRIORITY', align: 'center' },
+                  { label: 'DUE DATE', align: 'center', cls: '' },
+                  { label: 'TASK',     align: 'left',   cls: '' },
+                  { label: 'ID',       align: 'center', cls: 'bp-col-id-hdr' },
+                  { label: 'PRIORITY', align: 'center', cls: 'bp-col-priority-hdr' },
                 ].map(col => (
-                  <div key={col.label} style={{
+                  <div key={col.label} className={col.cls} style={{
                     fontSize: 9, fontWeight: 800, letterSpacing: '0.14em',
                     textTransform: 'uppercase', color: 'rgba(139,92,246,0.55)',
                     fontFamily: 'monospace', textAlign: col.align as React.CSSProperties['textAlign'],
@@ -870,7 +877,7 @@ function TaskRow({
           </div>
         ) : (
           /* ── 4-column layout: DUE DATE | TASK | ID | PRIORITY ── */
-          <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr 130px 90px', gap: '0 12px', alignItems: 'center', width: '100%' }}>
+          <div className="bp-grid">
 
             {/* Col 1: DUE DATE — centered */}
             <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -912,15 +919,22 @@ function TaskRow({
                   {expanded ? '▲ less' : '▼ more'}
                 </button>
               )}
+              {/* ID shown inline under task on mobile only */}
+              {task.contact_name && (
+                <div className="bp-col-id-mobile" style={{ marginTop: 3 }}>
+                  <style>{`.bp-col-id-mobile { display: none; } @media (max-width: 640px) { .bp-col-id-mobile { display: block; } }`}</style>
+                  <ContactBadge contactName={task.contact_name} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
+                </div>
+              )}
             </div>
 
-            {/* Col 3: ID — centered */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {/* Col 3: ID — hidden on mobile */}
+            <div className="bp-col-id" style={{ justifyContent: 'center' }}>
               <ContactBadge contactName={task.contact_name ?? null} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
             </div>
 
-            {/* Col 4: PRIORITY — centered */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {/* Col 4: PRIORITY — hidden on mobile */}
+            <div className="bp-col-priority" style={{ justifyContent: 'center' }}>
               <BpStarPicker
                 value={task.bp_priority ?? null}
                 onChange={async (v) => {
