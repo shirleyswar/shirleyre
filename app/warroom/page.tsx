@@ -105,6 +105,8 @@ export default function WarRoomPage() {
       style={{
         display: 'flex',
         height: '100vh',
+        width: '100vw',
+        maxWidth: '100vw',
         background: 'var(--bg-page)',
         overflow: 'hidden',
         // CSS variable overrides — cascade to all child components
@@ -129,7 +131,7 @@ export default function WarRoomPage() {
       />
 
       {/* Main content */}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minWidth: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minWidth: 0, maxWidth: '100%' }}>
 
         {/* ── WAR ROOM HEADER ── */}
         <WarRoomHeader onMenuToggle={() => setSidebarOpen(o => !o)} />
@@ -143,7 +145,7 @@ export default function WarRoomPage() {
         {/* StatsRibbon now lives inline in header */}
 
         {/* ── DASHBOARD BODY ── */}
-        <main ref={mainScrollRef as React.RefObject<HTMLElement>} style={{ flex: 1, overflowY: 'auto', padding: '18px 24px 28px 20px', position: 'relative', scrollbarGutter: 'stable' }}>
+        <main ref={mainScrollRef as React.RefObject<HTMLElement>} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '18px 24px 28px 20px', position: 'relative', scrollbarGutter: 'stable', minWidth: 0, maxWidth: '100%' }}>
 
           {/* Pull-to-refresh indicator — mobile only */}
           {(pullY > 4 || refreshing) && (
