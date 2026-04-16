@@ -390,17 +390,20 @@ function SleeveTable({ positions }: { positions: Position[] }) {
 }
 
 // ─── Sleeve Tab ───────────────────────────────────────────────────────────────
+type SleeveView = 'tranche1' | 'tranche2' | 'all'
+
 function SleeveTab() {
   const [positions, setPositions]     = useState<Position[]>([])
   const [loading, setLoading]         = useState(true)
-  const [uploading, setUploading]     = useState(false)
+  const [uploading, setUploading]     = useState<null | 'tranche1' | 'tranche2'>(null)
   const [uploadMsg, setUploadMsg]     = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
-  const [dragOver, setDragOver]       = useState(false)
   const [refreshing, setRefreshing]   = useState(false)
   const [refreshMsg, setRefreshMsg]   = useState<string | null>(null)
   const [lastRefreshed, setLastRefreshed] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [view, setView]               = useState<SleeveView>('all')
+  const t1Ref = useRef<HTMLInputElement>(null)
+  const t2Ref = useRef<HTMLInputElement>(null)
 
   useEffect(() => { fetchSleeve() }, [])
   useEffect(() => {
@@ -410,7 +413,7 @@ function SleeveTab() {
 
   async function fetchSleeve() {
     try {
-      const { data, error } = await supabase.from('sleeve_positions').select('*').order('market_value', { ascending: false }).limit(200)
+      const { data, error } = await supabase.from('sleeve_positions').select('*').order('market_value', { ascending: false }).limit(400)
       if (error?.code === '42P01') { setLoading(false); return }
       if (data) setPositions(data as Position[])
     } catch {}
@@ -440,111 +443,109 @@ function SleeveTab() {
     setRefreshing(false)
   }
 
-  const handleFile = useCallback(async (file: File) => {
+  const handleFile = useCallback(async (file: File, tranche: 'tranche1' | 'tranche2') => {
     if (!file.name.match(/\.xlsx?$/i)) { setUploadError('Please upload an .xlsx file.'); return }
-    setUploading(true); setUploadMsg(null); setUploadError(null)
+    setUploading(tranche); setUploadMsg(null); setUploadError(null)
 
     const rows = await parseXlsx(file, SLEEVE_COL_MAP)
-    if (typeof rows === 'string') { setUploadError(rows); setUploading(false); return }
+    if (typeof rows === 'string') { setUploadError(rows); setUploading(null); return }
 
     const batch = new Date().toISOString()
     const typedRows = rows as Record<string, unknown>[]
-    const newSymbols  = Array.from(new Set(typedRows.map(r => String(r['symbol']))))
-    const prevSymbols = Array.from(new Set(positions.map(p => p.symbol ?? '').filter(Boolean)))
-    const newSet  = new Set(newSymbols)
-    const prevSet = new Set(prevSymbols)
 
-    const toAdd    = newSymbols.filter(s => !prevSet.has(s))
-    const toUpdate = newSymbols.filter(s => prevSet.has(s))
-    const toRemove = prevSymbols.filter(s => !newSet.has(s) && s !== '')
+    // Tag with tranche — delete only this tranche's existing rows, then re-insert
+    await supabase.from('sleeve_positions').delete().eq('tranche', tranche)
 
-    // Move removed symbols to sold_positions
-    if (toRemove.length > 0) {
-      const soldRows = positions.filter(p => toRemove.includes(p.symbol ?? ''))
-      const soldInserts = soldRows.map(({ id: _id, upload_batch: _ub, price_updated_at: _pa, ...rest }) => ({
-        ...rest,
-        sold_at: new Date().toISOString(),
-      }))
-      if (soldInserts.length > 0) await supabase.from('sold_positions').insert(soldInserts)
-      // Remove from sleeve
-      await supabase.from('sleeve_positions').delete().in('symbol', toRemove)
-      // Remove from portfolio_positions
-      await supabase.from('portfolio_positions').delete().in('symbol', toRemove)
-    }
+    const allRows: Record<string, unknown>[] = typedRows.map(r => ({
+      ...r,
+      upload_batch: batch,
+      tranche,
+    }))
 
-    // Upsert sleeve rows
-    const allRows: Record<string, unknown>[] = typedRows.map(r => ({ ...r, upload_batch: batch }))
-
-    // Delete all current sleeve rows then re-insert (simplest upsert)
-    await supabase.from('sleeve_positions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     for (let i = 0; i < allRows.length; i += 50) {
       const { error } = await supabase.from('sleeve_positions').insert(allRows.slice(i, i + 50))
-      if (error) { setUploadError('Insert failed: ' + error.message); setUploading(false); return }
+      if (error) { setUploadError('Insert failed: ' + error.message); setUploading(null); return }
     }
 
-    // NEW symbols: also write to portfolio_positions
-    if (toAdd.length > 0) {
-      const newRows = allRows.filter(r => toAdd.includes(String(r['symbol']))).map(r => ({ ...r, upload_batch: batch }))
-      for (let i = 0; i < newRows.length; i += 50) {
-        await supabase.from('portfolio_positions').insert(newRows.slice(i, i + 50))
-      }
-    }
-
-    // EXISTING symbols: update portfolio_positions
-    if (toUpdate.length > 0) {
-      for (const sym of toUpdate) {
-        const row = allRows.find(r => r['symbol'] === sym)
-        if (row) {
-          const { upload_batch: _ub, ...updateData } = row as Record<string, unknown> & { upload_batch: string }
-          await supabase.from('portfolio_positions').update(updateData).eq('symbol', sym)
-        }
-      }
-    }
-
-    setUploadMsg(`✓ ${allRows.length} positions loaded${toAdd.length ? ` (${toAdd.length} new → also added to Portfolio)` : ''}${toRemove.length ? ` · ${toRemove.length} removed → moved to Sold` : ''}`)
+    setUploadMsg(`✓ ${tranche === 'tranche1' ? 'Tranche 1' : 'Tranche 2'}: ${allRows.length} positions loaded`)
     await fetchSleeve()
-    setUploading(false)
-  }, [positions])
+    setUploading(null)
+  }, [])
 
   if (loading) return <SkeletonTable />
+
+  const t1 = positions.filter(p => (p as any).tranche === 'tranche1' || !(p as any).tranche)
+  const t2 = positions.filter(p => (p as any).tranche === 'tranche2')
+  const viewPositions = view === 'tranche1' ? t1 : view === 'tranche2' ? t2 : positions
+
+  const toggleStyle = (active: boolean): React.CSSProperties => ({
+    padding: '5px 16px', fontSize: 11, fontWeight: 800, borderRadius: 7, cursor: 'pointer',
+    letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'inherit',
+    background: active ? P.purpleFaint : 'transparent',
+    border: `1px solid ${active ? P.purple : P.purpleBorder}`,
+    color: active ? P.purple : P.muted,
+    transition: 'all 0.15s',
+  })
 
   return (
     <div>
       {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 16, fontWeight: 800, color: P.purple, letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: `0 0 20px rgba(139,92,246,0.4)` }}>SLEEVE</span>
-        <span style={{ fontSize: 11, color: P.muted }}>Matthew&apos;s directed buys</span>
+
+        {/* Tranche toggles */}
+        <div style={{ display: 'flex', gap: 5 }}>
+          <button style={toggleStyle(view === 'tranche1')} onClick={() => setView('tranche1')}>
+            Tranche 1 {t1.length > 0 && <span style={{ opacity: 0.6 }}>({t1.length})</span>}
+          </button>
+          <button style={toggleStyle(view === 'tranche2')} onClick={() => setView('tranche2')}>
+            Tranche 2 {t2.length > 0 && <span style={{ opacity: 0.6 }}>({t2.length})</span>}
+          </button>
+          <button style={toggleStyle(view === 'all')} onClick={() => setView('all')}>
+            All {positions.length > 0 && <span style={{ opacity: 0.6 }}>({positions.length})</span>}
+          </button>
+        </div>
+
         <div style={{ flex: 1 }} />
+
+        {/* Refresh */}
         {positions.length > 0 && (
-          <button onClick={refreshPrices} disabled={refreshing} title={cacheAge().label || 'Refresh prices from Yahoo'}
+          <button onClick={refreshPrices} disabled={refreshing} title={cacheAge().label || 'Refresh prices'}
             style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 8, color: P.green, cursor: refreshing ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1, whiteSpace: 'nowrap' }}>
             {refreshing ? '⟳ Refreshing…' : `⟳ Refresh Prices${cacheAge().fresh ? ` (${cacheAge().label})` : ''}`}
           </button>
         )}
-        <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
-          style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', opacity: uploading ? 0.5 : 1 }}>
-          {uploading ? 'Loading…' : '↑ Upload Sleeve .xlsx'}
+
+        {/* Upload T1 */}
+        <button onClick={() => t1Ref.current?.click()} disabled={!!uploading}
+          style={{ padding: '6px 12px', fontSize: 11, fontWeight: 700, background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', opacity: uploading ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+          {uploading === 'tranche1' ? 'Loading T1…' : '↑ T1 .xlsx'}
         </button>
-        <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }} style={{ display: 'none' }} />
+        <input ref={t1Ref} type="file" accept=".xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f, 'tranche1'); e.target.value = '' }} style={{ display: 'none' }} />
+
+        {/* Upload T2 */}
+        <button onClick={() => t2Ref.current?.click()} disabled={!!uploading}
+          style={{ padding: '6px 12px', fontSize: 11, fontWeight: 800, background: 'rgba(232,184,75,0.12)', border: '1px solid rgba(232,184,75,0.5)', borderRadius: 8, color: '#E8B84B', cursor: 'pointer', opacity: uploading ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+          {uploading === 'tranche2' ? 'Loading T2…' : '↑ T2 .xlsx'}
+        </button>
+        <input ref={t2Ref} type="file" accept=".xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f, 'tranche2'); e.target.value = '' }} style={{ display: 'none' }} />
       </div>
 
-      {refreshMsg  && <div style={{ marginBottom: 12, fontSize: 12, color: refreshMsg.startsWith('Error') ? P.red : P.green, fontFamily: 'monospace' }}>{refreshMsg}</div>}
-      {uploadMsg   && <div style={{ marginBottom: 12, fontSize: 12, color: P.green, fontFamily: 'monospace' }}>{uploadMsg}</div>}
-      {uploadError && <div style={{ marginBottom: 12, fontSize: 12, color: P.red,   fontFamily: 'monospace' }}>{uploadError}</div>}
+      {refreshMsg  && <div style={{ marginBottom: 10, fontSize: 12, color: refreshMsg.startsWith('Error') ? P.red : P.green, fontFamily: 'monospace' }}>{refreshMsg}</div>}
+      {uploadMsg   && <div style={{ marginBottom: 10, fontSize: 12, color: P.green, fontFamily: 'monospace' }}>{uploadMsg}</div>}
+      {uploadError && <div style={{ marginBottom: 10, fontSize: 12, color: P.red,   fontFamily: 'monospace' }}>{uploadError}</div>}
 
-      {positions.length === 0 ? (
-        <div onDragOver={e => { e.preventDefault(); setDragOver(true) }} onDragLeave={() => setDragOver(false)}
-          onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
-          onClick={() => fileInputRef.current?.click()}
-          style={{ border: `2px dashed ${dragOver ? P.purple : P.purpleBorder}`, borderRadius: 12, padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? P.purpleFaint : 'transparent', transition: 'all 0.15s', marginBottom: 16 }}>
+      {viewPositions.length === 0 ? (
+        <div style={{ border: `2px dashed ${P.purpleBorder}`, borderRadius: 12, padding: '48px 24px', textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.5 }}>📊</div>
-          <div style={{ fontSize: 13, color: P.text, fontWeight: 600, marginBottom: 6 }}>Drop your Sleeve .xlsx here</div>
-          <div style={{ fontSize: 12, color: P.muted }}>Expected columns: NAME, SYM, ACQUIRED, PERIOD, QTY, MKT VALUE, COST BASIS, UNRL G/L %, UNRL G/L $, YRS HELD, ANN. RETURN</div>
+          <div style={{ fontSize: 13, color: P.text, fontWeight: 600, marginBottom: 6 }}>
+            {view === 'tranche2' ? 'No Tranche 2 positions yet — upload your T2 .xlsx above' : 'No positions — upload an .xlsx above'}
+          </div>
         </div>
       ) : (
         <>
-          <KpiCards positions={positions} />
-          <SleeveTable positions={positions} />
+          <KpiCards positions={viewPositions} />
+          <SleeveTable positions={viewPositions} />
         </>
       )}
     </div>
