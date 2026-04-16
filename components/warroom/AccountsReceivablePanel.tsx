@@ -258,27 +258,31 @@ export default function AccountsReceivablePanel() {
         {/* Subtle glow */}
         <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, background: 'radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        {/* Header row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 6, height: 28, borderRadius: 3, background: 'linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%)', flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.7)', fontFamily: 'var(--font-body)', marginBottom: 2 }}>
-                Receivables
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em' }}>
-                {receivable.length} active · {collected.length} collected
-              </div>
-            </div>
-          </div>
+        {/* Header row — styled like Under Contract panel header */}
+        <div className="wr-card-header" style={{ marginBottom: 20 }}>
+          <span style={{ color: '#a78bfa', display: 'flex' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </span>
+          <span className="wr-card-title" style={{ fontSize: 16, fontWeight: 900, color: '#a78bfa', letterSpacing: '0.06em', textShadow: '0 0 16px rgba(167,139,250,0.4)' }}>
+            Receivables
+          </span>
+          <span className="wr-panel-line" />
+          <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#a78bfa' }}>
+            {receivable.length}
+          </span>
           {receivable.length === 0 && (
-            <div style={{
+            <span style={{
               fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase',
               color: '#22c55e', background: 'rgba(34,197,94,0.08)',
               border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, padding: '4px 10px',
+              marginLeft: 8,
             }}>
               ✓ Clear
-            </div>
+            </span>
           )}
         </div>
 
