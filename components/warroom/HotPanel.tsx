@@ -213,7 +213,6 @@ export default function HotPanel() {
               {[
                 { label: '↗',            align: 'center' },
                 { label: 'Address',      align: 'left'   },
-                { label: 'Client / ID',  align: 'left'   },
                 { label: 'Action',       align: 'left'   },
                 { label: 'Value',        align: 'right'  },
                 { label: 'Commission',   align: 'right'  },
@@ -265,42 +264,37 @@ export default function HotPanel() {
                     </a>
                   </td>
 
-                  {/* Address */}
-                  <td style={{ padding: '13px 8px', maxWidth: 220 }}>
+                  {/* Address + Client stacked */}
+                  <td style={{ padding: '13px 8px', minWidth: 180, maxWidth: 240 }}>
                     <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)' }}>
                       {formatAddress(deal.address) || formatAddress(deal.name)}
                     </div>
-                  </td>
-
-                  {/* Client / ID */}
-                  <td style={{ padding: '13px 8px', maxWidth: 160 }}>
-                    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontWeight: 400 }}>
+                    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontWeight: 400, marginTop: 2 }}>
                       {deal.name ? deal.name.replace(/^📁\s*/, '') : '—'}
                     </div>
                   </td>
 
-                  {/* Action */}
-                  <td style={{ padding: '13px 8px' }}>
+                  {/* Action — wide, center-stage */}
+                  <td style={{ padding: '13px 8px', width: '99%' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {action ? (
                         <span
                           onClick={() => setActionModal(deal)}
-                          style={{ fontSize: 13, color: '#E8B84B', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, maxWidth: 240, fontFamily: 'var(--font-body)' }}
+                          style={{ fontSize: 13, color: '#E8B84B', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-body)' }}
                           title={action}
                         >
                           {action}
                         </span>
                       ) : (
-                        <span style={{ fontSize: 13, color: 'var(--text-dim)', fontStyle: 'italic', flex: 1 }}>—</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-dim)', fontStyle: 'italic' }}>—</span>
                       )}
                       <button
                         onClick={() => setActionModal(deal)}
                         style={{
-                          padding: '3px 10px', fontSize: 11, fontWeight: 700,
-                          background: 'rgba(232,184,75,0.08)', border: '1px solid rgba(232,184,75,0.3)',
-                          borderRadius: 5, color: '#E8B84B', cursor: 'pointer',
-                          whiteSpace: 'nowrap', fontFamily: 'inherit', letterSpacing: '0.04em',
-                          flexShrink: 0,
+                          padding: '2px 8px', fontSize: 11, fontWeight: 700,
+                          background: 'rgba(232,184,75,0.08)', border: '1px solid rgba(232,184,75,0.25)',
+                          borderRadius: 4, color: '#E8B84B', cursor: 'pointer',
+                          whiteSpace: 'nowrap', fontFamily: 'inherit', flexShrink: 0,
                         }}
                       >
                         {action ? '✎' : '+ Action'}
