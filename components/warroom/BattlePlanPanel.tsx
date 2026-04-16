@@ -683,33 +683,25 @@ export default function BattlePlanPanel() {
   )
 }
 
-// ─── Section Divider — styled like the commission card header ────────────────
+// ─── Section Divider — minimal, no ribbon ────────────────────────────────────
 function SectionDivider({ label, count, color, subtitle }: { label: string; count: number; color: string; subtitle?: string }) {
   return (
     <div style={{
       display: 'flex',
       alignItems: 'center',
       gap: 10,
-      padding: '8px 14px 8px 16px',
-      background: `${color}12`,
-      borderLeft: `3px solid ${color}`,
-      borderRadius: '0 6px 6px 0',
+      padding: '6px 14px 6px 14px',
       marginBottom: 2,
       marginTop: 4,
     }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color, fontFamily: 'monospace', lineHeight: 1 }}>
-          {label}
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.55)', fontFamily: 'monospace', lineHeight: 1 }}>
+          {subtitle || label}
         </div>
-        {subtitle && (
-          <div style={{ fontSize: 10, color: `${color}99`, marginTop: 2, fontFamily: 'monospace' }}>
-            {subtitle}
-          </div>
-        )}
       </div>
       <div style={{
-        fontSize: 11, fontWeight: 800, color,
-        background: `${color}18`, border: `1px solid ${color}40`,
+        fontSize: 11, fontWeight: 700, color: 'rgba(139,92,246,0.55)',
+        background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
         borderRadius: 999, padding: '1px 9px', fontFamily: 'monospace',
       }}>
         {count}
@@ -794,11 +786,10 @@ function TaskRow({
         alignItems: 'flex-start',
         gap: 0,
         background: isDragTarget
-          ? 'rgba(232,184,75,0.10)'
+          ? 'rgba(232,184,75,0.07)'
           : hovered
-          ? `${accentColor}0D`
+          ? 'rgba(139,92,246,0.06)'
           : 'rgba(255,255,255,0.018)',
-        borderLeft: `3px solid ${isDragTarget ? '#E8B84B' : hovered ? accentColor : `${accentColor}50`}`,
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         opacity: completing ? 0.3 : isDragging ? 0.35 : 1,
         transition: 'all 0.1s ease',
@@ -814,15 +805,15 @@ function TaskRow({
           onMouseLeave={() => setCircleHovered(false)}
           style={{
             width: 18, height: 18, borderRadius: 4,
-            border: `1.5px solid ${circleHovered ? accentColor : `${accentColor}60`}`,
-            background: circleHovered ? `${accentColor}25` : 'transparent',
+            border: `1.5px solid ${circleHovered ? 'rgba(139,92,246,0.9)' : 'rgba(139,92,246,0.3)'}`,
+            background: circleHovered ? 'rgba(139,92,246,0.18)' : 'transparent',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.15s', flexShrink: 0,
           }}
         >
           {circleHovered && (
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M2 5l2.5 2.5L8 3" stroke={accentColor} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M2 5l2.5 2.5L8 3" stroke="rgba(139,92,246,0.9)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </button>
@@ -1108,15 +1099,18 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
   if (isOverdue) {
     return (
       <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 3,
-        padding: '2px 7px',
-        background: 'rgba(239,68,68,0.15)',
-        border: '1px solid rgba(239,68,68,0.45)',
-        borderRadius: 4, fontSize: 9, fontWeight: 800,
-        color: '#ef4444', whiteSpace: 'nowrap', letterSpacing: '0.08em',
-        textTransform: 'uppercase', fontFamily: 'monospace',
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        padding: '2px 7px 2px 5px',
+        background: 'rgba(239,68,68,0.10)',
+        border: '1px solid rgba(239,68,68,0.35)',
+        borderRadius: 4,
+        whiteSpace: 'nowrap',
       }}>
-        ⚠ OVERDUE
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M8 1.5L1 14.5h14L8 1.5z" stroke="#ef4444" strokeWidth="1.5" strokeLinejoin="round"/>
+          <path d="M8 6v4" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="8" cy="12" r="0.75" fill="#ef4444"/>
+        </svg>
       </span>
     )
   }
@@ -1126,13 +1120,13 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: 4,
         padding: '2px 7px',
-        background: 'rgba(34,197,94,0.15)',
-        border: '1px solid rgba(34,197,94,0.45)',
-        borderRadius: 4, fontSize: 9, fontWeight: 800,
-        color: '#22c55e', whiteSpace: 'nowrap', letterSpacing: '0.08em',
+        background: 'rgba(139,92,246,0.10)',
+        border: '1px solid rgba(139,92,246,0.3)',
+        borderRadius: 4, fontSize: 9, fontWeight: 700,
+        color: 'rgba(139,92,246,0.85)', whiteSpace: 'nowrap', letterSpacing: '0.08em',
         textTransform: 'uppercase', fontFamily: 'monospace',
       }}>
-        <span style={{ fontSize: 7, lineHeight: 1 }}>●</span> TODAY
+        TODAY
       </span>
     )
   }
