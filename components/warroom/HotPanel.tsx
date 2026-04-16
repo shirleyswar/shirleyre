@@ -7,9 +7,7 @@ import { formatAddress } from '@/lib/formatAddress'
 
 function formatCurrency(n: number | null | undefined): string {
   if (!n) return '—'
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
-  return `$${n.toFixed(0)}`
+  return '$' + Math.round(n).toLocaleString('en-US')
 }
 
 const PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -213,11 +211,12 @@ export default function HotPanel() {
           <thead>
             <tr>
               {[
-                { label: '↗',          align: 'center' },
-                { label: 'Address',    align: 'left'   },
-                { label: 'Action',     align: 'left'   },
-                { label: 'Value',      align: 'right'  },
-                { label: 'Commission', align: 'right'  },
+                { label: '↗',            align: 'center' },
+                { label: 'Address',      align: 'left'   },
+                { label: 'Client / ID',  align: 'left'   },
+                { label: 'Action',       align: 'left'   },
+                { label: 'Value',        align: 'right'  },
+                { label: 'Commission',   align: 'right'  },
               ].map((h, i) => (
                 <th key={i} style={{
                   textAlign: h.align as React.CSSProperties['textAlign'],
@@ -271,11 +270,13 @@ export default function HotPanel() {
                     <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)' }}>
                       {formatAddress(deal.address) || formatAddress(deal.name)}
                     </div>
-                    {deal.name && (
-                      <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontWeight: 400, marginTop: 1 }}>
-                        {deal.name.replace(/^📁\s*/, '')}
-                      </div>
-                    )}
+                  </td>
+
+                  {/* Client / ID */}
+                  <td style={{ padding: '13px 8px', maxWidth: 160 }}>
+                    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontWeight: 400 }}>
+                      {deal.name ? deal.name.replace(/^📁\s*/, '') : '—'}
+                    </div>
                   </td>
 
                   {/* Action */}
