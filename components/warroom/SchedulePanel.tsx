@@ -664,7 +664,7 @@ export default function SchedulePanel() {
               <div key={group.date}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, marginTop: 8 }}>
                   <span style={{
-                    fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase',
+                    fontSize: 12, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase',
                     color: group.date === todayCST() ? '#A78BFA' : 'var(--text-muted)',
                     fontFamily: 'var(--font-body)',
                   }}>
@@ -890,12 +890,12 @@ function EventRow({
       }}
     >
       {/* Time */}
-      <div style={{ width: 68, fontSize: 12, fontWeight: 700, color: 'var(--accent-gold)', flexShrink: 0, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+      <div style={{ width: 74, fontSize: 14, fontWeight: 700, color: 'var(--accent-gold)', flexShrink: 0, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
         {event.time}
       </div>
       {/* Title + location */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: 15, color: 'var(--text-primary)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {event.title}
         </div>
         {event.location && (
