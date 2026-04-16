@@ -812,9 +812,10 @@ export default function UnderContractPanel() {
           }))
           setDeals(dealList)
 
-          // Fetch uc_details for all loaded deals
+          // Fetch uc_details and deadlines for all loaded deals upfront
           if (dealList.length > 0) {
             const ids = dealList.map(d => d.id)
+
             const { data: ucData } = await supabase
               .from('uc_details')
               .select('deal_id,deal_category,contract_price,commission_pct,commission_amount,lease_rate,lease_rate_unit,lease_term_months')
@@ -823,6 +824,21 @@ export default function UnderContractPanel() {
               const map: Record<string, UCDetails> = {}
               for (const row of ucData as UCDetails[]) map[row.deal_id] = row
               setUcDetails(map)
+            }
+
+            // Pre-fetch all deadlines so Next Deadline shows without expanding
+            const { data: dlData } = await supabase
+              .from('contract_deadlines')
+              .select('*')
+              .in('deal_id', ids)
+              .order('deadline_date', { ascending: true })
+            if (dlData) {
+              const dlMap: Record<string, ContractDeadline[]> = {}
+              for (const dl of dlData as ContractDeadline[]) {
+                if (!dlMap[dl.deal_id]) dlMap[dl.deal_id] = []
+                dlMap[dl.deal_id].push(dl)
+              }
+              setDealDeadlines(dlMap)
             }
           }
         }
