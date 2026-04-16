@@ -286,59 +286,45 @@ export default function AccountsReceivablePanel() {
           )}
         </div>
 
-        {/* Stats strip — 4 equal flex cols: Deals · MS Gross · Collected · Outstanding */}
+        {/* Stats strip — 5 zones matching row layout exactly:
+            [flex 1.5 Address] [flex 1 ID] [flex 1 buttons] [flex 1 Collected] [flex 1 Outstanding] */}
         <div style={{ display: 'flex', gap: 0, alignItems: 'stretch' }}>
-          {[
-            { label: 'Deals',    value: loading ? '—' : String(receivable.length), dim: true },
-            { label: 'MS Gross', value: loading ? '—' : fmt(totalMsPortionGross) },
-          ].map((s, i) => (
-            <div key={s.label} style={{
-              flex: '1 1 0',
-              padding: '12px 20px',
-              borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-              display: 'flex', flexDirection: 'column', gap: 4,
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: s.dim ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.3)', marginBottom: 2 }}>
-                {s.label}
-              </div>
-              <div style={{ fontSize: 20, fontWeight: s.dim ? 600 : 700, color: s.dim ? 'rgba(255,255,255,0.45)' : '#F0F2FF', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
-                {s.value}
-              </div>
+
+          {/* Zone 1 (Address col): Deals */}
+          <div style={{ flex: '1.5 1 0', padding: '12px 8px 12px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: 2 }}>Deals</div>
+            <div style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.45)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+              {loading ? '—' : String(receivable.length)}
             </div>
-          ))}
-          {/* Collected */}
-          <div style={{
-            flex: '1 1 0',
-            padding: '12px 20px',
-            borderLeft: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex', flexDirection: 'column', gap: 4,
-            textAlign: 'right' as any, paddingRight: 8,
-          }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 2, textAlign: 'right' }}>
-              Collected
+          </div>
+
+          {/* Zone 2 (ID col): MS Gross */}
+          <div style={{ flex: '1 1 0', padding: '12px 8px', borderLeft: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 2 }}>MS Gross</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+              {loading ? '—' : fmt(totalMsPortionGross)}
             </div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', lineHeight: 1.1, textAlign: 'right' }}>
+          </div>
+
+          {/* Zone 3 (buttons col): empty spacer */}
+          <div style={{ flex: '1 1 0', padding: '12px 8px' }} />
+
+          {/* Zone 4 (Collected col) */}
+          <div style={{ flex: '1 1 0', padding: '12px 12px 12px 8px', borderLeft: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 2 }}>Collected</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
               {loading ? '—' : fmt(totalMsCollected)}
             </div>
           </div>
-          {/* Outstanding — accent */}
-          <div style={{
-            flex: '1 1 0',
-            padding: '12px 20px',
-            borderLeft: '1px solid rgba(255,255,255,0.06)',
-            background: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.05)' : 'rgba(34,197,94,0.04)',
-            borderRadius: 10,
-            display: 'flex', flexDirection: 'column', gap: 4,
-            textAlign: 'right' as any, paddingRight: 20,
-          }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.6)' : 'rgba(34,197,94,0.6)', marginBottom: 2, textAlign: 'right' }}>
-              Outstanding
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: totalMsOutstanding > 0 ? '#C084FC' : '#22c55e', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em', lineHeight: 1.1, textAlign: 'right' }}>
+
+          {/* Zone 5 (Outstanding col) */}
+          <div style={{ flex: '1 1 0', padding: '12px 20px 12px 8px', borderLeft: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.7)' : 'rgba(34,197,94,0.6)', marginBottom: 2 }}>Outstanding</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: totalMsOutstanding > 0 ? '#C084FC' : '#22c55e', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
               {loading ? '—' : fmt(totalMsOutstanding)}
             </div>
             {totalMsPortionGross > 0 && (
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 2, textAlign: 'right' }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>
                 {pctCollected.toFixed(0)}% collected
               </div>
             )}
@@ -440,12 +426,12 @@ export default function AccountsReceivablePanel() {
                         )}
                       </div>
 
-                      {/* Zone 3 (Collected): amount — flex 1 */}
+                      {/* Zone 4 (Collected) — flex 1, right-align, paddingRight 12 matches stat */}
                       <div style={{ flex: '1 1 0', textAlign: 'right', fontSize: 13, fontWeight: 700, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', paddingRight: 12 }}>
                         {fmt(msPaid)}
                       </div>
 
-                      {/* Zone 4 (Outstanding): balance — flex 1 */}
+                      {/* Zone 5 (Outstanding) — flex 1, right-align, paddingRight 20 matches stat */}
                       <div style={{ flex: '1 1 0', textAlign: 'right', fontSize: 13, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', letterSpacing: '-0.01em', paddingRight: 20 }}>
                         {isCollected ? '✓ Done' : fmt(msBalance)}
                       </div>
