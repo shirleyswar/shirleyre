@@ -175,58 +175,61 @@ export default function HotPanel() {
 
   if (loading) return null
 
+  const header = (
+    <div className="wr-card-header" style={{ marginBottom: 4 }}>
+      <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
+        <RocketIcon />
+      </span>
+      <span className="wr-card-title" style={{ fontSize: 16, fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.06em', textShadow: '0 0 16px rgba(232,184,75,0.4)' }}>
+        Money Movers
+      </span>
+      <span className="wr-panel-line" />
+      <span className="wr-panel-stat wr-panel-stat-gold" style={{ fontSize: 18, fontWeight: 800 }}>{deals.length}</span>
+    </div>
+  )
+
   if (deals.length === 0) return (
-    <div style={{ background: 'var(--bg-card, #1A1E25)', border: '1px solid rgba(232,184,75,0.15)', borderRadius: 16, padding: '18px 20px' }}>
-      <div className="wr-card-header">
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>🚀</span>
-        <span className="wr-card-title" style={{ color: 'var(--accent-gold)' }}>Money Movers</span>
-        <span className="wr-panel-line" />
-        <span className="wr-panel-stat wr-panel-stat-gold">0</span>
+    <div className="wr-card">
+      {header}
+      <div className="wr-empty">
+        <div className="wr-empty-text">No active offer negotiations.</div>
+        <div className="wr-empty-line" />
       </div>
-      <div style={{ fontSize: 12, color: '#4b5563', padding: '8px 0' }}>No active offer negotiations.</div>
     </div>
   )
 
   return (
-    <div style={{
-      background: 'var(--bg-card, #1A1E25)',
-      border: '1px solid rgba(232,184,75,0.35)',
-      borderRadius: 16,
-      padding: '22px 24px',
-      boxShadow: '0 0 0 1px rgba(232,184,75,0.08) inset, 0 4px 32px rgba(232,184,75,0.08)',
-    }}>
+    <div className="wr-card">
       {/* Action modal */}
       {actionModal && typeof document !== 'undefined' && (
         <ActionModal deal={actionModal} onClose={() => setActionModal(null)} onSaved={handleActionSaved} />
       )}
 
-      {/* Header */}
-      <div className="wr-card-header" style={{ marginBottom: 20 }}>
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>🚀</span>
-        <span className="wr-card-title" style={{ fontSize: 16, fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.06em', textShadow: '0 0 16px rgba(232,184,75,0.4)' }}>
-          Money Movers
-        </span>
-        <span className="wr-panel-line" />
-        <span className="wr-panel-stat wr-panel-stat-gold" style={{ fontSize: 18, fontWeight: 800 }}>{deals.length}</span>
-        <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 10, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Active Offer Negotiations</span>
-      </div>
+      {header}
 
-      {/* Table */}
+      {/* Table — matches Under Contract layout */}
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid rgba(232,184,75,0.2)' }}>
-              {['Deal', 'Action', 'Value', 'Commission'].map((h, i) => (
-                <th key={h} style={{
-                  textAlign: i >= 2 ? 'right' : 'left',
-                  padding: '8px 12px',
-                  fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase',
+            <tr>
+              {[
+                { label: '↗',          align: 'center' },
+                { label: 'Address',    align: 'left'   },
+                { label: 'Action',     align: 'left'   },
+                { label: 'Value',      align: 'right'  },
+                { label: 'Commission', align: 'right'  },
+              ].map((h, i) => (
+                <th key={i} style={{
+                  textAlign: h.align as React.CSSProperties['textAlign'],
+                  padding: '7px 8px',
+                  fontSize: 10,
+                  fontWeight: 800,
                   color: 'rgba(232,184,75,0.6)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
                   whiteSpace: 'nowrap',
-                }}>
-                  {h}
-                </th>
+                  borderBottom: '1px solid rgba(232,184,75,0.15)',
+                }}>{h.label}</th>
               ))}
             </tr>
           </thead>
@@ -240,46 +243,61 @@ export default function HotPanel() {
               return (
                 <tr
                   key={deal.id}
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(232,184,75,0.04)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  style={{
+                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    transition: 'background 0.1s',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(232,184,75,0.03)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                 >
-                  {/* Deal — address + name */}
-                  <td style={{ padding: '14px 12px', maxWidth: 220 }}>
+                  {/* ↗ link */}
+                  <td style={{ width: 38, minWidth: 38, maxWidth: 38, padding: '6px 4px', textAlign: 'center' }}>
                     <a
                       href={`/warroom/deal?id=${deal.id}`}
-                      style={{ color: '#F0F2FF', textDecoration: 'none', fontWeight: 700, fontSize: 15, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    >
-                      {formatAddress(deal.address) || formatAddress(deal.name)}
+                      title="Open deal"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: 28, height: 28, borderRadius: 6,
+                        background: 'rgba(232,184,75,0.12)', border: '1px solid rgba(232,184,75,0.35)',
+                        color: '#E8B84B', textDecoration: 'none', fontSize: 14, lineHeight: 1,
+                      }}>
+                      ↗
                     </a>
+                  </td>
+
+                  {/* Address */}
+                  <td style={{ padding: '13px 8px', maxWidth: 220 }}>
+                    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)' }}>
+                      {formatAddress(deal.address) || formatAddress(deal.name)}
+                    </div>
                     {deal.name && (
-                      <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontWeight: 400, marginTop: 1 }}>
                         {deal.name.replace(/^📁\s*/, '')}
                       </div>
                     )}
                   </td>
 
-                  {/* Action — immediately right of Deal */}
-                  <td style={{ padding: '14px 12px', minWidth: 200 }}>
+                  {/* Action */}
+                  <td style={{ padding: '13px 8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {action ? (
                         <span
                           onClick={() => setActionModal(deal)}
-                          style={{ fontSize: 12, color: '#E8B84B', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}
+                          style={{ fontSize: 13, color: '#E8B84B', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, maxWidth: 240, fontFamily: 'var(--font-body)' }}
                           title={action}
                         >
                           {action}
                         </span>
                       ) : (
-                        <span style={{ fontSize: 12, color: '#374151', fontStyle: 'italic', flex: 1 }}>—</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-dim)', fontStyle: 'italic', flex: 1 }}>—</span>
                       )}
                       <button
                         onClick={() => setActionModal(deal)}
                         style={{
-                          padding: '5px 12px', fontSize: 11, fontWeight: 800,
-                          background: 'rgba(232,184,75,0.12)',
-                          border: '1px solid rgba(232,184,75,0.4)',
-                          borderRadius: 6, color: '#E8B84B', cursor: 'pointer',
+                          padding: '3px 10px', fontSize: 11, fontWeight: 700,
+                          background: 'rgba(232,184,75,0.08)', border: '1px solid rgba(232,184,75,0.3)',
+                          borderRadius: 5, color: '#E8B84B', cursor: 'pointer',
                           whiteSpace: 'nowrap', fontFamily: 'inherit', letterSpacing: '0.04em',
                           flexShrink: 0,
                         }}
@@ -290,13 +308,15 @@ export default function HotPanel() {
                   </td>
 
                   {/* Value */}
-                  <td style={{ padding: '14px 12px', textAlign: 'right', color: '#E8B84B', fontFamily: 'monospace', fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '13px 8px', whiteSpace: 'nowrap', textAlign: 'right', fontSize: 14, fontWeight: 600, color: '#F0F2FF', fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCurrency(value)}
                   </td>
 
                   {/* Commission */}
-                  <td style={{ padding: '14px 12px', textAlign: 'right', color: '#22c55e', fontFamily: 'monospace', fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>
-                    {formatCurrency(commission)}
+                  <td style={{ padding: '13px 8px', whiteSpace: 'nowrap', textAlign: 'right', fontSize: 14, fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums' }}>
+                    <span style={{ color: '#22c55e', fontWeight: 700 }}>
+                      {formatCurrency(commission)}
+                    </span>
                   </td>
                 </tr>
               )
@@ -305,5 +325,17 @@ export default function HotPanel() {
         </table>
       </div>
     </div>
+  )
+}
+
+function RocketIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.5 3A10.5 10.5 0 0 1 21 14.5"/>
+      <path d="M3 9.5A10.5 10.5 0 0 1 14.5 21"/>
+      <path d="m3 16 5 5"/>
+      <path d="M3 16h5v5"/>
+      <circle cx="17" cy="7" r="3"/>
+    </svg>
   )
 }
