@@ -331,11 +331,10 @@ export default function HotPanel() {
 function RocketIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9.5 3A10.5 10.5 0 0 1 21 14.5"/>
-      <path d="M3 9.5A10.5 10.5 0 0 1 14.5 21"/>
-      <path d="m3 16 5 5"/>
-      <path d="M3 16h5v5"/>
-      <circle cx="17" cy="7" r="3"/>
+      <path d="M12 2C12 2 7 6 7 13l5 3 5-3c0-7-5-11-5-11z"/>
+      <path d="M7 13c-2 1-3 3-3 5l3-1"/>
+      <path d="M17 13c2 1 3 3 3 5l-3-1"/>
+      <circle cx="12" cy="11" r="1.5" fill="currentColor" stroke="none"/>
     </svg>
   )
 }
