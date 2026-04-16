@@ -458,7 +458,18 @@ function SleeveTab() {
     try {
       const { data, error } = await supabase.from('sleeve_positions').select('*').order('market_value', { ascending: false }).limit(400)
       if (error?.code === '42P01') { setLoading(false); return }
-      if (data) setPositions(data as Position[])
+      if (data) {
+        // Recalculate annualized_return_pct from source fields — never trust stored value
+        const fixed = (data as Position[]).map(p => {
+          const mv = p.market_value, tc = p.total_cost, yrs = p.years_held
+          const absCost = tc != null ? Math.abs(tc) : null
+          const ann = (mv != null && absCost != null && absCost > 0 && yrs != null && yrs > 0)
+            ? (Math.pow(mv / absCost, 1 / yrs) - 1) * 100
+            : null
+          return { ...p, annualized_return_pct: ann }
+        })
+        setPositions(fixed)
+      }
     } catch {}
     finally { setLoading(false) }
   }
