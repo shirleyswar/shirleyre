@@ -264,8 +264,14 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
 
     const parseNum = (v: unknown): number | null => {
       if (v === null || v === undefined || v === '') return null
-      const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/[$,%\s]/g, ''))
-      return isNaN(n) ? null : n
+      if (typeof v === 'number') return isNaN(v) ? null : v
+      let s = String(v).trim()
+      // Accounting negative notation: (50,000) → -50000
+      const isNeg = s.startsWith('(') && s.endsWith(')')
+      s = s.replace(/[$,%\s()]/g, '')
+      const n = parseFloat(s)
+      if (isNaN(n)) return null
+      return isNeg ? -Math.abs(n) : n
     }
     const parseDate = (v: unknown): string | null => {
       if (!v) return null
@@ -306,8 +312,12 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
       const yrsHeld   = parseNum(get(r, 'years_held'))
 
       let annReturn: number | null = null
-      if (mv != null && cost != null && cost > 0 && yrsHeld != null && yrsHeld > 0) {
-        annReturn = (Math.pow(mv / cost, 1 / yrsHeld) - 1) * 100
+      const absCost = cost != null ? Math.abs(cost) : null
+      if (mv != null && absCost != null && absCost > 0 && yrsHeld != null && yrsHeld >= 0.08) {
+        // Only calculate if held at least ~1 month — avoids divide-near-zero distortion
+        annReturn = (Math.pow(mv / absCost, 1 / yrsHeld) - 1) * 100
+        // Sanity cap: annualized return shouldn't be more than ±10000%
+        if (Math.abs(annReturn) > 10000) annReturn = null
       }
 
       return {
