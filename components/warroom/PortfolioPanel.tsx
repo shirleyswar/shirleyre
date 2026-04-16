@@ -224,6 +224,36 @@ function PositionTable({ positions, showSoldAt = false }: { positions: Position[
 }
 
 // ─── Upload helper ────────────────────────────────────────────────────────────
+// Alternative column names Morgan Stanley might use
+const SLEEVE_COL_ALIASES: Record<string, string[]> = {
+  name:                 ['NAME', 'DESCRIPTION', 'SECURITY NAME', 'SECURITY'],
+  symbol:               ['SYM', 'SYMBOL', 'TICKER', 'CUSIP/SYM', 'CUSIP / SYM'],
+  acquired:             ['ACQUIRED', 'ACQUISITION DATE', 'DATE ACQUIRED', 'PURCHASE DATE'],
+  period:               ['PERIOD', 'HOLDING PERIOD', 'HOLD PERIOD'],
+  qty:                  ['QTY', 'QUANTITY', 'SHARES', 'UNITS'],
+  market_value:         ['MKT VALUE', 'MARKET VALUE', 'CURRENT VALUE', 'MKT VAL'],
+  total_cost:           ['COST BASIS', 'TOTAL COST', 'COST', 'TOTAL COST BASIS', 'ADJ COST BASIS'],
+  unrealized_gl_pct:    ['UNRL G/L %', 'UNREALIZED G/L %', 'UNRLZD G/L %', 'UNREALIZED GAIN/LOSS %', 'G/L %'],
+  unrealized_gl_dollar: ['UNRL G/L $', 'UNREALIZED G/L $', 'UNRLZD G/L $', 'UNREALIZED GAIN/LOSS', 'G/L $', 'UNREALIZED G/L'],
+  years_held:           ['YRS HELD', 'YEARS HELD', 'HOLDING PERIOD YRS'],
+  annualized_return_pct:['ANN. RETURN', 'ANNUALIZED RETURN', 'ANN RETURN', 'ANN RTN'],
+}
+
+function resolveHeaders(rawHeaders: string[], colMap: Record<string, string>): Record<string, string> {
+  // Build a map from field -> actual header found in the file
+  const norm = (s: string) => s.toUpperCase().replace(/\s+/g, ' ').trim()
+  const normHeaders = rawHeaders.map(norm)
+  const result: Record<string, string> = {}
+
+  for (const [field, primary] of Object.entries(colMap)) {
+    const aliases = SLEEVE_COL_ALIASES[field] ?? [primary]
+    const allAliases = Array.from(new Set([primary, ...aliases])).map(norm)
+    const found = rawHeaders.find((h, i) => allAliases.includes(normHeaders[i]))
+    if (found) result[field] = found
+  }
+  return result
+}
+
 async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Record<string, unknown>[] | string> {
   try {
     const XLSX = await import('xlsx')
@@ -234,7 +264,7 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
 
     const parseNum = (v: unknown): number | null => {
       if (v === null || v === undefined || v === '') return null
-      const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/[$,%]/g, ''))
+      const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/[$,%\s]/g, ''))
       return isNaN(n) ? null : n
     }
     const parseDate = (v: unknown): string | null => {
@@ -248,7 +278,11 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
       return null
     }
 
-    const symKey = colMap['symbol']
+    // Resolve actual header names from the file (case-insensitive, alias-aware)
+    const fileHeaders = raw.length > 0 ? Object.keys(raw[0]) : []
+    const resolved = resolveHeaders(fileHeaders, colMap)
+
+    const symKey = resolved['symbol'] ?? colMap['symbol']
     const rows = raw.filter(r => {
       const sym = r[symKey]
       if (!sym) return false
@@ -257,34 +291,35 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
       return true
     })
 
-    if (rows.length === 0) return 'No valid rows found — check Symbol/SYM column exists.'
+    if (rows.length === 0) {
+      const foundHeaders = fileHeaders.slice(0, 10).join(', ')
+      return `No valid rows found. Headers detected: ${foundHeaders || '(none)'}. Expected a Symbol/SYM/Ticker column.`
+    }
 
     const pct = (v: unknown) => { const n = parseNum(v); return n !== null ? n * 100 : null }
+    // Helper: get field value using resolved header, fall back to colMap primary
+    const get = (r: Record<string, unknown>, field: string) => r[resolved[field] ?? colMap[field]]
 
     return rows.map(r => {
-      const mv        = parseNum(r[colMap['market_value']])
-      const cost      = parseNum(r[colMap['total_cost']])
-      const yrsHeld   = parseNum(r[colMap['years_held']])
+      const mv        = parseNum(get(r, 'market_value'))
+      const cost      = parseNum(get(r, 'total_cost'))
+      const yrsHeld   = parseNum(get(r, 'years_held'))
 
-      // Always recalculate annualized return from first principles:
-      // (market_value / cost) ^ (1 / years_held) - 1
-      // This is accurate and consistent — the file's ANN. RETURN uses MS's
-      // internal IRR methodology across tranches and isn't reliable here.
       let annReturn: number | null = null
       if (mv != null && cost != null && cost > 0 && yrsHeld != null && yrsHeld > 0) {
         annReturn = (Math.pow(mv / cost, 1 / yrsHeld) - 1) * 100
       }
 
       return {
-        name:                  String(r[colMap['name']] ?? ''),
-        symbol:                String(r[colMap['symbol']] ?? '').trim().toUpperCase(),
-        acquired:              parseDate(r[colMap['acquired']]),
-        period:                String(r[colMap['period']] ?? ''),
-        qty:                   parseNum(r[colMap['qty']]),
+        name:                  String(get(r, 'name') ?? ''),
+        symbol:                String(get(r, 'symbol') ?? '').trim().toUpperCase(),
+        acquired:              parseDate(get(r, 'acquired')),
+        period:                String(get(r, 'period') ?? ''),
+        qty:                   parseNum(get(r, 'qty')),
         market_value:          mv,
         total_cost:            cost,
-        unrealized_gl_pct:     pct(r[colMap['unrealized_gl_pct']]),
-        unrealized_gl_dollar:  parseNum(r[colMap['unrealized_gl_dollar']]),
+        unrealized_gl_pct:     pct(get(r, 'unrealized_gl_pct')),
+        unrealized_gl_dollar:  parseNum(get(r, 'unrealized_gl_dollar')),
         years_held:            yrsHeld,
         annualized_return_pct: annReturn,
         ytd_pct:               null,
