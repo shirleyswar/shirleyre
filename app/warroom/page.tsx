@@ -11,7 +11,7 @@ import BattlePlanPanel from '@/components/warroom/BattlePlanPanel'
 import SchedulePanel from '@/components/warroom/SchedulePanel'
 import HotPanel from '@/components/warroom/HotPanel'
 import UnderContractPanel from '@/components/warroom/UnderContractPanel'
-import MoneyMoversPanel from '@/components/warroom/MoneyMoversPanel'
+
 import DealPipelinePanel from '@/components/warroom/DealPipelinePanel'
 import AccountsReceivablePanel from '@/components/warroom/AccountsReceivablePanel'
 import ClientsPanel from '@/components/warroom/ClientsPanel'
@@ -1080,7 +1080,6 @@ function OperationsView({ activePanel }: { activePanel: string }) {
           <SchedulePanel />
           <HotPanel />
           <UnderContractPanel />
-          <MoneyMoversPanel />
           <DealPipelinePanel />
           <ClientsPanel />
           <AccountsReceivablePanel />
@@ -1106,12 +1105,9 @@ function OperationsView({ activePanel }: { activePanel: string }) {
           <HotPanel />
         </div>
 
-        {/* Row 3: Under Contract (2-col) + Money Movers (1-col) */}
-        <div className="lg:col-span-2 card-reveal card-reveal-3" style={{ position: 'relative', zIndex: 30 }}>
+        {/* Row 3: Under Contract (full width) */}
+        <div className="lg:col-span-3 card-reveal card-reveal-3" style={{ position: 'relative', zIndex: 30 }}>
           <UnderContractPanel />
-        </div>
-        <div className="card-reveal card-reveal-4" style={{ position: 'relative', zIndex: 30 }}>
-          <MoneyMoversPanel />
         </div>
 
         {/* Row 4: Deal Pipeline (full width) */}

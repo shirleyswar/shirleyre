@@ -67,11 +67,11 @@ function ActionModal({
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ background: '#13112A', border: '1px solid rgba(251,146,60,0.4)', borderRadius: 14, padding: 28, width: '90vw', maxWidth: 460, display: 'flex', flexDirection: 'column', gap: 14 }}
+        style={{ background: '#13112A', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 14, padding: 28, width: '90vw', maxWidth: 460, display: 'flex', flexDirection: 'column', gap: 14 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(251,146,60,0.6)', fontFamily: 'monospace', marginBottom: 4 }}>Next Action</div>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.6)', fontFamily: 'monospace', marginBottom: 4 }}>Next Action</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF' }}>
               {formatAddress(deal.address) || (deal.name ?? '—')}
             </div>
@@ -95,7 +95,7 @@ function ActionModal({
           <button
             onClick={save}
             disabled={saving}
-            style={{ flex: 2, padding: '10px', background: 'rgba(251,146,60,0.2)', border: '1px solid rgba(251,146,60,0.5)', borderRadius: 8, color: '#fb923c', cursor: 'pointer', fontSize: 13, fontWeight: 800, fontFamily: 'inherit', opacity: saving ? 0.5 : 1 }}
+            style={{ flex: 2, padding: '10px', background: 'rgba(232,184,75,0.2)', border: '1px solid rgba(251,146,60,0.5)', borderRadius: 8, color: '#E8B84B', cursor: 'pointer', fontSize: 13, fontWeight: 800, fontFamily: 'inherit', opacity: saving ? 0.5 : 1 }}
           >
             {saving ? 'Saving…' : 'Save Action'}
           </button>
@@ -152,10 +152,12 @@ export default function HotPanel() {
   if (loading) return null
 
   if (deals.length === 0) return (
-    <div style={{ background: 'var(--bg-card, #1A1E25)', border: '1px solid rgba(251,146,60,0.15)', borderRadius: 16, padding: '18px 20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: '#fb923c', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Hot</span>
-        <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700, background: 'rgba(251,146,60,0.12)', color: '#fb923c', border: '1px solid rgba(251,146,60,0.3)' }}>0</span>
+    <div style={{ background: 'var(--bg-card, #1A1E25)', border: '1px solid rgba(232,184,75,0.15)', borderRadius: 16, padding: '18px 20px' }}>
+      <div className="wr-card-header">
+        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>💰</span>
+        <span className="wr-card-title" style={{ color: 'var(--accent-gold)' }}>Money Movers</span>
+        <span className="wr-panel-line" />
+        <span className="wr-panel-stat wr-panel-stat-gold">0</span>
       </div>
       <div style={{ fontSize: 12, color: '#4b5563', padding: '8px 0' }}>No active offer negotiations.</div>
     </div>
@@ -164,10 +166,10 @@ export default function HotPanel() {
   return (
     <div style={{
       background: 'var(--bg-card, #1A1E25)',
-      border: '1px solid rgba(251,146,60,0.35)',
+      border: '1px solid rgba(232,184,75,0.35)',
       borderRadius: 16,
       padding: '22px 24px',
-      boxShadow: '0 0 0 1px rgba(251,146,60,0.08) inset, 0 4px 32px rgba(251,146,60,0.08)',
+      boxShadow: '0 0 0 1px rgba(232,184,75,0.08) inset, 0 4px 32px rgba(232,184,75,0.08)',
     }}>
       {/* Action modal */}
       {actionModal && typeof document !== 'undefined' && (
@@ -175,13 +177,13 @@ export default function HotPanel() {
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <span style={{ fontSize: 18, fontWeight: 900, color: '#fb923c', letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: '0 0 20px rgba(251,146,60,0.5)' }}>
-          🔥 HOT
+      <div className="wr-card-header" style={{ marginBottom: 20 }}>
+        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>💰</span>
+        <span className="wr-card-title" style={{ fontSize: 16, fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.06em', textShadow: '0 0 16px rgba(232,184,75,0.4)' }}>
+          Money Movers
         </span>
-        <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 800, background: 'rgba(251,146,60,0.15)', color: '#fb923c', border: '1px solid rgba(251,146,60,0.4)' }}>
-          {deals.length}
-        </span>
+        <span className="wr-panel-line" />
+        <span className="wr-panel-stat wr-panel-stat-gold" style={{ fontSize: 18, fontWeight: 800 }}>{deals.length}</span>
         <div style={{ flex: 1 }} />
         <span style={{ fontSize: 10, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Active Offer Negotiations</span>
       </div>
@@ -190,13 +192,13 @@ export default function HotPanel() {
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid rgba(251,146,60,0.2)' }}>
+            <tr style={{ borderBottom: '1px solid rgba(232,184,75,0.2)' }}>
               {['Deal', 'Value', 'Commission', 'Action'].map((h, i) => (
                 <th key={h} style={{
                   textAlign: i >= 1 && i <= 2 ? 'right' : 'left',
                   padding: '8px 12px',
                   fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase',
-                  color: 'rgba(251,146,60,0.6)',
+                  color: 'rgba(232,184,75,0.6)',
                   whiteSpace: 'nowrap',
                 }}>
                   {h}
@@ -215,7 +217,7 @@ export default function HotPanel() {
                 <tr
                   key={deal.id}
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(251,146,60,0.04)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(232,184,75,0.04)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   {/* Deal — address + name */}
@@ -249,7 +251,7 @@ export default function HotPanel() {
                       {action ? (
                         <span
                           onClick={() => setActionModal(deal)}
-                          style={{ fontSize: 12, color: '#fb923c', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, maxWidth: 200 }}
+                          style={{ fontSize: 12, color: '#E8B84B', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, maxWidth: 200 }}
                           title={action}
                         >
                           {action}
@@ -261,9 +263,9 @@ export default function HotPanel() {
                         onClick={() => setActionModal(deal)}
                         style={{
                           padding: '5px 12px', fontSize: 11, fontWeight: 800,
-                          background: 'rgba(251,146,60,0.12)',
-                          border: '1px solid rgba(251,146,60,0.4)',
-                          borderRadius: 6, color: '#fb923c', cursor: 'pointer',
+                          background: 'rgba(232,184,75,0.12)',
+                          border: '1px solid rgba(232,184,75,0.4)',
+                          borderRadius: 6, color: '#E8B84B', cursor: 'pointer',
                           whiteSpace: 'nowrap', fontFamily: 'inherit', letterSpacing: '0.04em',
                           flexShrink: 0,
                         }}
