@@ -284,12 +284,39 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
       return null
     }
 
+    // If first row looks like a title (no Symbol column found), scan for the real header row
+    // by re-parsing with header offset until we find a row containing a Symbol/SYM/Ticker column
+    let raw2 = raw
+    const symAliases = ['SYMBOL','SYM','TICKER','CUSIP/SYM','CUSIP / SYM']
+    const norm2 = (s: string) => s.toUpperCase().replace(/\s+/g, ' ').trim()
+    const hasSymCol = (rows: Record<string, unknown>[]) =>
+      rows.length > 0 && Object.keys(rows[0]).some(k => symAliases.includes(norm2(k)))
+
+    if (!hasSymCol(raw)) {
+      // Try re-parsing skipping 1..5 header rows
+      const rawArr: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as unknown[][]
+      for (let skip = 1; skip <= 5; skip++) {
+        if (skip >= rawArr.length) break
+        const headers = (rawArr[skip] as unknown[]).map(c => c == null ? '' : String(c))
+        if (headers.some(h => symAliases.includes(norm2(h)))) {
+          // Use this row as headers
+          const dataRows = rawArr.slice(skip + 1)
+          raw2 = dataRows.map(row => {
+            const obj: Record<string, unknown> = {}
+            headers.forEach((h, i) => { obj[h || `__EMPTY_${i}`] = (row as unknown[])[i] ?? null })
+            return obj
+          })
+          break
+        }
+      }
+    }
+
     // Resolve actual header names from the file (case-insensitive, alias-aware)
-    const fileHeaders = raw.length > 0 ? Object.keys(raw[0]) : []
+    const fileHeaders = raw2.length > 0 ? Object.keys(raw2[0]) : []
     const resolved = resolveHeaders(fileHeaders, colMap)
 
     const symKey = resolved['symbol'] ?? colMap['symbol']
-    const rows = raw.filter(r => {
+    const rows = raw2.filter(r => {
       const sym = r[symKey]
       if (!sym) return false
       if (typeof sym === 'number' && isNaN(sym)) return false
@@ -299,7 +326,7 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
 
     if (rows.length === 0) {
       const foundHeaders = fileHeaders.slice(0, 10).join(', ')
-      return `No valid rows found. Headers detected: ${foundHeaders || '(none)'}. Expected a Symbol/SYM/Ticker column.`
+      return `No valid rows found. Headers detected: ${foundHeaders || '(none)'}. Expected a Symbol/SYM/Ticker column. If your file has a title row (e.g. "TRANCHE 2") above the headers, the parser should skip it automatically — check that column headers appear within the first 6 rows.`
     }
 
     const pct = (v: unknown) => { const n = parseNum(v); return n !== null ? n * 100 : null }
