@@ -313,11 +313,10 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
 
       let annReturn: number | null = null
       const absCost = cost != null ? Math.abs(cost) : null
-      if (mv != null && absCost != null && absCost > 0 && yrsHeld != null && yrsHeld >= 0.08) {
-        // Only calculate if held at least ~1 month — avoids divide-near-zero distortion
+      if (mv != null && absCost != null && absCost > 0 && yrsHeld != null && yrsHeld > 0) {
+        // Always calculate — proper annualized return math for any holding period including partial months
+        // Formula: (MV / Cost)^(1 / years) - 1
         annReturn = (Math.pow(mv / absCost, 1 / yrsHeld) - 1) * 100
-        // Sanity cap: annualized return shouldn't be more than ±10000%
-        if (Math.abs(annReturn) > 10000) annReturn = null
       }
 
       return {
