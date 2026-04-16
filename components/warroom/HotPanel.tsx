@@ -109,7 +109,7 @@ function ActionModal({
 // ─── HotPanel ─────────────────────────────────────────────────────────────────
 export default function HotPanel() {
   const [deals, setDeals] = useState<Deal[]>([])
-  const [ucDetails, setUcDetails] = useState<Record<string, { contract_price: number | null; commission_amount: number | null }>>({})
+  const [commissionData, setCommissionData] = useState<Record<string, { value: number | null; commission: number | null }>>({})
   const [loading, setLoading] = useState(true)
   const [actionModal, setActionModal] = useState<Deal | null>(null)
 
@@ -122,18 +122,42 @@ export default function HotPanel() {
     const list = (data ?? []) as Deal[]
     setDeals(list)
 
-    // Pull value + commission from uc_details where available
     if (list.length > 0) {
       const ids = list.map(d => d.id)
+      const map: Record<string, { value: number | null; commission: number | null }> = {}
+
+      // Primary: deal_economics (asking_price + sale_commission_pct) — same source as CommissionPanel
+      const { data: econData } = await supabase
+        .from('deal_economics')
+        .select('deal_id, asking_price, sale_commission_pct, lease_rate_psf, lease_term_years, transaction_type')
+        .in('deal_id', ids)
+      if (econData) {
+        for (const e of econData as any[]) {
+          const isLease = e.transaction_type === 'lease'
+          const price = e.asking_price ?? null
+          const pct = isLease ? null : (e.sale_commission_pct ?? null)
+          const commission = price && pct ? Math.round(price * (pct / 100) * 0.75) : null
+          map[e.deal_id] = { value: price, commission }
+        }
+      }
+
+      // Fallback: uc_details for any deals without economics data
       const { data: ucData } = await supabase
         .from('uc_details')
-        .select('deal_id, contract_price, commission_amount')
+        .select('deal_id, contract_price, commission_pct, commission_amount')
         .in('deal_id', ids)
       if (ucData) {
-        const map: Record<string, { contract_price: number | null; commission_amount: number | null }> = {}
-        for (const row of ucData as any[]) map[row.deal_id] = row
-        setUcDetails(map)
+        for (const u of ucData as any[]) {
+          if (!map[u.deal_id]?.value) {
+            const price = u.contract_price ?? null
+            const pct = u.commission_pct ?? null
+            const commission = u.commission_amount ?? (price && pct ? Math.round(price * (pct / 100) * 0.75) : null)
+            map[u.deal_id] = { value: price, commission }
+          }
+        }
       }
+
+      setCommissionData(map)
     }
     setLoading(false)
   }, [])
@@ -154,7 +178,7 @@ export default function HotPanel() {
   if (deals.length === 0) return (
     <div style={{ background: 'var(--bg-card, #1A1E25)', border: '1px solid rgba(232,184,75,0.15)', borderRadius: 16, padding: '18px 20px' }}>
       <div className="wr-card-header">
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>💰</span>
+        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>🚀</span>
         <span className="wr-card-title" style={{ color: 'var(--accent-gold)' }}>Money Movers</span>
         <span className="wr-panel-line" />
         <span className="wr-panel-stat wr-panel-stat-gold">0</span>
@@ -178,7 +202,7 @@ export default function HotPanel() {
 
       {/* Header */}
       <div className="wr-card-header" style={{ marginBottom: 20 }}>
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>💰</span>
+        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>🚀</span>
         <span className="wr-card-title" style={{ fontSize: 16, fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.06em', textShadow: '0 0 16px rgba(232,184,75,0.4)' }}>
           Money Movers
         </span>
@@ -193,9 +217,9 @@ export default function HotPanel() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(232,184,75,0.2)' }}>
-              {['Deal', 'Value', 'Commission', 'Action'].map((h, i) => (
+              {['Deal', 'Action', 'Value', 'Commission'].map((h, i) => (
                 <th key={h} style={{
-                  textAlign: i >= 1 && i <= 2 ? 'right' : 'left',
+                  textAlign: i >= 2 ? 'right' : 'left',
                   padding: '8px 12px',
                   fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase',
                   color: 'rgba(232,184,75,0.6)',
@@ -208,9 +232,9 @@ export default function HotPanel() {
           </thead>
           <tbody>
             {deals.map(deal => {
-              const uc = ucDetails[deal.id]
-              const value = uc?.contract_price ?? deal.value ?? null
-              const commission = uc?.commission_amount ?? deal.commission_estimated ?? null
+              const cd = commissionData[deal.id]
+              const value = cd?.value ?? deal.value ?? null
+              const commission = cd?.commission ?? deal.commission_estimated ?? null
               const action = deal.notes ?? ''
 
               return (
@@ -221,7 +245,7 @@ export default function HotPanel() {
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   {/* Deal — address + name */}
-                  <td style={{ padding: '14px 12px', maxWidth: 260 }}>
+                  <td style={{ padding: '14px 12px', maxWidth: 220 }}>
                     <a
                       href={`/warroom/deal?id=${deal.id}`}
                       style={{ color: '#F0F2FF', textDecoration: 'none', fontWeight: 700, fontSize: 15, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
@@ -235,29 +259,19 @@ export default function HotPanel() {
                     )}
                   </td>
 
-                  {/* Value */}
-                  <td style={{ padding: '14px 12px', textAlign: 'right', color: '#E8B84B', fontFamily: 'monospace', fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>
-                    {formatCurrency(value)}
-                  </td>
-
-                  {/* Commission */}
-                  <td style={{ padding: '14px 12px', textAlign: 'right', color: '#22c55e', fontFamily: 'monospace', fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>
-                    {formatCurrency(commission)}
-                  </td>
-
-                  {/* Action */}
+                  {/* Action — immediately right of Deal */}
                   <td style={{ padding: '14px 12px', minWidth: 200 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {action ? (
                         <span
                           onClick={() => setActionModal(deal)}
-                          style={{ fontSize: 12, color: '#E8B84B', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, maxWidth: 200 }}
+                          style={{ fontSize: 12, color: '#E8B84B', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}
                           title={action}
                         >
                           {action}
                         </span>
                       ) : (
-                        <span style={{ fontSize: 12, color: '#374151', fontStyle: 'italic', flex: 1 }}>No action set</span>
+                        <span style={{ fontSize: 12, color: '#374151', fontStyle: 'italic', flex: 1 }}>—</span>
                       )}
                       <button
                         onClick={() => setActionModal(deal)}
@@ -270,9 +284,19 @@ export default function HotPanel() {
                           flexShrink: 0,
                         }}
                       >
-                        {action ? '✎ Edit' : '+ Action'}
+                        {action ? '✎' : '+ Action'}
                       </button>
                     </div>
+                  </td>
+
+                  {/* Value */}
+                  <td style={{ padding: '14px 12px', textAlign: 'right', color: '#E8B84B', fontFamily: 'monospace', fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>
+                    {formatCurrency(value)}
+                  </td>
+
+                  {/* Commission */}
+                  <td style={{ padding: '14px 12px', textAlign: 'right', color: '#22c55e', fontFamily: 'monospace', fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>
+                    {formatCurrency(commission)}
                   </td>
                 </tr>
               )
