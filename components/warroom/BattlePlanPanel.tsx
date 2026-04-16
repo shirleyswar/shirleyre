@@ -519,19 +519,6 @@ export default function BattlePlanPanel() {
                 ))}
               </div>
 
-              {urgentTasks.length > 0 && (
-                <SectionDivider
-                  label={urgentTasks.some(t => t.due_date && t.due_date < today) ? 'Overdue / Today' : 'Due Today'}
-                  count={urgentTasks.length}
-                  color={urgentTasks.some(t => t.due_date && t.due_date < today) ? '#ef4444' : '#fb923c'}
-                  subtitle={[
-                    urgentTasks.filter(t => t.due_date && t.due_date < today).length > 0
-                      ? `${urgentTasks.filter(t => t.due_date && t.due_date < today).length} overdue` : null,
-                    urgentTasks.filter(t => t.due_date === today).length > 0
-                      ? `${urgentTasks.filter(t => t.due_date === today).length} due today` : null,
-                  ].filter(Boolean).join(' · ') || undefined}
-                />
-              )}
               {renderRows(urgentTasks)}
 
               {/* ── Collapse bar ── */}
@@ -888,7 +875,7 @@ function TaskRow({
                 <span
                   onClick={() => isLong && setExpanded(e => !e)}
                   style={{
-                    fontSize: 13,
+                    fontSize: 15,
                     fontWeight: 500,
                     color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
                     textDecoration: completing ? 'line-through' : 'none',
@@ -1033,8 +1020,7 @@ function ContactBadge({ contactName, deal, isLife, isEntity }: { contactName: st
         display: 'inline-flex', alignItems: 'center', gap: 3,
         padding: '2px 8px',
         background: 'rgba(239,68,68,0.15)',
-        border: '1px solid rgba(239,68,68,0.4)',
-        borderRadius: 4, fontSize: 10, fontWeight: 700,
+        borderRadius: 4, fontSize: 12, fontWeight: 700,
         color: '#f87171', whiteSpace: 'nowrap',
       }}>
         <svg width="9" height="9" viewBox="0 0 24 24" fill="#f87171" stroke="#f87171" strokeWidth="1">
@@ -1044,7 +1030,7 @@ function ContactBadge({ contactName, deal, isLife, isEntity }: { contactName: st
       </span>
     )
   }
-  if (!contactName) return <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.1)' }}>—</span>
+  if (!contactName) return <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.1)' }}>—</span>
   // Gold for all others (deal-linked gets deal status color, unlinked gets neutral gold)
   const style = (deal as any)?.status ? (BP_STATUS_BADGE_COLORS[(deal as any).status] ?? BP_NEUTRAL_BADGE) : BP_NEUTRAL_BADGE
   return (
@@ -1052,8 +1038,7 @@ function ContactBadge({ contactName, deal, isLife, isEntity }: { contactName: st
       display: 'inline-block',
       padding: '2px 8px',
       background: style.bg,
-      border: `1px solid ${style.border}`,
-      borderRadius: 4, fontSize: 10, fontWeight: 600, color: style.color,
+      borderRadius: 4, fontSize: 12, fontWeight: 600, color: style.color,
       whiteSpace: 'nowrap', letterSpacing: '0.02em', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'],
     }} title={contactName}>
       {contactName}
@@ -1098,18 +1083,11 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
 
   if (isOverdue) {
     return (
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 5,
-        padding: '2px 7px 2px 5px',
-        background: 'rgba(239,68,68,0.10)',
-        border: '1px solid rgba(239,68,68,0.35)',
-        borderRadius: 4,
-        whiteSpace: 'nowrap',
-      }}>
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
           <path d="M8 1.5L1 14.5h14L8 1.5z" stroke="#ef4444" strokeWidth="1.5" strokeLinejoin="round"/>
-          <path d="M8 6v4" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round"/>
-          <circle cx="8" cy="12" r="0.75" fill="#ef4444"/>
+          <path d="M8 6v3.5" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="8" cy="12" r="0.8" fill="#ef4444"/>
         </svg>
       </span>
     )
@@ -1118,15 +1096,12 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
   if (isToday) {
     return (
       <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        padding: '2px 7px',
-        background: 'rgba(139,92,246,0.10)',
-        border: '1px solid rgba(139,92,246,0.3)',
-        borderRadius: 4, fontSize: 9, fontWeight: 700,
-        color: 'rgba(139,92,246,0.85)', whiteSpace: 'nowrap', letterSpacing: '0.08em',
+        display: 'inline-flex', alignItems: 'center',
+        fontSize: 13, fontWeight: 700,
+        color: 'rgba(139,92,246,0.75)', whiteSpace: 'nowrap', letterSpacing: '0.06em',
         textTransform: 'uppercase', fontFamily: 'monospace',
       }}>
-        TODAY
+        Today
       </span>
     )
   }
@@ -1135,7 +1110,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
   return (
     <span
       title={value}
-      style={{ fontSize: 13, fontWeight: 700, color, fontFamily: 'monospace', whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'] }}>
+      style={{ fontSize: 14, fontWeight: 600, color, fontFamily: 'monospace', whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'] }}>
       {fmtDate(value)}
     </span>
   )
