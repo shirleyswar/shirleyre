@@ -402,7 +402,6 @@ function SleeveTab() {
   const [refreshMsg, setRefreshMsg]   = useState<string | null>(null)
   const [lastRefreshed, setLastRefreshed] = useState<string | null>(null)
   const [view, setView]               = useState<SleeveView>('all')
-  const t1Ref = useRef<HTMLInputElement>(null)
   const t2Ref = useRef<HTMLInputElement>(null)
 
   useEffect(() => { fetchSleeve() }, [])
@@ -515,13 +514,6 @@ function SleeveTab() {
             {refreshing ? '⟳ Refreshing…' : `⟳ Refresh Prices${cacheAge().fresh ? ` (${cacheAge().label})` : ''}`}
           </button>
         )}
-
-        {/* Upload T1 */}
-        <button onClick={() => t1Ref.current?.click()} disabled={!!uploading}
-          style={{ padding: '6px 12px', fontSize: 11, fontWeight: 700, background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', opacity: uploading ? 0.5 : 1, whiteSpace: 'nowrap' }}>
-          {uploading === 'tranche1' ? 'Loading T1…' : '↑ T1 .xlsx'}
-        </button>
-        <input ref={t1Ref} type="file" accept=".xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f, 'tranche1'); e.target.value = '' }} style={{ display: 'none' }} />
 
         {/* Upload T2 */}
         <button onClick={() => t2Ref.current?.click()} disabled={!!uploading}
