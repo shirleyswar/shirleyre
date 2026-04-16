@@ -325,8 +325,14 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
     })
 
     if (rows.length === 0) {
-      const foundHeaders = fileHeaders.slice(0, 10).join(', ')
-      return `No valid rows found. Headers detected: ${foundHeaders || '(none)'}. Expected a Symbol/SYM/Ticker column. If your file has a title row (e.g. "TRANCHE 2") above the headers, the parser should skip it automatically — check that column headers appear within the first 6 rows.`
+      const foundHeaders = fileHeaders.slice(0, 15).join(' | ')
+      return `No valid rows found. All detected headers: [${foundHeaders || '(none)'}]. Expected a Symbol/SYM/Ticker column.`
+    }
+
+    // Dev aid: log all detected headers + resolved mapping to console
+    if (typeof console !== 'undefined') {
+      console.log('[parseXlsx] detected headers:', fileHeaders)
+      console.log('[parseXlsx] resolved field map:', resolved)
     }
 
     const pct = (v: unknown) => { const n = parseNum(v); return n !== null ? n * 100 : null }
