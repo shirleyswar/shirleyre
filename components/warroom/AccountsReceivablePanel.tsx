@@ -373,15 +373,20 @@ export default function AccountsReceivablePanel() {
                         <div onClick={e => e.stopPropagation()} style={{ flexShrink: 0 }}>
                           <a href={`/warroom/deal?id=${item.deal_id}`} style={{ color: '#a78bfa', textDecoration: 'none', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>↗</a>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#F0F2FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
-                          {(item.deals?.address ?? item.deals?.name ?? '—').replace(/,\s*(LA|Louisiana)\s+\d{5}.*$/i, '').replace(/,?\s*USA\s*$/i, '').trim()}
+                        <span style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+                          {(item.deals?.address ?? item.deals?.name ?? '—')
+                            .replace(/^📁\s*/, '')
+                            .replace(/,\s*(LA|Louisiana)\s+\d{5}.*$/i, '')
+                            .replace(/,?\s*Baton Rouge\s*,?/i, '')
+                            .replace(/,?\s*USA\s*$/i, '')
+                            .trim()}
                         </span>
                       </div>
 
                       {/* Col 2: ID/Name */}
                       <div style={{ minWidth: 0, padding: '0 8px' }}>
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                          {item.deals?.name ?? '—'}
+                        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                          {(item.deals?.name ?? '—').replace(/^📁\s*/, '')}
                         </span>
                         {!isCollected && msTotal > 0 && (
                           <div style={{ marginTop: 3, height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
@@ -421,12 +426,12 @@ export default function AccountsReceivablePanel() {
                       </div>
 
                       {/* Col 4: Collected */}
-                      <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 700, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', padding: '0 8px' }}>
+                      <div style={{ textAlign: 'right', fontSize: 15, fontWeight: 700, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', padding: '0 8px' }}>
                         {fmt(msPaid)}
                       </div>
 
                       {/* Col 5: Outstanding */}
-                      <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', letterSpacing: '-0.01em', padding: '0 0 0 8px' }}>
+                      <div style={{ textAlign: 'right', fontSize: 15, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', letterSpacing: '-0.01em', padding: '0 0 0 8px' }}>
                         {isCollected ? '✓ Done' : fmt(msBalance)}
                       </div>
                     </div>
