@@ -3,22 +3,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase, Deal } from '@/lib/supabase'
+import { formatAddress } from '@/lib/formatAddress'
 
 function formatCurrency(n: number | null | undefined): string {
   if (!n) return '—'
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
   if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
   return `$${n.toFixed(0)}`
-}
-
-function cleanAddress(raw: string | null | undefined): string {
-  if (!raw) return '—'
-  return raw
-    .replace(/^📁\s*/, '')
-    .replace(/,\s*(LA|Louisiana)\s+\d{5}.*$/i, '')
-    .replace(/,?\s*Baton Rouge\s*,?/i, '')
-    .replace(/,?\s*USA\s*$/i, '')
-    .trim()
 }
 
 const PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -82,7 +73,7 @@ function ActionModal({
           <div>
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(251,146,60,0.6)', fontFamily: 'monospace', marginBottom: 4 }}>Next Action</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF' }}>
-              {cleanAddress(deal.address) || (deal.name ?? '—')}
+              {formatAddress(deal.address) || (deal.name ?? '—')}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 20 }}>×</button>
@@ -233,7 +224,7 @@ export default function HotPanel() {
                       href={`/warroom/deal?id=${deal.id}`}
                       style={{ color: '#F0F2FF', textDecoration: 'none', fontWeight: 700, fontSize: 15, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
-                      {cleanAddress(deal.address) || cleanAddress(deal.name)}
+                      {formatAddress(deal.address) || formatAddress(deal.name)}
                     </a>
                     {deal.name && (
                       <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

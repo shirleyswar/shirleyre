@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { formatAddress } from '@/lib/formatAddress'
 import { createPortal } from 'react-dom'
 import { supabase, Deal, ContractDeadline, DeadlineType, DeadlineStatus } from '@/lib/supabase'
 
@@ -972,10 +973,7 @@ export default function UnderContractPanel() {
                       {/* Address */}
                       <td style={{ padding: '13px 8px', maxWidth: 220 }}>
                         <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)' }}>
-                          {((deal as any).addr_display || deal.address?.replace(/^📁\s*/, '') || deal.name || '')
-                            .replace(/,\s*(LA|Louisiana)\s+\d{5}.*$/i, '')
-                            .replace(/,?\s*USA\s*$/i, '')
-                            .trim()}
+                          {formatAddress((deal as any).addr_display || deal.address || deal.name)}
                         </div>
                       </td>
 

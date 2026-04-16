@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
+import { formatAddress } from '@/lib/formatAddress'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -374,12 +375,7 @@ export default function AccountsReceivablePanel() {
                           <a href={`/warroom/deal?id=${item.deal_id}`} style={{ color: '#a78bfa', textDecoration: 'none', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>↗</a>
                         </div>
                         <span style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
-                          {(item.deals?.address ?? item.deals?.name ?? '—')
-                            .replace(/^📁\s*/, '')
-                            .replace(/,\s*(LA|Louisiana)\s+\d{5}.*$/i, '')
-                            .replace(/,?\s*Baton Rouge\s*,?/i, '')
-                            .replace(/,?\s*USA\s*$/i, '')
-                            .trim()}
+                          {formatAddress(item.deals?.address ?? item.deals?.name)}
                         </span>
                       </div>
 
