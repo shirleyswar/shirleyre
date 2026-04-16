@@ -1001,11 +1001,15 @@ export default function UnderContractPanel() {
                         {nextDeadline ? (
                           <button
                             onClick={() => handleToggleExpand(deal.id)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', textAlign: 'center' }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: deadlineColor, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
-                              {nextDeadline.label.length > 14 ? nextDeadline.label.slice(0, 14) + '…' : nextDeadline.label}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textAlign: 'left' }}>
+                            {/* Date — hero line */}
+                            <div style={{ fontSize: 13, fontWeight: 800, color: deadlineColor, whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+                              {new Date(nextDeadline.deadline_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </div>
-                            <div style={{ fontSize: 11, color: deadlineColor, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            {/* Label + countdown */}
+                            <div style={{ fontSize: 10, color: deadlineColor, fontWeight: 600, whiteSpace: 'nowrap', opacity: 0.75, marginTop: 2 }}>
+                              {nextDeadline.label.length > 18 ? nextDeadline.label.slice(0, 18) + '…' : nextDeadline.label}
+                              {' · '}
                               {nextDays! < 0 ? `${Math.abs(nextDays!)}d overdue` : nextDays === 0 ? 'TODAY' : `${nextDays}d`}
                             </div>
                           </button>
