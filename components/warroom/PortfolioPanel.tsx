@@ -356,6 +356,27 @@ const SLEEVE_COL_MAP: Record<string, string> = {
   years_held: 'YRS HELD', annualized_return_pct: 'ANN. RETURN',
 }
 
+// ─── Shared: recalculate years_held (from acquired → today) and annualized_return_pct ──────
+// Never trust stored values — recalculate on every fetch so numbers stay current and correct.
+function recalcPositions(positions: Position[]): Position[] {
+  const now = Date.now()
+  return positions.map(p => {
+    const mv = p.market_value
+    const tc = p.total_cost
+    // Recalculate years_held from acquired date if available; else keep stored value
+    let yrs = p.years_held
+    if (p.acquired) {
+      const acqMs = new Date(p.acquired).getTime()
+      if (!isNaN(acqMs) && acqMs > 0) yrs = (now - acqMs) / (1000 * 60 * 60 * 24 * 365.25)
+    }
+    const absCost = tc != null ? Math.abs(tc) : null
+    const ann = (mv != null && absCost != null && absCost > 0 && yrs != null && yrs > 0)
+      ? (Math.pow(mv / absCost, 1 / yrs) - 1) * 100
+      : null
+    return { ...p, years_held: yrs, annualized_return_pct: ann }
+  })
+}
+
 // ─── Sleeve Table v2 (Symbol, Name, Qty, Mkt Value, Cost Basis, G/L $, G/L %, Ann. Return) ──
 function SleeveTable({ positions }: { positions: Position[] }) {
   type SF = 'symbol' | 'name' | 'qty' | 'market_value' | 'total_cost' | 'unrealized_gl_dollar' | 'unrealized_gl_pct' | 'annualized_return_pct'
@@ -458,18 +479,7 @@ function SleeveTab() {
     try {
       const { data, error } = await supabase.from('sleeve_positions').select('*').order('market_value', { ascending: false }).limit(400)
       if (error?.code === '42P01') { setLoading(false); return }
-      if (data) {
-        // Recalculate annualized_return_pct from source fields — never trust stored value
-        const fixed = (data as Position[]).map(p => {
-          const mv = p.market_value, tc = p.total_cost, yrs = p.years_held
-          const absCost = tc != null ? Math.abs(tc) : null
-          const ann = (mv != null && absCost != null && absCost > 0 && yrs != null && yrs > 0)
-            ? (Math.pow(mv / absCost, 1 / yrs) - 1) * 100
-            : null
-          return { ...p, annualized_return_pct: ann }
-        })
-        setPositions(fixed)
-      }
+      if (data) setPositions(recalcPositions(data as Position[]))
     } catch {}
     finally { setLoading(false) }
   }
@@ -910,7 +920,7 @@ function SoldTab() {
     try {
       const { data, error } = await supabase.from('sold_positions').select('*').order('sold_at', { ascending: false }).limit(500)
       if (error?.code === '42P01') { setLoading(false); return }
-      if (data) setPositions(data as Position[])
+      if (data) setPositions(recalcPositions(data as Position[]))
     } catch {}
     finally { setLoading(false) }
   }
@@ -1250,18 +1260,7 @@ function PortfolioTab() {
     try {
       const { data, error } = await supabase.from('portfolio_positions').select('*').order('market_value', { ascending: false }).limit(200)
       if (error?.code === '42P01') { setTableExists(false); setLoading(false); return }
-      if (data) {
-        // Recalculate annualized_return_pct from source fields — never trust stored value (may be stale/wrong)
-        const fixed = (data as Position[]).map(p => {
-          const mv = p.market_value, tc = p.total_cost, yrs = p.years_held
-          const absCost = tc != null ? Math.abs(tc) : null
-          const ann = (mv != null && absCost != null && absCost > 0 && yrs != null && yrs > 0)
-            ? (Math.pow(mv / absCost, 1 / yrs) - 1) * 100
-            : null
-          return { ...p, annualized_return_pct: ann }
-        })
-        setPositions(fixed)
-      }
+      if (data) setPositions(recalcPositions(data as Position[]))
     } catch { setTableExists(false) }
     finally { setLoading(false) }
   }
