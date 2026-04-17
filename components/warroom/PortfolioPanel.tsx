@@ -101,7 +101,8 @@ function KpiCards({ positions, glLabel = 'Unrealized G/L' }: { positions: Positi
       {[
         { label: 'Market Value',  value: fmt$(totalMV),         sub: null,              color: P.purple },
         { label: 'Cost Basis',    value: fmt$(totalCost),        sub: null,              color: P.muted  },
-        { label: glLabel,         value: fmt$(totalGL),          sub: fmtPct(totalGLPct),color: pctColor(totalGL) },
+        { label: glLabel,         value: fmt$(totalGL),          sub: null,              color: pctColor(totalGL) },
+        { label: 'G/L %',         value: fmtPct(totalGLPct),    sub: null,              color: pctColor(totalGLPct) },
         { label: 'Ann. Return',   value: fmtPct(wtdAnn),         sub: 'weighted avg',    color: pctColor(wtdAnn) },
         { label: 'Positions',     value: String(uniqueSymbols),  sub: `${positions.length} lots`, color: P.purple },
       ].map(kpi => (
@@ -344,6 +345,16 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
     // Helper: get field value using resolved header, fall back to colMap primary
     const get = (r: Record<string, unknown>, field: string) => r[resolved[field] ?? colMap[field]]
 
+    // Helper: sanitize a date value — never let "-", "--", "N/A" reach Postgres date columns
+    const safeDate = (v: unknown): string | null => {
+      const d = parseDate(v)
+      if (!d) return null
+      if (d === '-' || d === '--' || d.trim() === '') return null
+      // Must match YYYY-MM-DD
+      if (!/^\d{4}-\d{2}-\d{2}/.test(d)) return null
+      return d
+    }
+
     return rows.map(r => {
       const mv        = parseNum(get(r, 'market_value'))
       const cost      = parseNum(get(r, 'total_cost'))
@@ -352,15 +363,13 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
       let annReturn: number | null = null
       const absCost = cost != null ? Math.abs(cost) : null
       if (mv != null && absCost != null && absCost > 0 && yrsHeld != null && yrsHeld > 0) {
-        // Always calculate — proper annualized return math for any holding period including partial months
-        // Formula: (MV / Cost)^(1 / years) - 1
         annReturn = (Math.pow(mv / absCost, 1 / yrsHeld) - 1) * 100
       }
 
       return {
         name:                  String(get(r, 'name') ?? ''),
         symbol:                String(get(r, 'symbol') ?? '').trim().toUpperCase(),
-        acquired:              parseDate(get(r, 'acquired')),
+        acquired:              safeDate(get(r, 'acquired')),
         period:                String(get(r, 'period') ?? ''),
         qty:                   parseNum(get(r, 'qty')),
         market_value:          mv,
@@ -408,10 +417,16 @@ function recalcPositions(positions: Position[]): Position[] {
       if (!isNaN(acqMs) && acqMs > 0) yrs = (now - acqMs) / (1000 * 60 * 60 * 24 * 365.25)
     }
     const absCost = tc != null ? Math.abs(tc) : null
-    const ann = (mv != null && absCost != null && absCost > 0 && yrs != null && yrs > 0)
+    // Only show annualized return if held >= 30 days — below that the math is technically correct but meaningless
+    const ann = (mv != null && absCost != null && absCost > 0 && yrs != null && yrs >= (30 / 365.25))
       ? (Math.pow(mv / absCost, 1 / yrs) - 1) * 100
       : null
-    return { ...p, years_held: yrs, annualized_return_pct: ann }
+    // Always compute G/L live from market_value and total_cost — never trust stored values
+    const gl_dollar = (mv != null && tc != null) ? mv - tc : p.unrealized_gl_dollar
+    const gl_pct = (mv != null && tc != null && absCost != null && absCost > 0)
+      ? ((mv - tc) / absCost) * 100
+      : p.unrealized_gl_pct
+    return { ...p, years_held: yrs, annualized_return_pct: ann, unrealized_gl_dollar: gl_dollar, unrealized_gl_pct: gl_pct }
   })
 }
 
@@ -942,15 +957,19 @@ function SoldTable({ positions, onCostUpdate }: { positions: Position[]; onCostU
   )
 }
 
+type SoldView = 'basket_a' | 'basket_b' | 'all'
+
 function SoldTab() {
   const [positions, setPositions] = useState<Position[]>([])
   const [loading, setLoading]     = useState(true)
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState<null | 'basket_a' | 'basket_b'>(null)
   const [uploadMsg, setUploadMsg] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [dragOver, setDragOver]   = useState(false)
+  const [soldView, setSoldView]   = useState<SoldView>('all')
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef   = useRef<HTMLInputElement>(null)
+  const fileBInputRef  = useRef<HTMLInputElement>(null)
 
   useEffect(() => { fetchSold() }, [])
 
@@ -963,15 +982,24 @@ function SoldTab() {
     finally { setLoading(false) }
   }
 
-  async function handleFile(file: File) {
+  async function handleFile(file: File, basket: 'basket_a' | 'basket_b' = 'basket_a') {
     if (!file.name.match(/\.xlsx?$/i)) { setUploadError('Please upload an .xlsx file.'); return }
-    setUploading(true); setUploadMsg(null); setUploadError(null)
+    setUploading(basket); setUploadMsg(null); setUploadError(null)
 
     const rows = await parseSoldXlsx(file)
-    if (typeof rows === 'string') { setUploadError(rows); setUploading(false); return }
+    if (typeof rows === 'string') { setUploadError(rows); setUploading(null); return }
 
-    // When re-uploading: try to preserve existing cost basis entries
-    const { data: existing } = await supabase.from('sold_positions').select('symbol,total_cost,acquired,years_held,annualized_return_pct')
+    // Delete only this basket's existing rows, preserve the other basket
+    const basketRanges: Record<string, { gte: string; lte: string }> = {
+      basket_a: { gte: '2025-12-18T00:00:00Z', lte: '2025-12-18T23:59:59Z' },
+      basket_b: { gte: '2026-04-08T00:00:00Z', lte: '2026-04-08T23:59:59Z' },
+    }
+    const range = basketRanges[basket]
+
+    // Preserve existing cost basis for this basket
+    const { data: existing } = await supabase.from('sold_positions')
+      .select('symbol,total_cost,acquired,years_held,annualized_return_pct')
+      .gte('sold_at', range.gte).lte('sold_at', range.lte)
     const existingMap = new Map<string, { total_cost: number | null; acquired: string | null; years_held: number | null; annualized_return_pct: number | null }>(
       (existing ?? []).map((e: Record<string,unknown>) => [e.symbol as string, {
         total_cost: e.total_cost as number | null,
@@ -981,15 +1009,15 @@ function SoldTab() {
       }])
     )
 
-    const { error: delErr } = await supabase.from('sold_positions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-    if (delErr) { setUploadError('Clear failed: ' + delErr.message); setUploading(false); return }
+    // Delete only this basket's rows
+    const { error: delErr } = await supabase.from('sold_positions').delete().gte('sold_at', range.gte).lte('sold_at', range.lte)
+    if (delErr) { setUploadError('Clear failed: ' + delErr.message); setUploading(null); return }
 
     const inserts = (rows as Record<string, unknown>[]).map(r => {
       const sym = String(r.symbol ?? '')
       const prev = existingMap.get(sym)
       const cost  = prev?.total_cost ?? r.total_cost ?? null
       const acq   = prev?.acquired ?? r.acquired ?? null
-      // Recalculate holding period and annualized return if we have cost+acquired+sold
       let yrs: number | null = prev?.years_held ?? null
       let ann: number | null = prev?.annualized_return_pct ?? null
       if (acq && r.sold_at) {
@@ -1005,12 +1033,12 @@ function SoldTab() {
 
     for (let i = 0; i < inserts.length; i += 50) {
       const { error } = await supabase.from('sold_positions').insert(inserts.slice(i, i + 50))
-      if (error) { setUploadError('Insert failed: ' + error.message); setUploading(false); return }
+      if (error) { setUploadError('Insert failed: ' + error.message); setUploading(null); return }
     }
 
-    setUploadMsg(`✓ ${inserts.length} positions loaded`)
+    setUploadMsg(`✓ ${basket === 'basket_a' ? 'Basket A' : 'Basket B'}: ${inserts.length} positions loaded`)
     await fetchSold()
-    setUploading(false)
+    setUploading(null)
   }
 
   async function handleCostUpdate(id: string, cost: number) {
@@ -1079,9 +1107,14 @@ function SoldTab() {
 
   if (loading) return <SkeletonTable />
 
+  // ── Filter by basket view ──
+  const basketA = positions.filter(p => (p.sold_at ?? '').startsWith('2025-12-18'))
+  const basketB = positions.filter(p => (p.sold_at ?? '').startsWith('2026-04-08'))
+  const viewPositions = soldView === 'basket_a' ? basketA : soldView === 'basket_b' ? basketB : positions
+
   // ── Basket calculations — use current_value from DB (set by edge function) ──
-  const soldTotal = positions.reduce((s, p) => s + (p.market_value ?? 0), 0)
-  const ifHeldTotal = positions.reduce((s, p) => {
+  const soldTotal = viewPositions.reduce((s, p) => s + (p.market_value ?? 0), 0)
+  const ifHeldTotal = viewPositions.reduce((s, p) => {
     const cv = (p as any).current_value
     return s + (cv != null ? cv : (p.market_value ?? 0))
   }, 0)
@@ -1105,35 +1138,59 @@ function SoldTab() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 16, fontWeight: 800, color: P.purple, letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: `0 0 20px rgba(139,92,246,0.4)` }}>SWAP SCORECARD</span>
-        <span style={{ fontSize: 11, color: P.muted }}>Basket A (sold) vs Basket B (sleeve)</span>
+
+        {/* Basket toggles */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {([
+            { id: 'basket_a', label: 'Basket A', sub: 'Dec 18' },
+            { id: 'basket_b', label: 'Basket B', sub: 'Apr 8' },
+            { id: 'all',      label: 'All',      sub: null },
+          ] as { id: SoldView; label: string; sub: string | null }[]).map(v => (
+            <button key={v.id} onClick={() => setSoldView(v.id)} style={{
+              padding: '4px 10px', fontSize: 10, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase',
+              background: soldView === v.id ? P.purpleFaint : 'transparent',
+              border: `1px solid ${soldView === v.id ? P.purpleDim : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 8, color: soldView === v.id ? P.purple : P.muted, cursor: 'pointer', fontFamily: 'inherit',
+            }}>{v.label}{v.sub ? ` (${v.sub})` : ''}</button>
+          ))}
+        </div>
+
         <div style={{ flex: 1 }} />
         {pricesUpdated && <span style={{ fontSize: 10, color: P.muted, fontFamily: 'monospace' }}>Prices as of {pricesUpdated}</span>}
-        <button onClick={refreshPrices}
-          disabled={pricesLoading}
+        <button onClick={refreshPrices} disabled={pricesLoading}
           style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 8, color: P.green, cursor: pricesLoading ? 'not-allowed' : 'pointer', opacity: pricesLoading ? 0.5 : 1 }}>
           {pricesLoading ? '⟳ Refreshing…' : '⟳ Refresh Prices'}
         </button>
-        <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
-          style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', opacity: uploading ? 0.5 : 1 }}>
-          {uploading ? 'Loading…' : '↑ Upload Sold .xlsx'}
+        {/* Basket A upload */}
+        <button onClick={() => fileInputRef.current?.click()} disabled={!!uploading}
+          style={{ padding: '6px 12px', fontSize: 11, fontWeight: 800, background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 8, color: P.purple, cursor: 'pointer', opacity: uploading ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+          {uploading === 'basket_a' ? 'Loading A…' : '↑ Basket A'}
         </button>
         <input ref={fileInputRef} type="file" accept=".xlsx,.xls"
-          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f, 'basket_a'); e.target.value = '' }}
+          style={{ display: 'none' }} />
+        {/* Basket B upload */}
+        <button onClick={() => fileBInputRef.current?.click()} disabled={!!uploading}
+          style={{ padding: '6px 12px', fontSize: 11, fontWeight: 800, background: 'rgba(232,184,75,0.12)', border: '1px solid rgba(232,184,75,0.5)', borderRadius: 8, color: '#E8B84B', cursor: 'pointer', opacity: uploading ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+          {uploading === 'basket_b' ? 'Loading B…' : '↑ Basket B'}
+        </button>
+        <input ref={fileBInputRef} type="file" accept=".xlsx,.xls"
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f, 'basket_b'); e.target.value = '' }}
           style={{ display: 'none' }} />
       </div>
 
       {uploadMsg   && <div style={{ marginBottom: 12, fontSize: 12, color: P.green, fontFamily: 'monospace' }}>{uploadMsg}</div>}
       {uploadError && <div style={{ marginBottom: 12, fontSize: 12, color: P.red,   fontFamily: 'monospace' }}>{uploadError}</div>}
 
-      {positions.length === 0 ? (
+      {viewPositions.length === 0 ? (
         <div onDragOver={e => { e.preventDefault(); setDragOver(true) }} onDragLeave={() => setDragOver(false)}
-          onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
-          onClick={() => fileInputRef.current?.click()}
+          onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f, soldView === 'basket_b' ? 'basket_b' : 'basket_a') }}
+          onClick={() => soldView === 'basket_b' ? fileBInputRef.current?.click() : fileInputRef.current?.click()}
           style={{ border: `2px dashed ${dragOver ? P.purple : P.purpleBorder}`, borderRadius: 12, padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? P.purpleFaint : 'transparent', transition: 'all 0.15s', marginBottom: 16 }}>
           <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.5 }}>📊</div>
-          <div style={{ fontSize: 13, color: P.text, fontWeight: 600, marginBottom: 6 }}>Drop your Morgan Stanley activity export here</div>
+          <div style={{ fontSize: 13, color: P.text, fontWeight: 600, marginBottom: 6 }}>{soldView === 'basket_b' ? 'Upload Basket B (Apr 8, 2026 sells) — click ↑ Basket B above' : 'Drop your Morgan Stanley activity export here'}</div>
           <div style={{ fontSize: 12, color: P.muted }}>Expected: Activity Date · Symbol · Description · Quantity · Price($) · Amount($)</div>
         </div>
       ) : (
@@ -1196,7 +1253,7 @@ function SoldTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {positions.map(p => {
+                  {viewPositions.map(p => {
                     const proceeds = p.market_value ?? 0
                     const cv = (p as any).current_value
                     const ifHeld = cv != null ? cv : proceeds
@@ -1453,6 +1510,7 @@ function PortfolioTab() {
                   {([
                     { label: '',          field: 'symbol'               },
                     { label: 'Symbol',    field: 'symbol'               },
+                    { label: 'Name',      field: 'name',                 cls: 'hidden sm:table-cell' },
                     { label: 'Ann. Ret',  field: 'annualized_return_pct'},
                     { label: 'Mkt Value', field: 'market_value'         },
                     { label: 'Period',    field: 'period',               cls: 'hidden sm:table-cell' },
@@ -1488,6 +1546,7 @@ function PortfolioTab() {
                           {row.symbol}
                           {isMultiLot && <span style={{ marginLeft: 5, fontSize: 9, padding: '1px 5px', background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 3, color: P.purpleDim }}>{row.lots.length}</span>}
                         </td>
+                        <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'left', color: P.muted, fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name || '—'}</td>
                         <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.annualized_return_pct), fontWeight: 600 }}>{fmtPct(row.annualized_return_pct)}</td>
                         <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 600, color: P.text }}>{fmt$(row.market_value)}</td>
                         <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center' }}>
