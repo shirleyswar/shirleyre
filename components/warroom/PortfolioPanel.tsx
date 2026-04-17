@@ -233,7 +233,7 @@ const SLEEVE_COL_ALIASES: Record<string, string[]> = {
   period:               ['PERIOD', 'HOLDING PERIOD', 'HOLD PERIOD'],
   qty:                  ['QTY', 'QUANTITY', 'SHARES', 'UNITS'],
   market_value:         ['MKT VALUE', 'MARKET VALUE', 'CURRENT VALUE', 'MKT VAL'],
-  total_cost:           ['COST BASIS', 'TOTAL COST', 'COST', 'TOTAL COST BASIS', 'ADJ COST BASIS'],
+  total_cost:           ['COST BASIS', 'TOTAL COST', 'COST', 'TOTAL COST BASIS', 'ADJ COST BASIS', 'ADJUSTED COST BASIS', 'TOTAL INVESTMENT', 'BOOK VALUE', 'BASIS', 'PURCHASE COST', 'ORIGINAL COST', 'INVESTMENT COST', 'TOTAL PAID'],
   unrealized_gl_pct:    ['UNRL G/L %', 'UNREALIZED G/L %', 'UNRLZD G/L %', 'UNREALIZED GAIN/LOSS %', 'G/L %'],
   unrealized_gl_dollar: ['UNRL G/L $', 'UNREALIZED G/L $', 'UNRLZD G/L $', 'UNREALIZED GAIN/LOSS', 'G/L $', 'UNREALIZED G/L'],
   years_held:           ['YRS HELD', 'YEARS HELD', 'HOLDING PERIOD YRS'],
@@ -341,6 +341,28 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
       console.log('[parseXlsx] resolved field map:', resolved)
     }
 
+    // ── Positional fallback for 5-column fixed format ──────────────────────
+    // If the file has exactly 5 columns (Name, Symbol, Date Acquired, Quantity, Total Cost)
+    // and total_cost wasn't resolved by name, grab column 5 (index 4) by position.
+    // This handles edge cases like extra spaces, encoding differences, or renamed headers.
+    if (!resolved['total_cost'] && fileHeaders.length >= 5) {
+      // Only use positional fallback if we successfully found symbol + qty (confirms right file shape)
+      if (resolved['symbol'] && resolved['qty']) {
+        // Use the last column if there are exactly 5, or any unresolved numeric column
+        const resolvedHeaders = new Set(Object.values(resolved))
+        const unresolved = fileHeaders.filter(h => !resolvedHeaders.has(h))
+        if (unresolved.length === 1) {
+          // Exactly one unaccounted column — must be total_cost
+          resolved['total_cost'] = unresolved[0]
+          console.log('[parseXlsx] positional fallback: total_cost =', unresolved[0])
+        } else if (fileHeaders.length === 5) {
+          // Strict 5-col: last column is always Total Cost
+          resolved['total_cost'] = fileHeaders[4]
+          console.log('[parseXlsx] positional fallback (5-col): total_cost =', fileHeaders[4])
+        }
+      }
+    }
+
     const pct = (v: unknown) => { const n = parseNum(v); return n !== null ? n * 100 : null }
     // Helper: get field value using resolved header, fall back to colMap primary
     const get = (r: Record<string, unknown>, field: string) => r[resolved[field] ?? colMap[field]]
@@ -360,10 +382,20 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
       const cost      = parseNum(get(r, 'total_cost'))
       const yrsHeld   = parseNum(get(r, 'years_held'))
 
+      // If years_held not in file, calculate from acquired date
+      let effectiveYrs = yrsHeld
+      if (effectiveYrs == null) {
+        const acquiredRaw = get(r, 'acquired')
+        if (acquiredRaw) {
+          const acqMs = new Date(String(acquiredRaw)).getTime()
+          if (!isNaN(acqMs)) effectiveYrs = (Date.now() - acqMs) / (1000 * 60 * 60 * 24 * 365.25)
+        }
+      }
+
       let annReturn: number | null = null
       const absCost = cost != null ? Math.abs(cost) : null
-      if (mv != null && absCost != null && absCost > 0 && yrsHeld != null && yrsHeld > 0) {
-        annReturn = (Math.pow(mv / absCost, 1 / yrsHeld) - 1) * 100
+      if (mv != null && absCost != null && absCost > 0 && effectiveYrs != null && effectiveYrs > 0) {
+        annReturn = (Math.pow(mv / absCost, 1 / effectiveYrs) - 1) * 100
       }
 
       return {
@@ -376,7 +408,7 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
         total_cost:            cost,
         unrealized_gl_pct:     pct(get(r, 'unrealized_gl_pct')),
         unrealized_gl_dollar:  parseNum(get(r, 'unrealized_gl_dollar')),
-        years_held:            yrsHeld,
+        years_held:            effectiveYrs,
         annualized_return_pct: annReturn,
         ytd_pct:               null,
         rolling_12mo_pct:      null,
