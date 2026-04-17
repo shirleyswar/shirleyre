@@ -341,24 +341,27 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
       console.log('[parseXlsx] resolved field map:', resolved)
     }
 
-    // ── Positional fallback for 5-column fixed format ──────────────────────
-    // If the file has exactly 5 columns (Name, Symbol, Date Acquired, Quantity, Total Cost)
-    // and total_cost wasn't resolved by name, grab column 5 (index 4) by position.
-    // This handles edge cases like extra spaces, encoding differences, or renamed headers.
-    if (!resolved['total_cost'] && fileHeaders.length >= 5) {
-      // Only use positional fallback if we successfully found symbol + qty (confirms right file shape)
-      if (resolved['symbol'] && resolved['qty']) {
-        // Use the last column if there are exactly 5, or any unresolved numeric column
-        const resolvedHeaders = new Set(Object.values(resolved))
-        const unresolved = fileHeaders.filter(h => !resolvedHeaders.has(h))
+    // ── Total Cost fallback — multiple strategies ──────────────────────────
+    if (!resolved['total_cost']) {
+      const normH = fileHeaders.map(h => ({ orig: h, n: h.toUpperCase().replace(/\s+/g, ' ').trim() }))
+      // Strategy 1: contains "COST" anywhere in the header
+      const costContains = normH.find(h => h.n.includes('COST') && !resolved['symbol']?.includes(h.orig))
+      if (costContains) {
+        resolved['total_cost'] = costContains.orig
+        console.log('[parseXlsx] cost fallback (contains COST):', costContains.orig)
+      }
+      // Strategy 2: 5-col file — last column by position
+      else if (fileHeaders.length === 5 && resolved['symbol'] && resolved['qty']) {
+        resolved['total_cost'] = fileHeaders[4]
+        console.log('[parseXlsx] cost fallback (5-col position):', fileHeaders[4])
+      }
+      // Strategy 3: single unresolved column
+      else if (resolved['symbol'] && resolved['qty']) {
+        const resolvedSet = new Set(Object.values(resolved).filter(Boolean))
+        const unresolved = fileHeaders.filter(h => !resolvedSet.has(h))
         if (unresolved.length === 1) {
-          // Exactly one unaccounted column — must be total_cost
           resolved['total_cost'] = unresolved[0]
-          console.log('[parseXlsx] positional fallback: total_cost =', unresolved[0])
-        } else if (fileHeaders.length === 5) {
-          // Strict 5-col: last column is always Total Cost
-          resolved['total_cost'] = fileHeaders[4]
-          console.log('[parseXlsx] positional fallback (5-col): total_cost =', fileHeaders[4])
+          console.log('[parseXlsx] cost fallback (only unresolved col):', unresolved[0])
         }
       }
     }
@@ -376,6 +379,10 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
       if (!/^\d{4}-\d{2}-\d{2}/.test(d)) return null
       return d
     }
+
+    // Build a debug string that will show in the upload status message
+    const debugInfo = `[headers: ${fileHeaders.join(' | ')}] [cost→${resolved['total_cost'] ?? 'NOT FOUND'}]`
+    console.log('[parseXlsx debug]', debugInfo)
 
     return rows.map(r => {
       const mv        = parseNum(get(r, 'market_value'))
@@ -1420,6 +1427,12 @@ function PortfolioTab() {
     setUploading(true); setUploadMsg(null); setUploadError(null)
     const rows = await parseXlsx(file, PORTFOLIO_COL_MAP)
     if (typeof rows === 'string') { setUploadError(rows); setUploading(false); return }
+
+    // Debug: check first row to surface what cost value came in
+    const sampleCost = (rows as Record<string,unknown>[])[0]?.total_cost
+    const sampleSymbol = (rows as Record<string,unknown>[])[0]?.symbol
+    setUploadError(`DEBUG — first row: ${sampleSymbol} cost=${JSON.stringify(sampleCost)} (dismiss after checking)`)
+
     const batch = new Date().toISOString()
     const { error: delError } = await supabase.from('portfolio_positions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     if (delError) { setUploadError('Failed to clear: ' + delError.message); setUploading(false); return }
