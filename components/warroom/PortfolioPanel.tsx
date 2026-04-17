@@ -1396,8 +1396,29 @@ function PortfolioTab() {
       const { error } = await supabase.from('portfolio_positions').insert(inserts.slice(i, i + 50))
       if (error) { setUploadError('Insert failed: ' + error.message); setUploading(false); return }
     }
-    setUploadMsg(`✓ ${inserts.length} positions loaded`)
+    setUploadMsg(`✓ ${inserts.length} positions loaded — fetching live prices…`)
     await fetchPositions()
+
+    // Auto-refresh prices immediately after upload so market_value / returns are populated
+    try {
+      const SUPABASE_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
+      const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/refresh-portfolio-prices`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force: true }),
+      })
+      const json = await res.json()
+      if (res.ok && !json.cached) {
+        await fetchPositions()
+        setUploadMsg(`✓ ${inserts.length} positions loaded — prices live`)
+      } else {
+        setUploadMsg(`✓ ${inserts.length} positions loaded — click Refresh Prices to see returns`)
+      }
+    } catch {
+      setUploadMsg(`✓ ${inserts.length} positions loaded — click Refresh Prices to see returns`)
+    }
+
     setUploading(false)
   }, [])
 
