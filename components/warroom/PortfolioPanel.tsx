@@ -349,6 +349,16 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
     // Helper: get field value using resolved header, fall back to colMap primary
     const get = (r: Record<string, unknown>, field: string) => r[resolved[field] ?? colMap[field]]
 
+    // Helper: sanitize a date value — never let "-", "--", "N/A" reach Postgres date columns
+    const safeDate = (v: unknown): string | null => {
+      const d = parseDate(v)
+      if (!d) return null
+      if (d === '-' || d === '--' || d.trim() === '') return null
+      // Must match YYYY-MM-DD
+      if (!/^\d{4}-\d{2}-\d{2}/.test(d)) return null
+      return d
+    }
+
     return rows.map(r => {
       const mv        = parseNum(get(r, 'market_value'))
       const cost      = parseNum(get(r, 'total_cost'))
@@ -357,15 +367,13 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
       let annReturn: number | null = null
       const absCost = cost != null ? Math.abs(cost) : null
       if (mv != null && absCost != null && absCost > 0 && yrsHeld != null && yrsHeld > 0) {
-        // Always calculate — proper annualized return math for any holding period including partial months
-        // Formula: (MV / Cost)^(1 / years) - 1
         annReturn = (Math.pow(mv / absCost, 1 / yrsHeld) - 1) * 100
       }
 
       return {
         name:                  String(get(r, 'name') ?? ''),
         symbol:                String(get(r, 'symbol') ?? '').trim().toUpperCase(),
-        acquired:              parseDate(get(r, 'acquired')),
+        acquired:              safeDate(get(r, 'acquired')),
         period:                String(get(r, 'period') ?? ''),
         qty:                   parseNum(get(r, 'qty')),
         market_value:          mv,
