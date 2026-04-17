@@ -276,8 +276,17 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
     }
     const parseDate = (v: unknown): string | null => {
       if (!v) return null
-      if (v instanceof Date) return v.toISOString().split('T')[0]
-      if (typeof v === 'string') return v.split('T')[0]
+      if (v instanceof Date) return isNaN(v.getTime()) ? null : v.toISOString().split('T')[0]
+      if (typeof v === 'string') {
+        const s = v.trim()
+        if (!s || s === '-' || s === '--' || s === 'N/A') return null
+        // MM/DD/YYYY
+        const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+        if (m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`
+        // Already ISO
+        if (s.match(/^\d{4}-\d{2}-\d{2}/)) return s.split('T')[0]
+        return null
+      }
       if (typeof v === 'number') {
         const d = (XLSX.SSF as unknown as { parse_date_code: (n: number) => { y: number; m: number; d: number } | null }).parse_date_code(v)
         if (d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`
