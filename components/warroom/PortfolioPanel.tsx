@@ -403,7 +403,8 @@ function recalcPositions(positions: Position[]): Position[] {
       if (!isNaN(acqMs) && acqMs > 0) yrs = (now - acqMs) / (1000 * 60 * 60 * 24 * 365.25)
     }
     const absCost = tc != null ? Math.abs(tc) : null
-    const ann = (mv != null && absCost != null && absCost > 0 && yrs != null && yrs > 0)
+    // Only show annualized return if held >= 30 days — below that the math is technically correct but meaningless
+    const ann = (mv != null && absCost != null && absCost > 0 && yrs != null && yrs >= (30 / 365.25))
       ? (Math.pow(mv / absCost, 1 / yrs) - 1) * 100
       : null
     // Always compute G/L live from market_value and total_cost — never trust stored values
@@ -1453,6 +1454,7 @@ function PortfolioTab() {
                   {([
                     { label: '',          field: 'symbol'               },
                     { label: 'Symbol',    field: 'symbol'               },
+                    { label: 'Name',      field: 'name',                 cls: 'hidden sm:table-cell' },
                     { label: 'Ann. Ret',  field: 'annualized_return_pct'},
                     { label: 'Mkt Value', field: 'market_value'         },
                     { label: 'Period',    field: 'period',               cls: 'hidden sm:table-cell' },
@@ -1488,6 +1490,7 @@ function PortfolioTab() {
                           {row.symbol}
                           {isMultiLot && <span style={{ marginLeft: 5, fontSize: 9, padding: '1px 5px', background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 3, color: P.purpleDim }}>{row.lots.length}</span>}
                         </td>
+                        <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'left', color: P.muted, fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name || '—'}</td>
                         <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.annualized_return_pct), fontWeight: 600 }}>{fmtPct(row.annualized_return_pct)}</td>
                         <td style={{ padding: '9px 8px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 600, color: P.text }}>{fmt$(row.market_value)}</td>
                         <td className="hidden sm:table-cell" style={{ padding: '9px 8px', textAlign: 'center' }}>
