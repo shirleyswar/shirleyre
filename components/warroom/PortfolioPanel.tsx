@@ -977,13 +977,16 @@ function SoldTab() {
     if (typeof rows === 'string') { setUploadError(rows); setUploading(null); return }
 
     // Delete only this basket's existing rows, preserve the other basket
-    const soldDates: Record<string, string> = { basket_a: '2025-12-18', basket_b: '2026-04-08' }
-    const basketDate = soldDates[basket]
+    const basketRanges: Record<string, { gte: string; lte: string }> = {
+      basket_a: { gte: '2025-12-18T00:00:00Z', lte: '2025-12-18T23:59:59Z' },
+      basket_b: { gte: '2026-04-08T00:00:00Z', lte: '2026-04-08T23:59:59Z' },
+    }
+    const range = basketRanges[basket]
 
     // Preserve existing cost basis for this basket
     const { data: existing } = await supabase.from('sold_positions')
       .select('symbol,total_cost,acquired,years_held,annualized_return_pct')
-      .like('sold_at', `${basketDate}%`)
+      .gte('sold_at', range.gte).lte('sold_at', range.lte)
     const existingMap = new Map<string, { total_cost: number | null; acquired: string | null; years_held: number | null; annualized_return_pct: number | null }>(
       (existing ?? []).map((e: Record<string,unknown>) => [e.symbol as string, {
         total_cost: e.total_cost as number | null,
@@ -994,7 +997,7 @@ function SoldTab() {
     )
 
     // Delete only this basket's rows
-    const { error: delErr } = await supabase.from('sold_positions').delete().like('sold_at', `${basketDate}%`)
+    const { error: delErr } = await supabase.from('sold_positions').delete().gte('sold_at', range.gte).lte('sold_at', range.lte)
     if (delErr) { setUploadError('Clear failed: ' + delErr.message); setUploading(null); return }
 
     const inserts = (rows as Record<string, unknown>[]).map(r => {
@@ -1092,14 +1095,8 @@ function SoldTab() {
   if (loading) return <SkeletonTable />
 
   // ── Filter by basket view ──
-  const basketA = positions.filter(p => {
-    const d = (p.sold_at ?? '').slice(0, 10)
-    return d === '2025-12-18'
-  })
-  const basketB = positions.filter(p => {
-    const d = (p.sold_at ?? '').slice(0, 10)
-    return d === '2026-04-08'
-  })
+  const basketA = positions.filter(p => (p.sold_at ?? '').startsWith('2025-12-18'))
+  const basketB = positions.filter(p => (p.sold_at ?? '').startsWith('2026-04-08'))
   const viewPositions = soldView === 'basket_a' ? basketA : soldView === 'basket_b' ? basketB : positions
 
   // ── Basket calculations — use current_value from DB (set by edge function) ──
