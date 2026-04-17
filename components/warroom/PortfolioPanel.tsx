@@ -228,7 +228,7 @@ function PositionTable({ positions, showSoldAt = false }: { positions: Position[
 const SLEEVE_COL_ALIASES: Record<string, string[]> = {
   name:                 ['NAME', 'DESCRIPTION', 'SECURITY NAME', 'SECURITY'],
   symbol:               ['SYM', 'SYMBOL', 'TICKER', 'CUSIP/SYM', 'CUSIP / SYM'],
-  acquired:             ['ACQUIRED', 'ACQUISITION DATE', 'DATE ACQUIRED', 'PURCHASE DATE'],
+  acquired:             ['ACQUIRED', 'ACQUISITION DATE', 'DATE ACQUIRED', 'PURCHASE DATE', 'DATE ACQ'],
   period:               ['PERIOD', 'HOLDING PERIOD', 'HOLD PERIOD'],
   qty:                  ['QTY', 'QUANTITY', 'SHARES', 'UNITS'],
   market_value:         ['MKT VALUE', 'MARKET VALUE', 'CURRENT VALUE', 'MKT VAL'],
@@ -276,7 +276,12 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
     const parseDate = (v: unknown): string | null => {
       if (!v) return null
       if (v instanceof Date) return v.toISOString().split('T')[0]
-      if (typeof v === 'string') return v.split('T')[0]
+      if (typeof v === 'string') {
+        // Handle MM/DD/YYYY format (e.g. 12/13/2016)
+        const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+        if (m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`
+        return v.split('T')[0]
+      }
       if (typeof v === 'number') {
         const d = (XLSX.SSF as unknown as { parse_date_code: (n: number) => { y: number; m: number; d: number } | null }).parse_date_code(v)
         if (d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`
@@ -377,8 +382,8 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
 }
 
 const PORTFOLIO_COL_MAP: Record<string, string> = {
-  name: 'Name', symbol: 'Symbol', acquired: 'Acquired', period: 'Period',
-  qty: 'Qty', market_value: 'Market Value', total_cost: 'Total Cost',
+  name: 'Name', symbol: 'Symbol', acquired: 'Date Acquired', period: 'Period',
+  qty: 'Quantity', market_value: 'Market Value', total_cost: 'Total Cost',
   unrealized_gl_pct: 'Unrealized G/L %', unrealized_gl_dollar: 'Unrealized G/L $',
   years_held: 'Years Held', annualized_return_pct: 'Annualized Return %',
 }
