@@ -406,7 +406,12 @@ function recalcPositions(positions: Position[]): Position[] {
     const ann = (mv != null && absCost != null && absCost > 0 && yrs != null && yrs > 0)
       ? (Math.pow(mv / absCost, 1 / yrs) - 1) * 100
       : null
-    return { ...p, years_held: yrs, annualized_return_pct: ann }
+    // Always compute G/L live from market_value and total_cost — never trust stored values
+    const gl_dollar = (mv != null && tc != null) ? mv - tc : p.unrealized_gl_dollar
+    const gl_pct = (mv != null && tc != null && absCost != null && absCost > 0)
+      ? ((mv - tc) / absCost) * 100
+      : p.unrealized_gl_pct
+    return { ...p, years_held: yrs, annualized_return_pct: ann, unrealized_gl_dollar: gl_dollar, unrealized_gl_pct: gl_pct }
   })
 }
 
