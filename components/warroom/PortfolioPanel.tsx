@@ -101,7 +101,8 @@ function KpiCards({ positions, glLabel = 'Unrealized G/L' }: { positions: Positi
       {[
         { label: 'Market Value',  value: fmt$(totalMV),         sub: null,              color: P.purple },
         { label: 'Cost Basis',    value: fmt$(totalCost),        sub: null,              color: P.muted  },
-        { label: glLabel,         value: fmt$(totalGL),          sub: fmtPct(totalGLPct),color: pctColor(totalGL) },
+        { label: glLabel,         value: fmt$(totalGL),          sub: null,              color: pctColor(totalGL) },
+        { label: 'G/L %',         value: fmtPct(totalGLPct),    sub: null,              color: pctColor(totalGLPct) },
         { label: 'Ann. Return',   value: fmtPct(wtdAnn),         sub: 'weighted avg',    color: pctColor(wtdAnn) },
         { label: 'Positions',     value: String(uniqueSymbols),  sub: `${positions.length} lots`, color: P.purple },
       ].map(kpi => (
