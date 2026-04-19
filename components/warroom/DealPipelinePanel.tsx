@@ -135,17 +135,21 @@ const STATUS_LABELS: Record<DealStatus, string> = {
 }
 
 const STATUS_CLASS: Record<DealStatus, string> = {
-  active: 'badge-active',
-  in_review: 'badge-pending',
-  pipeline: 'badge-pipeline',
-  in_service: 'badge-contract',
-  hot: 'badge-hot',
-  under_contract: 'badge-contract',
+  // Post-deal (green): active listing in service = ongoing relationship
+  active:          'badge-active',
+  in_service:      'badge-active',
+  // Pre-deal (warm amber/orange)
+  pipeline:        'badge-pipeline',
+  hot:             'badge-hot',
+  // In-deal (blue/indigo)
+  in_review:       'badge-contract',
+  under_contract:  'badge-contract',
   pending_payment: 'badge-pending',
-  closed: 'badge-closed',
-  expired: 'badge-dead',
-  dormant: 'badge-dead',
-  terminated: 'badge-dead',
+  // Terminal
+  closed:          'badge-closed',
+  expired:         'badge-dead',
+  dormant:         'badge-dead',
+  terminated:      'badge-dead',
 }
 
 // The 4 primary statuses shown in UI

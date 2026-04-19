@@ -192,13 +192,26 @@ html, body {
   text-transform: uppercase;
 }
 
-.badge-pipeline  { background: rgba(232,184,75,0.12);  color: var(--accent-gold);   }
-.badge-active    { background: rgba(34,197,94,0.12);   color: #22C55E;              }
-.badge-hot       { background: rgba(251,146,60,0.15);  color: #fb923c;              }
-.badge-contract  { background: rgba(79,142,247,0.12);  color: var(--accent-blue);   }
-.badge-pending   { background: rgba(167,139,250,0.12); color: var(--accent-violet); }
-.badge-closed    { background: rgba(100,116,139,0.12); color: #94A3B8;              }
-.badge-dead      { background: rgba(239,68,68,0.12);   color: #EF4444;              }
+/* Phase-grouped badge system:
+   Pre-deal  (warm)   → PIPELINE, HOT
+   In-deal   (blue)   → IN REVIEW, UNDER CONTRACT
+   Post-deal (green)  → ACTIVE, IN SERVICE
+   Urgency accent     → HOT gets orange flame dot, UNDER CONTRACT gets pulse dot */
+
+/* Pre-deal — warm amber/orange */
+.badge-pipeline  { background: rgba(201,147,58,0.12);  color: #C9933A; border: 1px solid rgba(201,147,58,0.3);  }
+.badge-hot       { background: rgba(251,100,36,0.15);  color: #f97316; border: 1px solid rgba(249,115,22,0.45); font-weight: 700; }
+
+/* In-deal — blue/indigo */
+.badge-contract  { background: rgba(79,142,247,0.12);  color: #4F8EF7; border: 1px solid rgba(79,142,247,0.35); }
+.badge-pending   { background: rgba(139,92,246,0.12);  color: #a78bfa; border: 1px solid rgba(139,92,246,0.35); }
+
+/* Post-deal — green */
+.badge-active    { background: rgba(34,197,94,0.12);   color: #22C55E; border: 1px solid rgba(34,197,94,0.3);   }
+
+/* Closed / terminal */
+.badge-closed    { background: rgba(100,116,139,0.10); color: #94A3B8; border: 1px solid rgba(100,116,139,0.2); }
+.badge-dead      { background: rgba(239,68,68,0.10);   color: #EF4444; border: 1px solid rgba(239,68,68,0.25); }
 
 /* ─── INPUTS ─────────────────────────────────────────────────── */
 .wr-input {
