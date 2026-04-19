@@ -844,13 +844,17 @@ function EventRow({
           )}
         </div>
 
-        {/* Title + property */}
+        {/* Title + property — 2-line wrap, never truncate addresses */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>
+          <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.35, fontWeight: 600,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+            overflow: 'hidden', wordBreak: 'break-word' }}>
             {event.title}
           </div>
           {event.location && (
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2,
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+              overflow: 'hidden', wordBreak: 'break-word' }}>
               {event.location}
             </div>
           )}
@@ -893,13 +897,17 @@ function EventRow({
       <div style={{ width: 74, fontSize: 14, fontWeight: 700, color: 'var(--accent-gold)', flexShrink: 0, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
         {event.time}
       </div>
-      {/* Title + location */}
+      {/* Title + location — allow 2-line wrap, never truncate */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, color: 'var(--text-primary)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: 15, color: 'var(--text-primary)', lineHeight: 1.35,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+          overflow: 'hidden', wordBreak: 'break-word' }}>
           {event.title}
         </div>
         {event.location && (
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+            overflow: 'hidden', wordBreak: 'break-word' }}>
             {event.location}
           </div>
         )}
