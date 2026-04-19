@@ -352,7 +352,7 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
   return (
     <header
       style={{
-        height: 52,
+        height: 42,
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
@@ -407,20 +407,7 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
         ShirleyCRE
       </span>
 
-      {/* Mobile: date + time inline after wordmark */}
-      {dateLabel && (() => {
-        const [, date] = dateLabel.split('||')
-        return (
-          <span className="sm:hidden" style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
-            color: '#22c55e', fontFamily: 'var(--font-body)',
-            whiteSpace: 'nowrap', marginLeft: 8, flexShrink: 1, overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            {date}{liveTime ? ` · ${liveTime}` : ''}
-          </span>
-        )
-      })()}
+      {/* Mobile: date hidden from header — keeps it as a thin single-line strip */}
 
       <div style={{ flex: 1 }} />
 
@@ -552,7 +539,7 @@ function NavRibbon({
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        height: 'clamp(80px, 14vw, 96px)',
+        height: 'clamp(50px, 9vw, 60px)',
         gap: 0,
         padding: '0 12px',
         cursor: 'default',
@@ -595,7 +582,7 @@ function NavRibbon({
               flex: '1 1 0',
               width: '100%',
               maxWidth: 160,
-              height: 'clamp(80px, 14vw, 96px)',
+              height: 'clamp(50px, 9vw, 60px)',
               background: isActive
                 ? 'linear-gradient(135deg, #2A1F50 0%, #221845 40%, #1E1540 100%)'
                 : 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
@@ -638,7 +625,7 @@ function NavRibbon({
             )}
 
             {/* Orbit icon */}
-            <div style={{ position: 'relative', width: 'clamp(40px, 8vw, 54px)', height: 'clamp(40px, 8vw, 54px)', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 'clamp(26px, 5.5vw, 36px)', height: 'clamp(26px, 5.5vw, 36px)', flexShrink: 0 }}>
               {/* Outer orbit ring */}
               <motion.div
                 style={{
@@ -709,7 +696,7 @@ function NavRibbon({
           flex: '1 1 0',
           width: '100%',
           maxWidth: 160,
-          height: 'clamp(80px, 14vw, 96px)',
+          height: 'clamp(50px, 9vw, 60px)',
           background: 'linear-gradient(135deg, #0d1a2e 0%, #0f2040 50%, #0a1830 100%)',
           border: '1px solid rgba(79,142,247,0.35)',
           borderRadius: 16,
@@ -729,7 +716,7 @@ function NavRibbon({
         }} />
 
         {/* Orbit icon zone */}
-        <div style={{ position: 'relative', width: 'clamp(40px, 8vw, 54px)', height: 'clamp(40px, 8vw, 54px)', flexShrink: 0 }}>
+        <div style={{ position: 'relative', width: 'clamp(26px, 5.5vw, 36px)', height: 'clamp(26px, 5.5vw, 36px)', flexShrink: 0 }}>
           <motion.div
             style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(79,142,247,0.28)' }}
             animate={{ scale: [1, 1.45, 1], opacity: [0.45, 0, 0.45] }}
@@ -807,7 +794,7 @@ function NavRibbon({
             flex: '0 0 auto',
             width: 'clamp(90px, 20vw, 160px)',
             maxWidth: 160,
-            height: 'clamp(80px, 14vw, 96px)',
+            height: 'clamp(50px, 9vw, 60px)',
             background: 'linear-gradient(135deg, #0a1e1e 0%, #0d2222 50%, #091a1a 100%)',
             border: '1px solid rgba(14,165,160,0.22)',
             borderRadius: 16,
@@ -827,7 +814,7 @@ function NavRibbon({
           }} />
 
           {/* Orbit icon zone */}
-          <div style={{ position: 'relative', width: 'clamp(40px, 8vw, 54px)', height: 'clamp(40px, 8vw, 54px)', flexShrink: 0 }}>
+          <div style={{ position: 'relative', width: 'clamp(26px, 5.5vw, 36px)', height: 'clamp(26px, 5.5vw, 36px)', flexShrink: 0 }}>
             {/* Outer ring */}
             <motion.div
               style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(14,165,160,0.22)' }}
@@ -928,7 +915,7 @@ function StatsNavCard() {
       alignItems: 'center',
       justifyContent: 'center',
       flex: '0 0 auto',
-      height: 'clamp(80px, 14vw, 96px)',
+      height: 'clamp(50px, 9vw, 60px)',
       padding: '0 16px',
       background: 'linear-gradient(135deg, #0D1218 0%, #111720 100%)',
       border: '1px solid rgba(232,184,75,0.18)',
