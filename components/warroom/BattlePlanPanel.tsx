@@ -326,54 +326,87 @@ export default function BattlePlanPanel() {
   const [futureExpanded, setFutureExpanded] = useState(false)
 
   return (
-    <div className="wr-card">
-      <div className="wr-card-header">
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}><SwordIcon /></span>
-        <span className="wr-rank1">BATTLE PLAN</span>
-        <span className="wr-panel-line" />
-        <span className="wr-panel-stat" style={{ fontSize: 16 }}>
-          {openTasks.length > 0 ? openTasks.length : '—'}
+    <div className="wr-card" style={{ padding: 0 }}>
+      {/* ── Panel Header — clean, quiet, title-case ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        padding: '16px 20px 0',
+        marginBottom: 12,
+      }}>
+        <span style={{
+          fontSize: 15, fontWeight: 600,
+          color: 'var(--text-primary)',
+          fontFamily: 'var(--font-body)',
+          letterSpacing: '-0.01em',
+        }}>
+          Battle Plan
         </span>
+        <span style={{
+          marginLeft: 10,
+          fontSize: 12, fontWeight: 500,
+          color: 'var(--text-muted)',
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+          {openTasks.length > 0 ? openTasks.length : ''}
+        </span>
+        <div style={{ flex: 1 }} />
       </div>
 
-      {/* Add task + Sort controls */}
-      <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button onClick={() => setShowAddForm(true)} className="wr-btn-orbit" style={{ fontSize: 12, flexShrink: 0 }}>
-          + Add Item
+      {/* ── Toolbar: + Add Item  |  sort dropdown — siblings, same height ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px', marginBottom: 12 }}>
+        <button
+          onClick={() => setShowAddForm(true)}
+          style={{
+            height: 32, padding: '0 14px',
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.14)',
+            borderRadius: 7,
+            color: 'var(--text-primary)',
+            fontSize: 12, fontWeight: 500,
+            fontFamily: 'var(--font-body)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6,
+            transition: 'border-color 0.15s, background 0.15s',
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.background = 'transparent' }}
+        >
+          <span style={{ fontSize: 14, lineHeight: 1, color: 'rgba(255,255,255,0.5)' }}>+</span>
+          Add Item
         </button>
+
         <div style={{ flex: 1 }} />
-        {/* Sort dropdown */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-            Sort
-          </span>
-          <select
-            value={sortMode}
-            onChange={e => setSortMode(e.target.value as typeof sortMode)}
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 6,
-              padding: '4px 8px',
-              fontSize: 11,
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-body)',
-              cursor: 'pointer',
-              outline: 'none',
-              appearance: 'none' as React.CSSProperties['appearance'],
-              WebkitAppearance: 'none' as React.CSSProperties['WebkitAppearance'],
-              paddingRight: 20,
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 6px center',
-            }}
-          >
-            <option value="due_date">Due date</option>
-            <option value="priority">Priority</option>
-            <option value="assignee">Assignee</option>
-            <option value="recent">Recently added</option>
-          </select>
-        </div>
+
+        {/* Sort — self-explanatory label inside the select, no external "SORT" label */}
+        <select
+          value={sortMode}
+          onChange={e => setSortMode(e.target.value as typeof sortMode)}
+          style={{
+            height: 32,
+            padding: '0 28px 0 10px',
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.14)',
+            borderRadius: 7,
+            fontSize: 12,
+            fontWeight: 500,
+            color: 'var(--text-muted)',
+            fontFamily: 'var(--font-body)',
+            cursor: 'pointer',
+            outline: 'none',
+            appearance: 'none' as React.CSSProperties['appearance'],
+            WebkitAppearance: 'none' as React.CSSProperties['WebkitAppearance'],
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5' viewBox='0 0 9 5'%3E%3Cpath d='M0 0l4.5 5L9 0z' fill='rgba(255,255,255,0.25)'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 9px center',
+            minWidth: 112,
+          }}
+        >
+          <option value="due_date">Due date</option>
+          <option value="priority">Priority</option>
+          <option value="assignee">Assignee</option>
+          <option value="recent">Recently added</option>
+        </select>
       </div>
 
       {/* ── Add Task Modal ── */}
@@ -534,75 +567,52 @@ export default function BattlePlanPanel() {
 
           return (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {/* Mobile-responsive grid styles */}
+              {/* Row grid system — desktop 4-col, mobile single-col */}
               <style>{`
-                .bp-grid { display: grid; grid-template-columns: 110px 1fr 130px 90px; gap: 0 12px; align-items: center; width: 100%; }
-                .bp-header { display: grid; grid-template-columns: 110px 1fr 130px 90px; gap: 0 12px; padding: 5px 12px 5px 42px; border-bottom: 1px solid rgba(139,92,246,0.2); margin-bottom: 2px; }
-                .bp-col-id, .bp-col-priority { display: flex; }
-                .bp-col-id-hdr, .bp-col-priority-hdr { display: block; }
-                /* Mobile: hide DUE DATE column, ID, PRIORITY columns; single-column task */
+                /* Row: accent-bar | checkbox | task+chip | spacer | date | priority | drag */
+                .bp-grid { display: flex; align-items: center; width: 100%; gap: 0; }
+                .bp-grid-task { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+                .bp-grid-date { width: 90px; flex-shrink: 0; display: flex; justify-content: flex-end; }
+                .bp-grid-priority { width: 72px; flex-shrink: 0; display: flex; justify-content: center; }
+                .bp-col-id { display: flex; align-items: center; }
                 @media (max-width: 640px) {
-                  .bp-grid { grid-template-columns: 1fr; }
-                  .bp-header { display: none; }
-                  .bp-col-due, .bp-col-id, .bp-col-priority { display: none !important; }
-                  .bp-col-id-hdr, .bp-col-priority-hdr { display: none !important; }
-                  /* Tighter row padding on mobile for density */
-                  .bp-row-inner { padding-top: 7px !important; padding-bottom: 7px !important; }
-                  .bp-check-cell { padding-top: 8px !important; padding-bottom: 8px !important; }
+                  .bp-grid-date { display: none; }
+                  .bp-grid-priority { display: none; }
+                  .bp-col-id { display: none; }
                 }
               `}</style>
 
-              {/* ── Column headers — desktop only ── */}
-              <div className="bp-header">
-                {[
-                  { label: 'DUE DATE', align: 'center', cls: '' },
-                  { label: 'TASK',     align: 'left',   cls: '' },
-                  { label: 'ID',       align: 'center', cls: 'bp-col-id-hdr' },
-                  { label: 'PRIORITY', align: 'center', cls: 'bp-col-priority-hdr' },
-                ].map(col => (
-                  <div key={col.label} className={col.cls} style={{
-                    fontSize: 9, fontWeight: 800, letterSpacing: '0.14em',
-                    textTransform: 'uppercase', color: 'rgba(139,92,246,0.55)',
-                    fontFamily: 'monospace', textAlign: col.align as React.CSSProperties['textAlign'],
-                  }}>
-                    {col.label}
-                  </div>
-                ))}
-              </div>
-
               {renderRows(urgentTasks)}
 
-              {/* ── Collapse bar ── */}
+              {/* ── "Show more" — last row of the list, same styling as task rows ── */}
               {futureTasks.length > 0 && (
                 <button
                   onClick={() => setFutureExpanded(e => !e)}
                   style={{
                     width: '100%',
-                    padding: '11px 16px',
-                    background: futureExpanded ? 'rgba(139,92,246,0.06)' : 'rgba(255,255,255,0.025)',
+                    minHeight: 48,
+                    padding: '0 20px 0 40px', // left indent matches task text
+                    background: 'transparent',
                     border: 'none',
-                    borderTop: '1px solid rgba(255,255,255,0.06)',
-                    borderBottom: futureExpanded ? '1px solid rgba(139,92,246,0.15)' : '1px solid rgba(255,255,255,0.06)',
-                    color: futureExpanded ? 'rgba(167,139,250,0.75)' : 'rgba(255,255,255,0.5)',
-                    fontSize: 12,
-                    fontWeight: 600,
+                    borderTop: '1px solid rgba(255,255,255,0.05)',
+                    color: 'var(--text-muted)',
+                    fontSize: 13,
+                    fontWeight: 500,
                     fontFamily: 'var(--font-body)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    letterSpacing: '0.03em',
-                    marginTop: 6,
-                    transition: 'all 0.15s',
-                    minHeight: 44, // thumb-reachable tap target
+                    gap: 8,
+                    textAlign: 'left',
+                    transition: 'color 0.15s, background 0.15s',
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent' }}
                 >
-                  <span>
-                    {futureExpanded
-                      ? `Hide upcoming ▴`
-                      : `Show ${futureTasks.length} more ▾`
-                    }
+                  <span style={{ fontSize: 10, opacity: 0.5 }}>
+                    {futureExpanded ? '▴' : '▾'}
                   </span>
+                  {futureExpanded ? 'Hide upcoming' : `Show ${futureTasks.length} more`}
                 </button>
               )}
 
@@ -823,6 +833,9 @@ function TaskRow({
     setEditing(false)
   }
 
+  // Overdue accent: 3px left-edge bar, full row height, Apple-style
+  const accentBarColor = isOverdue ? '#ef4444' : isDueToday ? '#fb923c' : 'transparent'
+
   return (
     <div
       data-task-id={task.id}
@@ -830,59 +843,68 @@ function TaskRow({
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex',
-        alignItems: 'flex-start',
-        gap: 0,
+        alignItems: 'center',           // single vertical axis
+        minHeight: 52,                   // locked row height — desktop
         background: isDragTarget
-          ? 'rgba(232,184,75,0.07)'
+          ? 'rgba(232,184,75,0.05)'
           : hovered
-          ? 'rgba(139,92,246,0.06)'
-          : 'rgba(255,255,255,0.018)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+          ? 'rgba(255,255,255,0.03)'
+          : 'transparent',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
         opacity: completing ? 0.3 : isDragging ? 0.35 : 1,
-        transition: 'all 0.1s ease',
-        borderRadius: '0 6px 6px 0',
-        marginBottom: 2,
+        transition: 'background 0.1s ease',
+        position: 'relative',
       }}
     >
-      {/* Left: checkbox */}
-      <div className="bp-check-cell" style={{ padding: '10px 10px 10px 12px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+      {/* Left accent bar — 3px solid, full row height, overdue = red, today = orange */}
+      <div style={{
+        position: 'absolute', left: 0, top: 0, bottom: 0,
+        width: 3,
+        background: accentBarColor,
+        borderRadius: '0 2px 2px 0',
+        transition: 'background 0.15s',
+      }} />
+
+      {/* Checkbox — vertically centered */}
+      <div style={{ padding: '0 10px 0 16px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
         <button
           onClick={onComplete}
           onMouseEnter={() => setCircleHovered(true)}
           onMouseLeave={() => setCircleHovered(false)}
           style={{
-            width: 18, height: 18, borderRadius: 4,
-            border: `1.5px solid ${circleHovered ? 'rgba(139,92,246,0.9)' : 'rgba(139,92,246,0.3)'}`,
-            background: circleHovered ? 'rgba(139,92,246,0.18)' : 'transparent',
+            width: 17, height: 17, borderRadius: 4,
+            border: `1.5px solid ${circleHovered ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.18)'}`,
+            background: circleHovered ? 'rgba(255,255,255,0.08)' : 'transparent',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.15s', flexShrink: 0,
           }}
         >
           {circleHovered && (
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M2 5l2.5 2.5L8 3" stroke="rgba(139,92,246,0.9)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+              <path d="M2 5l2.5 2.5L8 3" stroke="rgba(255,255,255,0.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </button>
       </div>
 
-      {/* Center: main content */}
-      <div className="bp-row-inner" style={{ flex: 1, padding: '9px 8px 9px 0', minWidth: 0 }}>
+      {/* Main content — fills remaining width */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 0, padding: '0 0 0 0' }}>
         {editing ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          /* ── Edit mode ── */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 16px 10px 0' }}>
             <input
               autoFocus
               value={editTitle}
               onChange={e => setEditTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false) }}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${accentColor}`, borderRadius: 6, padding: '6px 10px', fontSize: 13, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.2)`, borderRadius: 6, padding: '7px 10px', fontSize: 13, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
             />
             <input
               value={editContactName}
               onChange={e => setEditContactName(e.target.value)}
               list="bp-contact-list-edit"
-              placeholder="ID / Contact..."
-              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--accent-gold)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
+              placeholder="Assignee / contact..."
+              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--text-muted)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
             />
             <datalist id="bp-contact-list-edit">
               {Array.from(new Set([...deals.map(d => d.name), ...entityNames].filter(Boolean))).map(n => (
@@ -891,7 +913,7 @@ function TaskRow({
             </datalist>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <div>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 3, fontFamily: 'monospace' }}>Deadline</div>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 3, fontFamily: 'monospace' }}>Deadline</div>
                 <input
                   type="date"
                   value={editDueDate}
@@ -909,16 +931,63 @@ function TaskRow({
               </label>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={saveEdit} style={{ padding: '4px 12px', background: accentColor, color: '#0D0F14', border: 'none', borderRadius: 5, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Save</button>
-              <button onClick={() => setEditing(false)} style={{ padding: '4px 12px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', borderRadius: 5, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={saveEdit} style={{ padding: '5px 14px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Save</button>
+              <button onClick={() => setEditing(false)} style={{ padding: '5px 14px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 5, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
             </div>
           </div>
         ) : (
-          /* ── 4-column layout: DUE DATE | TASK | ID | PRIORITY ── */
+          /* ── View mode: single horizontal axis ── */
           <div className="bp-grid">
+            {/* Task title — visual anchor, heavier weight */}
+            <div className="bp-grid-task">
+              {task.is_family && <span style={{ flexShrink: 0 }}><FamilyIcon active={true} /></span>}
+              <span
+                onClick={() => isLong && setExpanded(e => !e)}
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
+                  textDecoration: completing ? 'line-through' : 'none',
+                  lineHeight: 1.35,
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: expanded ? undefined : 1,
+                  WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+                  cursor: isLong ? 'pointer' : 'default',
+                  letterSpacing: '-0.01em',
+                } as React.CSSProperties}
+              >
+                {task.title}
+              </span>
 
-            {/* Col 1: DUE DATE — centered, hidden on mobile */}
-            <div className="bp-col-due" style={{ display: 'flex', justifyContent: 'center' }}>
+              {/* Assignee chip — inline right of title, always on same line */}
+              {task.contact_name && (
+                <span style={{ flexShrink: 0 }}>
+                  <ContactBadge contactName={task.contact_name} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
+                </span>
+              )}
+
+              {/* Mobile: due date inline (hidden on desktop via bp-grid-date) */}
+              {task.due_date && (() => {
+                const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+                const isOvd = task.due_date < todayStr
+                const isDT = task.due_date === todayStr
+                const color = isOvd ? '#ef4444' : isDT ? '#fb923c' : 'var(--text-muted)'
+                const [, m2, d2] = task.due_date.split('-').map(Number)
+                const dt2 = new Date(parseInt(task.due_date.split('-')[0]), m2 - 1, d2)
+                const dow2 = dt2.toLocaleDateString('en-US', { weekday: 'short' })
+                const label = isOvd ? '⚠' : isDT ? '● today' : `${dow2} ${m2}/${d2}`
+                return (
+                  <span className="bp-mobile-date" style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                    <style>{`.bp-mobile-date { display: none; } @media (max-width: 640px) { .bp-mobile-date { display: inline; } }`}</style>
+                    {label}
+                  </span>
+                )
+              })()}
+            </div>
+
+            {/* Desktop: date — right-aligned in its column */}
+            <div className="bp-grid-date">
               <DeadlinePicker
                 value={task.due_date ?? null}
                 onChange={async (d) => {
@@ -928,70 +997,8 @@ function TaskRow({
               />
             </div>
 
-            {/* Col 2: TASK — left aligned */}
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
-                {task.is_family && <span style={{ flexShrink: 0, marginTop: 2 }}><FamilyIcon active={true} /></span>}
-                <span
-                  onClick={() => isLong && setExpanded(e => !e)}
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 500,
-                    color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
-                    textDecoration: completing ? 'line-through' : 'none',
-                    lineHeight: 1.4,
-                    display: '-webkit-box',
-                    WebkitLineClamp: expanded ? undefined : 2,
-                    WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
-                    overflow: expanded ? 'visible' : 'hidden',
-                    cursor: isLong ? 'pointer' : 'default',
-                    wordBreak: 'break-word',
-                    textAlign: 'left',
-                  } as React.CSSProperties}
-                >
-                  {task.title}
-                </span>
-              </div>
-              {isLong && (
-                <button onClick={() => setExpanded(e => !e)} style={{ background: 'none', border: 'none', padding: 0, fontSize: 10, color: `${accentColor}80`, cursor: 'pointer', fontFamily: 'var(--font-body)', marginTop: 2 }}>
-                  {expanded ? '▲ less' : '▼ more'}
-                </button>
-              )}
-              {/* ID shown inline under task on mobile only */}
-              {/* Mobile inline row: assignee chip + due-date indicator */}
-              <div className="bp-col-id-mobile" style={{ marginTop: 3, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                <style>{`.bp-col-id-mobile { display: none; } @media (max-width: 640px) { .bp-col-id-mobile { display: flex; } }`}</style>
-                {task.contact_name && (
-                  <ContactBadge contactName={task.contact_name} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
-                )}
-                {task.due_date && (() => {
-                  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-                  const overdue = task.due_date < todayStr
-                  const dueToday = task.due_date === todayStr
-                  const color = overdue ? '#ef4444' : dueToday ? '#fb923c' : '#4F8EF7'
-                  // overdue: icon only — text is redundant with red color
-                  const label = overdue ? '⚠' : dueToday ? '● today' : (() => {
-                    const [y2, m2, d2] = task.due_date.split('-').map(Number)
-                    const dt2 = new Date(y2, m2 - 1, d2)
-                    const dow2 = dt2.toLocaleDateString('en-US', { weekday: 'short' })
-                    return `${dow2} ${m2}/${d2}`
-                  })()
-                  return (
-                    <span style={{ fontSize: 10, fontWeight: 700, color, fontFamily: 'monospace', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-                      {label}
-                    </span>
-                  )
-                })()}
-              </div>
-            </div>
-
-            {/* Col 3: ID — hidden on mobile */}
-            <div className="bp-col-id" style={{ justifyContent: 'center' }}>
-              <ContactBadge contactName={task.contact_name ?? null} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
-            </div>
-
-            {/* Col 4: PRIORITY — hidden on mobile */}
-            <div className="bp-col-priority" style={{ justifyContent: 'center' }}>
+            {/* Desktop: priority stars */}
+            <div className="bp-grid-priority">
               <BpStarPicker
                 value={task.bp_priority ?? null}
                 onChange={async (v) => {
@@ -1004,13 +1011,15 @@ function TaskRow({
         )}
       </div>
 
-      {/* Right: edit + drag (only on hover) */}
+      {/* Edit + drag — visible on hover, right edge */}
       {!editing && hovered && (
-        <div style={{ padding: '12px 8px 12px 4px', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+        <div style={{ padding: '0 12px 0 8px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <button
             onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditIsEntity(!!task.is_entity); setEditIsLife(!!task.is_life); setEditDueDate(task.due_date ?? ''); setEditing(true) }}
             title="Edit"
-            style={{ padding: '3px 6px', background: 'transparent', border: `1px solid ${accentColor}40`, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.8 }}
+            style={{ padding: '3px 5px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.6, transition: 'opacity 0.1s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}
           >
             <PencilIcon />
           </button>
@@ -1019,7 +1028,7 @@ function TaskRow({
             onPointerMove={onPointerDragMove}
             onPointerUp={onPointerDragEnd}
             onPointerCancel={onPointerDragEnd}
-            style={{ fontSize: 15, color: 'var(--text-muted)', cursor: 'grab', opacity: 0.6, userSelect: 'none', touchAction: 'none', padding: '2px 4px' }}>
+            style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', cursor: 'grab', userSelect: 'none', touchAction: 'none', padding: '2px 2px', letterSpacing: '0.05em' }}>
             ⠿
           </span>
         </div>
