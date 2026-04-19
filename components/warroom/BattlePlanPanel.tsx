@@ -46,6 +46,7 @@ export default function BattlePlanPanel() {
   const [newContactName, setNewContactName] = useState('')
   const [newBpPriority, setNewBpPriority] = useState<number | null>(null)
   const [prioritySortDir, setPrioritySortDir] = useState<'desc' | 'asc'>('desc')
+  const [sortMode, setSortMode] = useState<'due_date' | 'priority' | 'assignee' | 'recent'>('due_date')
   const [newIsFamily, setNewIsFamily] = useState(false)
   const [newIsEntity, setNewIsEntity] = useState(false)
   const [newDueDate, setNewDueDate] = useState('')
@@ -335,11 +336,44 @@ export default function BattlePlanPanel() {
         </span>
       </div>
 
-      {/* Add task button */}
-      <div style={{ marginBottom: 14 }}>
-        <button onClick={() => setShowAddForm(true)} className="wr-btn-orbit" style={{ fontSize: 12 }}>
+      {/* Add task + Sort controls */}
+      <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => setShowAddForm(true)} className="wr-btn-orbit" style={{ fontSize: 12, flexShrink: 0 }}>
           + Add Item
         </button>
+        <div style={{ flex: 1 }} />
+        {/* Sort dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+            Sort
+          </span>
+          <select
+            value={sortMode}
+            onChange={e => setSortMode(e.target.value as typeof sortMode)}
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 6,
+              padding: '4px 8px',
+              fontSize: 11,
+              color: 'var(--text-primary)',
+              fontFamily: 'var(--font-body)',
+              cursor: 'pointer',
+              outline: 'none',
+              appearance: 'none' as React.CSSProperties['appearance'],
+              WebkitAppearance: 'none' as React.CSSProperties['WebkitAppearance'],
+              paddingRight: 20,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 6px center',
+            }}
+          >
+            <option value="due_date">Due date</option>
+            <option value="priority">Priority</option>
+            <option value="assignee">Assignee</option>
+            <option value="recent">Recently added</option>
+          </select>
+        </div>
       </div>
 
       {/* ── Add Task Modal ── */}
@@ -436,14 +470,27 @@ export default function BattlePlanPanel() {
           const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 
           let sorted = [...openTasks].sort((a, b) => {
+            if (sortMode === 'priority') {
+              const ap = a.bp_priority ?? 0
+              const bp = b.bp_priority ?? 0
+              return bp - ap  // highest priority first
+            }
+            if (sortMode === 'assignee') {
+              return (a.contact_name ?? '').localeCompare(b.contact_name ?? '')
+            }
+            if (sortMode === 'recent') {
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            }
+            // default: due_date — tasks with due dates first, then by date asc
             const aDate = a.due_date ?? null
             const bDate = b.due_date ?? null
             if (aDate && bDate && aDate !== bDate) return aDate.localeCompare(bDate)
             if (aDate && !bDate) return -1
             if (!aDate && bDate) return 1
+            // tiebreak: priority desc
             const ap = a.bp_priority ?? 0
             const bp = b.bp_priority ?? 0
-            return prioritySortDir === 'desc' ? bp - ap : ap - bp
+            return bp - ap
           })
 
           // Live drag preview
@@ -531,25 +578,31 @@ export default function BattlePlanPanel() {
                   onClick={() => setFutureExpanded(e => !e)}
                   style={{
                     width: '100%',
-                    padding: '10px 16px',
-                    background: 'rgba(255,255,255,0.025)',
+                    padding: '11px 16px',
+                    background: futureExpanded ? 'rgba(139,92,246,0.06)' : 'rgba(255,255,255,0.025)',
                     border: 'none',
                     borderTop: '1px solid rgba(255,255,255,0.06)',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    color: 'rgba(255,255,255,0.38)',
-                    fontSize: 11,
+                    borderBottom: futureExpanded ? '1px solid rgba(139,92,246,0.15)' : '1px solid rgba(255,255,255,0.06)',
+                    color: futureExpanded ? 'rgba(167,139,250,0.75)' : 'rgba(255,255,255,0.5)',
+                    fontSize: 12,
+                    fontWeight: 600,
                     fontFamily: 'var(--font-body)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    letterSpacing: '0.04em',
-                    marginTop: 4,
-                    transition: 'background 0.15s',
+                    letterSpacing: '0.03em',
+                    marginTop: 6,
+                    transition: 'all 0.15s',
+                    minHeight: 44, // thumb-reachable tap target
                   }}
                 >
-                  <span>{futureTasks.length} item{futureTasks.length !== 1 ? 's' : ''} · no deadline / future</span>
-                  <span style={{ fontSize: 10, transition: 'transform 0.2s', display: 'inline-block', transform: futureExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                  <span>
+                    {futureExpanded
+                      ? `Hide upcoming ▴`
+                      : `Show ${futureTasks.length} more ▾`
+                    }
+                  </span>
                 </button>
               )}
 
@@ -675,25 +728,28 @@ export default function BattlePlanPanel() {
 }
 
 // ─── Section Divider — minimal, no ribbon ────────────────────────────────────
+// Subsection dividers intentionally smaller/dimmer than top-level panel count
+// so the hierarchy stays clear: BATTLE PLAN "27" > UPCOMING "24"
 function SectionDivider({ label, count, color, subtitle }: { label: string; count: number; color: string; subtitle?: string }) {
   return (
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 10,
-      padding: '6px 14px 6px 14px',
+      gap: 8,
+      padding: '5px 14px 4px',
       marginBottom: 2,
       marginTop: 4,
     }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.55)', fontFamily: 'monospace', lineHeight: 1 }}>
+        <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.4)', fontFamily: 'monospace', lineHeight: 1 }}>
           {subtitle || label}
         </div>
       </div>
+      {/* Dimmer, smaller pill — subordinate to panel-level count */}
       <div style={{
-        fontSize: 11, fontWeight: 700, color: 'rgba(139,92,246,0.55)',
-        background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
-        borderRadius: 999, padding: '1px 9px', fontFamily: 'monospace',
+        fontSize: 9, fontWeight: 600, color: 'rgba(139,92,246,0.4)',
+        background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.12)',
+        borderRadius: 999, padding: '0px 7px', fontFamily: 'monospace',
       }}>
         {count}
       </div>
@@ -913,7 +969,13 @@ function TaskRow({
                   const overdue = task.due_date < todayStr
                   const dueToday = task.due_date === todayStr
                   const color = overdue ? '#ef4444' : dueToday ? '#fb923c' : '#4F8EF7'
-                  const label = overdue ? '⚠ overdue' : dueToday ? '● today' : task.due_date.slice(5)
+                  // overdue: icon only — text is redundant with red color
+                  const label = overdue ? '⚠' : dueToday ? '● today' : (() => {
+                    const [y2, m2, d2] = task.due_date.split('-').map(Number)
+                    const dt2 = new Date(y2, m2 - 1, d2)
+                    const dow2 = dt2.toLocaleDateString('en-US', { weekday: 'short' })
+                    return `${dow2} ${m2}/${d2}`
+                  })()
                   return (
                     <span style={{ fontSize: 10, fontWeight: 700, color, fontFamily: 'monospace', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
                       {label}
@@ -1016,21 +1078,12 @@ const BP_STATUS_BADGE_COLORS: Record<string, { bg: string; border: string; color
 }
 const BP_NEUTRAL_BADGE = { bg: 'rgba(232,184,75,0.08)', border: 'rgba(232,184,75,0.25)', color: 'rgba(232,184,75,0.8)' }
 
+// Color rule: LIFE = red, entity/company = purple, person = gold
+// is_entity flag = true → purple regardless of deal linkage
+// No flag, no deal → gold (person assumed)
+// Deal-linked person → gold with deal-status tint
 function ContactBadge({ contactName, deal, isLife, isEntity }: { contactName: string | null; deal: DealOption | null; isLife?: boolean; isEntity?: boolean }) {
-  // ENTITY badge — purple (takes visual priority over gold, but LIFE still beats it)
-  if (!isLife && isEntity) {
-    return (
-      <span style={{
-        display: 'inline-block', padding: '2px 8px',
-        background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.4)',
-        borderRadius: 4, fontSize: 10, fontWeight: 600, color: '#a78bfa',
-        whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'],
-      }} title={contactName ?? undefined}>
-        {contactName || 'Entity'}
-      </span>
-    )
-  }
-  // LIFE badge — red with heart icon
+  // LIFE badge — red with heart icon (highest priority)
   if (isLife || contactName === 'LIFE') {
     return (
       <span style={{
@@ -1047,14 +1100,28 @@ function ContactBadge({ contactName, deal, isLife, isEntity }: { contactName: st
       </span>
     )
   }
+  // ENTITY / COMPANY badge — purple
+  if (isEntity) {
+    return (
+      <span style={{
+        display: 'inline-block', padding: '2px 8px',
+        background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)',
+        borderRadius: 4, fontSize: 10, fontWeight: 600, color: '#a78bfa',
+        whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'],
+      }} title={contactName ?? undefined}>
+        {contactName || 'Entity'}
+      </span>
+    )
+  }
   if (!contactName) return <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.1)' }}>—</span>
-  // Gold for all others (deal-linked gets deal status color, unlinked gets neutral gold)
+  // PERSON badge — gold (with deal-status tint if linked to a deal)
   const style = (deal as any)?.status ? (BP_STATUS_BADGE_COLORS[(deal as any).status] ?? BP_NEUTRAL_BADGE) : BP_NEUTRAL_BADGE
   return (
     <span style={{
       display: 'inline-block',
       padding: '2px 8px',
       background: style.bg,
+      border: `1px solid ${style.border}`,
       borderRadius: 4, fontSize: 12, fontWeight: 600, color: style.color,
       whiteSpace: 'nowrap', letterSpacing: '0.02em', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'],
     }} title={contactName}>
@@ -1078,14 +1145,9 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
     const todayMidnight = new Date(ty, tm - 1, td)
     const diffDays = Math.round((dt.getTime() - todayMidnight.getTime()) / 86400000)
     if (diffDays === 0) return 'Today'
-    if (diffDays >= 0 && diffDays <= 7) {
-      // Within next 7 days — full day name only
-      return dt.toLocaleDateString('en-US', { weekday: 'long' })  // "Monday"
-    }
-    // Outside 7 days — "Mon. Apr. 4"
+    // Always "Mon 4/20" format — unambiguous, compact, consistent
     const dow = dt.toLocaleDateString('en-US', { weekday: 'short' })  // "Mon"
-    const mon = dt.toLocaleDateString('en-US', { month: 'short' })    // "Apr"
-    return `${dow}. ${mon}. ${day}`
+    return `${dow} ${m}/${day}`
   }
 
   if (!value) {
