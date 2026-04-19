@@ -493,15 +493,19 @@ export default function BattlePlanPanel() {
                 .bp-header { display: grid; grid-template-columns: 110px 1fr 130px 90px; gap: 0 12px; padding: 5px 12px 5px 42px; border-bottom: 1px solid rgba(139,92,246,0.2); margin-bottom: 2px; }
                 .bp-col-id, .bp-col-priority { display: flex; }
                 .bp-col-id-hdr, .bp-col-priority-hdr { display: block; }
+                /* Mobile: hide DUE DATE column, ID, PRIORITY columns; single-column task */
                 @media (max-width: 640px) {
-                  .bp-grid { grid-template-columns: 100px 1fr; }
-                  .bp-header { grid-template-columns: 100px 1fr; padding-left: 38px; }
-                  .bp-col-id, .bp-col-priority { display: none !important; }
+                  .bp-grid { grid-template-columns: 1fr; }
+                  .bp-header { display: none; }
+                  .bp-col-due, .bp-col-id, .bp-col-priority { display: none !important; }
                   .bp-col-id-hdr, .bp-col-priority-hdr { display: none !important; }
+                  /* Tighter row padding on mobile for density */
+                  .bp-row-inner { padding-top: 7px !important; padding-bottom: 7px !important; }
+                  .bp-check-cell { padding-top: 8px !important; padding-bottom: 8px !important; }
                 }
               `}</style>
 
-              {/* ── Column headers ── */}
+              {/* ── Column headers — desktop only ── */}
               <div className="bp-header">
                 {[
                   { label: 'DUE DATE', align: 'center', cls: '' },
@@ -785,7 +789,7 @@ function TaskRow({
       }}
     >
       {/* Left: checkbox */}
-      <div style={{ padding: '14px 10px 14px 12px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+      <div className="bp-check-cell" style={{ padding: '10px 10px 10px 12px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
         <button
           onClick={onComplete}
           onMouseEnter={() => setCircleHovered(true)}
@@ -807,7 +811,7 @@ function TaskRow({
       </div>
 
       {/* Center: main content */}
-      <div style={{ flex: 1, padding: '12px 8px 12px 0', minWidth: 0 }}>
+      <div className="bp-row-inner" style={{ flex: 1, padding: '9px 8px 9px 0', minWidth: 0 }}>
         {editing ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input
@@ -857,8 +861,8 @@ function TaskRow({
           /* ── 4-column layout: DUE DATE | TASK | ID | PRIORITY ── */
           <div className="bp-grid">
 
-            {/* Col 1: DUE DATE — centered */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {/* Col 1: DUE DATE — centered, hidden on mobile */}
+            <div className="bp-col-due" style={{ display: 'flex', justifyContent: 'center' }}>
               <DeadlinePicker
                 value={task.due_date ?? null}
                 onChange={async (d) => {
@@ -898,12 +902,25 @@ function TaskRow({
                 </button>
               )}
               {/* ID shown inline under task on mobile only */}
-              {task.contact_name && (
-                <div className="bp-col-id-mobile" style={{ marginTop: 3 }}>
-                  <style>{`.bp-col-id-mobile { display: none; } @media (max-width: 640px) { .bp-col-id-mobile { display: block; } }`}</style>
+              {/* Mobile inline row: assignee chip + due-date indicator */}
+              <div className="bp-col-id-mobile" style={{ marginTop: 3, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <style>{`.bp-col-id-mobile { display: none; } @media (max-width: 640px) { .bp-col-id-mobile { display: flex; } }`}</style>
+                {task.contact_name && (
                   <ContactBadge contactName={task.contact_name} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
-                </div>
-              )}
+                )}
+                {task.due_date && (() => {
+                  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+                  const overdue = task.due_date < todayStr
+                  const dueToday = task.due_date === todayStr
+                  const color = overdue ? '#ef4444' : dueToday ? '#fb923c' : '#4F8EF7'
+                  const label = overdue ? '⚠ overdue' : dueToday ? '● today' : task.due_date.slice(5)
+                  return (
+                    <span style={{ fontSize: 10, fontWeight: 700, color, fontFamily: 'monospace', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                      {label}
+                    </span>
+                  )
+                })()}
+              </div>
             </div>
 
             {/* Col 3: ID — hidden on mobile */}
