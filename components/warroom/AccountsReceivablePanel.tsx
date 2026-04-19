@@ -287,33 +287,26 @@ export default function AccountsReceivablePanel() {
           )}
         </div>
 
-        {/* Stats strip — CSS grid, same template as rows */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr', gap: 0, marginTop: 4 }}>
-          {/* Col 1: Deals */}
-          <div style={{ padding: '10px 8px 10px 0', display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>Deals</div>
-            <div style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.45)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
-              {loading ? '—' : String(receivable.length)}
-            </div>
-          </div>
-          {/* Col 2: MS Gross */}
-          <div style={{ padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>MS Gross</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
-              {loading ? '—' : fmt(totalMsPortionGross)}
-            </div>
-          </div>
-          {/* Col 3: spacer (buttons zone) */}
-          <div />
-          {/* Col 4: Collected — right-aligned */}
-          <div style={{ padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-end' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>Collected</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
-              {loading ? '—' : fmt(totalMsCollected)}
-            </div>
-          </div>
-          {/* Col 5: Outstanding — right-aligned */}
-          <div style={{ padding: '10px 0 10px 8px', display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-end' }}>
+        {/* Stats strip — mobile: 2-col grid (Outstanding first), desktop: 5-col */}
+        <style>{`
+          .ar-stats { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 0; margin-top: 4px; }
+          .ar-stat-outstanding { padding: 10px 0 10px 8px; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+          .ar-stat-collected { padding: 10px 8px; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+          .ar-stat-gross { padding: 10px 8px; display: flex; flex-direction: column; gap: 3px; }
+          .ar-stat-deals { padding: 10px 8px 10px 0; display: flex; flex-direction: column; gap: 3px; }
+          .ar-stat-spacer { display: block; }
+          @media (max-width: 640px) {
+            .ar-stats { grid-template-columns: 1fr 1fr; }
+            .ar-stat-outstanding { align-items: flex-end; padding: 8px 0 8px 8px; order: 1; }
+            .ar-stat-collected { align-items: flex-start; padding: 8px 8px 8px 0; order: 2; }
+            .ar-stat-gross { padding: 4px 8px 4px 0; order: 4; }
+            .ar-stat-deals { padding: 4px 0 4px 0; order: 3; }
+            .ar-stat-spacer { display: none; }
+          }
+        `}</style>
+        <div className="ar-stats">
+          {/* Outstanding FIRST on mobile (order:1) */}
+          <div className="ar-stat-outstanding">
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.7)' : 'rgba(34,197,94,0.6)' }}>Outstanding</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: totalMsOutstanding > 0 ? '#C084FC' : '#22c55e', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
               {loading ? '—' : fmt(totalMsOutstanding)}
@@ -322,6 +315,29 @@ export default function AccountsReceivablePanel() {
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>{pctCollected.toFixed(0)}% collected</div>
             )}
           </div>
+          {/* Collected second on mobile */}
+          <div className="ar-stat-collected">
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>Collected</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+              {loading ? '—' : fmt(totalMsCollected)}
+            </div>
+          </div>
+          {/* Deals count */}
+          <div className="ar-stat-deals">
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>Deals</div>
+            <div style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.45)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+              {loading ? '—' : String(receivable.length)}
+            </div>
+          </div>
+          {/* MS Gross */}
+          <div className="ar-stat-gross">
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>MS Gross</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+              {loading ? '—' : fmt(totalMsPortionGross)}
+            </div>
+          </div>
+          {/* spacer col — desktop only */}
+          <div className="ar-stat-spacer" />
         </div>
         {/* ── Deal rows — inside the hero card ── */}
         {(loading || tableError || sorted.length > 0) && (
@@ -333,17 +349,36 @@ export default function AccountsReceivablePanel() {
             ) : sorted.length === 0 ? (
               <div style={{ fontSize: 13, color: '#22c55e', textAlign: 'center', padding: '8px 0' }}>✓ Nothing outstanding</div>
             ) : (
-              <div style={{ width: '100%' }}>
-                {/* Column headers — same grid as stats + rows */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr', gap: 0, padding: '4px 0', marginBottom: 2 }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', padding: '0 8px 0 0' }}>ADDRESS</div>
-                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', padding: '0 8px' }}>ID</div>
-                  <div />
-                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: 'right', padding: '0 8px' }}>COLLECTED</div>
-                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: 'right', padding: '0 0 0 8px' }}>OUTSTANDING</div>
-                </div>
+              <>{/* Mobile-first: vertical card stack per deal */}
+              <style>{`
+                .ar-row-desktop { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 0; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+                .ar-row-hdr { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 0; padding: 4px 0; margin-bottom: 2px; }
+                .ar-desktop-only { display: block; }
+                .ar-mobile-card { display: none; }
+                @media (max-width: 640px) {
+                  .ar-row-desktop { display: none; }
+                  .ar-row-hdr { display: none; }
+                  .ar-desktop-only { display: none; }
+                  .ar-mobile-card {
+                    display: flex; flex-direction: column; gap: 8px;
+                    padding: 12px 14px; margin-bottom: 8px;
+                    background: rgba(139,92,246,0.05);
+                    border: 1px solid rgba(167,139,250,0.15);
+                    border-radius: 10px;
+                  }
+                }
+              `}</style>
 
-          {sorted.map(item => {
+              {/* Desktop column headers */}
+              <div className="ar-row-hdr ar-desktop-only">
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', padding: '0 8px 0 0' }}>ADDRESS</div>
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', padding: '0 8px' }}>ID</div>
+                <div />
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: 'right', padding: '0 8px' }}>COLLECTED</div>
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: 'right', padding: '0 0 0 8px' }}>OUTSTANDING</div>
+              </div>
+
+              {sorted.map(item => {
                 const isCollected = item.status === 'collected'
                 const msPaid = item.payments_total ?? item.paid_to_date ?? 0
                 const msBalance = msBal(item)
@@ -351,20 +386,16 @@ export default function AccountsReceivablePanel() {
                 const pctPaid = msTotal > 0 ? Math.min(100, (msPaid / msTotal) * 100) : 0
                 const itemPayments = payments[item.id] ?? []
                 const isExpanded = expandedId === item.id
+                const addressLabel = formatAddress(item.deals?.address ?? item.deals?.name)
+                const dealName = (item.deals?.name ?? '—').replace(/^📁\s*/, '')
 
                 return (
                   <div key={item.id}>
-                    {/* Main row — 4 cols: arrow | deal | ms portion | balance+actions */}
+                    {/* ── Desktop row ── */}
                     <div
+                      className="ar-row-desktop"
                       style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
-                        gap: 0,
-                        alignItems: 'center',
-                        padding: '9px 0',
-                        borderBottom: '1px solid rgba(255,255,255,0.05)',
                         opacity: isCollected ? 0.55 : 1,
-                        cursor: 'pointer',
                         borderLeft: isCollected ? '2px solid rgba(107,114,128,0.25)' : '2px solid rgba(167,139,250,0.5)',
                       }}
                       onClick={() => setExpandedId(isExpanded ? null : item.id)}
@@ -375,61 +406,76 @@ export default function AccountsReceivablePanel() {
                           <a href={`/warroom/deal?id=${item.deal_id}`} style={{ color: '#a78bfa', textDecoration: 'none', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>↗</a>
                         </div>
                         <span style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
-                          {formatAddress(item.deals?.address ?? item.deals?.name)}
+                          {addressLabel}
                         </span>
                       </div>
-
                       {/* Col 2: ID/Name */}
                       <div style={{ minWidth: 0, padding: '0 8px' }}>
-                        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                          {(item.deals?.name ?? '—').replace(/^📁\s*/, '')}
-                        </span>
+                        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{dealName}</span>
                         {!isCollected && msTotal > 0 && (
                           <div style={{ marginTop: 3, height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
                             <div style={{ height: 2, width: `${pctPaid}%`, background: pctPaid >= 100 ? '#22c55e' : '#a78bfa', borderRadius: 1, transition: 'width 0.3s' }} />
                           </div>
                         )}
                       </div>
-
                       {/* Col 3: Buttons */}
                       <div style={{ display: 'flex', gap: 4, padding: '0 4px' }} onClick={e => e.stopPropagation()}>
                         {!isCollected && (
                           <>
-                            <button onClick={() => openPayModal(item)}
-                              style={{
-                                flex: 1, padding: '4px 6px', fontSize: 10, fontWeight: 800,
-                                background: 'rgba(167,139,250,0.18)',
-                                border: '1.5px solid rgba(167,139,250,0.55)',
-                                borderRadius: 5, color: '#c4b5fd', cursor: 'pointer',
-                                whiteSpace: 'nowrap', textTransform: 'uppercase',
-                                fontFamily: 'inherit', letterSpacing: '0.03em',
-                              }}>
-                              + Pay
-                            </button>
-                            <button onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }}
-                              style={{
-                                flex: 1, padding: '4px 6px', fontSize: 10, fontWeight: 800,
-                                background: 'rgba(34,197,94,0.15)',
-                                border: '1.5px solid rgba(34,197,94,0.5)',
-                                borderRadius: 5, color: '#4ade80', cursor: 'pointer',
-                                whiteSpace: 'nowrap', textTransform: 'uppercase',
-                                fontFamily: 'inherit', letterSpacing: '0.03em',
-                              }}>
-                              Full ✓
-                            </button>
+                            <button onClick={() => openPayModal(item)} style={{ flex: 1, padding: '4px 6px', fontSize: 10, fontWeight: 800, background: 'rgba(167,139,250,0.18)', border: '1.5px solid rgba(167,139,250,0.55)', borderRadius: 5, color: '#c4b5fd', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit', letterSpacing: '0.03em' }}>+ Pay</button>
+                            <button onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }} style={{ flex: 1, padding: '4px 6px', fontSize: 10, fontWeight: 800, background: 'rgba(34,197,94,0.15)', border: '1.5px solid rgba(34,197,94,0.5)', borderRadius: 5, color: '#4ade80', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit', letterSpacing: '0.03em' }}>Full ✓</button>
                           </>
                         )}
                       </div>
-
                       {/* Col 4: Collected */}
-                      <div style={{ textAlign: 'right', fontSize: 15, fontWeight: 700, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', padding: '0 8px' }}>
-                        {fmt(msPaid)}
-                      </div>
-
+                      <div style={{ textAlign: 'right', fontSize: 15, fontWeight: 700, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', padding: '0 8px' }}>{fmt(msPaid)}</div>
                       {/* Col 5: Outstanding */}
-                      <div style={{ textAlign: 'right', fontSize: 15, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', letterSpacing: '-0.01em', padding: '0 0 0 8px' }}>
-                        {isCollected ? '✓ Done' : fmt(msBalance)}
+                      <div style={{ textAlign: 'right', fontSize: 15, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', letterSpacing: '-0.01em', padding: '0 0 0 8px' }}>{isCollected ? '✓ Done' : fmt(msBalance)}</div>
+                    </div>
+
+                    {/* ── Mobile card ── */}
+                    <div
+                      className="ar-mobile-card"
+                      style={{ opacity: isCollected ? 0.65 : 1 }}
+                      onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                    >
+                      {/* Address + link */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <div onClick={e => e.stopPropagation()} style={{ flexShrink: 0, paddingTop: 1 }}>
+                          <a href={`/warroom/deal?id=${item.deal_id}`} style={{ color: '#a78bfa', textDecoration: 'none', fontSize: 14, fontWeight: 700 }}>↗</a>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', wordBreak: 'break-word', lineHeight: 1.35 }}>{addressLabel}</div>
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{dealName}</div>
+                        </div>
+                        {isCollected && <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 700, flexShrink: 0 }}>✓ Done</span>}
                       </div>
+                      {/* Progress bar */}
+                      {!isCollected && msTotal > 0 && (
+                        <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                          <div style={{ height: 3, width: `${pctPaid}%`, background: pctPaid >= 100 ? '#22c55e' : '#a78bfa', borderRadius: 2, transition: 'width 0.3s' }} />
+                        </div>
+                      )}
+                      {/* Outstanding + Collected row */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(192,132,252,0.6)', fontFamily: 'monospace' }}>Outstanding</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>
+                            {isCollected ? '✓' : fmt(msBalance)}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', fontFamily: 'monospace' }}>Collected</div>
+                          <div style={{ fontSize: 18, fontWeight: 700, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{fmt(msPaid)}</div>
+                        </div>
+                      </div>
+                      {/* Action buttons */}
+                      {!isCollected && (
+                        <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+                          <button onClick={() => openPayModal(item)} style={{ flex: 1, padding: '9px', fontSize: 12, fontWeight: 800, background: 'rgba(167,139,250,0.18)', border: '1.5px solid rgba(167,139,250,0.55)', borderRadius: 7, color: '#c4b5fd', cursor: 'pointer', textTransform: 'uppercase', fontFamily: 'inherit', letterSpacing: '0.05em' }}>+ Pay</button>
+                          <button onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }} style={{ flex: 1, padding: '9px', fontSize: 12, fontWeight: 800, background: 'rgba(34,197,94,0.15)', border: '1.5px solid rgba(34,197,94,0.5)', borderRadius: 7, color: '#4ade80', cursor: 'pointer', textTransform: 'uppercase', fontFamily: 'inherit', letterSpacing: '0.05em' }}>Full ✓</button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Payment history — expanded */}
@@ -460,7 +506,7 @@ export default function AccountsReceivablePanel() {
                   </div>
                 )
               })}
-              </div>
+              </>
             )}
           </div>
         )}
