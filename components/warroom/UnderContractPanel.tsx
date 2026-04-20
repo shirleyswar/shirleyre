@@ -892,10 +892,9 @@ export default function UnderContractPanel() {
             <thead>
               <tr>
                 {[
-                  { label: '',              align: 'center' },
                   { label: '↗',            align: 'center' },
                   { label: 'Address',       align: 'left'   },
-                  { label: 'Client / ID',   align: 'left'   },
+                  { label: 'Client',        align: 'left'   },
                   { label: 'Price',         align: 'right'  },
                   { label: 'Commission',    align: 'right'  },
                   { label: 'Next Deadline', align: 'center' },
@@ -959,19 +958,6 @@ export default function UnderContractPanel() {
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.015)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                     >
-                      {/* Expand chevron */}
-                      <td style={{ padding: '10px 6px 10px 10px', width: 20, textAlign: 'center' }}>
-                        <span style={{
-                          fontSize: 10,
-                          color: isExpanded ? '#2dd4bf' : 'var(--text-dim)',
-                          transition: 'transform 0.2s',
-                          display: 'inline-block',
-                          transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                        }}>
-                          ▶
-                        </span>
-                      </td>
-
                       {/* Deal page arrow */}
                       <td style={{ width: 38, minWidth: 38, maxWidth: 38, padding: '6px 4px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                         <a
@@ -1079,7 +1065,7 @@ export default function UnderContractPanel() {
                     {/* Expanded subpanel */}
                     {isExpanded && (
                       <tr key={`${deal.id}-expand`} style={{ borderBottom: i < deals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                        <td colSpan={8} style={{ padding: '0 10px 10px' }}>
+                        <td colSpan={7} style={{ padding: '0 10px 10px' }}>
                           <DealSubpanel
                             deal={deal}
                             onDeadlinesChange={handleDeadlinesChange}
