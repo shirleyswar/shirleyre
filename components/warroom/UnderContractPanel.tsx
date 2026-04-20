@@ -81,9 +81,10 @@ const STATUS_STYLES: Record<DeadlineStatus, { bg: string; text: string; label: s
 
 function getDaysColor(days: number, status: DeadlineStatus): string {
   if (status === 'satisfied') return 'var(--text-dim)'
-  if (days <= 1) return '#ef4444'
+  if (days < 0) return '#ef4444'
+  if (days <= 2) return '#ef4444'
   if (days <= 7) return '#fb923c'
-  return '#22c55e'
+  return '#4F8EF7'
 }
 
 // ─── Deadline Row ────────────────────────────────────────────────────────────
@@ -126,19 +127,22 @@ function DeadlineRow({ deadline, onSatisfy, onDelete, onEdit }: DeadlineRowProps
 
       {/* Stage badge */}
       <div style={{ flex: '0 0 130px' }}>
-        <span style={{
-          display: 'inline-block',
-          padding: '1px 7px',
-          borderRadius: 20,
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.05em',
-          textTransform: 'uppercase',
-          background: typeInfo.bg,
-          color: typeInfo.text,
-        }}>
-          {typeInfo.label}
-        </span>
+        {deadline.deadline_type !== 'closing' && (
+          <span style={{
+            display: 'inline-block',
+            padding: '1px 7px',
+            borderRadius: 20,
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            background: typeInfo.bg,
+            color: typeInfo.text,
+          }}>
+            {typeInfo.label}
+          </span>
+        )}
+        {deadline.deadline_type === 'closing' && <span />}
       </div>
 
       {/* Date */}
