@@ -1177,46 +1177,23 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 // 8-pointed violet star with atmospheric particle haze
 // Drawn as pure SVG so it scales cleanly and stays sharp at all sizes
 function StarMark({ size = 20 }: { size?: number }) {
-  const s = size
+  // Real brand mark — PNG image, black background transparent via mix-blend-mode
   return (
-    <svg
-      width={s} height={s}
-      viewBox="0 0 40 40"
-      fill="none"
+    <img
+      src="/shirleycre-star.jpg"
+      alt="ShirleyCRE star mark"
+      width={size}
+      height={size}
       className="star-pulse"
-      style={{ flexShrink: 0 }}
+      style={{
+        flexShrink: 0,
+        // Black background of the JPG blends away; star glows remain
+        mixBlendMode: 'lighten',
+        borderRadius: '50%',         // soft mask keeps it from being a hard square
+        objectFit: 'cover',
+      }}
       aria-hidden="true"
-    >
-      {/* Atmospheric outer haze — very soft, large radius */}
-      <circle cx="20" cy="20" r="18" fill="rgba(124,58,237,0.08)" />
-      <circle cx="20" cy="20" r="13" fill="rgba(168,85,247,0.10)" />
-
-      {/* Scattered particle dots — 8 tiny dots at cardinal/intercardinal positions */}
-      {[0,45,90,135,180,225,270,315].map((deg, i) => {
-        const r = 17 + (i % 3 === 0 ? 1 : 0)
-        const rad = (deg * Math.PI) / 180
-        const cx = 20 + r * Math.sin(rad)
-        const cy = 20 - r * Math.cos(rad)
-        return <circle key={deg} cx={cx.toFixed(1)} cy={cy.toFixed(1)} r={i % 4 === 0 ? '0.7' : '0.4'} fill="rgba(216,180,254,0.5)" />
-      })}
-
-      {/* 8-pointed star — two overlapping squares rotated 45° */}
-      {/* Outer 4 points (cardinal: N/E/S/W) */}
-      <polygon
-        points="20,3 22.5,17.5 37,20 22.5,22.5 20,37 17.5,22.5 3,20 17.5,17.5"
-        fill="#A855F7"
-        opacity="0.9"
-      />
-      {/* Inner 4 points (intercardinal: NE/SE/SW/NW) — rotated 45° */}
-      <polygon
-        points="27.07,5.86 21.7,18.3 34.14,12.93 21.7,21.7 27.07,34.14 18.3,21.7 5.86,27.07 18.3,18.3"
-        fill="#C084FC"
-        opacity="0.7"
-      />
-
-      {/* Bright center core */}
-      <circle cx="20" cy="20" r="2.5" fill="#E8D0FF" opacity="0.95" />
-    </svg>
+    />
   )
 }
 
