@@ -480,12 +480,12 @@ function NavRibbon({
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
             padding: '6px 14px',
-            background: 'linear-gradient(135deg, #C9933A 0%, #E8B84B 100%)',
-            border: '1px solid rgba(232,184,75,0.6)',
-            borderRadius: 999, cursor: 'pointer', color: '#000',
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.4) 100%)',
+            border: '1px solid rgba(167,139,250,0.5)',
+            borderRadius: 999, cursor: 'pointer', color: '#EDE9FE',
             fontSize: 10, fontWeight: 800, letterSpacing: '0.12em',
             textTransform: 'uppercase', flexShrink: 0,
-            boxShadow: '0 0 14px rgba(201,147,58,0.4)',
+            boxShadow: '0 0 14px rgba(139,92,246,0.3)',
             whiteSpace: 'nowrap',
           }}
         >
@@ -703,45 +703,45 @@ function NavRibbon({
           width: '100%',
           maxWidth: 160,
           height: 'clamp(72px, 9vw, 60px)',
-          background: 'linear-gradient(135deg, #0d1a2e 0%, #0f2040 50%, #0a1830 100%)',
-          border: '1px solid rgba(79,142,247,0.35)',
+          background: 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
+          border: '1px solid rgba(90,70,140,0.35)',
           borderRadius: 12,
           cursor: 'pointer',
           overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(79,142,247,0.1), inset 0 1px 0 rgba(79,142,247,0.08)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(120,60,200,0.1), inset 0 1px 0 rgba(140,100,220,0.06)',
           userSelect: 'none',
           WebkitUserSelect: 'none',
         }}
       >
-        {/* Atmospheric glow */}
+        {/* Atmospheric glow — violet to match brand */}
         <div style={{
           position: 'absolute', top: -30, right: -30,
           width: 100, height: 100, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(79,142,247,0.18) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(100,60,180,0.20) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
 
-        {/* Orbit icon zone */}
+        {/* Orbit icon zone — violet system */}
         <div style={{ position: 'relative', width: 'clamp(36px, 6vw, 40px)', height: 'clamp(36px, 6vw, 40px)', flexShrink: 0 }}>
           <motion.div
-            style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(79,142,247,0.28)' }}
+            style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(130,90,200,0.35)' }}
             animate={{ scale: [1, 1.45, 1], opacity: [0.45, 0, 0.45] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
           />
           <motion.div
-            style={{ position: 'absolute', inset: '15%', borderRadius: '50%', border: '1px solid rgba(79,142,247,0.45)' }}
+            style={{ position: 'absolute', inset: '15%', borderRadius: '50%', border: '1px solid rgba(130,90,200,0.55)' }}
             animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.08, 0.6] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.55 }}
           />
           <motion.div
-            animate={{ boxShadow: ['0 0 8px rgba(79,142,247,0.25)', '0 0 20px rgba(79,142,247,0.55)', '0 0 8px rgba(79,142,247,0.25)'] }}
+            animate={{ boxShadow: ['0 0 8px rgba(120,80,200,0.2)', '0 0 18px rgba(120,80,200,0.45)', '0 0 8px rgba(120,80,200,0.2)'] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
             style={{
               position: 'absolute', inset: '22%', borderRadius: '50%',
-              background: 'rgba(20,45,90,0.9)',
-              border: '1px solid rgba(79,142,247,0.55)',
+              background: 'rgba(40,30,65,0.95)',
+              border: '1px solid rgba(130,90,200,0.55)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#4F8EF7',
+              color: '#8B6CC1',
             }}
           >
             <svg width="65%" height="65%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -753,10 +753,10 @@ function NavRibbon({
           </motion.div>
         </div>
 
-        {/* Label */}
+        {/* Label — violet to match system */}
         <div style={{
           fontSize: 'clamp(10px, 2.8vw, 13px)', fontWeight: 700,
-          color: '#6BA3F7',
+          color: '#9080B0',
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
           fontFamily: 'var(--font-body)',
