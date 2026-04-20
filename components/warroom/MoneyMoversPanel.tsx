@@ -152,13 +152,21 @@ function DealRow({ deal, rank }: { deal: Deal; rank: number }) {
 
       {/* Deal name + type */}
       <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', lineHeight: 1.4 }}>
           {(deal as any).is_money_mover && <span style={{ fontSize: 11, flexShrink: 0 }}>💰</span>}
           {deal.name}
         </div>
         <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, textTransform: 'capitalize' }}>
           {deal.type.replace(/_/g, ' ')}
         </div>
+        {deal.created_at && (
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+            {(() => {
+              const d = Math.floor((Date.now() - new Date(deal.created_at).getTime()) / 86400000)
+              return d === 0 ? 'added today' : `${d}d in pipeline`
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Sparkline — atmospheric area chart */}
