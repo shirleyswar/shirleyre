@@ -65,6 +65,18 @@ export default function WarRoomPage() {
     }
   }, [])
 
+  // Cursor glow — desktop only, via CSS media query
+  useEffect(() => {
+    const el = document.getElementById('cursor-glow')
+    if (!el) return
+    function onMove(e: MouseEvent) {
+      el!.style.left = e.clientX + 'px'
+      el!.style.top  = e.clientY + 'px'
+    }
+    window.addEventListener('mousemove', onMove, { passive: true })
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+
   const { pullY, refreshing } = usePullToRefresh(mainScrollRef, useCallback(() => setRefreshKey(k => k + 1), []))
 
   const handlePinSuccess = useCallback(() => {
@@ -101,6 +113,10 @@ export default function WarRoomPage() {
   }
 
   return (
+    <>
+    {/* Cursor glow — desktop only (CSS hides on touch devices) */}
+    <div id="cursor-glow" aria-hidden="true" />
+
     <div
       style={{
         display: 'flex',
@@ -225,6 +241,7 @@ export default function WarRoomPage() {
         </main>
       </div>
     </div>
+    </>
   )
 }
 
@@ -332,18 +349,47 @@ function useDateLabel() {
 }
 
 function useLiveTime() {
-  // Initialize with current time immediately (avoids blank on first render)
+  // Ticks every second — live operations feed, not a snapshot
   const [time, setTime] = useState(() =>
-    new Date().toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true })
+    new Date().toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
   )
   useEffect(() => {
     function update() {
-      setTime(new Date().toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true }))
+      setTime(new Date().toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }))
     }
-    const t = setInterval(update, 60000)
+    const t = setInterval(update, 1000)
     return () => clearInterval(t)
   }, [])
   return time
+}
+
+// ── Count-up animation hook ────────────────────────────────────────────────
+// Animates a number from 0 to `target` over `duration`ms on first mount
+// When `target` changes, animates from current to new value
+function useCountUp(target: number, duration = 600): number {
+  const [display, setDisplay] = useState(0)
+  const animRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null)
+  const startRef = useRef<number>(0)
+  const startValRef = useRef<number>(0)
+
+  useEffect(() => {
+    if (animRef.current) cancelAnimationFrame(animRef.current)
+    startRef.current = performance.now()
+    startValRef.current = display
+
+    function step(now: number) {
+      const elapsed = now - startRef.current
+      const progress = Math.min(elapsed / duration, 1)
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplay(Math.round(startValRef.current + (target - startValRef.current) * eased))
+      if (progress < 1) animRef.current = requestAnimationFrame(step)
+    }
+    animRef.current = requestAnimationFrame(step)
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
+  }, [target]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return display
 }
 
 function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
@@ -1137,7 +1183,8 @@ function StarMark({ size = 20 }: { size?: number }) {
       width={s} height={s}
       viewBox="0 0 40 40"
       fill="none"
-      style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px rgba(168,85,247,0.55)) drop-shadow(0 0 14px rgba(168,85,247,0.25))' }}
+      className="star-pulse"
+      style={{ flexShrink: 0 }}
       aria-hidden="true"
     >
       {/* Atmospheric outer haze — very soft, large radius */}

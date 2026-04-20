@@ -394,6 +394,112 @@ html, body {
   box-shadow: 0 0 0 2px rgba(232,184,75,0.2);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   MOTION SYSTEM — Stage 1
+   Star pulse, chip urgency breath, card glow breath, row entry
+   Rule: atmosphere only — if you notice it consciously, too much
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Star mark ambient pulse — 3.5s breathing cycle ── */
+@keyframes starPulse {
+  0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 6px rgba(168,85,247,0.50)) drop-shadow(0 0 14px rgba(168,85,247,0.22)); }
+  50%       { opacity: 1.00; filter: drop-shadow(0 0 10px rgba(168,85,247,0.80)) drop-shadow(0 0 22px rgba(168,85,247,0.38)); }
+}
+.star-pulse {
+  animation: starPulse 3.5s ease-in-out infinite;
+}
+
+/* ── HOT chip urgency breath — 2.5s ── */
+@keyframes hotPulse {
+  0%, 100% { box-shadow: none; border-color: rgba(249,115,22,0.45); }
+  50%       { box-shadow: 0 0 8px rgba(249,115,22,0.55), 0 0 18px rgba(249,115,22,0.20); border-color: rgba(249,115,22,0.80); }
+}
+.badge-hot {
+  animation: hotPulse 2.5s ease-in-out infinite;
+}
+
+/* ── Overdue left-edge bar faster pulse — 2s ── */
+@keyframes overdueBarPulse {
+  0%, 100% { opacity: 0.8; box-shadow: 2px 0 8px rgba(239,68,68,0.3); }
+  50%       { opacity: 1.0; box-shadow: 3px 0 14px rgba(239,68,68,0.6); }
+}
+.overdue-bar-pulse {
+  animation: overdueBarPulse 2s ease-in-out infinite;
+}
+
+/* ── Card edge glow breath — 6s slow cycle ── */
+@keyframes cardGlowBreath {
+  0%, 100% {
+    box-shadow: 0 2px 16px rgba(0,0,0,0.45),
+                0 0 0 1px rgba(168,85,247,0.04),
+                0 0 24px rgba(168,85,247,0.04);
+  }
+  50% {
+    box-shadow: 0 2px 16px rgba(0,0,0,0.45),
+                0 0 0 1px rgba(168,85,247,0.08),
+                0 0 32px rgba(168,85,247,0.08);
+  }
+}
+.wr-card {
+  animation: cardGlowBreath 6s ease-in-out infinite;
+}
+/* Pause breath on hover — user is focusing, no distraction */
+.wr-card:hover {
+  animation: none;
+}
+
+/* ── Data scanner sweep — violet line passes across card on update ── */
+@keyframes cardScan {
+  0%   { transform: translateX(-100%); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(200%); opacity: 0; }
+}
+.card-scan-active::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(168,85,247,0.12) 50%, transparent 100%);
+  animation: cardScan 0.6s ease-in-out forwards;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ── Row item entry — slide in from left edge, 200ms ease-out ── */
+@keyframes rowEntry {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.row-enter {
+  animation: rowEntry 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Row exit — fade + collapse ── */
+@keyframes rowExit {
+  from { opacity: 1; max-height: 80px; }
+  to   { opacity: 0; max-height: 0; overflow: hidden; margin: 0; padding-top: 0; padding-bottom: 0; }
+}
+.row-exit {
+  animation: rowExit 0.22s ease-in forwards;
+}
+
+/* ── Cursor glow — violet radial follows mouse (desktop only) ── */
+#cursor-glow {
+  pointer-events: none;
+  position: fixed;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(168,85,247,0.08) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: left 0.12s ease-out, top 0.12s ease-out;
+  z-index: 9998;
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  #cursor-glow { display: block; }
+}
+
 /* ─── GOLD FLASH OVERLAY ─────────────────────────────────────── */
 @keyframes goldFlashOverlay {
   0%   { opacity: 0; }

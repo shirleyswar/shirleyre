@@ -1,6 +1,29 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+
+// Count-up animation — rolls from 0 to target on mount/change
+function useCountUp(target: number, duration = 600): number {
+  const [display, setDisplay] = useState(0)
+  const animRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null)
+  const startRef = useRef(0)
+  const startValRef = useRef(0)
+  useEffect(() => {
+    if (animRef.current) cancelAnimationFrame(animRef.current)
+    startRef.current = performance.now()
+    startValRef.current = display
+    function step(now: number) {
+      const elapsed = now - startRef.current
+      const p = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setDisplay(Math.round(startValRef.current + (target - startValRef.current) * eased))
+      if (p < 1) animRef.current = requestAnimationFrame(step)
+    }
+    animRef.current = requestAnimationFrame(step)
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
+  }, [target]) // eslint-disable-line react-hooks/exhaustive-deps
+  return display
+}
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
 
@@ -321,6 +344,7 @@ export default function BattlePlanPanel() {
   const handleDragEnd = useCallback(() => {}, [])
 
   const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'in_progress')
+  const animatedCount = useCountUp(openTasks.length, 700)
 
   // ── Collapse bar state ───────────────────────────────────────────────────
   const [futureExpanded, setFutureExpanded] = useState(false)
@@ -350,7 +374,7 @@ export default function BattlePlanPanel() {
           color: 'var(--text-muted)',
           fontVariantNumeric: 'tabular-nums',
         }}>
-          {openTasks.length > 0 ? openTasks.length : ''}
+          {openTasks.length > 0 ? animatedCount : ''}
         </span>
         <div style={{ flex: 1 }} />
       </div>
@@ -864,15 +888,19 @@ function TaskRow({
         // no marginBottom — overdue accent bars must be seamlessly flush row-to-row
       }}
     >
-      {/* Left accent bar — 4px solid, flush full row height, no gaps between adjacent rows */}
-      <div style={{
-        position: 'absolute', left: 0, top: 0, bottom: 0,
-        width: 4,
-        background: accentBarColor,
-        borderRadius: 0,  // flush — no rounding so rows flow seamlessly
-        transition: 'background 0.15s',
-        pointerEvents: 'none',
-      }} />
+      {/* Left accent bar — 4px solid, flush full row height */}
+      {/* Overdue bars pulse at 2s; today bars are static orange */}
+      <div
+        className={isOverdue ? 'overdue-bar-pulse' : undefined}
+        style={{
+          position: 'absolute', left: 0, top: 0, bottom: 0,
+          width: 4,
+          background: accentBarColor,
+          borderRadius: 0,
+          transition: 'background 0.15s',
+          pointerEvents: 'none',
+        }}
+      />
 
       {/* Checkbox — custom 4px-radius, animated check on hover/complete */}
       <div style={{ padding: '0 10px 0 16px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
