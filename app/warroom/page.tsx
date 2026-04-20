@@ -523,7 +523,7 @@ function NavRibbon({
         alignItems: 'center',
         justifyContent: 'flex-start',
         gap: 8,
-        padding: '6px 12px',
+        padding: '4px 12px',  // tighter top/bottom → header↔nav feel unified
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(167,139,250,0.08)',
         flexShrink: 0,
@@ -539,7 +539,7 @@ function NavRibbon({
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        height: 'clamp(50px, 9vw, 60px)',
+        height: 'clamp(72px, 9vw, 60px)',
         gap: 0,
         padding: '0 12px',
         cursor: 'default',
@@ -582,12 +582,12 @@ function NavRibbon({
               flex: '1 1 0',
               width: '100%',
               maxWidth: 160,
-              height: 'clamp(50px, 9vw, 60px)',
+              height: 'clamp(72px, 9vw, 60px)',
               background: isActive
                 ? 'linear-gradient(135deg, #2A1F50 0%, #221845 40%, #1E1540 100%)'
                 : 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
               border: `1px solid ${isActive ? 'rgba(140,100,220,0.65)' : 'rgba(90,70,140,0.35)'}`,
-              borderRadius: 16,
+              borderRadius: 12,
               cursor: 'pointer',
               overflow: 'hidden',
               boxShadow: isActive
@@ -625,7 +625,7 @@ function NavRibbon({
             )}
 
             {/* Orbit icon */}
-            <div style={{ position: 'relative', width: 'clamp(26px, 5.5vw, 36px)', height: 'clamp(26px, 5.5vw, 36px)', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 'clamp(36px, 6vw, 40px)', height: 'clamp(36px, 6vw, 40px)', flexShrink: 0 }}>
               {/* Outer orbit ring */}
               <motion.div
                 style={{
@@ -666,7 +666,7 @@ function NavRibbon({
 
             {/* Label */}
             <div style={{
-              fontSize: 'clamp(10px, 2.6vw, 13px)', fontWeight: 800,
+              fontSize: 'clamp(10px, 2.8vw, 13px)', fontWeight: 700,
               color: isActive ? '#EEEAF4' : '#9080B0',
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
@@ -696,10 +696,10 @@ function NavRibbon({
           flex: '1 1 0',
           width: '100%',
           maxWidth: 160,
-          height: 'clamp(50px, 9vw, 60px)',
+          height: 'clamp(72px, 9vw, 60px)',
           background: 'linear-gradient(135deg, #0d1a2e 0%, #0f2040 50%, #0a1830 100%)',
           border: '1px solid rgba(79,142,247,0.35)',
-          borderRadius: 16,
+          borderRadius: 12,
           cursor: 'pointer',
           overflow: 'hidden',
           boxShadow: '0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(79,142,247,0.1), inset 0 1px 0 rgba(79,142,247,0.08)',
@@ -716,7 +716,7 @@ function NavRibbon({
         }} />
 
         {/* Orbit icon zone */}
-        <div style={{ position: 'relative', width: 'clamp(26px, 5.5vw, 36px)', height: 'clamp(26px, 5.5vw, 36px)', flexShrink: 0 }}>
+        <div style={{ position: 'relative', width: 'clamp(36px, 6vw, 40px)', height: 'clamp(36px, 6vw, 40px)', flexShrink: 0 }}>
           <motion.div
             style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(79,142,247,0.28)' }}
             animate={{ scale: [1, 1.45, 1], opacity: [0.45, 0, 0.45] }}
@@ -738,7 +738,7 @@ function NavRibbon({
               color: '#4F8EF7',
             }}
           >
-            <svg width="55%" height="55%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="65%" height="65%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
               <circle cx="9" cy="7" r="4"/>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -749,7 +749,7 @@ function NavRibbon({
 
         {/* Label */}
         <div style={{
-          fontSize: 'clamp(10px, 2.6vw, 13px)', fontWeight: 800,
+          fontSize: 'clamp(10px, 2.8vw, 13px)', fontWeight: 700,
           color: '#6BA3F7',
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
@@ -794,10 +794,10 @@ function NavRibbon({
             flex: '0 0 auto',
             width: 'clamp(90px, 20vw, 160px)',
             maxWidth: 160,
-            height: 'clamp(50px, 9vw, 60px)',
+            height: 'clamp(72px, 9vw, 60px)',
             background: 'linear-gradient(135deg, #0a1e1e 0%, #0d2222 50%, #091a1a 100%)',
             border: '1px solid rgba(14,165,160,0.22)',
-            borderRadius: 16,
+            borderRadius: 12,
             cursor: 'pointer',
             overflow: 'hidden',
             textDecoration: 'none',
@@ -814,7 +814,7 @@ function NavRibbon({
           }} />
 
           {/* Orbit icon zone */}
-          <div style={{ position: 'relative', width: 'clamp(26px, 5.5vw, 36px)', height: 'clamp(26px, 5.5vw, 36px)', flexShrink: 0 }}>
+          <div style={{ position: 'relative', width: 'clamp(36px, 6vw, 40px)', height: 'clamp(36px, 6vw, 40px)', flexShrink: 0 }}>
             {/* Outer ring */}
             <motion.div
               style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(14,165,160,0.22)' }}
@@ -840,7 +840,7 @@ function NavRibbon({
               }}
             >
               {/* External link icon */}
-              <svg width="50%" height="50%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
                 <polyline points="15 3 21 3 21 9"/>
                 <line x1="10" y1="14" x2="21" y2="3"/>
@@ -850,7 +850,7 @@ function NavRibbon({
 
           {/* Label */}
           <div style={{
-            fontSize: 'clamp(10px, 2.6vw, 13px)', fontWeight: 800,
+            fontSize: 'clamp(10px, 2.8vw, 13px)', fontWeight: 700,
             color: 'rgba(14,165,160,0.85)',
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
@@ -915,11 +915,11 @@ function StatsNavCard() {
       alignItems: 'center',
       justifyContent: 'center',
       flex: '0 0 auto',
-      height: 'clamp(50px, 9vw, 60px)',
+      height: 'clamp(72px, 9vw, 60px)',
       padding: '0 16px',
       background: 'linear-gradient(135deg, #0D1218 0%, #111720 100%)',
       border: '1px solid rgba(232,184,75,0.18)',
-      borderRadius: 16,
+      borderRadius: 12,
       gap: 6,
       minWidth: 'clamp(120px, 20vw, 180px)',
       boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 12px rgba(232,184,75,0.06), inset 0 1px 0 rgba(232,184,75,0.06)',
@@ -1128,7 +1128,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 // so the core is ~14–20px. Icons must fit within that — use 55% of core.
 function HeartIcon() {
   return (
-    <svg width="55%" height="55%" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <svg width="65%" height="65%" viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
     </svg>
   )
@@ -1136,7 +1136,7 @@ function HeartIcon() {
 
 function BuildingIcon() {
   return (
-    <svg width="55%" height="55%" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <svg width="65%" height="65%" viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M2 3h8v18H2zM14 8h8v13h-8zM2 20h20v2H2z"/>
     </svg>
   )
@@ -1144,7 +1144,7 @@ function BuildingIcon() {
 
 function ChartIcon() {
   return (
-    <svg width="55%" height="55%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="65%" height="65%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
     </svg>
   )

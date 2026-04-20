@@ -354,52 +354,54 @@ export default function BattlePlanPanel() {
 
       {/* ── Toolbar: + Add Item  |  sort dropdown — siblings, same height ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px', marginBottom: 12 }}>
+        {/* Shared style constants for sibling controls */}
+        {/* Both: height 30px, borderRadius 7px, same border/color, no glow on either */}
         <button
           onClick={() => setShowAddForm(true)}
           style={{
-            height: 32, padding: '0 14px',
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.14)',
+            height: 30, padding: '0 12px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 7,
-            color: 'var(--text-primary)',
+            color: 'rgba(255,255,255,0.7)',
             fontSize: 12, fontWeight: 500,
             fontFamily: 'var(--font-body)',
             cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6,
-            transition: 'border-color 0.15s, background 0.15s',
+            display: 'flex', alignItems: 'center', gap: 5,
+            transition: 'border-color 0.15s, background 0.15s, color 0.15s',
             whiteSpace: 'nowrap',
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.background = 'transparent' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.9)' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}
         >
-          <span style={{ fontSize: 14, lineHeight: 1, color: 'rgba(255,255,255,0.5)' }}>+</span>
+          <span style={{ fontSize: 15, lineHeight: 1, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>+</span>
           Add Item
         </button>
 
         <div style={{ flex: 1 }} />
 
-        {/* Sort — self-explanatory label inside the select, no external "SORT" label */}
+        {/* Sort dropdown — identical visual treatment to Add Item */}
         <select
           value={sortMode}
           onChange={e => setSortMode(e.target.value as typeof sortMode)}
           style={{
-            height: 32,
-            padding: '0 28px 0 10px',
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.14)',
+            height: 30,
+            padding: '0 26px 0 10px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 7,
             fontSize: 12,
             fontWeight: 500,
-            color: 'var(--text-muted)',
+            color: 'rgba(255,255,255,0.6)',
             fontFamily: 'var(--font-body)',
             cursor: 'pointer',
             outline: 'none',
             appearance: 'none' as React.CSSProperties['appearance'],
             WebkitAppearance: 'none' as React.CSSProperties['WebkitAppearance'],
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5' viewBox='0 0 9 5'%3E%3Cpath d='M0 0l4.5 5L9 0z' fill='rgba(255,255,255,0.25)'/%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='rgba(255,255,255,0.22)'/%3E%3C/svg%3E")`,
             backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 9px center',
-            minWidth: 112,
+            backgroundPosition: 'right 8px center',
+            minWidth: 108,
           }}
         >
           <option value="due_date">Due date</option>
@@ -575,10 +577,12 @@ export default function BattlePlanPanel() {
                 .bp-grid-date { width: 90px; flex-shrink: 0; display: flex; justify-content: flex-end; }
                 .bp-grid-priority { width: 72px; flex-shrink: 0; display: flex; justify-content: center; }
                 .bp-col-id { display: flex; align-items: center; }
+                /* Mobile: hide date col, priority col, and assignee chips — let titles breathe */
                 @media (max-width: 640px) {
                   .bp-grid-date { display: none; }
                   .bp-grid-priority { display: none; }
                   .bp-col-id { display: none; }
+                  .bp-chip-hide-mobile { display: none !important; }
                 }
               `}</style>
 
@@ -609,10 +613,10 @@ export default function BattlePlanPanel() {
                   onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent' }}
                 >
-                  <span style={{ fontSize: 10, opacity: 0.5 }}>
+                  {futureExpanded ? 'Hide upcoming' : `Show ${futureTasks.length} more`}
+                  <span style={{ fontSize: 10, opacity: 0.5, marginLeft: 4 }}>
                     {futureExpanded ? '▴' : '▾'}
                   </span>
-                  {futureExpanded ? 'Hide upcoming' : `Show ${futureTasks.length} more`}
                 </button>
               )}
 
@@ -854,36 +858,57 @@ function TaskRow({
         opacity: completing ? 0.3 : isDragging ? 0.35 : 1,
         transition: 'background 0.1s ease',
         position: 'relative',
+        // no marginBottom — overdue accent bars must be seamlessly flush row-to-row
       }}
     >
-      {/* Left accent bar — 3px solid, full row height, overdue = red, today = orange */}
+      {/* Left accent bar — 4px solid, flush full row height, no gaps between adjacent rows */}
       <div style={{
         position: 'absolute', left: 0, top: 0, bottom: 0,
-        width: 3,
+        width: 4,
         background: accentBarColor,
-        borderRadius: '0 2px 2px 0',
+        borderRadius: 0,  // flush — no rounding so rows flow seamlessly
         transition: 'background 0.15s',
+        pointerEvents: 'none',
       }} />
 
-      {/* Checkbox — vertically centered */}
+      {/* Checkbox — custom 4px-radius, animated check on hover/complete */}
       <div style={{ padding: '0 10px 0 16px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
         <button
           onClick={onComplete}
           onMouseEnter={() => setCircleHovered(true)}
           onMouseLeave={() => setCircleHovered(false)}
           style={{
-            width: 17, height: 17, borderRadius: 4,
-            border: `1.5px solid ${circleHovered ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.18)'}`,
-            background: circleHovered ? 'rgba(255,255,255,0.08)' : 'transparent',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.15s', flexShrink: 0,
+            width: 16, height: 16,
+            borderRadius: 4,  // tight corners — not circular, not square
+            border: `1.5px solid ${
+              circleHovered
+                ? 'rgba(255,255,255,0.45)'
+                : 'rgba(255,255,255,0.15)'
+            }`,
+            background: circleHovered
+              ? 'rgba(255,255,255,0.08)'
+              : 'transparent',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'border-color 0.15s, background 0.15s',
+            flexShrink: 0,
+            padding: 0,
           }}
+          aria-label="Complete task"
         >
-          {circleHovered && (
-            <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-              <path d="M2 5l2.5 2.5L8 3" stroke="rgba(255,255,255,0.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
+          {/* Check mark — fades in on hover */}
+          <svg
+            width="9" height="7" viewBox="0 0 9 7" fill="none"
+            style={{ opacity: circleHovered ? 1 : 0, transition: 'opacity 0.12s ease' }}
+          >
+            <path
+              d="M1.5 3.5L3.5 5.5L7.5 1.5"
+              stroke="rgba(255,255,255,0.8)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
       </div>
 
@@ -960,9 +985,9 @@ function TaskRow({
                 {task.title}
               </span>
 
-              {/* Assignee chip — inline right of title, always on same line */}
+              {/* Assignee chip — inline right of title; hidden on mobile for density */}
               {task.contact_name && (
-                <span style={{ flexShrink: 0 }}>
+                <span className="bp-chip-hide-mobile" style={{ flexShrink: 0 }}>
                   <ContactBadge contactName={task.contact_name} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
                 </span>
               )}
@@ -1170,13 +1195,15 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
   }
 
   if (isOverdue) {
+    // Triangle gone — left accent bar owns the overdue signal.
+    // Show the date in red so user knows exactly which day it was due.
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-          <path d="M8 1.5L1 14.5h14L8 1.5z" stroke="#ef4444" strokeWidth="1.5" strokeLinejoin="round"/>
-          <path d="M8 6v3.5" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round"/>
-          <circle cx="8" cy="12" r="0.8" fill="#ef4444"/>
-        </svg>
+      <span style={{
+        fontSize: 11, fontWeight: 700, color: '#ef4444',
+        fontFamily: 'monospace', whiteSpace: 'nowrap',
+        letterSpacing: '0.01em',
+      }}>
+        {fmtDate(value!)}
       </span>
     )
   }

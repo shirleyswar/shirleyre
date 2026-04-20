@@ -526,14 +526,14 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
   width: 220px;
   height: 88px;
   background: linear-gradient(135deg, #160E2C 0%, #1A1030 40%, #130E24 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(167, 139, 250, 0.2);
-  border-radius: 16px;
+  border-radius: 12px;
   cursor: pointer;
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   position: relative;
@@ -656,12 +656,12 @@ select {
   color-scheme: dark;
 }
 
-/* ── War Room Nav Ribbon — Mobile full-width cards ── */
+/* ── War Room Nav Ribbon — Mobile full-width square-ish tiles ── */
 @media (max-width: 640px) {
   .wr-nav-ribbon {
     justify-content: stretch !important;
     overflow-x: hidden !important;
-    padding: 6px 8px !important;
+    padding: 4px 8px !important;
     gap: 6px !important;
   }
   .wr-nav-card {
@@ -669,6 +669,24 @@ select {
     width: auto !important;
     max-width: none !important;
     min-width: 0 !important;
+    /* Aspect ratio ~1:1 — square tiles on mobile */
+    aspect-ratio: 1 / 1 !important;
+    height: auto !important;
   }
+  /* Icon container fills ~40% of tile height on mobile */
+  .wr-nav-card-icon-wrap {
+    width: 40% !important;
+    height: 40% !important;
+  }
+  /* Label: slightly smaller on mobile tiles */
+  .wr-nav-card-label {
+    font-size: 9px !important;
+    letter-spacing: 0.1em !important;
+  }
+}
+
+/* ── Card corner radius — 12px everywhere (tight, premium) ── */
+.wr-card {
+  border-radius: 12px !important;
 }
 
