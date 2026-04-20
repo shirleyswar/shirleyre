@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { formatAddress } from '@/lib/formatAddress'
 import { createPortal } from 'react-dom'
-import { supabase, Deal, ContractDeadline, DeadlineType, DeadlineStatus } from '@/lib/supabase'
+import { supabase, Deal, ContractDeadline, DeadlineType, DeadlineStatus, DealType } from '@/lib/supabase'
 
 interface ContractDeal extends Deal {
   days_since_contract?: number
@@ -377,6 +377,477 @@ function DeadlineForm({ dealId, editing, onSaved, onCancel }: DeadlineFormProps)
       {err && (
         <div style={{ marginTop: 6, fontSize: 11, color: '#ef4444' }}>{err}</div>
       )}
+    </div>
+  )
+}
+
+// ─── Landed Flow Modal ───────────────────────────────────────────────────────
+
+const PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
+
+async function sha256(text: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(text)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+const SALE_DEAL_TYPES: DealType[] = ['listing', 'active_listing', 'potential_listing', 'seller', 'buyer', 'buyer_rep']
+const LEASE_DEAL_TYPES: DealType[] = ['lease', 'tenant', 'tenant_rep', 'landlord', 'landlord_rep']
+
+interface LandedDealContact {
+  id: string
+  deal_id: string
+  contact_id: string
+  relationship: string | null
+  contacts: {
+    id: string
+    name: string
+    role: string | null
+    phone: string | null
+    email: string | null
+  } | null
+}
+
+interface LandedFlowModalProps {
+  deal: ContractDeal
+  ucDetails: UCDetails | undefined
+  onCancel: () => void
+  onSuccess: (id: string) => void
+}
+
+function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowModalProps) {
+  const [stage, setStage] = useState<'pin' | 'confirm'>('pin')
+
+  // PIN
+  const [pin, setPin] = useState('')
+  const [pinErr, setPinErr] = useState(false)
+
+  // Determine deal type
+  const dealTypeVal = deal.type as DealType
+  const isClearlySale = SALE_DEAL_TYPES.includes(dealTypeVal)
+  const isClearlyLease = LEASE_DEAL_TYPES.includes(dealTypeVal)
+  const hasDealCategory = !!ucDetails?.deal_category
+  const showTypeToggle = !hasDealCategory && !isClearlySale && !isClearlyLease
+
+  let computedDefault: 'Sale' | 'Lease' = 'Sale'
+  if (hasDealCategory) {
+    const cat = (ucDetails!.deal_category ?? '').toLowerCase()
+    computedDefault = (cat.includes('lease') || cat.includes('tenant') || cat.includes('landlord')) ? 'Lease' : 'Sale'
+  } else if (isClearlyLease) {
+    computedDefault = 'Lease'
+  }
+
+  // Confirmation form
+  const [dealTypeChoice, setDealTypeChoice] = useState<'Sale' | 'Lease'>(computedDefault)
+  const [contractPrice, setContractPrice] = useState(String(ucDetails?.contract_price ?? deal.value ?? ''))
+  const [commissionPct, setCommissionPct] = useState(String(ucDetails?.commission_pct ?? ''))
+  const [coBrokerPct, setCoBrokerPct] = useState('0')
+  const [referralPct, setReferralPct] = useState('0')
+  const [closeDate, setCloseDate] = useState(
+    new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  )
+
+  // Clients
+  const [contacts, setContacts] = useState<LandedDealContact[]>([])
+  const [contactsLoading, setContactsLoading] = useState(false)
+  const [addingClient, setAddingClient] = useState(false)
+  const [clientForm, setClientForm] = useState({ name: '', role: '', phone: '', email: '' })
+  const [clientErr, setClientErr] = useState('')
+  const [savingClient, setSavingClient] = useState(false)
+
+  // Submit
+  const [submitting, setSubmitting] = useState(false)
+  const [submitErr, setSubmitErr] = useState('')
+
+  useEffect(() => {
+    if (stage === 'confirm') fetchContacts()
+  }, [stage]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function fetchContacts() {
+    setContactsLoading(true)
+    try {
+      const { data } = await supabase
+        .from('deal_contacts')
+        .select('*, contacts(*)')
+        .eq('deal_id', deal.id)
+      setContacts((data as LandedDealContact[]) || [])
+    } catch {}
+    setContactsLoading(false)
+  }
+
+  // Computed commission
+  const cpNum = parseFloat(contractPrice.replace(/[^0-9.]/g, '')) || 0
+  const commPct = parseFloat(commissionPct.replace(/[^0-9.]/g, '')) || 0
+  const cobPct = parseFloat(coBrokerPct.replace(/[^0-9.]/g, '')) || 0
+  const refPct = parseFloat(referralPct.replace(/[^0-9.]/g, '')) || 0
+  const totalGross = cpNum * (commPct / 100)
+  const netToMatthew = totalGross * (1 - cobPct / 100) * (1 - refPct / 100)
+
+  async function handlePinChange(v: string) {
+    setPin(v)
+    setPinErr(false)
+    if (v.length === 4) {
+      const hash = await sha256(v)
+      if (hash === PIN_HASH) {
+        setStage('confirm')
+      } else {
+        setPinErr(true)
+        setPin('')
+      }
+    }
+  }
+
+  async function addClient() {
+    if (!clientForm.name.trim()) { setClientErr('Name is required'); return }
+    setSavingClient(true); setClientErr('')
+    try {
+      // Case-insensitive check for existing contact
+      const { data: existing } = await supabase
+        .from('contacts')
+        .select('id')
+        .ilike('name', clientForm.name.trim())
+        .limit(1)
+
+      let contactId: string
+      if (existing && existing.length > 0) {
+        contactId = (existing[0] as { id: string }).id
+      } else {
+        const { data: c, error: ce } = await supabase
+          .from('contacts')
+          .insert({
+            name: clientForm.name.trim(),
+            role: clientForm.role.trim() || null,
+            phone: clientForm.phone.trim() || null,
+            email: clientForm.email.trim() || null,
+            priority: 'standard',
+          })
+          .select()
+          .single()
+        if (ce) throw ce
+        contactId = (c as { id: string }).id
+      }
+
+      const { data: dc, error: dce } = await supabase
+        .from('deal_contacts')
+        .insert({ deal_id: deal.id, contact_id: contactId, relationship: clientForm.role.trim() || null })
+        .select('*, contacts(*)')
+        .single()
+      if (dce) throw dce
+
+      setContacts(prev => [...prev, dc as LandedDealContact])
+      setClientForm({ name: '', role: '', phone: '', email: '' })
+      setAddingClient(false)
+    } catch (e: unknown) {
+      setClientErr(e instanceof Error ? e.message : 'Save failed')
+    }
+    setSavingClient(false)
+  }
+
+  async function handleConfirm() {
+    setSubmitting(true)
+    setSubmitErr('')
+    try {
+      const isSale = dealTypeChoice === 'Sale'
+
+      // 1. Archive satisfied deadlines
+      const { data: satisfiedDls } = await supabase
+        .from('contract_deadlines')
+        .select('id, notes')
+        .eq('deal_id', deal.id)
+        .eq('status', 'satisfied')
+
+      if (satisfiedDls && satisfiedDls.length > 0) {
+        for (const dl of satisfiedDls as { id: string; notes: string | null }[]) {
+          const newNotes = dl.notes
+            ? `[Archived ${closeDate}] ${dl.notes}`
+            : `[Archived ${closeDate}]`
+          const { error } = await supabase
+            .from('contract_deadlines')
+            .update({ notes: newNotes })
+            .eq('id', dl.id)
+          if (error) throw error
+        }
+      }
+
+      if (isSale) {
+        // Insert ar_item
+        const { data: arItem, error: arErr } = await supabase
+          .from('ar_items')
+          .insert({
+            deal_id: deal.id,
+            deal_type: 'Sale',
+            commission_amount: totalGross,
+            sr_portion_amount: netToMatthew,
+            status: 'collected',
+            collected_date: closeDate,
+          })
+          .select()
+          .single()
+        if (arErr) throw arErr
+
+        // Insert ar_payment
+        const { error: payErr } = await supabase
+          .from('ar_payments')
+          .insert({
+            ar_item_id: (arItem as { id: string }).id,
+            amount: netToMatthew,
+            paid_date: closeDate,
+            note: 'Paid at closing',
+          })
+        if (payErr) throw payErr
+
+        // Update deal
+        const { error: dealErr } = await supabase
+          .from('deals')
+          .update({ status: 'closed', commission_collected: netToMatthew })
+          .eq('id', deal.id)
+        if (dealErr) throw dealErr
+
+      } else {
+        // Lease — ar_item as receivable
+        const { error: arErr } = await supabase
+          .from('ar_items')
+          .insert({
+            deal_id: deal.id,
+            deal_type: 'Lease',
+            commission_amount: totalGross,
+            sr_portion_amount: netToMatthew,
+            status: 'receivable',
+          })
+        if (arErr) throw arErr
+
+        const { error: dealErr } = await supabase
+          .from('deals')
+          .update({ status: 'pending_payment' })
+          .eq('id', deal.id)
+        if (dealErr) throw dealErr
+      }
+
+      onSuccess(deal.id)
+    } catch (e: unknown) {
+      setSubmitErr(e instanceof Error ? e.message : 'An error occurred. Please try again.')
+      setSubmitting(false)
+    }
+  }
+
+  const mInp: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 7, padding: '8px 10px', fontSize: 13, color: '#F0F2FF',
+    outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
+  }
+
+  const mLbl: React.CSSProperties = {
+    fontSize: 9, fontWeight: 700, letterSpacing: '0.12em',
+    textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
+    marginBottom: 4, fontFamily: 'monospace', display: 'block',
+  }
+
+  // ── PIN gate stage ───────────────────────────────────────────────────────
+  if (stage === 'pin') {
+    return (
+      <div
+        style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        onClick={onCancel}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{ background: '#13112A', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 14, padding: 32, width: '90vw', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'center' }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.7)', fontFamily: 'monospace' }}>Confirm LANDED</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>Enter PIN to begin close-out</div>
+          <input
+            autoFocus
+            type="tel"
+            inputMode="numeric"
+            maxLength={4}
+            value={pin}
+            onChange={e => {
+              const v = e.target.value.replace(/\D/g, '').slice(0, 4)
+              handlePinChange(v)
+            }}
+            placeholder="· · · ·"
+            style={{
+              width: '100%', fontSize: 32, textAlign: 'center', letterSpacing: '0.5em',
+              padding: '14px', background: 'rgba(255,255,255,0.05)',
+              border: `1.5px solid ${pinErr ? '#ef4444' : 'rgba(34,197,94,0.3)'}`,
+              borderRadius: 10, color: '#f0f0f0', outline: 'none', boxSizing: 'border-box',
+            }}
+          />
+          {pinErr && <div style={{ color: '#ef4444', fontSize: 12, textAlign: 'center', marginTop: -10 }}>Incorrect PIN</div>}
+          <button onClick={onCancel} style={{ padding: '8px 24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, color: '#6b7280', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Confirmation stage ───────────────────────────────────────────────────
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, overflowY: 'auto' }}
+      onClick={onCancel}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ background: '#13112A', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 14, padding: 28, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.7)' }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.7)', fontFamily: 'monospace', marginBottom: 4 }}>Close-Out</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#F0F2FF' }}>{deal.name || deal.address || '—'}</div>
+          </div>
+          <button onClick={onCancel} style={{ background: 'transparent', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>✕</button>
+        </div>
+
+        {/* Deal type toggle — only if ambiguous */}
+        {showTypeToggle ? (
+          <div>
+            <span style={mLbl}>Deal Type</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {(['Sale', 'Lease'] as const).map(t => (
+                <button
+                  key={t}
+                  onClick={() => setDealTypeChoice(t)}
+                  style={{
+                    flex: 1, padding: '8px', fontSize: 13, fontWeight: 700,
+                    background: dealTypeChoice === t ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.04)',
+                    border: `1.5px solid ${dealTypeChoice === t ? 'rgba(34,197,94,0.6)' : 'rgba(255,255,255,0.1)'}`,
+                    borderRadius: 7, color: dealTypeChoice === t ? '#22c55e' : '#6b7280', cursor: 'pointer',
+                  }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Type:</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#22c55e' }}>{dealTypeChoice}</span>
+          </div>
+        )}
+
+        {/* Contract Price + Commission Rate */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={mLbl}>Contract Price</label>
+            <input type="text" inputMode="decimal" value={contractPrice} onChange={e => setContractPrice(e.target.value)} placeholder="0" style={mInp} />
+          </div>
+          <div>
+            <label style={mLbl}>Commission Rate %</label>
+            <input type="text" inputMode="decimal" value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="0" style={mInp} />
+          </div>
+        </div>
+
+        {/* Co-broker + Referral */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={mLbl}>Co-Broker Split %</label>
+            <input type="text" inputMode="decimal" value={coBrokerPct} onChange={e => setCoBrokerPct(e.target.value)} placeholder="0" style={mInp} />
+          </div>
+          <div>
+            <label style={mLbl}>Referral %</label>
+            <input type="text" inputMode="decimal" value={referralPct} onChange={e => setReferralPct(e.target.value)} placeholder="0" style={mInp} />
+          </div>
+        </div>
+
+        {/* Net Commission hero */}
+        <div style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 10, padding: '14px 18px', textAlign: 'center' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.6)', fontFamily: 'monospace', marginBottom: 4 }}>Net Commission</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: '#22c55e', fontVariantNumeric: 'tabular-nums' }}>
+            ${Math.round(netToMatthew).toLocaleString('en-US')}
+          </div>
+          {(cobPct > 0 || refPct > 0) && (
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+              Gross: ${Math.round(totalGross).toLocaleString('en-US')}
+              {cobPct > 0 ? ` · Co-broker: ${cobPct}%` : ''}
+              {refPct > 0 ? ` · Referral: ${refPct}%` : ''}
+            </div>
+          )}
+        </div>
+
+        {/* Clients */}
+        <div>
+          <label style={mLbl}>Clients</label>
+          {contactsLoading ? (
+            <div style={{ fontSize: 11, color: '#6b7280' }}>Loading…</div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: contacts.length > 0 ? 8 : 0 }}>
+              {contacts.map(dc => (
+                <div key={dc.id} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 20, fontSize: 12, color: '#c4b5fd' }}>
+                  <span>{dc.contacts?.name || '—'}</span>
+                  {dc.relationship && <span style={{ opacity: 0.6 }}>· {dc.relationship}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+          {addingClient ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <input autoFocus placeholder="Name *" value={clientForm.name} onChange={e => setClientForm(p => ({...p, name: e.target.value}))} style={mInp} />
+                <input placeholder="Role" value={clientForm.role} onChange={e => setClientForm(p => ({...p, role: e.target.value}))} style={mInp} />
+                <input placeholder="Phone" value={clientForm.phone} onChange={e => setClientForm(p => ({...p, phone: e.target.value}))} style={mInp} />
+                <input placeholder="Email" value={clientForm.email} onChange={e => setClientForm(p => ({...p, email: e.target.value}))} style={mInp} />
+              </div>
+              {clientErr && <div style={{ fontSize: 11, color: '#ef4444' }}>{clientErr}</div>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => { setAddingClient(false); setClientErr('') }} style={{ flex: 1, padding: '7px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, color: '#6b7280', cursor: 'pointer', fontSize: 12 }}>Cancel</button>
+                <button onClick={addClient} disabled={savingClient} style={{ flex: 2, padding: '7px', background: 'rgba(167,139,250,0.2)', border: '1px solid rgba(167,139,250,0.4)', borderRadius: 7, color: '#a78bfa', cursor: 'pointer', fontSize: 12, fontWeight: 700, opacity: savingClient ? 0.5 : 1 }}>
+                  {savingClient ? 'Saving…' : 'Add'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAddingClient(true)}
+              style={{ padding: '6px 14px', fontSize: 11, fontWeight: 700, background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 7, color: '#a78bfa', cursor: 'pointer' }}>
+              + Add Client
+            </button>
+          )}
+        </div>
+
+        {/* Close date */}
+        <div>
+          <label style={mLbl}>Close Date</label>
+          <input
+            type="date"
+            value={closeDate}
+            onChange={e => setCloseDate(e.target.value)}
+            style={{ ...mInp, colorScheme: 'dark' } as React.CSSProperties}
+          />
+        </div>
+
+        {/* Error */}
+        {submitErr && (
+          <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 7, fontSize: 12, color: '#ef4444' }}>
+            {submitErr}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+          <button onClick={onCancel} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6b7280', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={submitting}
+            style={{
+              flex: 2, padding: '11px',
+              background: submitting ? 'rgba(34,197,94,0.1)' : 'linear-gradient(135deg, rgba(34,197,94,0.3) 0%, rgba(21,128,61,0.4) 100%)',
+              border: '2px solid rgba(34,197,94,0.6)',
+              borderRadius: 8, color: '#bbf7d0',
+              fontSize: 14, fontWeight: 900,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              cursor: submitting ? 'default' : 'pointer',
+              fontFamily: 'inherit',
+              opacity: submitting ? 0.7 : 1,
+            }}>
+            {submitting ? 'Processing…' : '✓ Confirm LANDED'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -800,6 +1271,7 @@ export default function UnderContractPanel() {
   const [expandedDeal, setExpandedDeal] = useState<string | null>(null)
   const [dealDeadlines, setDealDeadlines] = useState<Record<string, ContractDeadline[]>>({})
   const [ucDetails, setUcDetails] = useState<Record<string, UCDetails>>({})
+  const [landedDealId, setLandedDealId] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchDeals() {
@@ -1037,16 +1509,14 @@ export default function UnderContractPanel() {
 
                       {/* LANDED hero button */}
                       <td style={{ padding: '6px 10px 6px 4px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                        <a
-                          href={`/warroom/deal?id=${deal.id}`}
-                          onClick={e => e.stopPropagation()}
+                        <button
+                          onClick={e => { e.stopPropagation(); setLandedDealId(deal.id) }}
                           style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             gap: 6,
                             padding: '9px 16px',
                             fontSize: 12, fontWeight: 900,
                             letterSpacing: '0.1em', textTransform: 'uppercase',
-                            textDecoration: 'none',
                             background: 'linear-gradient(135deg, rgba(34,197,94,0.28) 0%, rgba(21,128,61,0.38) 100%)',
                             border: '2px solid rgba(34,197,94,0.75)',
                             borderRadius: 10,
@@ -1054,18 +1524,20 @@ export default function UnderContractPanel() {
                             boxShadow: '0 0 20px rgba(34,197,94,0.25), 0 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
                             whiteSpace: 'nowrap',
                             transition: 'all 0.15s',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
                           }}
                           onMouseEnter={e => {
-                            (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 0 32px rgba(34,197,94,0.45), 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15)'
-                            ;(e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'
+                            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 32px rgba(34,197,94,0.45), 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15)'
+                            ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
                           }}
                           onMouseLeave={e => {
-                            (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 0 20px rgba(34,197,94,0.25), 0 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
-                            ;(e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'
+                            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(34,197,94,0.25), 0 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
+                            ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
                           }}
                         >
                           ✓ LANDED
-                        </a>
+                        </button>
                       </td>
 
                     </tr>
@@ -1087,6 +1559,20 @@ export default function UnderContractPanel() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Landed flow modal portal */}
+      {landedDealId && typeof document !== 'undefined' && createPortal(
+        <LandedFlowModal
+          deal={deals.find(d => d.id === landedDealId)!}
+          ucDetails={ucDetails[landedDealId]}
+          onCancel={() => setLandedDealId(null)}
+          onSuccess={(id) => {
+            setDeals(prev => prev.filter(d => d.id !== id))
+            setLandedDealId(null)
+          }}
+        />,
+        document.body
       )}
     </div>
   )
