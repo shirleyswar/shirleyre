@@ -403,15 +403,17 @@ export default function DealPipelinePanel() {
             style={{
               padding: '7px 16px',
               fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              background: 'linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.42) 100%)',
-              border: '1px solid rgba(167,139,250,0.5)',
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(168,85,247,0.4)',
               borderRadius: 8,
-              color: '#c4b5fd',
+              color: '#C084FC',
               cursor: 'pointer',
               fontFamily: 'var(--font-body)',
               flexShrink: 0,
+              boxShadow: '0 0 12px rgba(168,85,247,0.2), 0 0 28px rgba(168,85,247,0.08)',
+              transition: 'box-shadow 0.2s ease, border-color 0.15s',
             }}
           >
             + Deal

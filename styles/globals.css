@@ -81,22 +81,27 @@ html, body {
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); background-clip: content-box; }
 
-/* ─── CARD — Tier 3 surface ──────────────────────────────────── */
+/* ─── CARD — Tier 3 surface with subtle violet luminous edge ──── */
 .wr-card {
   background: var(--bg-card);
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 20px;
   position: relative;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
-  border: 1px solid rgba(255,255,255,0.11);
-  box-shadow: 0 2px 16px rgba(0,0,0,0.45);
+  /* SpaceX console style: faint violet glow at card boundary */
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.45),
+              0 0 0 1px rgba(168,85,247,0.04),
+              0 0 24px rgba(168,85,247,0.04);
   min-width: 0;
   max-width: 100%;
   overflow-x: hidden;
 }
 
 .wr-card:hover {
-  box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55),
+              0 0 0 1px rgba(168,85,247,0.08),
+              0 0 32px rgba(168,85,247,0.07);
   transform: translateY(-1px);
 }
 
@@ -279,21 +284,27 @@ html, body {
 .wr-btn-orbit {
   padding: 8px 16px;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  background: linear-gradient(135deg, rgba(139,92,246,0.25) 0%, rgba(109,40,217,0.35) 100%);
-  border: 1px solid rgba(167,139,250,0.5);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  /* Violet atmospheric glow — brand atmosphere on primary actions */
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(168,85,247,0.4);
   border-radius: 8px;
-  color: #c4b5fd;
+  color: #C084FC;
   cursor: pointer;
   font-family: inherit;
-  box-shadow: 0 0 16px rgba(139,92,246,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
-  animation: orbitPulse 2.8s ease-in-out infinite;
-  transition: opacity 0.15s;
+  box-shadow: 0 0 12px rgba(168,85,247,0.2),
+              0 0 28px rgba(168,85,247,0.08),
+              inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: box-shadow 0.2s ease, border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
-.wr-btn-orbit:disabled { opacity: 0.4; cursor: not-allowed; }
-.wr-btn-orbit:hover:not(:disabled) { opacity: 0.85; }
+.wr-btn-orbit:disabled { opacity: 0.35; cursor: not-allowed; }
+.wr-btn-orbit:hover:not(:disabled) {
+  border-color: rgba(168,85,247,0.65);
+  color: #E8D0FF;
+  box-shadow: 0 0 18px rgba(168,85,247,0.35), 0 0 40px rgba(168,85,247,0.12), inset 0 1px 0 rgba(255,255,255,0.06);
+}
 
 /* ─── TEAL BUTTON (LACDB/CREXI filter family) ────────────────── */
 .wr-btn-teal {
