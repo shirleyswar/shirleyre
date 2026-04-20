@@ -393,16 +393,22 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
         ))}
       </button>
 
-      {/* ShirleyCRE wordmark — stays in top bar */}
+      {/* Star mark — brand co-equal, left of wordmark */}
+      <span style={{ display: 'flex', alignItems: 'center', marginLeft: 4, marginRight: 6, flexShrink: 0 }}>
+        <StarMark size={22} />
+      </span>
+
+      {/* ShirleyCRE wordmark — violet with soft gold ambient glow */}
       <span style={{
         fontSize: 17, fontWeight: 800,
-        color: '#E8B84B',
+        color: '#C084FC',                                           /* violet primary */
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
         fontFamily: 'var(--font-body)',
         flexShrink: 0,
-        textShadow: '0 0 14px rgba(232,184,75,0.55)',
-        marginLeft: 4,
+        /* Gold bloom behind violet type — soft ambient, not a halo */
+        textShadow: '0 0 28px rgba(232,184,75,0.22), 0 0 48px rgba(232,184,75,0.10)',
+        marginLeft: 0,
       }}>
         ShirleyCRE
       </span>
@@ -1118,6 +1124,52 @@ function OperationsView({ activePanel }: { activePanel: string }) {
         </div>
       </div>
     </motion.div>
+  )
+}
+
+// ─── STAR MARK — brand co-equal with wordmark ──────────────────────────────────
+// 8-pointed violet star with atmospheric particle haze
+// Drawn as pure SVG so it scales cleanly and stays sharp at all sizes
+function StarMark({ size = 20 }: { size?: number }) {
+  const s = size
+  return (
+    <svg
+      width={s} height={s}
+      viewBox="0 0 40 40"
+      fill="none"
+      style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px rgba(168,85,247,0.55)) drop-shadow(0 0 14px rgba(168,85,247,0.25))' }}
+      aria-hidden="true"
+    >
+      {/* Atmospheric outer haze — very soft, large radius */}
+      <circle cx="20" cy="20" r="18" fill="rgba(124,58,237,0.08)" />
+      <circle cx="20" cy="20" r="13" fill="rgba(168,85,247,0.10)" />
+
+      {/* Scattered particle dots — 8 tiny dots at cardinal/intercardinal positions */}
+      {[0,45,90,135,180,225,270,315].map((deg, i) => {
+        const r = 17 + (i % 3 === 0 ? 1 : 0)
+        const rad = (deg * Math.PI) / 180
+        const cx = 20 + r * Math.sin(rad)
+        const cy = 20 - r * Math.cos(rad)
+        return <circle key={deg} cx={cx.toFixed(1)} cy={cy.toFixed(1)} r={i % 4 === 0 ? '0.7' : '0.4'} fill="rgba(216,180,254,0.5)" />
+      })}
+
+      {/* 8-pointed star — two overlapping squares rotated 45° */}
+      {/* Outer 4 points (cardinal: N/E/S/W) */}
+      <polygon
+        points="20,3 22.5,17.5 37,20 22.5,22.5 20,37 17.5,22.5 3,20 17.5,17.5"
+        fill="#A855F7"
+        opacity="0.9"
+      />
+      {/* Inner 4 points (intercardinal: NE/SE/SW/NW) — rotated 45° */}
+      <polygon
+        points="27.07,5.86 21.7,18.3 34.14,12.93 21.7,21.7 27.07,34.14 18.3,21.7 5.86,27.07 18.3,18.3"
+        fill="#C084FC"
+        opacity="0.7"
+      />
+
+      {/* Bright center core */}
+      <circle cx="20" cy="20" r="2.5" fill="#E8D0FF" opacity="0.95" />
+    </svg>
   )
 }
 
