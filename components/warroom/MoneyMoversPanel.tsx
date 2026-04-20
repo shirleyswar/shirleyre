@@ -79,6 +79,12 @@ export default function MoneyMoversPanel() {
   return (
     <div className="wr-card h-full min-h-[240px]">
       <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 0', marginBottom: 12 }}>
+        <span style={{ color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', marginRight: 8 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+          </svg>
+        </span>
         <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', letterSpacing: '-0.01em' }}>
           Money Movers
         </span>

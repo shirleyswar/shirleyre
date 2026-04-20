@@ -327,12 +327,15 @@ export default function BattlePlanPanel() {
 
   return (
     <div className="wr-card" style={{ padding: 0 }}>
-      {/* ── Panel Header — clean, quiet, title-case ── */}
+      {/* ── Panel Header — icon + title-case title ── */}
       <div style={{
         display: 'flex', alignItems: 'center',
         padding: '16px 20px 0',
         marginBottom: 12,
       }}>
+        <span style={{ color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', marginRight: 8 }}>
+          <SwordIcon />
+        </span>
         <span style={{
           fontSize: 15, fontWeight: 600,
           color: 'var(--text-primary)',
@@ -1001,7 +1004,8 @@ function TaskRow({
                 const [, m2, d2] = task.due_date.split('-').map(Number)
                 const dt2 = new Date(parseInt(task.due_date.split('-')[0]), m2 - 1, d2)
                 const dow2 = dt2.toLocaleDateString('en-US', { weekday: 'short' })
-                const label = isOvd ? '⚠' : isDT ? '● today' : `${dow2} ${m2}/${d2}`
+                // overdue: show red date — accent bar owns the warning signal, no triangle
+                const label = isOvd ? `${dow2} ${m2}/${d2}` : isDT ? '● today' : `${dow2} ${m2}/${d2}`
                 return (
                   <span className="bp-mobile-date" style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
                     <style>{`.bp-mobile-date { display: none; } @media (max-width: 640px) { .bp-mobile-date { display: inline; } }`}</style>
@@ -1252,10 +1256,13 @@ function EmptyState() {
 }
 
 function SwordIcon() {
+  // Vertical broadsword, point down — matches Sidebar icon vocabulary
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
-      <path d="M13 19l6-6" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2 L10.5 14 L12 16 L13.5 14 Z" />
+      <line x1="7" y1="14" x2="17" y2="14" />
+      <line x1="12" y1="14" x2="12" y2="20" />
+      <circle cx="12" cy="21.5" r="1.5" />
     </svg>
   )
 }
