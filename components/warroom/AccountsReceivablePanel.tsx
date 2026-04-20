@@ -259,28 +259,20 @@ export default function AccountsReceivablePanel() {
         {/* Subtle glow */}
         <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, background: 'radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        {/* Header row — styled like Under Contract panel header */}
-        <div className="wr-card-header" style={{ marginBottom: 20 }}>
-          <span style={{ color: '#a78bfa', display: 'flex' }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-          </span>
-          <span className="wr-card-title" style={{ fontSize: 16, fontWeight: 900, color: '#a78bfa', letterSpacing: '0.06em', textShadow: '0 0 16px rgba(167,139,250,0.4)' }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 0 0 0', marginBottom: 20 }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', letterSpacing: '-0.01em' }}>
             Receivables
           </span>
-          <span className="wr-panel-line" />
-          <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#a78bfa' }}>
+          <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
             {receivable.length}
           </span>
+          <div style={{ flex: 1 }} />
           {receivable.length === 0 && (
             <span style={{
               fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase',
               color: '#22c55e', background: 'rgba(34,197,94,0.08)',
               border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, padding: '4px 10px',
-              marginLeft: 8,
             }}>
               ✓ Clear
             </span>

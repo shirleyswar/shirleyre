@@ -865,15 +865,14 @@ export default function UnderContractPanel() {
   return (
     <div className="wr-card">
       {/* Panel header */}
-      <div className="wr-card-header" style={{ marginBottom: 4 }}>
-        <span style={{ color: '#2dd4bf', display: 'flex' }}>
-          <DocIcon />
+      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 0', marginBottom: 12 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', letterSpacing: '-0.01em' }}>
+          Under Contract
         </span>
-        <span className="wr-card-title" style={{ fontSize: 16, fontWeight: 900, color: '#2dd4bf', letterSpacing: '0.06em', textShadow: '0 0 16px rgba(45,212,191,0.4)' }}>Under Contract</span>
-        <span className="wr-panel-line" />
-        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#2dd4bf' }}>
+        <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
           {loading ? '—' : deals.length}
         </span>
+        <div style={{ flex: 1 }} />
       </div>
 
       {loading ? (

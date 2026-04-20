@@ -78,16 +78,15 @@ export default function MoneyMoversPanel() {
 
   return (
     <div className="wr-card h-full min-h-[240px]">
-      {/* Chapter-heading panel header */}
-      <div className="wr-card-header">
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
-          <RocketIcon />
+      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 0', marginBottom: 12 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', letterSpacing: '-0.01em' }}>
+          Money Movers
         </span>
-        <span className="wr-card-title">Money Movers</span>
-        <span className="wr-panel-line" />
-        <span className="wr-panel-stat wr-panel-stat-gold" style={{ fontSize: 16 }}>
-          {formatCurrency(total)}
+        <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          {deals.length}
         </span>
+        <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>deals needing action</span>
+        <div style={{ flex: 1 }} />
       </div>
 
       {loading ? (

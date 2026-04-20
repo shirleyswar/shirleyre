@@ -523,58 +523,31 @@ export default function SchedulePanel() {
 
   return (
     <div className="wr-card h-full min-h-[240px]">
-      <div className="wr-card-header">
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}><CalIcon /></span>
-        <span className="wr-card-title" style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.12em', color: 'var(--accent-gold)' }}>
-          SCHEDULE
+      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 0', marginBottom: 12 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', letterSpacing: '-0.01em' }}>
+          Schedule
         </span>
-        <span className="wr-panel-line" />
-        {/* TODAY button — purple */}
+        <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          {upcomingEvents.length + contractDeadlines.length}
+        </span>
+        <div style={{ flex: 1 }} />
         <button
           onClick={openAddForm}
           style={{
-            padding: '4px 12px',
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.35) 0%, rgba(109,40,217,0.45) 100%)',
-            border: '1px solid rgba(167,139,250,0.5)',
-            borderRadius: 20,
-            color: '#c4b5fd',
-            fontSize: 10,
-            fontWeight: 800,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
+            height: 30, padding: '0 12px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 7,
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: 12, fontWeight: 500,
             fontFamily: 'var(--font-body)',
-            boxShadow: '0 0 10px rgba(139,92,246,0.25)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 5,
+            whiteSpace: 'nowrap',
           }}
         >
-          + Add Event
-        </button>
-      </div>
-
-      {/* TODAY purple pill below header */}
-      <div style={{ marginBottom: 14 }}>
-        <button
-          onClick={openAddForm}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '6px 16px',
-            background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
-            border: '1px solid rgba(167,139,250,0.6)',
-            borderRadius: 20,
-            color: '#EDE9FE',
-            fontSize: 12,
-            fontWeight: 800,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-body)',
-            boxShadow: '0 0 18px rgba(124,58,237,0.4)',
-          }}
-        >
-          <span style={{ fontSize: 14 }}>📅</span>
-          TODAY — {new Date().toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' })}
+          <span style={{ fontSize: 15, lineHeight: 1, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>+</span>
+          Add event
         </button>
       </div>
 
@@ -1108,17 +1081,6 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
-
-function CalIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="3" y="4" width="18" height="18" rx="2"/>
-      <line x1="16" y1="2" x2="16" y2="6"/>
-      <line x1="8" y1="2" x2="8" y2="6"/>
-      <line x1="3" y1="10" x2="21" y2="10"/>
-    </svg>
-  )
-}
 
 function CalIconSmall() {
   return (
