@@ -690,3 +690,28 @@ select {
   border-radius: 12px !important;
 }
 
+
+
+/* ── UC chip: full on desktop, abbreviated on mobile ── */
+@media (max-width: 640px) {
+  .uc-label-full { display: none; }
+  .uc-label-short { display: inline; }
+}
+@media (min-width: 641px) {
+  .uc-label-full { display: inline; }
+  .uc-label-short { display: none; }
+}
+
+/* ── Address/deal-name: wrap on mobile, truncate on desktop ── */
+.wr-address {
+  word-break: break-word;
+  line-height: 1.35;
+}
+@media (min-width: 641px) {
+  .wr-address {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: normal;
+  }
+}

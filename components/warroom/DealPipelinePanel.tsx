@@ -155,6 +155,18 @@ const STATUS_CLASS: Record<DealStatus, string> = {
 // The 4 primary statuses shown in UI
 const PRIMARY_STATUSES: DealStatus[] = ['active', 'in_review', 'pipeline', 'in_service']
 
+function StatusLabel({ status }: { status: string }) {
+  if (status === 'under_contract') {
+    return (
+      <>
+        <span className="uc-label-full">Under Contract</span>
+        <span className="uc-label-short">UC</span>
+      </>
+    )
+  }
+  return <>{STATUS_LABELS[status as DealStatus] || status}</>
+}
+
 function formatCurrency(n: number | null) {
   if (!n) return '—'
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
@@ -280,6 +292,7 @@ export default function DealPipelinePanel() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<DealStatus | 'all'>('all')
   const [tierFilter, setTierFilter] = useState<DealTier | 'all'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   type SortField = 'address' | 'name' | 'type' | 'status' | 'tier' | 'rating' | 'created_at'
   const [sortBy, setSortBy] = useState<SortField | null>(null)  // null = default portfolio-first
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -359,8 +372,13 @@ export default function DealPipelinePanel() {
     return [...portfolios, ...singles]
   }
 
-  const filteredCount = deals.length
-  const totalComm = deals.reduce((s, d) => s + (d.commission_estimated || 0), 0)
+  const filteredDeals = searchQuery.trim()
+    ? deals.filter(d =>
+        (d.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (d.address || '').toLowerCase().includes(searchQuery.toLowerCase()))
+    : deals
+  const filteredCount = filteredDeals.length
+  const totalComm = filteredDeals.reduce((s, d) => s + (d.commission_estimated || 0), 0)
 
   return (
     <div className="wr-card">
@@ -418,9 +436,23 @@ export default function DealPipelinePanel() {
 
           {/* ── Desktop filters (sm+): full pills ── */}
           <div className="deal-desktop-filters hidden sm:flex" style={{ gap: 6, alignItems: 'center', flexShrink: 0 }}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search deals..."
+              style={{
+                height: 30, padding: '0 10px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 7, fontSize: 12, color: 'var(--text-primary)',
+                fontFamily: 'var(--font-body)', outline: 'none',
+                width: '100%', maxWidth: 160,
+              }}
+            />
             <div style={{ display: 'flex', gap: 4 }}>
               {[
-                { value: 'all', label: 'All' },
+                { value: 'all', label: 'All statuses' },
                 { value: 'active', label: 'Active' },
                 { value: 'hot', label: 'Hot' },
                 { value: 'under_contract', label: 'UC' },
@@ -507,7 +539,7 @@ export default function DealPipelinePanel() {
               </tr>
             </thead>
             <tbody>
-              {deals.length === 0 ? (
+              {filteredDeals.length === 0 ? (
                 <tr>
                   <td colSpan={9} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
                     No deals match this filter. Add one above ↑
@@ -517,13 +549,13 @@ export default function DealPipelinePanel() {
                 (() => {
                   // Build base-address frequency map to detect duplicates
                   const baseCounts: Record<string, number> = {}
-                  deals.forEach(d => {
+                  filteredDeals.forEach(d => {
                     const b = baseAddress(d.address)
                     if (b && !d.address?.startsWith('📁')) baseCounts[b] = (baseCounts[b] || 0) + 1
                   })
-                  return sortedDeals(deals).map((deal, i, arr) => {
+                  return sortedDeals(filteredDeals).map((deal, i, arr) => {
                   const isPortfolio = deal.address?.startsWith('📁')
-                  const subDeals = deals.filter(d => d.parent_deal_id === deal.id).sort((a,b) => (a.address||'').localeCompare(b.address||''))
+                  const subDeals = filteredDeals.filter(d => d.parent_deal_id === deal.id).sort((a,b) => (a.address||'').localeCompare(b.address||''))
                   const isExpanded = expandedPortfolios.has(deal.id)
 
                   // Compute display address: append suite if base address is shared by >1 deal
@@ -857,7 +889,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       {/* Col 5: Type — hidden on mobile */}
       <td className="hidden sm:table-cell" style={{ padding: '10px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 13, textAlign: 'center' }}>{DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type.replace(/_/g, ' ')}</td>
       <td style={{ padding: '10px 10px', textAlign: 'center' }}>
-        <span className={`badge ${STATUS_CLASS[deal.status as DealStatus]}`}>{STATUS_LABELS[deal.status as DealStatus]}</span>
+        <span className={`badge ${STATUS_CLASS[deal.status as DealStatus]}`}><StatusLabel status={deal.status} /></span>
       </td>
       {/* Col 7: Tier — hidden on mobile */}
       <td className="hidden sm:table-cell" style={{ padding: '10px 10px', textAlign: 'center' }}>
