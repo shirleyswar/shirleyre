@@ -162,7 +162,7 @@ export default function WarRoomPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                   <div style={{
                     width: 36, height: 36, borderRadius: '50%',
-                    background: 'radial-gradient(circle at 35% 35%, #F5CE7A, #C9933A)',
+                    background: 'radial-gradient(circle at 35% 35%, #C084FC, #7C3AED)',
                     boxShadow: '0 0 20px rgba(232,184,75,0.7), 0 0 40px rgba(201,147,58,0.4)',
                     animation: 'ptr-spin 0.8s linear infinite',
                   }} />
@@ -177,7 +177,7 @@ export default function WarRoomPage() {
                   <div style={{
                     width: 32, height: 32, borderRadius: '50%',
                     border: `3px solid rgba(201,147,58,0.15)`,
-                    borderTopColor: pullY >= 64 ? '#E8B84B' : `rgba(201,147,58,${Math.min(pullY / 64, 1) * 0.8})`,
+                    borderTopColor: pullY >= 64 ? '#A855F7' : `rgba(168,85,247,${Math.min(pullY / 64, 1) * 0.8})`,
                     transition: 'border-top-color 0.15s',
                     transform: `rotate(${pullY * 2.8}deg)`,
                   }} />
@@ -909,7 +909,7 @@ function StatsNavCard() {
   }
 
   const items = [
-    { label: 'Pipeline', value: loading ? '—' : fmt(stats.pipeline), color: '#E8B84B' },
+    { label: 'Pipeline', value: loading ? '—' : fmt(stats.pipeline), color: '#A855F7' },
     { label: 'UC', value: loading ? '—' : String(stats.openDeals), color: '#22C55E' },
     { label: 'A/R', value: loading ? '—' : fmt(stats.ar), color: '#60A5FA' },
   ]

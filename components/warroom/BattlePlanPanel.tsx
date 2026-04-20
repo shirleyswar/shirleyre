@@ -655,7 +655,7 @@ export default function BattlePlanPanel() {
             {pendingComplete.deal_id && (() => {
               const d = deals.find(x => x.id === pendingComplete.deal_id)
               return d ? (
-                <div style={{ fontSize: 11, color: 'var(--accent-gold)', marginBottom: 16, fontFamily: 'monospace' }}>
+                <div style={{ fontSize: 11, color: 'var(--accent-violet-lt)', marginBottom: 16, fontFamily: 'monospace' }}>
                   {d.address || d.name}
                 </div>
               ) : <div style={{ marginBottom: 16 }} />

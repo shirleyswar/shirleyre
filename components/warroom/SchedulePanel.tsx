@@ -133,7 +133,7 @@ function CalendarPicker({
         <button
           type="button"
           onClick={prevMonth}
-          style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 4 }}
+          style={{ background: 'none', border: 'none', color: 'rgba(168,85,247,0.7)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 4 }}
         >‹</button>
         <span style={{ fontSize: 13, fontWeight: 700, color: '#F2EDE4', letterSpacing: '0.05em' }}>
           {MONTHS[viewMonth]} {viewYear}
@@ -141,7 +141,7 @@ function CalendarPicker({
         <button
           type="button"
           onClick={nextMonth}
-          style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 4 }}
+          style={{ background: 'none', border: 'none', color: 'rgba(168,85,247,0.7)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 4 }}
         >›</button>
       </div>
 
@@ -174,13 +174,13 @@ function CalendarPicker({
                 fontSize: 12,
                 fontWeight: isSelected ? 800 : isToday ? 600 : 400,
                 background: isSelected
-                  ? 'var(--accent-gold)'
+                  ? 'var(--accent-violet)'
                   : isToday
                   ? 'rgba(232,184,75,0.15)'
                   : 'transparent',
                 border: isToday && !isSelected ? '1px solid rgba(232,184,75,0.4)' : '1px solid transparent',
                 borderRadius: 6,
-                color: isSelected ? '#0D0F14' : isToday ? 'var(--accent-gold)' : '#D1D5DB',
+                color: isSelected ? '#0D0F14' : isToday ? 'var(--accent-violet)' : '#D1D5DB',
                 cursor: 'pointer',
                 transition: 'all 0.1s',
                 padding: 0,
@@ -250,7 +250,7 @@ function DateSelector({ value, onChange }: { value: string; onChange: (v: string
           gap: 6,
           padding: '8px 12px',
           background: 'rgba(255,255,255,0.05)',
-          border: open ? '1px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.12)',
+          border: open ? '1px solid rgba(168,85,247,0.6)' : '1px solid rgba(255,255,255,0.12)',
           borderRadius: 8,
           fontSize: 13,
           color: '#F2EDE4',
@@ -598,7 +598,7 @@ export default function SchedulePanel() {
               <select
                 value={formDealId}
                 onChange={e => setFormDealId(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: formDealId ? 'var(--accent-gold)' : '#6B7280', outline: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: formDealId ? 'var(--accent-violet)' : '#6B7280', outline: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
               >
                 <option value="">No deal linked</option>
                 {deals.map(d => <option key={d.id} value={d.id}>{d.address || d.name}</option>)}
@@ -779,7 +779,7 @@ function EventRow({
         />
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={cancel} style={{ flex: 1, padding: '7px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#6B7280', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Cancel</button>
-          <button onClick={save} style={{ flex: 2, padding: '7px', background: 'rgba(232,184,75,0.15)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 6, color: '#E8B84B', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Save</button>
+          <button onClick={save} style={{ flex: 2, padding: '7px', background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: 6, color: '#C084FC', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Save</button>
         </div>
       </div>
     )
@@ -1005,7 +1005,7 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
           width: 90,
           padding: '10px 8px',
           background: 'rgba(255,255,255,0.05)',
-          border: open ? '1px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.12)',
+          border: open ? '1px solid rgba(168,85,247,0.6)' : '1px solid rgba(255,255,255,0.12)',
           borderRadius: 8,
           fontSize: 13,
           color: value ? '#F2EDE4' : '#6B7280',
@@ -1051,7 +1051,7 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
                   style={{
                     width: 36, height: ITEM_HEIGHT - 2, padding: '0',
                     flexShrink: 0,
-                    background: h === hour ? 'var(--accent-gold)' : 'transparent',
+                    background: h === hour ? 'var(--accent-violet)' : 'transparent',
                     border: 'none', borderRadius: 5,
                     color: h === hour ? '#0D0F14' : 'var(--text-primary)',
                     fontSize: 13, fontWeight: h === hour ? 700 : 400, cursor: 'pointer',
@@ -1071,7 +1071,7 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
               <button key={m} type="button" onClick={() => selectMinute(m)}
                 style={{
                   width: 36, padding: '5px 0',
-                  background: m === minute ? 'var(--accent-gold)' : 'transparent',
+                  background: m === minute ? 'var(--accent-violet)' : 'transparent',
                   border: 'none', borderRadius: 5,
                   color: m === minute ? '#0D0F14' : 'var(--text-primary)',
                   fontSize: 13, fontWeight: m === minute ? 700 : 400, cursor: 'pointer',
