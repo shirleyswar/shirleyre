@@ -633,13 +633,17 @@ export default function SchedulePanel() {
               No upcoming events. Tap + Add Event to schedule one.
             </div>
           ) : (
-            grouped.map(group => (
-              <div key={group.date}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, marginTop: 8 }}>
+            (() => {
+              const tomorrowStr = (() => { const t = new Date(); t.setDate(t.getDate() + 1); return t.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) })()
+              return grouped.map(group => (
+              <div key={group.date} style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, marginTop: 16 }}>
                   <span style={{
-                    fontSize: 12, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase',
-                    color: group.date === todayCST() ? '#A78BFA' : 'var(--text-muted)',
+                    fontSize: (group.date === todayCST() || group.date === tomorrowStr) ? 13 : 12,
+                    fontWeight: (group.date === todayCST() || group.date === tomorrowStr) ? 700 : 500,
+                    color: group.date === todayCST() ? 'rgba(255,255,255,0.85)' : group.date === tomorrowStr ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.35)',
                     fontFamily: 'var(--font-body)',
+                    letterSpacing: '-0.01em',
                   }}>
                     {formatGroupHeader(group.date)}
                   </span>
@@ -651,7 +655,8 @@ export default function SchedulePanel() {
                   ))}
                 </div>
               </div>
-            ))
+              ))
+            })()
           )}
 
           {/* ── Contract Deadlines Section ── */}
@@ -857,17 +862,30 @@ function EventRow({
       style={{
         display: 'flex',
         gap: 10,
-        padding: '7px 10px',
+        padding: '7px 10px 7px 14px',
         background: hovered ? 'rgba(232,184,75,0.04)' : 'var(--bg-elevated)',
         borderRadius: 6,
         border: '1px solid transparent',
         alignItems: 'center',
         cursor: 'default',
         transition: 'background 0.15s',
+        position: 'relative',
       }}
     >
+      <div style={{
+        position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, borderRadius: 0,
+        background: (() => {
+          const t = (event.title || '').toLowerCase()
+          if (t.includes('closing') || t.includes('close')) return '#22c55e'
+          if (t.includes('inspection') || t.includes('inspect')) return '#fb923c'
+          if (t.includes('personal') || t.includes('family')) return '#f87171'
+          if (t.includes('meeting') || t.includes('call') || t.includes('mtg')) return '#4F8EF7'
+          return 'rgba(255,255,255,0.06)'
+        })(),
+        pointerEvents: 'none',
+      }} />
       {/* Time */}
-      <div style={{ width: 74, fontSize: 14, fontWeight: 700, color: 'var(--accent-gold)', flexShrink: 0, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+      <div style={{ width: 58, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', flexShrink: 0, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
         {event.time}
       </div>
       {/* Title + location — allow 2-line wrap, never truncate */}
