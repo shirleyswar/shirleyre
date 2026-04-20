@@ -363,11 +363,11 @@ export default function AccountsReceivablePanel() {
 
               {/* Desktop column headers */}
               <div className="ar-row-hdr ar-desktop-only">
-                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', padding: '0 8px 0 0' }}>ADDRESS</div>
-                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', padding: '0 8px' }}>ID</div>
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace', padding: '0 8px 0 0' }}>ADDRESS</div>
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace', padding: '0 8px' }}>ID</div>
                 <div />
-                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: 'right', padding: '0 8px' }}>COLLECTED</div>
-                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.35)', fontFamily: 'monospace', textAlign: 'right', padding: '0 0 0 8px' }}>OUTSTANDING</div>
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace', textAlign: 'right', padding: '0 8px' }}>COLLECTED</div>
+                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace', textAlign: 'right', padding: '0 0 0 8px' }}>OUTSTANDING</div>
               </div>
 
               {sorted.map(item => {
@@ -397,7 +397,7 @@ export default function AccountsReceivablePanel() {
                         <div onClick={e => e.stopPropagation()} style={{ flexShrink: 0 }}>
                           <a href={`/warroom/deal?id=${item.deal_id}`} style={{ color: '#a78bfa', textDecoration: 'none', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>↗</a>
                         </div>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+                        <span className="wr-address" style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', letterSpacing: '-0.01em' }}>
                           {addressLabel}
                         </span>
                       </div>

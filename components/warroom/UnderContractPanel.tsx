@@ -905,11 +905,11 @@ export default function UnderContractPanel() {
                     padding: '7px 8px',
                     fontSize: 10,
                     fontWeight: 800,
-                    color: 'rgba(45,212,191,0.6)',
+                    color: 'rgba(255,255,255,0.3)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.12em',
                     whiteSpace: 'nowrap',
-                    borderBottom: '1px solid rgba(45,212,191,0.15)',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
                   }}>{h.label}</th>
                 ))}
               </tr>
@@ -977,7 +977,7 @@ export default function UnderContractPanel() {
 
                       {/* Address */}
                       <td style={{ padding: '13px 8px', maxWidth: 220 }}>
-                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)' }}>
+                        <div className="wr-address" style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)' }}>
                           {formatAddress((deal as any).addr_display || deal.address || deal.name)}
                         </div>
                       </td>

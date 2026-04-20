@@ -524,7 +524,7 @@ export default function DealPipelinePanel() {
                       textAlign: h.align as React.CSSProperties['textAlign'],
                       width: h.width, minWidth: h.width, maxWidth: h.width,
                       padding: '8px 4px', fontSize: 9, fontWeight: 800,
-                      color: isActive ? '#E8B84B' : 'rgba(167,139,250,0.8)',
+                      color: isActive ? '#E8B84B' : 'rgba(255,255,255,0.3)',
                       textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap',
                       cursor: h.sortField ? 'pointer' : 'default', userSelect: 'none',
                       borderRight: h.label === 'FILES' ? '1px solid rgba(139,92,246,0.15)' : undefined,
@@ -879,7 +879,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         ) : deal.address?.startsWith('📁') ? (
           <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>{deal.address?.replace(/^📁\s*/, '')}</span>
         ) : (
-          <span style={{ color: isSubDeal ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+          <span className="wr-address" style={{ color: isSubDeal ? 'var(--text-muted)' : 'var(--text-primary)' }}>
             {displayAddress || (deal as any).addr_display || deal.address || '—'}
           </span>
         )}

@@ -152,7 +152,7 @@ function DealRow({ deal, rank }: { deal: Deal; rank: number }) {
 
       {/* Deal name + type */}
       <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', lineHeight: 1.4 }}>
+        <div className="wr-address" style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4 }}>
           {(deal as any).is_money_mover && <span style={{ fontSize: 11, flexShrink: 0 }}>💰</span>}
           {deal.name}
         </div>
