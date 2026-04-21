@@ -4102,22 +4102,32 @@ function DealDashboardInner() {
                     <div>
                       <label style={fLabel}>Commission Rate (%)</label>
                       <input
-                        type="number" step="0.01" style={fInput}
+                        type="text" inputMode="decimal" style={fInput}
                         value={ucForm.commissionPct}
                         onChange={e => {
                           const pct = e.target.value
-                          const price = parseFloat(ucForm.contractPrice) || 0
-                          const rate = parseFloat(pct) || 0
+                          const price = parseFloat(ucForm.contractPrice.replace(/[^0-9.]/g, '')) || 0
+                          const rate = parseFloat(pct.replace(/[^0-9.]/g, '')) || 0
                           const amt = price > 0 && rate > 0 ? String(Math.round(price * (rate / 100) * 0.75)) : ucForm.commissionAmount
                           setUCForm(f => ({ ...f, commissionPct: pct, commissionAmount: amt }))
                         }}
-                        placeholder="e.g. 3.0"
+                        onFocus={e => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, '')
+                          const price = parseFloat(ucForm.contractPrice.replace(/[^0-9.]/g, '')) || 0
+                          const rate = parseFloat(raw) || 0
+                          const amt = price > 0 && rate > 0 ? String(Math.round(price * (rate / 100) * 0.75)) : ucForm.commissionAmount
+                          setUCForm(f => ({ ...f, commissionPct: raw, commissionAmount: amt }))
+                        }}
+                        onBlur={e => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, '')
+                          const n = parseFloat(raw)
+                          const price = parseFloat(ucForm.contractPrice.replace(/[^0-9.]/g, '')) || 0
+                          const rate = n || 0
+                          const amt = price > 0 && rate > 0 ? String(Math.round(price * (rate / 100) * 0.75)) : ucForm.commissionAmount
+                          setUCForm(f => ({ ...f, commissionPct: (!isNaN(n) && n > 0) ? n.toFixed(2) + '%' : raw, commissionAmount: amt }))
+                        }}
+                        placeholder="e.g. 3.00%"
                       />
-                      {ucForm.commissionPct && parseFloat(ucForm.commissionPct) > 0 && (
-                        <div style={{ fontSize: 13, color: '#E8B84B', marginTop: 3, fontWeight: 800 }}>
-                          {parseFloat(ucForm.commissionPct).toFixed(2)}%
-                        </div>
-                      )}
                     </div>
                     <div>
                       <label style={fLabel}>My Commission ($)</label>

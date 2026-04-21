@@ -441,8 +441,14 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
 
   // Confirmation form
   const [dealTypeChoice, setDealTypeChoice] = useState<'Sale' | 'Lease'>(computedDefault)
-  const [contractPrice, setContractPrice] = useState(String(ucDetails?.contract_price ?? deal.value ?? ''))
-  const [commissionPct, setCommissionPct] = useState(String(ucDetails?.commission_pct ?? ''))
+  const [contractPrice, setContractPrice] = useState(() => {
+    const n = ucDetails?.contract_price ?? deal.value ?? null
+    return n ? '$' + Math.round(n as number).toLocaleString('en-US') : ''
+  })
+  const [commissionPct, setCommissionPct] = useState(() => {
+    const n = ucDetails?.commission_pct ?? null
+    return n ? n.toFixed(2) + '%' : ''
+  })
   const [coBrokerPct, setCoBrokerPct] = useState('0')
   const [referralPct, setReferralPct] = useState('0')
   const [closeDate, setCloseDate] = useState(
@@ -648,15 +654,35 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
   if (stage === 'pin') {
     return (
       <div
-        style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
         onClick={onCancel}
       >
         <div
           onClick={e => e.stopPropagation()}
-          style={{ background: '#13112A', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 14, padding: 32, width: '90vw', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'center' }}
+          style={{
+            background: 'linear-gradient(160deg, #0a1f14 0%, #0d2818 50%, #091a10 100%)',
+            border: '2px solid rgba(34,197,94,0.55)',
+            borderRadius: 16,
+            padding: '36px 32px',
+            width: '90vw', maxWidth: 380,
+            display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center',
+            boxShadow: '0 0 60px rgba(34,197,94,0.15), 0 24px 64px rgba(0,0,0,0.8)',
+          }}
         >
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(34,197,94,0.7)', fontFamily: 'monospace' }}>Confirm LANDED</div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>Enter PIN to begin close-out</div>
+          {/* Icon */}
+          <div style={{
+            width: 52, height: 52, borderRadius: '50%',
+            background: 'rgba(34,197,94,0.15)',
+            border: '1.5px solid rgba(34,197,94,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 22,
+          }}>✓</div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#bbf7d0', fontFamily: 'inherit', textAlign: 'center', marginBottom: 6 }}>LANDED</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', textAlign: 'center', lineHeight: 1.5 }}>
+              This is final — enter PIN to<br />confirm close-out
+            </div>
+          </div>
           <input
             autoFocus
             type="tel"
@@ -669,14 +695,15 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
             }}
             placeholder="· · · ·"
             style={{
-              width: '100%', fontSize: 32, textAlign: 'center', letterSpacing: '0.5em',
-              padding: '14px', background: 'rgba(255,255,255,0.05)',
-              border: `1.5px solid ${pinErr ? '#ef4444' : 'rgba(34,197,94,0.3)'}`,
-              borderRadius: 10, color: '#f0f0f0', outline: 'none', boxSizing: 'border-box',
+              width: '100%', fontSize: 36, textAlign: 'center', letterSpacing: '0.55em',
+              padding: '16px', background: 'rgba(34,197,94,0.06)',
+              border: `2px solid ${pinErr ? '#ef4444' : 'rgba(34,197,94,0.45)'}`,
+              borderRadius: 12, color: '#bbf7d0', outline: 'none', boxSizing: 'border-box',
+              fontWeight: 700,
             }}
           />
-          {pinErr && <div style={{ color: '#ef4444', fontSize: 12, textAlign: 'center', marginTop: -10 }}>Incorrect PIN</div>}
-          <button onClick={onCancel} style={{ padding: '8px 24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, color: '#6b7280', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+          {pinErr && <div style={{ color: '#ef4444', fontSize: 12, textAlign: 'center', marginTop: -12 }}>Incorrect PIN</div>}
+          <button onClick={onCancel} style={{ padding: '9px 28px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, color: '#6b7280', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
         </div>
       </div>
     )
@@ -732,11 +759,39 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={mLbl}>Contract Price</label>
-            <input type="text" inputMode="decimal" value={contractPrice} onChange={e => setContractPrice(e.target.value)} placeholder="0" style={mInp} />
+            <input
+              type="text" inputMode="decimal"
+              value={contractPrice}
+              onChange={e => setContractPrice(e.target.value)}
+              onFocus={e => {
+                const raw = e.target.value.replace(/[^0-9.]/g, '')
+                setContractPrice(raw)
+              }}
+              onBlur={e => {
+                const n = parseFloat(e.target.value.replace(/[^0-9.]/g, ''))
+                if (!isNaN(n) && n > 0) setContractPrice('$' + Math.round(n).toLocaleString('en-US'))
+              }}
+              placeholder="$0"
+              style={mInp}
+            />
           </div>
           <div>
             <label style={mLbl}>Commission Rate %</label>
-            <input type="text" inputMode="decimal" value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="0" style={mInp} />
+            <input
+              type="text" inputMode="decimal"
+              value={commissionPct}
+              onChange={e => setCommissionPct(e.target.value)}
+              onFocus={e => {
+                const raw = e.target.value.replace(/[^0-9.]/g, '')
+                setCommissionPct(raw)
+              }}
+              onBlur={e => {
+                const n = parseFloat(e.target.value.replace(/[^0-9.]/g, ''))
+                if (!isNaN(n) && n > 0) setCommissionPct(n.toFixed(2) + '%')
+              }}
+              placeholder="0%"
+              style={mInp}
+            />
           </div>
         </div>
 
