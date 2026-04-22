@@ -346,11 +346,14 @@ export default function BattlePlanPanel() {
   const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'in_progress')
   const animatedCount = useCountUp(openTasks.length, 700)
 
-  // ── Collapse bar state ───────────────────────────────────────────────────
-  const [futureExpanded, setFutureExpanded] = useState(false)
+  // ── Bucket collapse state ────────────────────────────────────────────────
+  const [collapsedBuckets, setCollapsedBuckets] = useState<{ overdue: boolean; today: boolean; thisWeek: boolean; later: boolean; none: boolean }>({ overdue: false, today: false, thisWeek: true, later: true, none: true })
+  function toggleBucket(key: keyof typeof collapsedBuckets) {
+    setCollapsedBuckets(prev => ({ ...prev, [key]: !prev[key] }))
+  }
 
   return (
-    <div className="wr-card" style={{ padding: 0 }}>
+    <div className="wr-card" style={{ padding: 0, position: 'relative', paddingBottom: 80, background: 'linear-gradient(160deg, #0d1520 0%, #111827 60%, #0a1220 100%)', border: '1px solid rgba(139,92,246,0.15)' }}>
       {/* ── Panel Header — icon + title-case title ── */}
       <div style={{
         display: 'flex', alignItems: 'center',
@@ -379,32 +382,8 @@ export default function BattlePlanPanel() {
         <div style={{ flex: 1 }} />
       </div>
 
-      {/* ── Toolbar: + Add Item  |  sort dropdown — siblings, same height ── */}
+      {/* ── Toolbar: sort dropdown only (Add Item replaced by FAB) ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px', marginBottom: 12 }}>
-        {/* Shared style constants for sibling controls */}
-        {/* Both: height 30px, borderRadius 7px, same border/color, no glow on either */}
-        <button
-          onClick={() => setShowAddForm(true)}
-          style={{
-            height: 30, padding: '0 12px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 7,
-            color: 'rgba(255,255,255,0.7)',
-            fontSize: 12, fontWeight: 500,
-            fontFamily: 'var(--font-body)',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 5,
-            transition: 'border-color 0.15s, background 0.15s, color 0.15s',
-            whiteSpace: 'nowrap',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.9)' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}
-        >
-          <span style={{ fontSize: 15, lineHeight: 1, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>+</span>
-          Add Item
-        </button>
-
         <div style={{ flex: 1 }} />
 
         {/* Sort dropdown — identical visual treatment to Add Item */}
@@ -567,9 +546,15 @@ export default function BattlePlanPanel() {
             }
           }
 
-          // Split into urgent (overdue + today) vs future/no-deadline
-          const urgentTasks = sorted.filter(t => t.due_date && t.due_date <= today)
-          const futureTasks = sorted.filter(t => !t.due_date || t.due_date > today)
+          // 5-bucket grouping
+          const week7 = new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+          const buckets: { key: keyof typeof collapsedBuckets; label: string; color: string; tasks: BattlePlanTask[] }[] = [
+            { key: 'overdue',  label: 'Overdue',      color: '#ef4444',              tasks: sorted.filter(t => t.due_date && t.due_date < today) },
+            { key: 'today',    label: 'Today',        color: '#E8B84B',              tasks: sorted.filter(t => t.due_date === today) },
+            { key: 'thisWeek', label: 'This Week',    color: '#4F8EF7',              tasks: sorted.filter(t => t.due_date && t.due_date > today && t.due_date <= week7) },
+            { key: 'later',    label: 'Later',        color: 'rgba(255,255,255,0.35)', tasks: sorted.filter(t => t.due_date && t.due_date > week7) },
+            { key: 'none',     label: 'No Due Date',  color: 'rgba(255,255,255,0.2)', tasks: sorted.filter(t => !t.due_date) },
+          ]
 
           const renderRows = (taskList: BattlePlanTask[]) => taskList.map(task => (
             <TaskRow
@@ -598,7 +583,7 @@ export default function BattlePlanPanel() {
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {/* Row grid system — desktop 4-col, mobile single-col */}
               <style>{`
-                /* Row: accent-bar | checkbox | task+chip | spacer | date | priority | drag */
+                /* Row: checkbox | task+chip | spacer | date | priority | drag */
                 .bp-grid { display: flex; align-items: center; width: 100%; gap: 0; }
                 .bp-grid-task { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
                 .bp-grid-date { width: 90px; flex-shrink: 0; display: flex; justify-content: flex-end; }
@@ -613,52 +598,58 @@ export default function BattlePlanPanel() {
                 }
               `}</style>
 
-              {renderRows(urgentTasks)}
-
-              {/* ── "Show more" — last row of the list, same styling as task rows ── */}
-              {futureTasks.length > 0 && (
-                <button
-                  onClick={() => setFutureExpanded(e => !e)}
-                  style={{
-                    width: '100%',
-                    minHeight: 48,
-                    padding: '0 20px 0 40px', // left indent matches task text
-                    background: 'transparent',
-                    border: 'none',
-                    borderTop: '1px solid rgba(255,255,255,0.05)',
-                    color: 'var(--text-muted)',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    fontFamily: 'var(--font-body)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    textAlign: 'left',
-                    transition: 'color 0.15s, background 0.15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent' }}
-                >
-                  {futureExpanded ? 'Hide upcoming' : `Show ${futureTasks.length} more`}
-                  <span style={{ fontSize: 10, opacity: 0.5, marginLeft: 4 }}>
-                    {futureExpanded ? '▴' : '▾'}
-                  </span>
-                </button>
-              )}
-
-              {/* Future tasks — hidden unless expanded */}
-              {futureExpanded && (
-                <>
-                  <SectionDivider label="Upcoming" count={futureTasks.length} color="#4F8EF7" />
-                  {renderRows(futureTasks)}
-                </>
-              )}
+              {buckets.map(bucket => {
+                if (bucket.tasks.length === 0) return null
+                const isCollapsed = collapsedBuckets[bucket.key]
+                return (
+                  <div key={bucket.key}>
+                    <button
+                      onClick={() => toggleBucket(bucket.key)}
+                      style={{ display:'flex', alignItems:'center', gap:6, width:'100%', background:'none', border:'none', padding:'10px 0 5px 20px', cursor:'pointer' }}
+                    >
+                      <span style={{ fontSize:9, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase', color: bucket.color, fontFamily:'monospace' }}>
+                        {bucket.label} · {bucket.tasks.length}
+                      </span>
+                      <span style={{ fontSize:9, color:'rgba(255,255,255,0.2)', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition:'transform 0.18s ease', display:'inline-block' }}>▾</span>
+                    </button>
+                    {!isCollapsed && renderRows(bucket.tasks)}
+                  </div>
+                )
+              })}
             </div>
           )
         })()}
         </>
       )}
+
+      {/* ── FAB — Add action item ── */}
+      <button
+        onClick={() => setShowAddForm(true)}
+        style={{
+          position: 'absolute',
+          bottom: 16,
+          right: 16,
+          width: 52,
+          height: 52,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, rgba(139,92,246,0.85), rgba(109,40,217,0.95))',
+          border: '1px solid rgba(167,139,250,0.5)',
+          color: '#fff',
+          fontSize: 26,
+          fontWeight: 300,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 0 28px rgba(139,92,246,0.5), 0 4px 16px rgba(0,0,0,0.4)',
+          lineHeight: 1,
+          zIndex: 10,
+          flexShrink: 0,
+        }}
+        aria-label="Add action item"
+      >
+        +
+      </button>
 
       {/* ── Completion Modal ── */}
       {pendingComplete && typeof document !== 'undefined' && createPortal(
@@ -864,9 +855,6 @@ function TaskRow({
     setEditing(false)
   }
 
-  // Overdue accent: 3px left-edge bar, full row height, Apple-style
-  const accentBarColor = isOverdue ? '#ef4444' : isDueToday ? '#fb923c' : 'transparent'
-
   return (
     <div
       data-task-id={task.id}
@@ -885,22 +873,8 @@ function TaskRow({
         opacity: completing ? 0.3 : isDragging ? 0.35 : 1,
         transition: 'background 0.1s ease',
         position: 'relative',
-        // no marginBottom — overdue accent bars must be seamlessly flush row-to-row
       }}
     >
-      {/* Left accent bar — 4px solid, flush full row height */}
-      {/* Overdue bars pulse at 2s; today bars are static orange */}
-      <div
-        className={isOverdue ? 'overdue-bar-pulse' : undefined}
-        style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0,
-          width: 4,
-          background: accentBarColor,
-          borderRadius: 0,
-          transition: 'background 0.15s',
-          pointerEvents: 'none',
-        }}
-      />
 
       {/* Checkbox — custom 4px-radius, animated check on hover/complete */}
       <div style={{ padding: '0 10px 0 16px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
@@ -909,9 +883,9 @@ function TaskRow({
           onMouseEnter={() => setCircleHovered(true)}
           onMouseLeave={() => setCircleHovered(false)}
           style={{
-            width: 16, height: 16,
-            borderRadius: 4,  // tight corners — not circular, not square
-            border: `1.5px solid ${
+            width: 22, height: 22,
+            borderRadius: 11,  // full circle
+            border: `2px solid ${
               circleHovered
                 ? 'rgba(255,255,255,0.45)'
                 : 'rgba(255,255,255,0.15)'
@@ -921,7 +895,8 @@ function TaskRow({
               : 'transparent',
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'border-color 0.15s, background 0.15s',
+            transition: 'border-color 0.15s, background 0.15s, transform 0.12s',
+            transform: circleHovered ? 'scale(1.08)' : 'scale(1)',
             flexShrink: 0,
             padding: 0,
           }}
@@ -1028,7 +1003,7 @@ function TaskRow({
                 const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
                 const isOvd = task.due_date < todayStr
                 const isDT = task.due_date === todayStr
-                const color = isOvd ? '#ef4444' : isDT ? '#fb923c' : 'var(--text-muted)'
+                const color = isOvd ? '#ef4444' : isDT ? '#E8B84B' : 'rgba(255,255,255,0.3)'
                 const [, m2, d2] = task.due_date.split('-').map(Number)
                 const dt2 = new Date(parseInt(task.due_date.split('-')[0]), m2 - 1, d2)
                 const dow2 = dt2.toLocaleDateString('en-US', { weekday: 'short' })
@@ -1245,7 +1220,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
       <span style={{
         display: 'inline-flex', alignItems: 'center',
         fontSize: 13, fontWeight: 700,
-        color: 'rgba(139,92,246,0.75)', whiteSpace: 'nowrap', letterSpacing: '0.06em',
+        color: '#E8B84B', whiteSpace: 'nowrap', letterSpacing: '0.06em',
         textTransform: 'uppercase', fontFamily: 'monospace',
       }}>
         Today
@@ -1253,7 +1228,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
     )
   }
 
-  const color = '#4F8EF7'
+  const color = 'rgba(255,255,255,0.35)'
   return (
     <span
       title={value}
