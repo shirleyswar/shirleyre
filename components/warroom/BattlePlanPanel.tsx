@@ -347,7 +347,7 @@ export default function BattlePlanPanel() {
   const animatedCount = useCountUp(openTasks.length, 700)
 
   // ── Bucket collapse state ────────────────────────────────────────────────
-  const [collapsedBuckets, setCollapsedBuckets] = useState<{ overdue: boolean; today: boolean; thisWeek: boolean; later: boolean; none: boolean }>({ overdue: false, today: false, thisWeek: true, later: true, none: true })
+  const [collapsedBuckets, setCollapsedBuckets] = useState<{ overdue: boolean; today: boolean; thisWeek: boolean; later: boolean; none: boolean }>({ overdue: false, today: false, thisWeek: true, later: true, none: false })
   function toggleBucket(key: keyof typeof collapsedBuckets) {
     setCollapsedBuckets(prev => ({ ...prev, [key]: !prev[key] }))
   }
@@ -382,8 +382,27 @@ export default function BattlePlanPanel() {
         <div style={{ flex: 1 }} />
       </div>
 
-      {/* ── Toolbar: sort dropdown only (Add Item replaced by FAB) ── */}
+      {/* ── Toolbar: Add Item button + sort dropdown ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px', marginBottom: 12 }}>
+        {/* Add Item button — fallback for when FAB is not visible */}
+        <button
+          onClick={() => setShowAddForm(true)}
+          style={{
+            height: 30, padding: '0 12px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 7,
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: 12, fontWeight: 500,
+            fontFamily: 'var(--font-body)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 5,
+          }}
+        >
+          <span style={{ fontSize: 15, lineHeight: 1, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>+</span>
+          Add Item
+        </button>
+
         <div style={{ flex: 1 }} />
 
         {/* Sort dropdown — identical visual treatment to Add Item */}

@@ -326,7 +326,7 @@ export default function AccountsReceivablePanel() {
           {/* Outstanding FIRST on mobile (order:1) */}
           <div className="ar-stat-outstanding">
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.7)' : 'rgba(34,197,94,0.6)' }}>Outstanding</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: totalMsOutstanding > 0 ? '#C084FC' : '#22c55e', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, textShadow: totalMsOutstanding > 0 ? '0 0 20px rgba(192,132,252,0.5)' : '0 0 20px rgba(34,197,94,0.4)' }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: totalMsOutstanding > 0 ? '#C084FC' : '#22c55e', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, textShadow: totalMsOutstanding > 0 ? '0 0 20px rgba(192,132,252,0.45), 0 0 40px rgba(192,132,252,0.2)' : '0 0 20px rgba(34,197,94,0.4)' }}>
               {loading ? '—' : fmt(totalMsOutstanding)}
             </div>
             {totalMsPortionGross > 0 && (
