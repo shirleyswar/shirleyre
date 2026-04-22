@@ -446,17 +446,35 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
 
       {/* ShirleyCRE wordmark — violet with soft gold ambient glow */}
       <span style={{
-        fontSize: 17, fontWeight: 800,
-        color: '#C084FC',                                           /* violet primary */
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        fontFamily: 'var(--font-body)',
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
         flexShrink: 0,
-        /* Gold bloom behind violet type — soft ambient, not a halo */
-        textShadow: '0 0 28px rgba(232,184,75,0.22), 0 0 48px rgba(232,184,75,0.10)',
         marginLeft: 0,
       }}>
-        ShirleyCRE
+        {/* Radial glow orb behind the wordmark */}
+        <span style={{
+          position: 'absolute',
+          inset: '-12px -20px',
+          background: 'radial-gradient(ellipse at center, rgba(192,132,252,0.18) 0%, rgba(232,184,75,0.08) 50%, transparent 75%)',
+          borderRadius: '50%',
+          pointerEvents: 'none',
+          zIndex: 0,
+          filter: 'blur(6px)',
+        }} />
+        <span style={{
+          position: 'relative',
+          zIndex: 1,
+          fontSize: 17, fontWeight: 800,
+          color: '#C084FC',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          fontFamily: 'var(--font-body)',
+          /* Gold bloom behind violet type — soft ambient, not a halo */
+          textShadow: '0 0 28px rgba(232,184,75,0.28), 0 0 48px rgba(232,184,75,0.14), 0 0 14px rgba(192,132,252,0.35)',
+        }}>
+          ShirleyCRE
+        </span>
       </span>
 
       {/* Mobile: date hidden from header — keeps it as a thin single-line strip */}
@@ -1191,6 +1209,7 @@ function StarMark({ size = 20 }: { size?: number }) {
         mixBlendMode: 'lighten',
         borderRadius: '50%',         // soft mask keeps it from being a hard square
         objectFit: 'cover',
+        filter: 'drop-shadow(0 0 8px rgba(232,184,75,0.35))',
       }}
       aria-hidden="true"
     />

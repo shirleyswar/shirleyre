@@ -92,11 +92,12 @@ function getDaysColor(days: number, status: DeadlineStatus): string {
 interface DeadlineRowProps {
   deadline: ContractDeadline
   onSatisfy: (id: string) => void
+  onUndo: (id: string) => void
   onDelete: (id: string) => void
   onEdit: (deadline: ContractDeadline) => void
 }
 
-function DeadlineRow({ deadline, onSatisfy, onDelete, onEdit }: DeadlineRowProps) {
+function DeadlineRow({ deadline, onSatisfy, onUndo, onDelete, onEdit }: DeadlineRowProps) {
   const days = daysUntil(deadline.deadline_date)
   const satisfied = deadline.status === 'satisfied'
   const typeInfo = TYPE_COLORS[deadline.deadline_type]
@@ -204,6 +205,17 @@ function DeadlineRow({ deadline, onSatisfy, onDelete, onEdit }: DeadlineRowProps
             }}>
             ✓
           </button>
+        )}
+        {satisfied && (
+          <button
+            onClick={() => onUndo(deadline.id)}
+            title="Revert to Pending"
+            style={{
+              width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)',
+              borderRadius: 5, color: '#fbbf24', cursor: 'pointer', fontSize: 14, fontWeight: 700,
+            }}
+          >↩</button>
         )}
         <button
           onClick={() => onEdit(deadline)}
@@ -449,8 +461,9 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
     const n = ucDetails?.commission_pct ?? null
     return n ? n.toFixed(2) + '%' : ''
   })
-  const [coBrokerPct, setCoBrokerPct] = useState('0')
-  const [referralPct, setReferralPct] = useState('0')
+  const [coBrokerPct, setCoBrokerPct] = useState('0.00%')
+  const [referralPct, setReferralPct] = useState('0.00%')
+  const isDualRep = ucDetails?.dual_rep === true
   const [closeDate, setCloseDate] = useState(
     new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
   )
@@ -489,7 +502,7 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
   const cobPct = parseFloat(coBrokerPct.replace(/[^0-9.]/g, '')) || 0
   const refPct = parseFloat(referralPct.replace(/[^0-9.]/g, '')) || 0
   const totalGross = cpNum * (commPct / 100)
-  const netToMatthew = totalGross * (1 - cobPct / 100) * (1 - refPct / 100)
+  const netToMatthew = totalGross * (1 - cobPct / 100) * (1 - refPct / 100) * 0.75
 
   async function handlePinChange(v: string) {
     setPin(v)
@@ -583,7 +596,7 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
           .from('ar_items')
           .insert({
             deal_id: deal.id,
-            deal_type: 'Sale',
+            deal_type: 'sale',
             commission_amount: totalGross,
             sr_portion_amount: netToMatthew,
             status: 'collected',
@@ -617,7 +630,7 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
           .from('ar_items')
           .insert({
             deal_id: deal.id,
-            deal_type: 'Lease',
+            deal_type: 'lease',
             commission_amount: totalGross,
             sr_portion_amount: netToMatthew,
             status: 'receivable',
@@ -796,16 +809,46 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
         </div>
 
         {/* Co-broker + Referral */}
+        {!isDualRep && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={mLbl}>Co-Broker Split %</label>
-            <input type="text" inputMode="decimal" value={coBrokerPct} onChange={e => setCoBrokerPct(e.target.value)} placeholder="0" style={mInp} />
+            <input
+              type="text" inputMode="decimal"
+              value={coBrokerPct}
+              onChange={e => setCoBrokerPct(e.target.value)}
+              onFocus={e => {
+                const raw = e.target.value.replace(/[^0-9.]/g, '')
+                setCoBrokerPct(raw)
+              }}
+              onBlur={e => {
+                const n = parseFloat(e.target.value.replace(/[^0-9.]/g, ''))
+                setCoBrokerPct(!isNaN(n) ? n.toFixed(2) + '%' : '0.00%')
+              }}
+              placeholder="0.00%"
+              style={mInp}
+            />
           </div>
           <div>
             <label style={mLbl}>Referral %</label>
-            <input type="text" inputMode="decimal" value={referralPct} onChange={e => setReferralPct(e.target.value)} placeholder="0" style={mInp} />
+            <input
+              type="text" inputMode="decimal"
+              value={referralPct}
+              onChange={e => setReferralPct(e.target.value)}
+              onFocus={e => {
+                const raw = e.target.value.replace(/[^0-9.]/g, '')
+                setReferralPct(raw)
+              }}
+              onBlur={e => {
+                const n = parseFloat(e.target.value.replace(/[^0-9.]/g, ''))
+                setReferralPct(!isNaN(n) ? n.toFixed(2) + '%' : '0.00%')
+              }}
+              placeholder="0.00%"
+              style={mInp}
+            />
           </div>
         </div>
+        )}
 
         {/* Net Commission hero */}
         <div style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 10, padding: '14px 18px', textAlign: 'center' }}>
@@ -953,6 +996,17 @@ function DealSubpanel({ deal, onDeadlinesChange }: DealSubpanelProps) {
     } catch {}
   }
 
+  async function handleUndo(id: string) {
+    try {
+      await supabase
+        .from('contract_deadlines')
+        .update({ status: 'pending', updated_at: new Date().toISOString() })
+        .eq('id', id)
+      setDeadlines(prev => prev.map(d => d.id === id ? { ...d, status: 'pending' as DeadlineStatus } : d))
+      onDeadlinesChange(deal.id, deadlines.map(d => d.id === id ? { ...d, status: 'pending' as DeadlineStatus } : d))
+    } catch {}
+  }
+
   async function handleDelete(id: string) {
     try {
       await supabase.from('contract_deadlines').delete().eq('id', id)
@@ -1049,6 +1103,7 @@ function DealSubpanel({ deal, onDeadlinesChange }: DealSubpanelProps) {
                 key={d.id}
                 deadline={d}
                 onSatisfy={handleSatisfy}
+                onUndo={handleUndo}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
               />
@@ -1318,6 +1373,7 @@ interface UCDetails {
   lease_rate: number | null
   lease_rate_unit: string | null
   lease_term_months: number | null
+  dual_rep: boolean | null
 }
 
 export default function UnderContractPanel() {
@@ -1349,7 +1405,7 @@ export default function UnderContractPanel() {
 
             const { data: ucData } = await supabase
               .from('uc_details')
-              .select('deal_id,deal_category,contract_price,commission_pct,commission_amount,lease_rate,lease_rate_unit,lease_term_months')
+              .select('deal_id,deal_category,contract_price,commission_pct,commission_amount,lease_rate,lease_rate_unit,lease_term_months,dual_rep')
               .in('deal_id', ids)
             if (ucData) {
               const map: Record<string, UCDetails> = {}
@@ -1394,7 +1450,7 @@ export default function UnderContractPanel() {
   }, [])
 
   return (
-    <div className="wr-card">
+    <div className="wr-card" style={{ boxShadow: '0 0 0 1px rgba(45,212,191,0.08), 0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(45,212,191,0.04)' }}>
       {/* Panel header */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 0', marginBottom: 12 }}>
         <span style={{ color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', marginRight: 8 }}>

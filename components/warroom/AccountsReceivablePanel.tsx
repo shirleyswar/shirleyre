@@ -51,6 +51,19 @@ function fmt(n: number | null | undefined): string {
   return '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+function dealTypeLabel(deal_type: string | null): string {
+  if (!deal_type) return 'Collected'
+  const map: Record<string, string> = {
+    sale: 'Sale',
+    nnn_lease: 'NNN Lease',
+    full_service_lease: 'Full Serv.',
+    modified_gross_lease: 'Mod. Gross',
+    gross_lease: 'Gross Lease',
+    lease: 'Lease',
+  }
+  return map[deal_type] ?? deal_type.replace(/_/g, ' ')
+}
+
 // MS Portion balance = sr_portion_amount - payments logged
 function msBal(item: ArItem): number {
   const ms = item.sr_portion_amount ?? 0
@@ -136,9 +149,14 @@ export default function AccountsReceivablePanel() {
   }
 
   // ── Log partial payment ────────────────────────────────────────────────────
-  function openPayModal(item: ArItem) {
+  function openPayModal(item: ArItem, prefilledAmount?: string) {
     setPayModal(item)
-    setPayAmount('')
+    if (prefilledAmount) {
+      const n = parseFloat(prefilledAmount)
+      setPayAmount(!isNaN(n) && n > 0 ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '')
+    } else {
+      setPayAmount('')
+    }
     setPayDate(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }))
     setPayNote('')
     setPayPin('')
@@ -308,7 +326,7 @@ export default function AccountsReceivablePanel() {
           {/* Outstanding FIRST on mobile (order:1) */}
           <div className="ar-stat-outstanding">
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: totalMsOutstanding > 0 ? 'rgba(192,132,252,0.7)' : 'rgba(34,197,94,0.6)' }}>Outstanding</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: totalMsOutstanding > 0 ? '#C084FC' : '#22c55e', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: totalMsOutstanding > 0 ? '#C084FC' : '#22c55e', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, textShadow: totalMsOutstanding > 0 ? '0 0 20px rgba(192,132,252,0.5)' : '0 0 20px rgba(34,197,94,0.4)' }}>
               {loading ? '—' : fmt(totalMsOutstanding)}
             </div>
             {totalMsPortionGross > 0 && (
@@ -326,13 +344,13 @@ export default function AccountsReceivablePanel() {
           <div className="ar-stat-deals">
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>Deals</div>
             <div style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.45)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, minWidth: 28 }}>
-              {loading ? '—' : String(receivable.length)}
+              {loading ? '—' : String(items.length)}
             </div>
           </div>
           {/* Gross */}
           <div className="ar-stat-gross">
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>Gross</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#F0F2FF', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, textShadow: '0 0 16px rgba(255,255,255,0.12)' }}>
               {loading ? '—' : fmt(totalMsPortionGross)}
             </div>
           </div>
@@ -423,6 +441,7 @@ export default function AccountsReceivablePanel() {
                         {!isCollected && (
                           <>
                             <button onClick={() => openPayModal(item)} style={{ flex: 1, padding: '4px 6px', fontSize: 10, fontWeight: 800, background: 'rgba(167,139,250,0.22)', border: '1.5px solid rgba(167,139,250,0.6)', borderRadius: 5, color: '#c4b5fd', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit', letterSpacing: '0.03em' }}>+ Pay</button>
+                            <button onClick={() => openPayModal(item, String((msTotal * 0.5).toFixed(2)))} style={{ flex: 1, padding: '4px 6px', fontSize: 10, fontWeight: 800, background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 5, color: '#a78bfa', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit', letterSpacing: '0.03em' }}>50%</button>
                             <button onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }} style={{ flex: 1, padding: '4px 6px', fontSize: 10, fontWeight: 800, background: 'transparent', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 5, color: '#4ade80', cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'uppercase', fontFamily: 'inherit', letterSpacing: '0.03em' }}>Full ✓</button>
                           </>
                         )}
@@ -430,7 +449,7 @@ export default function AccountsReceivablePanel() {
                       {/* Col 4: Collected */}
                       <div style={{ textAlign: 'right', fontSize: 15, fontWeight: 700, color: msPaid > 0 ? '#22c55e' : 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', padding: '0 8px' }}>{fmt(msPaid)}</div>
                       {/* Col 5: Outstanding */}
-                      <div style={{ textAlign: 'right', fontSize: 15, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', letterSpacing: '-0.01em', padding: '0 0 0 8px' }}>{isCollected ? '✓ Done' : fmt(msBalance)}</div>
+                      <div style={{ textAlign: 'right', fontSize: 15, fontWeight: 800, color: isCollected ? '#22c55e' : '#C084FC', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', letterSpacing: '-0.01em', padding: '0 0 0 8px' }}>{isCollected ? `✓ ${dealTypeLabel(item.deal_type)}` : fmt(msBalance)}</div>
                     </div>
 
                     {/* ── Mobile card ── */}
@@ -441,7 +460,7 @@ export default function AccountsReceivablePanel() {
                         onClick={() => setExpandedId(isExpanded ? null : item.id)}
                       >
                         <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#F0F2FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addressLabel}</div>
-                        <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 700, flexShrink: 0, letterSpacing: '0.04em' }}>✓ Done</span>
+                        <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 700, flexShrink: 0, letterSpacing: '0.04em' }}>✓ {dealTypeLabel(item.deal_type)}</span>
                         <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 700, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{fmt(msPaid)}</span>
                       </div>
                     ) : (
@@ -482,6 +501,7 @@ export default function AccountsReceivablePanel() {
                       {/* Action buttons */}
                       <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
                         <button onClick={() => openPayModal(item)} style={{ flex: 1, padding: '9px', fontSize: 12, fontWeight: 800, background: 'rgba(167,139,250,0.22)', border: '1.5px solid rgba(167,139,250,0.6)', borderRadius: 7, color: '#c4b5fd', cursor: 'pointer', textTransform: 'uppercase', fontFamily: 'inherit', letterSpacing: '0.05em' }}>+ Pay</button>
+                        <button onClick={() => openPayModal(item, String((msTotal * 0.5).toFixed(2)))} style={{ flex: 1, padding: '9px', fontSize: 12, fontWeight: 800, background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 7, color: '#a78bfa', cursor: 'pointer', textTransform: 'uppercase', fontFamily: 'inherit', letterSpacing: '0.05em' }}>50%</button>
                         <button onClick={() => { setCollectModal(item.id); setCollectPin(''); setCollectPinErr(false) }} style={{ flex: 1, padding: '9px', fontSize: 12, fontWeight: 800, background: 'transparent', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 7, color: '#4ade80', cursor: 'pointer', textTransform: 'uppercase', fontFamily: 'inherit', letterSpacing: '0.05em' }}>Full ✓</button>
                       </div>
                     </div>
@@ -521,13 +541,44 @@ export default function AccountsReceivablePanel() {
         )}
       </div>
 
-      {/* ── Log Payment Modal ── */}
+      {/* ── Log Payment Modal (bottom sheet) ── */}
       {payModal !== null && typeof document !== 'undefined' && createPortal(
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={() => setPayModal(null)}
-        >
-          <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(167,139,250,0.4)', borderRadius: 14, padding: 28, width: '90vw', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <>
+          <style>{`
+            @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+            .pay-sheet { animation: slideUp 0.22s cubic-bezier(0.32, 0.72, 0, 1); }
+          `}</style>
+          {/* Backdrop */}
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.6)' }}
+            onClick={() => { setPayModal(null); setPayPinStep(false) }}
+          />
+          {/* Sheet */}
+          <div
+            className="pay-sheet"
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 9999,
+              background: '#13112A',
+              border: '1px solid rgba(167,139,250,0.4)',
+              borderRadius: '20px 20px 0 0',
+              padding: '0 24px 24px',
+              paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14,
+            }}
+          >
+            {/* Drag handle */}
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+              <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+            </div>
+
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)', fontFamily: 'monospace' }}>Log Payment</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#F0F2FF' }}>{payModal.deals?.name ?? '—'}</div>
             <div style={{ fontSize: 11, color: '#6b7280' }}>
@@ -543,9 +594,25 @@ export default function AccountsReceivablePanel() {
                     type="text"
                     inputMode="decimal"
                     value={payAmount}
-                    onChange={e => setPayAmount(e.target.value)}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/[^0-9.]/g, '')
+                      if (raw === '' || raw === '.') { setPayAmount(raw); return }
+                      const parts = raw.split('.')
+                      const intPart = parseInt(parts[0] || '0', 10)
+                      const formatted = '$' + intPart.toLocaleString('en-US') + (parts.length > 1 ? '.' + parts[1].slice(0, 2) : '')
+                      setPayAmount(formatted)
+                    }}
+                    onFocus={e => {
+                      const raw = e.target.value.replace(/[^0-9.]/g, '')
+                      setPayAmount(raw)
+                    }}
+                    onBlur={e => {
+                      const n = parseFloat(e.target.value.replace(/[^0-9.]/g, ''))
+                      if (!isNaN(n) && n > 0) setPayAmount('$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+                      else setPayAmount('')
+                    }}
                     placeholder="$0.00"
-                    style={inp}
+                    style={{ ...inp, fontSize: 22, fontWeight: 700, textAlign: 'center' }}
                   />
                 </div>
                 <div>
@@ -556,8 +623,8 @@ export default function AccountsReceivablePanel() {
                   <div style={lbl}>Note (optional)</div>
                   <input type="text" value={payNote} onChange={e => setPayNote(e.target.value)} placeholder="Check #, wire ref..." style={inp} />
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setPayModal(null)} style={cancelBtn}>Cancel</button>
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button onClick={() => { setPayModal(null); setPayPinStep(false) }} style={cancelBtn}>Cancel</button>
                   <button
                     onClick={() => { if (payAmount) setPayPinStep(true) }}
                     disabled={!payAmount.trim()}
@@ -583,14 +650,14 @@ export default function AccountsReceivablePanel() {
                     if (v.length === 4) submitPayment()
                   }}
                   placeholder="· · · ·"
-                  style={{ width: '100%', fontSize: 28, textAlign: 'center', letterSpacing: '0.4em', padding: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${payPinErr ? '#ef4444' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', fontSize: 28, textAlign: 'center', letterSpacing: '0.4em', padding: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${payPinErr ? '#ef4444' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', boxSizing: 'border-box' as any }}
                 />
                 {payPinErr && <div style={{ color: '#ef4444', fontSize: 11, textAlign: 'center' }}>Incorrect PIN</div>}
                 <button onClick={() => setPayPinStep(false)} style={cancelBtn}>← Back</button>
               </>
             )}
           </div>
-        </div>,
+        </>,
         document.body
       )}
 

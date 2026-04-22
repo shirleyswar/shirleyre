@@ -3965,20 +3965,32 @@ function DealDashboardInner() {
 
     {/* UC Dialog */}
     {showUCDialog && deal && typeof document !== 'undefined' && createPortal(
+      <>
+      <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
       <div style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         background: 'rgba(0,0,0,0.82)',
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-        paddingTop: '8vh', paddingBottom: '6vh', overflowY: 'auto',
       }} onClick={() => setShowUCDialog(false)}>
         <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
           background: '#1A1E25',
           border: '1px solid rgba(45,212,191,0.35)',
-          borderRadius: 14,
-          padding: '24px 28px',
-          width: '90vw', maxWidth: 480,
+          borderRadius: '20px 20px 0 0',
+          padding: '0 28px 28px',
+          paddingBottom: 'max(28px, env(safe-area-inset-bottom, 28px))',
+          maxHeight: '90vh',
+          overflowY: 'auto',
           display: 'flex', flexDirection: 'column', gap: 14,
+          animation: 'slideUp 0.22s cubic-bezier(0.32,0.72,0,1)',
         }} onClick={e => e.stopPropagation()}>
+
+          {/* Drag handle */}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+          </div>
 
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -4240,7 +4252,8 @@ function DealDashboardInner() {
             )
           })()}
         </div>
-      </div>,
+      </div>
+      </>,
       document.body
     )}
     </>
