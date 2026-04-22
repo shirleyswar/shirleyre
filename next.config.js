@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// cache-bust: 2026-04-22
 const nextConfig = {
   // Cloudflare Pages compatibility
   output: 'export',
