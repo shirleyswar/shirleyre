@@ -472,21 +472,15 @@ export default function BattlePlanPanel() {
                 ))}
               </datalist>
             </div>
-            {/* Priority + Deadline row */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Priority</div>
-                <BpStarPicker value={newBpPriority} onChange={setNewBpPriority} />
-              </div>
-              <div>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Deadline</div>
-                <input
-                  type="date"
-                  value={newDueDate}
-                  onChange={e => setNewDueDate(e.target.value)}
-                  style={{ fontSize: 12, padding: '6px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
-                />
-              </div>
+            {/* Deadline */}
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Deadline</div>
+              <input
+                type="date"
+                value={newDueDate}
+                onChange={e => setNewDueDate(e.target.value)}
+                style={{ fontSize: 12, padding: '6px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+              />
             </div>
             <div style={{ display: 'flex', gap: 20 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: addToLife ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: addToLife ? 700 : 400 }}>
@@ -602,16 +596,14 @@ export default function BattlePlanPanel() {
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {/* Row grid system — desktop 4-col, mobile single-col */}
               <style>{`
-                /* Row: checkbox | task+chip | spacer | date | priority | drag */
+                /* Row: checkbox | task+chip | date | drag */
                 .bp-grid { display: flex; align-items: center; width: 100%; gap: 0; }
                 .bp-grid-task { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
                 .bp-grid-date { width: 90px; flex-shrink: 0; display: flex; justify-content: flex-end; }
-                .bp-grid-priority { width: 72px; flex-shrink: 0; display: flex; justify-content: center; }
                 .bp-col-id { display: flex; align-items: center; }
-                /* Mobile: hide date col, priority col, and assignee chips — let titles breathe */
+                /* Mobile: hide date col and assignee chips — let titles breathe */
                 @media (max-width: 640px) {
                   .bp-grid-date { display: none; }
-                  .bp-grid-priority { display: none; }
                   .bp-col-id { display: none; }
                   .bp-chip-hide-mobile { display: none !important; }
                 }
@@ -1048,16 +1040,7 @@ function TaskRow({
               />
             </div>
 
-            {/* Desktop: priority stars */}
-            <div className="bp-grid-priority">
-              <BpStarPicker
-                value={task.bp_priority ?? null}
-                onChange={async (v) => {
-                  await supabase.from('tasks').update({ bp_priority: v } as Record<string, unknown>).eq('id', task.id)
-                  onUpdate({ bp_priority: v })
-                }}
-              />
-            </div>
+
           </div>
         )}
       </div>
@@ -1102,28 +1085,7 @@ function FamilyIcon({ active }: { active: boolean }) {
   )
 }
 
-// ─── BP Star Picker ──────────────────────────────────────────────────────────
-function BpStarPicker({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
-  const [hover, setHover] = useState<number | null>(null)
-  const display = hover ?? value ?? 0
-  return (
-    <div style={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
-      {[1, 2, 3, 4, 5].map(i => (
-        <span
-          key={i}
-          onMouseEnter={() => setHover(i)}
-          onMouseLeave={() => setHover(null)}
-          onClick={() => onChange(value === i ? null : i)}
-          style={{
-            fontSize: 14, cursor: 'pointer',
-            color: i <= display ? '#E8B84B' : 'rgba(255,255,255,0.15)',
-            lineHeight: 1, transition: 'color 0.1s', userSelect: 'none',
-          }}
-        >★</span>
-      ))}
-    </div>
-  )
-}
+
 
 // ─── Contact Badge — colored by matched deal status ───────────────────────────
 const BP_STATUS_BADGE_COLORS: Record<string, { bg: string; border: string; color: string }> = {
