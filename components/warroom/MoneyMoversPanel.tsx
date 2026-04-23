@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase, Deal } from '@/lib/supabase'
 
 function formatCurrency(n: number) {
@@ -9,37 +9,16 @@ function formatCurrency(n: number) {
   return `$${n.toFixed(0)}`
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pipeline: 'badge-pipeline',
-  active: 'badge-active',
-  under_contract: 'badge-contract',
-  pending_payment: 'badge-pending',
-}
-
-// Generates deterministic atmospheric sparkline points from a seed number
-function generateSparkline(seed: number, count = 12): number[] {
-  const pts: number[] = []
-  let val = 40 + (seed % 30)
-  for (let i = 0; i < count; i++) {
-    val += ((seed * (i + 1) * 7919) % 21) - 9
-    val = Math.max(10, Math.min(90, val))
-    pts.push(val)
+function autoSuggestAction(status: string): string {
+  switch (status) {
+    case 'pipeline': return 'Initial outreach pending'
+    case 'active': return 'Agreement in place — schedule follow-up'
+    case 'in_review': return 'Review in progress'
+    case 'hot': return 'High priority — needs immediate attention'
+    case 'under_contract': return 'Under contract — track deadlines'
+    case 'pending_payment': return 'Commission collection pending'
+    default: return 'Follow up needed'
   }
-  return pts
-}
-
-// Converts a value array to SVG path string (area + line)
-function buildSparkPaths(values: number[], w: number, h: number) {
-  const max = Math.max(...values)
-  const min = Math.min(...values)
-  const range = max - min || 1
-  const pts = values.map((v, i) => ({
-    x: (i / (values.length - 1)) * w,
-    y: h - ((v - min) / range) * (h * 0.85) - h * 0.05,
-  }))
-  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
-  const areaPath = `${linePath} L${w},${h} L0,${h} Z`
-  return { linePath, areaPath, pts }
 }
 
 export default function MoneyMoversPanel() {
@@ -49,24 +28,16 @@ export default function MoneyMoversPanel() {
   useEffect(() => {
     async function fetchDeals() {
       try {
-        // Flagged money movers first, then top commission deals
-        const [flaggedRes, topRes] = await Promise.all([
-          supabase.from('deals').select('*').eq('is_money_mover', true)
-            .not('status', 'in', '("closed","dead","expired","dormant","terminated")'),
-          supabase.from('deals').select('*')
-            .not('status', 'in', '("closed","dead","expired","dormant","terminated")')
-            .not('commission_estimated', 'is', null)
-            .order('commission_estimated', { ascending: false })
-            .limit(8),
-        ])
-        const flagged: Deal[] = (flaggedRes.data ?? []) as Deal[]
-        const top: Deal[] = (topRes.data ?? []) as Deal[]
-        // Merge: flagged first, then top by commission, dedupe, max 6
-        const flaggedIds = new Set(flagged.map((d: Deal) => d.id))
-        const merged = [...flagged, ...top.filter((d: Deal) => !flaggedIds.has(d.id))].slice(0, 6)
-        setDeals(merged)
+        const { data } = await supabase
+          .from('deals')
+          .select('*')
+          .eq('is_money_mover', true)
+          .not('status', 'in', '("closed","dead","expired","dormant","terminated")')
+          .order('commission_estimated', { ascending: false })
+          .limit(10)
+        setDeals((data ?? []) as Deal[])
       } catch {
-        setDeals(PLACEHOLDER_DEALS)
+        setDeals([])
       } finally {
         setLoading(false)
       }
@@ -74,172 +45,149 @@ export default function MoneyMoversPanel() {
     fetchDeals()
   }, [])
 
-  const total = deals.reduce((s, d) => s + (d.commission_estimated || 0), 0)
-
   return (
-    <div className="wr-card h-full min-h-[240px]">
-      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 0', marginBottom: 12 }}>
-        <span style={{ color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', marginRight: 8 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <div className="wr-card h-full min-h-[200px]">
+      {/* T1 Header */}
+      <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
+        <span style={{ color: '#E8B84B', display: 'flex', alignItems: 'center' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="1" x2="12" y2="23"/>
             <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
           </svg>
         </span>
-        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', letterSpacing: '-0.01em' }}>
-          Money Movers
+        <span className="wr-rank1" style={{ color: '#E8B84B' }}>Money Movers</span>
+        <div className="wr-panel-line" />
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(232,184,75,0.6)', fontVariantNumeric: 'tabular-nums' }}>
+          {loading ? '—' : deals.length}
         </span>
-        <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-          {deals.length}
-        </span>
-        <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>deals needing action</span>
-        <div style={{ flex: 1 }} />
       </div>
 
       {loading ? (
         <SkeletonList />
       ) : deals.length === 0 ? (
         <div className="wr-empty">
-          <div className="wr-empty-text">Pipeline clear.</div>
+          <div className="wr-empty-text">No flagged money movers.</div>
           <div className="wr-empty-line" />
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {deals.map((deal, i) => (
-            <DealRow key={deal.id} deal={deal} rank={i + 1} />
-          ))}
-        </div>
+        <>
+          {/* Desktop table — hidden on mobile */}
+          <div className="hidden sm:block" style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(232,184,75,0.15)' }}>
+                  {['Address', 'Next Action', 'Value', 'Commission'].map(col => (
+                    <th key={col} style={{
+                      padding: '6px 12px', fontSize: 10, fontWeight: 700,
+                      letterSpacing: '0.12em', textTransform: 'uppercase',
+                      color: 'rgba(255,255,255,0.3)', textAlign: col === 'Address' || col === 'Next Action' ? 'left' : 'right',
+                      whiteSpace: 'nowrap',
+                    }}>{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {deals.map(deal => (
+                  <DesktopDealRow key={deal.id} deal={deal} onUpdate={updated => setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile list — hidden on desktop */}
+          <div className="sm:hidden" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {deals.map(deal => (
+              <MobileDealRow key={deal.id} deal={deal} onUpdate={updated => setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
 }
 
-function DealRow({ deal, rank }: { deal: Deal; rank: number }) {
-  // Generate a sparkline seeded from deal id
-  const seed = deal.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) + (deal.commission_estimated || 1)
-  const sparkValues = generateSparkline(seed)
-  const sparkId = `spark-mm-${deal.id}`
-  const W = 64, H = 28
-  const { linePath, areaPath } = buildSparkPaths(sparkValues, W, H)
+function DesktopDealRow({ deal, onUpdate }: { deal: Deal; onUpdate: (d: Deal) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const displayAction = (deal as any).next_action || autoSuggestAction(deal.status)
+  const isCustom = !!(deal as any).next_action
+
+  function startEdit() {
+    setDraft((deal as any).next_action || '')
+    setEditing(true)
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }
+
+  async function saveAction() {
+    const val = draft.trim() || null
+    try {
+      await supabase.from('deals').update({ next_action: val } as Record<string, unknown>).eq('id', deal.id)
+      onUpdate({ ...deal, next_action: val } as Deal)
+    } catch {}
+    setEditing(false)
+  }
+
+  const addr = (deal as any).addr_display || deal.address || deal.name || '—'
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '8px 10px',
-        background: 'var(--bg-nested)',
-        borderRadius: 8,
-        border: '1px solid rgba(255,255,255,0.05)',
-        transition: 'border-color 0.15s, box-shadow 0.15s',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'
-        e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.3)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
-        e.currentTarget.style.boxShadow = 'none'
-      }}
+    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+      onMouseLeave={e => (e.currentTarget.style.background = '')}
     >
-      {/* Rank */}
-      <span style={{
-        width: 20, height: 20,
-        borderRadius: '50%',
-        background: rank === 1 ? 'rgba(232,184,75,0.18)' : 'rgba(255,255,255,0.04)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 10, fontWeight: 700,
-        color: rank === 1 ? 'var(--accent-gold)' : 'var(--text-muted)',
-        flexShrink: 0,
-        border: rank === 1 ? '1px solid rgba(232,184,75,0.25)' : 'none',
-      }}>
-        {rank}
-      </span>
-
-      {/* Deal name + type */}
-      <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
-        <div className="wr-address" style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4 }}>
-          {(deal as any).is_money_mover && <span style={{ fontSize: 11, flexShrink: 0 }}>💰</span>}
-          {deal.name}
-        </div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, textTransform: 'capitalize' }}>
-          {deal.type.replace(/_/g, ' ')}
-        </div>
-        {deal.created_at && (
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
-            {(() => {
-              const d = Math.floor((Date.now() - new Date(deal.created_at).getTime()) / 86400000)
-              return d === 0 ? 'added today' : `${d}d in pipeline`
-            })()}
+      {/* Address */}
+      <td style={{ padding: '10px 12px', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', whiteSpace: 'nowrap', maxWidth: 220 }}>
+        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, textTransform: 'capitalize' }}>{deal.status.replace(/_/g, ' ')}</div>
+      </td>
+      {/* Next Action — editable */}
+      <td style={{ padding: '10px 12px', maxWidth: 260 }} onClick={startEdit}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={saveAction}
+            onKeyDown={e => { if (e.key === 'Enter') saveAction(); if (e.key === 'Escape') setEditing(false) }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+          />
+        ) : (
+          <div style={{ fontSize: 12, color: isCustom ? '#F0F2FF' : 'var(--text-muted)', cursor: 'pointer', fontStyle: isCustom ? 'normal' : 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            title="Click to set custom action"
+          >
+            {displayAction}
           </div>
         )}
-      </div>
-
-      {/* Sparkline — atmospheric area chart */}
-      <svg
-        width={W} height={H}
-        viewBox={`0 0 ${W} ${H}`}
-        style={{ flexShrink: 0, overflow: 'visible' }}
-        aria-hidden="true"
-      >
-        <defs>
-          <linearGradient id={sparkId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#4F8EF7" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#4F8EF7" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={areaPath} fill={`url(#${sparkId})`} />
-        <path d={linePath} fill="none" stroke="#4F8EF7" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-
+      </td>
+      {/* Value */}
+      <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 13, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>
+        {deal.value ? formatCurrency(deal.value) : '—'}
+      </td>
       {/* Commission */}
-      <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 60 }}>
-        <div style={{
-          fontSize: 13, fontWeight: 700,
-          color: 'var(--accent-gold)',
-          fontVariantNumeric: 'tabular-nums',
-          letterSpacing: '-0.01em',
-        }}>
-          {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
-        </div>
-        <span className={`badge ${STATUS_COLORS[deal.status] || 'badge-pipeline'}`}>
-          {deal.status.replace(/_/g, ' ')}
-        </span>
-      </div>
-    </div>
+      <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#E8B84B', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+        {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
+      </td>
+    </tr>
   )
 }
 
-const PLACEHOLDER_DEALS: Deal[] = [
-  {
-    id: 'p1', name: 'Edinburgh Ave. N. 1873', address: null,
-    type: 'listing', status: 'under_contract', tier: 'filed',
-    value: 1200000, commission_rate: 0.06, commission_estimated: 72000, commission_collected: 0,
-    deal_source: null, notes: null, dropbox_link: null, parent_deal_id: null,
-    created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'p2', name: 'French Truck Coffee — BR', address: null,
-    type: 'tenant_rep', status: 'active', tier: 'tracked',
-    value: 800000, commission_rate: 0.04, commission_estimated: 32000, commission_collected: 0,
-    deal_source: null, notes: null, dropbox_link: null, parent_deal_id: null,
-    created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-  },
-]
+function MobileDealRow({ deal, onUpdate }: { deal: Deal; onUpdate: (d: Deal) => void }) {
+  const displayAction = (deal as any).next_action || autoSuggestAction(deal.status)
+  const isCustom = !!(deal as any).next_action
+  const addr = (deal as any).addr_display || deal.address || deal.name || '—'
+
+  return (
+    <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.3 }}>{addr}</div>
+      <div style={{ fontSize: 12, color: isCustom ? 'rgba(255,255,255,0.5)' : 'var(--text-muted)', fontStyle: isCustom ? 'normal' : 'italic' }}>{displayAction}</div>
+    </div>
+  )
+}
 
 function SkeletonList() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 20px 16px' }}>
       {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 44 }} />)}
     </div>
-  )
-}
-
-function RocketIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/>
-      <path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/>
-    </svg>
   )
 }

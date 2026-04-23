@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
 
 interface ScheduleEvent {
@@ -44,6 +45,7 @@ function formatTime(time: string | null): string {
 export default function Next48Panel() {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAddModal, setShowAddModal] = useState(false)
 
   useEffect(() => { fetchEvents() }, [])
 
@@ -137,7 +139,7 @@ export default function Next48Panel() {
                       cursor: 'pointer',
                       fontFamily: 'var(--font-body)',
                     }}
-                    onClick={() => {/* scroll to schedule panel */}}
+                    onClick={() => setShowAddModal(true)}
                   >
                     + Add Event
                   </button>
@@ -160,6 +162,30 @@ export default function Next48Panel() {
           </div>
         )}
       </div>
+      {showAddModal && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowAddModal(false) }}
+        >
+          <AddEventModal
+            defaultDate={todayCST()}
+            onSave={async (ev) => {
+              try {
+                await supabase.from('schedule_events').insert({
+                  title: ev.title,
+                  date: ev.date,
+                  time: ev.time || null,
+                  location: ev.location || null,
+                })
+                await fetchEvents()
+              } catch {}
+              setShowAddModal(false)
+            }}
+            onClose={() => setShowAddModal(false)}
+          />
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
@@ -244,6 +270,53 @@ function EventCard({ event, featured }: { event: ScheduleEvent; featured: boolea
           {timeStr}
         </div>
       )}
+    </div>
+  )
+}
+
+function AddEventModal({ defaultDate, onSave, onClose }: {
+  defaultDate: string
+  onSave: (ev: { title: string; date: string; time: string; location: string }) => Promise<void>
+  onClose: () => void
+}) {
+  const [title, setTitle] = useState('')
+  const [date, setDate] = useState(defaultDate)
+  const [time, setTime] = useState('')
+  const [location, setLocation] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    if (!title.trim()) return
+    setSaving(true)
+    await onSave({ title: title.trim(), date, time, location })
+    setSaving(false)
+  }
+
+  return (
+    <div style={{ background: '#13112A', border: '1px solid rgba(79,142,247,0.35)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(79,142,247,0.6)', fontFamily: 'var(--font-body)' }}>
+        Add Event
+      </div>
+      <input autoFocus type="text" value={title} onChange={e => setTitle(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && title.trim()) handleSave(); if (e.key === 'Escape') onClose() }}
+        placeholder="Event title *"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }} />
+      <div style={{ display: 'flex', gap: 10 }}>
+        <input type="date" value={date} onChange={e => setDate(e.target.value)}
+          style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' as React.CSSProperties['colorScheme'] }} />
+        <input type="time" value={time} onChange={e => setTime(e.target.value)}
+          style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' as React.CSSProperties['colorScheme'] }} />
+      </div>
+      <input type="text" value={location} onChange={e => setLocation(e.target.value)}
+        placeholder="Location (optional)"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={onClose} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Cancel</button>
+        <button onClick={handleSave} disabled={saving || !title.trim()}
+          style={{ flex: 2, padding: '11px', background: saving || !title.trim() ? 'rgba(79,142,247,0.1)' : 'rgba(79,142,247,0.2)', border: '1px solid rgba(79,142,247,0.5)', borderRadius: 8, color: '#4F8EF7', fontSize: 14, fontWeight: 700, cursor: saving || !title.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: saving || !title.trim() ? 0.5 : 1 }}>
+          {saving ? 'Saving...' : 'Add Event'}
+        </button>
+      </div>
     </div>
   )
 }

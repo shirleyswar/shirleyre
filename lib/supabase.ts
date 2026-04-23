@@ -29,6 +29,8 @@ export interface Deal {
   notes: string | null
   dropbox_link: string | null
   parent_deal_id: string | null
+  is_money_mover?: boolean | null
+  next_action?: string | null
   rating?: number | null
   addr_number?: string | null
   addr_street_name?: string | null

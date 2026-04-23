@@ -382,6 +382,19 @@ export default function DealPipelinePanel() {
 
   return (
     <div className="wr-card">
+      {/* DEALS section header — T1 standard */}
+      <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
+        <span style={{ color: '#C084FC', display: 'flex', alignItems: 'center' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </span>
+        <span className="wr-rank1" style={{ color: '#C084FC' }}>Deals</span>
+        <div className="wr-panel-line" />
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(192,132,252,0.6)', fontVariantNumeric: 'tabular-nums' }}>
+          {filteredCount}
+        </span>
+      </div>
       {/* Force-hide on mobile regardless of scroll container context */}
       <style>{`
         @media (max-width: 639px) {
@@ -400,21 +413,8 @@ export default function DealPipelinePanel() {
           {/* + Deal — compact, left */}
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            style={{
-              padding: '7px 16px',
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.04em',
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(168,85,247,0.4)',
-              borderRadius: 8,
-              color: '#C084FC',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-body)',
-              flexShrink: 0,
-              boxShadow: '0 0 12px rgba(168,85,247,0.2), 0 0 28px rgba(168,85,247,0.08)',
-              transition: 'box-shadow 0.2s ease, border-color 0.15s',
-            }}
+            className="wr-btn-orbit"
+            style={{ borderRadius: 999, fontSize: 12, padding: '7px 16px', flexShrink: 0 }}
           >
             + Deal
           </button>
@@ -874,12 +874,12 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap', fontSize: 13, textAlign: 'left' }}>
         {isSubDeal && <span style={{ marginRight: 8, color: 'var(--text-dim)', fontSize: 11 }}>↳</span>}
         {isPortfolio && onToggleExpand ? (
-          <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)', fontWeight: 700 }}>
-            <span style={{ fontSize: 13, transition: 'transform 0.15s', display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+          <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-primary)', fontWeight: 600 }}>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', transition: 'transform 0.15s', display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
             {displayAddress || (deal as any).addr_display || deal.address?.replace(/^📁\s*/, '')}
           </button>
         ) : deal.address?.startsWith('📁') ? (
-          <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>{deal.address?.replace(/^📁\s*/, '')}</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{deal.address?.replace(/^📁\s*/, '')}</span>
         ) : (
           <span className="wr-address" style={{ color: isSubDeal ? 'var(--text-muted)' : 'var(--text-primary)' }}>
             {displayAddress || (deal as any).addr_display || deal.address || '—'}

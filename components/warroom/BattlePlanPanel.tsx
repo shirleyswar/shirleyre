@@ -358,53 +358,27 @@ export default function BattlePlanPanel() {
         position: 'absolute', inset: 0, borderRadius: 12, pointerEvents: 'none', zIndex: 0,
         background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139,92,246,0.04) 0%, transparent 70%)',
       }} />
-      {/* ── Panel Header — icon + title-case title ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '16px 20px 0',
-        marginBottom: 12,
-      }}>
-        <span style={{ color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', marginRight: 8 }}>
+      {/* ── Panel Header — T1 standard ── */}
+      <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
+        <span style={{ color: '#A855F7', display: 'flex', alignItems: 'center' }}>
           <SwordIcon />
         </span>
-        <span style={{
-          fontSize: 15, fontWeight: 600,
-          color: 'var(--text-primary)',
-          fontFamily: 'var(--font-body)',
-          letterSpacing: '-0.01em',
-        }}>
-          Battle Plan
-        </span>
-        <span style={{
-          marginLeft: 10,
-          fontSize: 12, fontWeight: 500,
-          color: 'var(--text-muted)',
-          fontVariantNumeric: 'tabular-nums',
-        }}>
+        <span className="wr-rank1" style={{ color: '#A855F7' }}>Battle Plan</span>
+        <div className="wr-panel-line" />
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(168,85,247,0.6)', fontVariantNumeric: 'tabular-nums' }}>
           {openTasks.length > 0 ? animatedCount : ''}
         </span>
-        <div style={{ flex: 1 }} />
       </div>
 
       {/* ── Toolbar: Add Item button + sort dropdown ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px', marginBottom: 12 }}>
-        {/* Add Item button — fallback for when FAB is not visible */}
+        {/* Add Item button — pill style */}
         <button
           onClick={() => setShowAddForm(true)}
-          style={{
-            height: 30, padding: '0 12px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 7,
-            color: 'rgba(255,255,255,0.7)',
-            fontSize: 12, fontWeight: 500,
-            fontFamily: 'var(--font-body)',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 5,
-          }}
+          className="wr-btn-orbit"
+          style={{ height: 30, padding: '0 14px', fontSize: 12, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 5 }}
         >
-          <span style={{ fontSize: 15, lineHeight: 1, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>+</span>
-          Add Item
+          + Add Item
         </button>
 
         <div style={{ flex: 1 }} />
@@ -606,30 +580,24 @@ export default function BattlePlanPanel() {
                         cursor: 'pointer',
                       }}
                     >
-                      <span style={{
-                        fontSize: 20,
-                        fontWeight: 700,
-                        color: bucket.color,
-                        letterSpacing: '-0.01em',
-                        fontFamily: 'var(--font-body)',
-                      }}>
-                        {bucket.label}
-                      </span>
-                      <span style={{
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: 'rgba(255,255,255,0.25)',
-                        fontFamily: 'var(--font-body)',
-                      }}>
-                        {bucket.tasks.length}
-                      </span>
-                      <div style={{ flex: 1 }} />
-                      <span style={{
-                        fontSize: 12, color: 'rgba(255,255,255,0.2)',
-                        transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.18s ease',
-                        display: 'inline-block',
-                      }}>▾</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
+                          textTransform: 'uppercase', color: bucket.color,
+                          fontFamily: 'var(--font-body)',
+                        }}>{bucket.label}</span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 500, color: bucket.color, opacity: 0.5,
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>{bucket.tasks.length}</span>
+                        <div style={{ flex: 1, height: 1, background: `${bucket.color}22`, marginLeft: 4 }} />
+                        <span style={{
+                          fontSize: 12, color: 'rgba(255,255,255,0.2)',
+                          transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.18s ease',
+                          display: 'inline-block',
+                        }}>▾</span>
+                      </div>
                     </div>
                     {!isCollapsed && (
                       <div style={{ padding: '0 16px 8px' }}>

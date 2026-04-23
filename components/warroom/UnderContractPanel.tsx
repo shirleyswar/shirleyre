@@ -1452,22 +1452,20 @@ export default function UnderContractPanel() {
   return (
     <div className="wr-card" style={{ boxShadow: '0 0 0 1px rgba(45,212,191,0.08), 0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(45,212,191,0.04)' }}>
       {/* Panel header */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 0', marginBottom: 12 }}>
-        <span style={{ color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', marginRight: 8 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
+        <span style={{ color: '#22C55E', display: 'flex', alignItems: 'center' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="8" y1="13" x2="16" y2="13"/>
             <line x1="8" y1="17" x2="13" y2="17"/>
           </svg>
         </span>
-        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', letterSpacing: '-0.01em' }}>
-          Under Contract
-        </span>
-        <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+        <span className="wr-rank1" style={{ color: '#22C55E' }}>Under Contract</span>
+        <div className="wr-panel-line" />
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(34,197,94,0.6)', fontVariantNumeric: 'tabular-nums' }}>
           {loading ? '—' : deals.length}
         </span>
-        <div style={{ flex: 1 }} />
       </div>
 
       {loading ? (
