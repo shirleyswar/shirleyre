@@ -400,18 +400,19 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
   return (
     <header
       style={{
-        height: 42,
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
         alignItems: 'center',
         paddingLeft: 12,
         paddingRight: 12,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
         gap: 0,
         flexShrink: 0,
         position: 'relative',
         overflow: 'hidden',
         minWidth: 0,
+        minHeight: 42,
       }}
     >
       {/* Title */}

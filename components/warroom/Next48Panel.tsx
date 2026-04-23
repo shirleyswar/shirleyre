@@ -27,7 +27,15 @@ function tomorrowCST(): string {
 
 function formatTime(time: string | null): string {
   if (!time) return ''
-  const [h, m] = time.split(':').map(Number)
+  // Handle both "HH:MM:SS", "HH:MM", and full ISO strings like "2026-04-23T06:00:00"
+  let timePart = time
+  if (time.includes('T')) {
+    timePart = time.split('T')[1] ?? ''
+  }
+  const parts = timePart.split(':')
+  const h = parseInt(parts[0] ?? '0', 10)
+  const m = parseInt(parts[1] ?? '0', 10)
+  if (isNaN(h) || isNaN(m)) return ''
   const period = h >= 12 ? 'PM' : 'AM'
   const hour = h % 12 || 12
   return `${hour}:${String(m).padStart(2, '0')} ${period}`
@@ -60,7 +68,6 @@ export default function Next48Panel() {
   const tomorrow = tomorrowCST()
   const todayEvents = events.filter(e => e.date === today)
   const tomorrowEvents = events.filter(e => e.date === tomorrow)
-  const hasAny = todayEvents.length > 0 || tomorrowEvents.length > 0
 
   return (
     <div className="wr-card" style={{
@@ -88,7 +95,7 @@ export default function Next48Panel() {
             Next 48
           </span>
           <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-body)' }}>
-            {hasAny ? `${events.length} event${events.length !== 1 ? 's' : ''}` : ''}
+            {events.length > 0 ? `${events.length} event${events.length !== 1 ? 's' : ''}` : ''}
           </span>
         </div>
 
@@ -99,47 +106,45 @@ export default function Next48Panel() {
               <div key={i} className="skeleton" style={{ height: 64, borderRadius: 10, marginBottom: 8 }} />
             ))}
           </div>
-        ) : !hasAny ? (
-          /* Empty state */
-          <div style={{ padding: '32px 24px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-            <div style={{ fontSize: 48, fontWeight: 800, color: 'rgba(255,255,255,0.08)', letterSpacing: '-0.03em', fontFamily: 'var(--font-body)', lineHeight: 1 }}>
-              NONE
-            </div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>Nothing scheduled today or tomorrow</div>
-            <button
-              style={{
-                marginTop: 4,
-                padding: '8px 18px',
-                background: 'rgba(79,142,247,0.1)',
-                border: '1px solid rgba(79,142,247,0.3)',
-                borderRadius: 8,
-                color: '#4F8EF7',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-              }}
-              onClick={() => {/* scroll to schedule panel */}}
-            >
-              + Add event
-            </button>
-          </div>
         ) : (
           <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {/* Today group */}
-            {todayEvents.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4F8EF7', marginBottom: 10, fontFamily: 'var(--font-body)' }}>
-                  Today
-                </div>
+            {/* TODAY group — always rendered */}
+            <div style={{ marginBottom: tomorrowEvents.length > 0 ? 20 : 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4F8EF7', marginBottom: 10, fontFamily: 'var(--font-body)' }}>
+                Today
+              </div>
+              {todayEvents.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {todayEvents.map((ev, i) => (
                     <EventCard key={ev.id} event={ev} featured={i === 0} />
                   ))}
                 </div>
-              </div>
-            )}
-            {/* Tomorrow group */}
+              ) : (
+                /* Empty state for TODAY */
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: 'rgba(255,255,255,0.12)', letterSpacing: '-0.02em', fontFamily: 'var(--font-body)', lineHeight: 1 }}>
+                    NONE
+                  </div>
+                  <button
+                    style={{
+                      padding: '7px 16px',
+                      background: 'rgba(79,142,247,0.1)',
+                      border: '1px solid rgba(79,142,247,0.3)',
+                      borderRadius: 8,
+                      color: '#4F8EF7',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-body)',
+                    }}
+                    onClick={() => {/* scroll to schedule panel */}}
+                  >
+                    + Add Event
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* TOMORROW group — only when events exist */}
             {tomorrowEvents.length > 0 && (
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 10, fontFamily: 'var(--font-body)' }}>
