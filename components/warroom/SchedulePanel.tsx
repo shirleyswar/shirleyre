@@ -323,11 +323,15 @@ export default function SchedulePanel() {
   async function fetchUpcoming() {
     setLoading(true)
     try {
-      const today = todayCST()
+      const afterTomorrow = (() => {
+        const d = new Date()
+        d.setDate(d.getDate() + 2)
+        return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+      })()
       const { data, error } = await supabase
         .from('schedule_events')
         .select('*')
-        .gte('date', today)
+        .gte('date', afterTomorrow)
         .order('date', { ascending: true })
         .order('time', { ascending: true })
         .limit(50)

@@ -18,6 +18,8 @@ import ClientsPanel from '@/components/warroom/ClientsPanel'
 import ShirleyCREAgentCard from '@/components/warroom/ShirleyCREAgentCard'
 import WinLogPanel from '@/components/warroom/WinLogPanel'
 import LifePanel from '@/components/warroom/LifePanel'
+import Next48Panel from '@/components/warroom/Next48Panel'
+import MoneyMoversPanel from '@/components/warroom/MoneyMoversPanel'
 import EntitiesPanel from '@/components/warroom/EntitiesPanel'
 import PortfolioPanel from '@/components/warroom/PortfolioPanel'
 import { useRouter } from 'next/navigation'
@@ -1133,6 +1135,8 @@ function OperationsView({ activePanel }: { activePanel: string }) {
     return (
       <motion.div key="overview-v" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1080 }}>
+          <Next48Panel />
+          <MoneyMoversPanel />
           <BattlePlanPanel />
           <SchedulePanel />
           <HotPanel />
@@ -1149,40 +1153,50 @@ function OperationsView({ activePanel }: { activePanel: string }) {
     <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 max-w-[1640px] mx-auto">
 
-        {/* Row 1: Battle Plan (2-col) + Schedule (1-col) */}
-        <div className="lg:col-span-2 card-reveal card-reveal-1" style={{ position: 'relative', zIndex: 50 }}>
+        {/* Row 1: Next 48 — full width, hero */}
+        <div className="lg:col-span-3 card-reveal card-reveal-1" style={{ position: 'relative', zIndex: 60 }}>
+          <Next48Panel />
+        </div>
+
+        {/* Row 2: Money Movers — full width */}
+        <div className="lg:col-span-3 card-reveal card-reveal-2" style={{ position: 'relative', zIndex: 55 }}>
+          <MoneyMoversPanel />
+        </div>
+
+        {/* Row 3: Battle Plan (2-col) + Schedule (1-col) */}
+        <div className="lg:col-span-2 card-reveal card-reveal-3" style={{ position: 'relative', zIndex: 50 }}>
           <BattlePlanPanel />
         </div>
-        <div className="card-reveal card-reveal-2" style={{ position: 'relative', zIndex: 50 }}>
+        <div className="card-reveal card-reveal-4" style={{ position: 'relative', zIndex: 50 }}>
           <SchedulePanel />
         </div>
 
-        {/* Row 2: Hot Panel (full width) */}
-        <div className="lg:col-span-3 card-reveal card-reveal-3" style={{ position: 'relative', zIndex: 40 }}>
+        {/* Row 4: Hot Panel (full width) */}
+        <div className="lg:col-span-3 card-reveal card-reveal-5" style={{ position: 'relative', zIndex: 40 }}>
           <HotPanel />
         </div>
 
-        {/* Row 3: Under Contract (full width) */}
-        <div className="lg:col-span-3 card-reveal card-reveal-3" style={{ position: 'relative', zIndex: 30 }}>
+        {/* Row 5: Under Contract (full width) */}
+        <div className="lg:col-span-3 card-reveal card-reveal-5" style={{ position: 'relative', zIndex: 30 }}>
           <UnderContractPanel />
         </div>
 
-        {/* Row 4: Deal Pipeline (full width) */}
+        {/* Row 6: Deal Pipeline (full width) */}
         <div className="lg:col-span-3 card-reveal card-reveal-5" style={{ position: 'relative', zIndex: 20 }}>
           <DealPipelinePanel />
         </div>
 
-        {/* Row 5: Clients (full width) */}
-        <div className="lg:col-span-3 card-reveal card-reveal-5" style={{ position: 'relative', zIndex: 15 }}>
+        {/* Row 7: Clients (full width) */}
+        <div className="lg:col-span-3 card-reveal card-reveal-6" style={{ position: 'relative', zIndex: 15 }}>
           <ClientsPanel />
         </div>
 
-        {/* Row 6: AR — full width */}
-        <div className="lg:col-span-3 card-reveal card-reveal-6" style={{ position: 'relative', zIndex: 10 }}>
+        {/* Row 8: AR — full width */}
+        <div className="lg:col-span-3 card-reveal card-reveal-7" style={{ position: 'relative', zIndex: 10 }}>
           <AccountsReceivablePanel />
         </div>
 
-        {/* Row 7: ShirleyCRE Agent Card — full width below */}
+        {/* Row 9: ShirleyCRE Agent Card */}
         <div className="lg:col-span-3 card-reveal card-reveal-7" style={{ position: 'relative', zIndex: 10 }}>
           <ShirleyCREAgentCard />
         </div>
