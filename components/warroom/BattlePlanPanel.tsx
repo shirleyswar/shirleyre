@@ -68,7 +68,6 @@ export default function BattlePlanPanel() {
   const [addToLife, setAddToLife] = useState(false)
   const [newContactName, setNewContactName] = useState('')
   const [newBpPriority, setNewBpPriority] = useState<number | null>(null)
-  const [prioritySortDir, setPrioritySortDir] = useState<'desc' | 'asc'>('desc')
   const [sortMode, setSortMode] = useState<'due_date' | 'priority' | 'assignee' | 'recent'>('due_date')
   const [newIsFamily, setNewIsFamily] = useState(false)
   const [newIsEntity, setNewIsEntity] = useState(false)
@@ -354,6 +353,11 @@ export default function BattlePlanPanel() {
 
   return (
     <div className="wr-card" style={{ padding: 0, position: 'relative', paddingBottom: 80, background: 'linear-gradient(160deg, #0d1520 0%, #111827 60%, #0a1220 100%)', border: '1px solid rgba(139,92,246,0.15)' }}>
+      {/* Atmospheric background */}
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: 12, pointerEvents: 'none', zIndex: 0,
+        background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139,92,246,0.04) 0%, transparent 70%)',
+      }} />
       {/* ── Panel Header — icon + title-case title ── */}
       <div style={{
         display: 'flex', alignItems: 'center',
@@ -569,31 +573,8 @@ export default function BattlePlanPanel() {
             { key: 'none',     label: 'No Due Date',  color: 'rgba(255,255,255,0.2)', tasks: sorted.filter(t => !t.due_date) },
           ]
 
-          const renderRows = (taskList: BattlePlanTask[]) => taskList.map(task => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              deal={deals.find(d => d.id === task.deal_id) || null}
-              completing={completingIds.has(task.id)}
-              showFollowUp={showFollowUpFor === task.id}
-              dragOverId={dragOverId}
-              draggingId={draggingId}
-              onComplete={() => completeTask(task)}
-              onUpdate={(updates) => updateTask(task.id, updates)}
-              onDragStart={() => handleDragStart()}
-              onDragOver={(e) => handleDragOver(e)}
-              onDrop={(e) => handleDrop(e)}
-              onDragEnd={handleDragEnd}
-              onPointerDragStart={(e) => handlePointerDragStart(e, task.id)}
-              onPointerDragMove={handlePointerDragMove}
-              onPointerDragEnd={handlePointerDragEnd}
-              deals={deals}
-              entityNames={entityNames}
-            />
-          ))
-
           return (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
               {/* Row grid system — desktop 4-col, mobile single-col */}
               <style>{`
                 /* Row: checkbox | task+chip | date | drag */
@@ -609,21 +590,74 @@ export default function BattlePlanPanel() {
                 }
               `}</style>
 
-              {buckets.map(bucket => {
+              {buckets.map((bucket, bucketIdx) => {
                 if (bucket.tasks.length === 0) return null
                 const isCollapsed = collapsedBuckets[bucket.key]
+                const isFirstBucket = bucketIdx === 0
                 return (
                   <div key={bucket.key}>
-                    <button
+                    <div
                       onClick={() => toggleBucket(bucket.key)}
-                      style={{ display:'flex', alignItems:'center', gap:6, width:'100%', background:'none', border:'none', padding:'10px 0 5px 20px', cursor:'pointer' }}
+                      style={{
+                        padding: isFirstBucket ? '8px 20px 10px' : '20px 20px 10px',
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: 10,
+                        cursor: 'pointer',
+                      }}
                     >
-                      <span style={{ fontSize:9, fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase', color: bucket.color, fontFamily:'monospace' }}>
-                        {bucket.label} · {bucket.tasks.length}
+                      <span style={{
+                        fontSize: 20,
+                        fontWeight: 700,
+                        color: bucket.color,
+                        letterSpacing: '-0.01em',
+                        fontFamily: 'var(--font-body)',
+                      }}>
+                        {bucket.label}
                       </span>
-                      <span style={{ fontSize:9, color:'rgba(255,255,255,0.2)', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition:'transform 0.18s ease', display:'inline-block' }}>▾</span>
-                    </button>
-                    {!isCollapsed && renderRows(bucket.tasks)}
+                      <span style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: 'rgba(255,255,255,0.25)',
+                        fontFamily: 'var(--font-body)',
+                      }}>
+                        {bucket.tasks.length}
+                      </span>
+                      <div style={{ flex: 1 }} />
+                      <span style={{
+                        fontSize: 12, color: 'rgba(255,255,255,0.2)',
+                        transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.18s ease',
+                        display: 'inline-block',
+                      }}>▾</span>
+                    </div>
+                    {!isCollapsed && (
+                      <div style={{ padding: '0 16px 8px' }}>
+                        {bucket.tasks.map((task, taskIdx) => (
+                          <TaskRow
+                            key={task.id}
+                            task={task}
+                            deal={deals.find(d => d.id === task.deal_id) || null}
+                            completing={completingIds.has(task.id)}
+                            showFollowUp={showFollowUpFor === task.id}
+                            dragOverId={dragOverId}
+                            draggingId={draggingId}
+                            isFeatured={bucket.key === 'overdue' && taskIdx === 0}
+                            onComplete={() => completeTask(task)}
+                            onUpdate={(updates) => updateTask(task.id, updates)}
+                            onDragStart={() => handleDragStart()}
+                            onDragOver={(e) => handleDragOver(e)}
+                            onDrop={(e) => handleDrop(e)}
+                            onDragEnd={handleDragEnd}
+                            onPointerDragStart={(e) => handlePointerDragStart(e, task.id)}
+                            onPointerDragMove={handlePointerDragMove}
+                            onPointerDragEnd={handlePointerDragEnd}
+                            deals={deals}
+                            entityNames={entityNames}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -812,6 +846,7 @@ interface TaskRowProps {
   showFollowUp: boolean
   dragOverId: string | null
   draggingId?: string | null
+  isFeatured?: boolean
   onComplete: () => void
   onUpdate: (updates: Partial<BattlePlanTask>) => void
   onDragStart: () => void
@@ -823,14 +858,13 @@ interface TaskRowProps {
 }
 
 function TaskRow({
-  task, deal, completing, dragOverId, draggingId,
+  task, deal, completing, dragOverId, draggingId, isFeatured,
   onComplete, onUpdate,
   onPointerDragStart, onPointerDragMove, onPointerDragEnd,
   deals, entityNames,
 }: TaskRowProps) {
   const [hovered, setHovered] = useState(false)
   const [editing, setEditing] = useState(false)
-  const [expanded, setExpanded] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDealId, setEditDealId] = useState(task.deal_id || '')
   const [editContactName, setEditContactName] = useState(task.contact_name || '')
@@ -841,21 +875,37 @@ function TaskRow({
   const [circleHovered, setCircleHovered] = useState(false)
   const isDragTarget = dragOverId === task.id && draggingId !== task.id
   const isDragging   = draggingId === task.id
-  const isLong = task.title.length > 48
 
-  // Determine accent color from urgency / category
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-  const isOverdue = task.due_date && task.due_date < today
+  const isOverdue = !!(task.due_date && task.due_date < today)
   const isDueToday = task.due_date === today
-  const accentColor = task.is_life
-    ? '#f87171'
-    : task.is_entity
-    ? '#4ade80'
-    : isOverdue
-    ? '#ef4444'
-    : isDueToday
-    ? '#fb923c'
-    : '#8B5CF6'
+
+  // Compute relative date label + color for subtext
+  function getDateSubtext(): { label: string; color: string } | null {
+    if (!task.due_date) return null
+    const [y, m, d] = task.due_date.split('-').map(Number)
+    const dueMs = new Date(y, m - 1, d).getTime()
+    const [ty, tm, td] = today.split('-').map(Number)
+    const todayMs = new Date(ty, tm - 1, td).getTime()
+    const diffDays = Math.round((dueMs - todayMs) / 86400000)
+    if (diffDays < 0) {
+      return { label: `${Math.abs(diffDays)} days late`, color: 'rgba(239,68,68,0.7)' }
+    }
+    if (diffDays === 0) {
+      return { label: 'Today', color: 'rgba(232,184,75,0.8)' }
+    }
+    if (diffDays === 1) {
+      return { label: 'Tomorrow', color: 'rgba(255,255,255,0.4)' }
+    }
+    if (diffDays <= 7) {
+      return { label: `In ${diffDays} days`, color: 'rgba(255,255,255,0.35)' }
+    }
+    const dt = new Date(y, m - 1, d)
+    const dow = dt.toLocaleDateString('en-US', { weekday: 'short' })
+    return { label: `${dow} ${m}/${d}`, color: 'rgba(255,255,255,0.3)' }
+  }
+
+  const dateSubtext = getDateSubtext()
 
   async function saveEdit() {
     if (editTitle.trim()) {
@@ -872,199 +922,184 @@ function TaskRow({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'flex',
-        alignItems: 'center',           // single vertical axis
-        minHeight: 52,                   // locked row height — desktop
         background: isDragTarget
+          ? 'rgba(232,184,75,0.06)'
+          : isOverdue
+          ? 'rgba(239,68,68,0.04)'
+          : isDueToday
           ? 'rgba(232,184,75,0.05)'
-          : hovered
-          ? 'rgba(255,255,255,0.03)'
-          : 'transparent',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-        opacity: completing ? 0.3 : isDragging ? 0.35 : 1,
-        transition: 'background 0.1s ease',
+          : 'rgba(255,255,255,0.025)',
+        borderRadius: 12,
+        border: `1px solid ${isOverdue ? 'rgba(239,68,68,0.15)' : isDueToday ? 'rgba(232,184,75,0.2)' : 'rgba(255,255,255,0.06)'}`,
+        padding: editing ? '14px 16px' : '14px 16px',
+        marginBottom: 8,
         position: 'relative',
+        opacity: completing ? 0.3 : isDragging ? 0.35 : 1,
+        transition: 'all 0.15s ease',
+        boxShadow: isFeatured
+          ? '0 0 32px rgba(239,68,68,0.18), 0 0 64px rgba(239,68,68,0.08), 0 4px 24px rgba(0,0,0,0.4)'
+          : isDueToday
+          ? '0 0 20px rgba(232,184,75,0.1), 0 2px 12px rgba(0,0,0,0.3)'
+          : '0 2px 8px rgba(0,0,0,0.2)',
       }}
     >
-
-      {/* Checkbox — custom 4px-radius, animated check on hover/complete */}
-      <div style={{ padding: '0 10px 0 16px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-        <button
-          onClick={onComplete}
-          onMouseEnter={() => setCircleHovered(true)}
-          onMouseLeave={() => setCircleHovered(false)}
-          style={{
-            width: 22, height: 22,
-            borderRadius: 11,  // full circle
-            border: `2px solid ${
-              circleHovered
-                ? 'rgba(255,255,255,0.45)'
-                : 'rgba(255,255,255,0.15)'
-            }`,
-            background: circleHovered
-              ? 'rgba(255,255,255,0.08)'
-              : 'transparent',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'border-color 0.15s, background 0.15s, transform 0.12s',
-            transform: circleHovered ? 'scale(1.08)' : 'scale(1)',
-            flexShrink: 0,
-            padding: 0,
-          }}
-          aria-label="Complete task"
-        >
-          {/* Check mark — fades in on hover */}
-          <svg
-            width="9" height="7" viewBox="0 0 9 7" fill="none"
-            style={{ opacity: circleHovered ? 1 : 0, transition: 'opacity 0.12s ease' }}
-          >
-            <path
-              d="M1.5 3.5L3.5 5.5L7.5 1.5"
-              stroke="rgba(255,255,255,0.8)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      </div>
-
-      {/* Main content — fills remaining width */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 0, padding: '0 0 0 0' }}>
-        {editing ? (
-          /* ── Edit mode ── */
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 16px 10px 0' }}>
-            <input
-              autoFocus
-              value={editTitle}
-              onChange={e => setEditTitle(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false) }}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.2)`, borderRadius: 6, padding: '7px 10px', fontSize: 13, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
-            />
-            <input
-              value={editContactName}
-              onChange={e => setEditContactName(e.target.value)}
-              list="bp-contact-list-edit"
-              placeholder="Assignee / contact..."
-              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--text-muted)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
-            />
-            <datalist id="bp-contact-list-edit">
-              {Array.from(new Set([...deals.map(d => d.name), ...entityNames].filter(Boolean))).map(n => (
-                <option key={n} value={n} />
-              ))}
-            </datalist>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 3, fontFamily: 'monospace' }}>Deadline</div>
-                <input
-                  type="date"
-                  value={editDueDate}
-                  onChange={e => setEditDueDate(e.target.value)}
-                  style={{ fontSize: 12, padding: '5px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' }}
-                />
-              </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: editIsLife ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsLife ? 700 : 400, marginTop: 14 }}>
-                <input type="checkbox" checked={editIsLife} onChange={e => setEditIsLife(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#f87171', cursor: 'pointer' }} />
-                <span style={{ fontSize: 13 }}>♥</span> Life
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: editIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsEntity ? 700 : 400, marginTop: 14 }}>
-                <input type="checkbox" checked={editIsEntity} onChange={e => setEditIsEntity(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#22c55e', cursor: 'pointer' }} />
-                <span style={{ fontSize: 12 }}>🏢</span> Entity
-              </label>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={saveEdit} style={{ padding: '5px 14px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Save</button>
-              <button onClick={() => setEditing(false)} style={{ padding: '5px 14px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 5, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
-            </div>
-          </div>
-        ) : (
-          /* ── View mode: single horizontal axis ── */
-          <div className="bp-grid">
-            {/* Task title — visual anchor, heavier weight */}
-            <div className="bp-grid-task">
-              {task.is_family && <span style={{ flexShrink: 0 }}><FamilyIcon active={true} /></span>}
-              <span
-                onClick={() => isLong && setExpanded(e => !e)}
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
-                  textDecoration: completing ? 'line-through' : 'none',
-                  lineHeight: 1.35,
-                  overflow: 'hidden',
-                  display: '-webkit-box',
-                  WebkitLineClamp: expanded ? undefined : 1,
-                  WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
-                  cursor: isLong ? 'pointer' : 'default',
-                  letterSpacing: '-0.01em',
-                } as React.CSSProperties}
-              >
-                {task.title}
-              </span>
-
-              {/* Assignee chip — inline right of title; hidden on mobile for density */}
-              {task.contact_name && (
-                <span className="bp-chip-hide-mobile" style={{ flexShrink: 0 }}>
-                  <ContactBadge contactName={task.contact_name} deal={deal} isLife={!!task.is_life} isEntity={!!task.is_entity} />
-                </span>
-              )}
-
-              {/* Mobile: due date inline (hidden on desktop via bp-grid-date) */}
-              {task.due_date && (() => {
-                const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-                const isOvd = task.due_date < todayStr
-                const isDT = task.due_date === todayStr
-                const color = isOvd ? '#ef4444' : isDT ? '#E8B84B' : 'rgba(255,255,255,0.3)'
-                const [, m2, d2] = task.due_date.split('-').map(Number)
-                const dt2 = new Date(parseInt(task.due_date.split('-')[0]), m2 - 1, d2)
-                const dow2 = dt2.toLocaleDateString('en-US', { weekday: 'short' })
-                // overdue: show red date — accent bar owns the warning signal, no triangle
-                const label = isOvd ? `${dow2} ${m2}/${d2}` : isDT ? '● today' : `${dow2} ${m2}/${d2}`
-                return (
-                  <span className="bp-mobile-date" style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                    <style>{`.bp-mobile-date { display: none; } @media (max-width: 640px) { .bp-mobile-date { display: inline; } }`}</style>
-                    {label}
-                  </span>
-                )
-              })()}
-            </div>
-
-            {/* Desktop: date — right-aligned in its column */}
-            <div className="bp-grid-date">
-              <DeadlinePicker
-                value={task.due_date ?? null}
-                onChange={async (d) => {
-                  await supabase.from('tasks').update({ due_date: d } as Record<string, unknown>).eq('id', task.id)
-                  onUpdate({ due_date: d })
-                }}
+      {editing ? (
+        /* ── Edit mode — expanded card ── */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <input
+            autoFocus
+            value={editTitle}
+            onChange={e => setEditTitle(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false) }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 7, padding: '8px 11px', fontSize: 15, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box', fontWeight: 600 }}
+          />
+          <input
+            value={editContactName}
+            onChange={e => setEditContactName(e.target.value)}
+            list="bp-contact-list-edit"
+            placeholder="Assignee / contact..."
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '7px 11px', fontSize: 13, color: 'var(--text-muted)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
+          />
+          <datalist id="bp-contact-list-edit">
+            {Array.from(new Set([...deals.map(d => d.name), ...entityNames].filter(Boolean))).map(n => (
+              <option key={n} value={n} />
+            ))}
+          </datalist>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 3, fontFamily: 'monospace' }}>Deadline</div>
+              <input
+                type="date"
+                value={editDueDate}
+                onChange={e => setEditDueDate(e.target.value)}
+                style={{ fontSize: 12, padding: '5px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' }}
               />
             </div>
-
-
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: editIsLife ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsLife ? 700 : 400, marginTop: 14 }}>
+              <input type="checkbox" checked={editIsLife} onChange={e => setEditIsLife(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#f87171', cursor: 'pointer' }} />
+              <span style={{ fontSize: 13 }}>♥</span> Life
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: editIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsEntity ? 700 : 400, marginTop: 14 }}>
+              <input type="checkbox" checked={editIsEntity} onChange={e => setEditIsEntity(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#22c55e', cursor: 'pointer' }} />
+              <span style={{ fontSize: 12 }}>🏢</span> Entity
+            </label>
           </div>
-        )}
-      </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={saveEdit} style={{ padding: '6px 14px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Save</button>
+            <button onClick={() => setEditing(false)} style={{ padding: '6px 14px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        /* ── View mode: card layout ── */
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
 
-      {/* Edit + drag — visible on hover, right edge */}
-      {!editing && hovered && (
-        <div style={{ padding: '0 12px 0 8px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          {/* Checkbox — 22px circle, left-aligned vertically centered */}
           <button
-            onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditIsEntity(!!task.is_entity); setEditIsLife(!!task.is_life); setEditDueDate(task.due_date ?? ''); setEditing(true) }}
-            title="Edit"
-            style={{ padding: '3px 5px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.6, transition: 'opacity 0.1s' }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}
+            onClick={onComplete}
+            onMouseEnter={() => setCircleHovered(true)}
+            onMouseLeave={() => setCircleHovered(false)}
+            style={{
+              width: 22, height: 22, borderRadius: 11,
+              border: `2px solid ${circleHovered ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.15)'}`,
+              background: circleHovered ? 'rgba(255,255,255,0.08)' : 'transparent',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'border-color 0.15s, background 0.15s, transform 0.12s',
+              transform: circleHovered ? 'scale(1.08)' : 'scale(1)',
+              flexShrink: 0, padding: 0,
+            }}
+            aria-label="Complete task"
           >
-            <PencilIcon />
+            <svg width="9" height="7" viewBox="0 0 9 7" fill="none"
+              style={{ opacity: circleHovered ? 1 : 0, transition: 'opacity 0.12s ease' }}>
+              <path d="M1.5 3.5L3.5 5.5L7.5 1.5" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
-          <span
-            onPointerDown={onPointerDragStart}
-            onPointerMove={onPointerDragMove}
-            onPointerUp={onPointerDragEnd}
-            onPointerCancel={onPointerDragEnd}
-            style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', cursor: 'grab', userSelect: 'none', touchAction: 'none', padding: '2px 2px', letterSpacing: '0.05em' }}>
-            ⠿
-          </span>
+
+          {/* Content block — title + subtext row */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {/* Title — HERO */}
+            <div style={{
+              fontSize: 16, fontWeight: 600,
+              color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
+              lineHeight: 1.3, letterSpacing: '-0.01em',
+              textDecoration: completing ? 'line-through' : 'none',
+              overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+            }}>
+              {task.is_family && <span style={{ marginRight: 5, verticalAlign: 'middle' }}><FamilyIcon active={true} /></span>}
+              {task.title}
+            </div>
+            {/* Subtext row — date string + contact chip */}
+            {(dateSubtext || task.contact_name) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {dateSubtext && (
+                  <span style={{ fontSize: 12, color: dateSubtext.color, fontFamily: 'var(--font-body)' }}>
+                    {dateSubtext.label}
+                  </span>
+                )}
+                {task.contact_name && (
+                  <span style={{
+                    background: 'rgba(255,255,255,0.08)', borderRadius: 4,
+                    padding: '1px 7px', fontSize: 11,
+                    color: 'rgba(255,255,255,0.5)',
+                  }}>
+                    {task.contact_name}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right: date badge */}
+          <div style={{ flexShrink: 0 }}>
+            {isOverdue && task.due_date && (() => {
+              const [y, m, d] = task.due_date!.split('-').map(Number)
+              const [ty, tm, td] = today.split('-').map(Number)
+              const diff = Math.round((new Date(ty, tm-1, td).getTime() - new Date(y, m-1, d).getTime()) / 86400000)
+              return (
+                <span style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>
+                  {diff}d late
+                </span>
+              )
+            })()}
+            {isDueToday && (
+              <span style={{ background: 'rgba(232,184,75,0.15)', color: '#E8B84B', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>
+                Today
+              </span>
+            )}
+            {!isOverdue && !isDueToday && task.due_date && (
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'monospace' }}>
+                {(() => {
+                  const [y, m, d] = task.due_date!.split('-').map(Number)
+                  const dt = new Date(y, m - 1, d)
+                  const dow = dt.toLocaleDateString('en-US', { weekday: 'short' })
+                  return `${dow} ${m}/${d}`
+                })()}
+              </span>
+            )}
+          </div>
+
+          {/* Drag handle — hover only, far right */}
+          {hovered && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+              <button
+                onClick={() => { setEditTitle(task.title); setEditDealId(task.deal_id || ''); setEditContactName(task.contact_name || ''); setEditIsFamily(!!task.is_family); setEditIsEntity(!!task.is_entity); setEditIsLife(!!task.is_life); setEditDueDate(task.due_date ?? ''); setEditing(true) }}
+                title="Edit"
+                style={{ padding: '3px 5px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 0.6, transition: 'opacity 0.1s' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}
+              >
+                <PencilIcon />
+              </button>
+              <span
+                onPointerDown={onPointerDragStart}
+                onPointerMove={onPointerDragMove}
+                onPointerUp={onPointerDragEnd}
+                onPointerCancel={onPointerDragEnd}
+                style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', cursor: 'grab', userSelect: 'none', touchAction: 'none', padding: '2px 2px', letterSpacing: '0.05em' }}>
+                ⠿
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
