@@ -4,6 +4,25 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
 
+// Sort events by time: no-time events go last, then sort numerically
+function sortByTime(evs: ScheduleEvent[]): ScheduleEvent[] {
+  return [...evs].sort((a, b) => {
+    if (!a.time && !b.time) return 0
+    if (!a.time) return 1
+    if (!b.time) return -1
+    // Normalize both to "HH:MM" for reliable numeric sort
+    const toMinutes = (t: string) => {
+      let s = t
+      if (s.includes('T')) s = s.split('T')[1] ?? ''
+      const parts = s.split(':')
+      const h = parseInt(parts[0] ?? '0', 10)
+      const m = parseInt(parts[1] ?? '0', 10)
+      return isNaN(h) || isNaN(m) ? 9999 : h * 60 + m
+    }
+    return toMinutes(a.time) - toMinutes(b.time)
+  })
+}
+
 interface ScheduleEvent {
   id: string
   title: string
@@ -46,6 +65,7 @@ export default function Next48Panel() {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editEvent, setEditEvent] = useState<ScheduleEvent | null>(null)
 
   useEffect(() => { fetchEvents() }, [])
 
@@ -68,8 +88,8 @@ export default function Next48Panel() {
 
   const today = todayCST()
   const tomorrow = tomorrowCST()
-  const todayEvents = events.filter(e => e.date === today)
-  const tomorrowEvents = events.filter(e => e.date === tomorrow)
+  const todayEvents = sortByTime(events.filter(e => e.date === today))
+  const tomorrowEvents = sortByTime(events.filter(e => e.date === tomorrow))
 
   return (
     <div className="wr-card" style={{
@@ -118,7 +138,7 @@ export default function Next48Panel() {
               {todayEvents.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {todayEvents.map((ev, i) => (
-                    <EventCard key={ev.id} event={ev} featured={i === 0} />
+                    <EventCard key={ev.id} event={ev} featured={i === 0} onEdit={() => setEditEvent(ev)} />
                   ))}
                 </div>
               ) : (
@@ -154,7 +174,7 @@ export default function Next48Panel() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {tomorrowEvents.map((ev, i) => (
-                    <EventCard key={ev.id} event={ev} featured={false} />
+                    <EventCard key={ev.id} event={ev} featured={false} onEdit={() => setEditEvent(ev)} />
                   ))}
                 </div>
               </div>
@@ -162,6 +182,37 @@ export default function Next48Panel() {
           </div>
         )}
       </div>
+      {editEvent && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
+          onClick={e => { if (e.target === e.currentTarget) setEditEvent(null) }}
+        >
+          <EditEventModal
+            event={editEvent}
+            onSave={async (updates) => {
+              try {
+                await supabase.from('schedule_events').update({
+                  title: updates.title,
+                  date: updates.date,
+                  time: updates.time || null,
+                  location: updates.location || null,
+                }).eq('id', editEvent.id)
+                await fetchEvents()
+              } catch {}
+              setEditEvent(null)
+            }}
+            onDelete={async () => {
+              try {
+                await supabase.from('schedule_events').delete().eq('id', editEvent.id)
+                await fetchEvents()
+              } catch {}
+              setEditEvent(null)
+            }}
+            onClose={() => setEditEvent(null)}
+          />
+        </div>,
+        document.body
+      )}
       {showAddModal && typeof document !== 'undefined' && createPortal(
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
@@ -190,25 +241,29 @@ export default function Next48Panel() {
   )
 }
 
-function EventCard({ event, featured }: { event: ScheduleEvent; featured: boolean }) {
+function EventCard({ event, featured, onEdit }: { event: ScheduleEvent; featured: boolean; onEdit: () => void }) {
   const timeStr = formatTime(event.time)
 
   return (
-    <div style={{
-      background: featured
-        ? 'linear-gradient(135deg, rgba(79,142,247,0.12) 0%, rgba(79,142,247,0.06) 100%)'
-        : 'rgba(255,255,255,0.03)',
-      border: `1px solid ${featured ? 'rgba(79,142,247,0.25)' : 'rgba(255,255,255,0.07)'}`,
-      borderRadius: 12,
-      padding: featured ? '16px 18px' : '12px 16px',
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 14,
-      boxShadow: featured
-        ? '0 0 28px rgba(79,142,247,0.12), 0 0 56px rgba(79,142,247,0.05), 0 4px 16px rgba(0,0,0,0.3)'
-        : '0 2px 8px rgba(0,0,0,0.15)',
-      transition: 'all 0.15s ease',
-    }}>
+    <div
+      onClick={onEdit}
+      style={{
+        background: featured
+          ? 'linear-gradient(135deg, rgba(79,142,247,0.12) 0%, rgba(79,142,247,0.06) 100%)'
+          : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${featured ? 'rgba(79,142,247,0.25)' : 'rgba(255,255,255,0.07)'}`,
+        borderRadius: 12,
+        padding: featured ? '16px 18px' : '12px 16px',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 14,
+        boxShadow: featured
+          ? '0 0 28px rgba(79,142,247,0.12), 0 0 56px rgba(79,142,247,0.05), 0 4px 16px rgba(0,0,0,0.3)'
+          : '0 2px 8px rgba(0,0,0,0.15)',
+        transition: 'all 0.15s ease',
+        cursor: 'pointer',
+      }}
+    >
       {/* Left: calendar icon */}
       <div style={{
         width: featured ? 40 : 32,
@@ -269,6 +324,94 @@ function EventCard({ event, featured }: { event: ScheduleEvent; featured: boolea
         }}>
           {timeStr}
         </div>
+      )}
+    </div>
+  )
+}
+
+function EditEventModal({ event, onSave, onDelete, onClose }: {
+  event: ScheduleEvent
+  onSave: (updates: { title: string; date: string; time: string; location: string }) => Promise<void>
+  onDelete: () => Promise<void>
+  onClose: () => void
+}) {
+  const [title, setTitle] = useState(event.title)
+  const [date, setDate] = useState(event.date)
+  const [time, setTime] = useState(() => {
+    if (!event.time) return ''
+    let t = event.time
+    if (t.includes('T')) t = t.split('T')[1] ?? ''
+    // Normalize to HH:MM for the time input
+    const parts = t.split(':')
+    const h = (parts[0] ?? '').padStart(2, '0')
+    const m = (parts[1] ?? '00').padStart(2, '0')
+    return `${h}:${m}`
+  })
+  const [location, setLocation] = useState(event.location ?? '')
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  async function handleSave() {
+    if (!title.trim()) return
+    setSaving(true)
+    await onSave({ title: title.trim(), date, time, location })
+    setSaving(false)
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    await onDelete()
+    setDeleting(false)
+  }
+
+  return (
+    <div style={{ background: '#13112A', border: '1px solid rgba(79,142,247,0.35)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(79,142,247,0.6)', fontFamily: 'var(--font-body)' }}>
+          Edit Event
+        </div>
+        {!confirmDelete && (
+          <button onClick={() => setConfirmDelete(true)}
+            style={{ background: 'transparent', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 6, color: 'rgba(239,68,68,0.6)', fontSize: 11, padding: '3px 9px', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+            Delete
+          </button>
+        )}
+      </div>
+      {confirmDelete ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 13, color: '#9ca3af' }}>Delete <strong style={{ color: '#F0F2FF' }}>{event.title}</strong>? This can't be undone.</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Cancel</button>
+            <button onClick={handleDelete} disabled={deleting}
+              style={{ flex: 1, padding: '10px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 8, color: '#ef4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+              {deleting ? 'Deleting…' : 'Yes, Delete'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && title.trim()) handleSave(); if (e.key === 'Escape') onClose() }}
+            placeholder="Event title *"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }} />
+          <div style={{ display: 'flex', gap: 10 }}>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' as React.CSSProperties['colorScheme'] }} />
+            <input type="time" value={time} onChange={e => setTime(e.target.value)}
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' as React.CSSProperties['colorScheme'] }} />
+          </div>
+          <input type="text" value={location} onChange={e => setLocation(e.target.value)}
+            placeholder="Location (optional)"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={onClose} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Cancel</button>
+            <button onClick={handleSave} disabled={saving || !title.trim()}
+              style={{ flex: 2, padding: '11px', background: saving || !title.trim() ? 'rgba(79,142,247,0.1)' : 'rgba(79,142,247,0.2)', border: '1px solid rgba(79,142,247,0.5)', borderRadius: 8, color: '#4F8EF7', fontSize: 14, fontWeight: 700, cursor: saving || !title.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: saving || !title.trim() ? 0.5 : 1 }}>
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

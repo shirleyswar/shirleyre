@@ -164,9 +164,10 @@ export default function AccountsReceivablePanel() {
     setPayPinStep(false)
   }
 
-  async function submitPayment() {
+  async function submitPayment(pinOverride?: string) {
     if (!payModal) return
-    const hash = await sha256(payPin)
+    const pinToUse = pinOverride ?? payPin
+    const hash = await sha256(pinToUse)
     if (hash !== PIN_HASH) { setPayPinErr(true); setPayPin(''); return }
 
     setSaving(true)
@@ -647,7 +648,7 @@ export default function AccountsReceivablePanel() {
                     const v = e.target.value.replace(/\D/g, '').slice(0, 4)
                     setPayPin(v)
                     setPayPinErr(false)
-                    if (v.length === 4) submitPayment()
+                    if (v.length === 4) submitPayment(v)
                   }}
                   placeholder="· · · ·"
                   style={{ width: '100%', fontSize: 28, textAlign: 'center', letterSpacing: '0.4em', padding: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${payPinErr ? '#ef4444' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', boxSizing: 'border-box' as any }}
