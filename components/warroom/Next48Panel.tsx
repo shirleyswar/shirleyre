@@ -1,8 +1,109 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
+
+// ─── TIME PICKER — 15-minute intervals, 12-hour format ───────────────────────
+// Replaces the native <input type="time"> which shows every minute
+const TIME_OPTIONS: { label: string; value: string }[] = (() => {
+  const opts: { label: string; value: string }[] = [{ label: 'No time', value: '' }]
+  for (let h = 0; h < 24; h++) {
+    for (const m of [0, 15, 30, 45]) {
+      const period = h >= 12 ? 'PM' : 'AM'
+      const hour12 = h % 12 || 12
+      const label = `${hour12}:${String(m).padStart(2, '0')} ${period}`
+      const value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+      opts.push({ label, value })
+    }
+  }
+  return opts
+})()
+
+function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return
+    function handle(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [open])
+
+  const selected = TIME_OPTIONS.find(o => o.value === value) ?? TIME_OPTIONS[0]
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flex: 1 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%',
+          background: 'rgba(255,255,255,0.05)',
+          border: `1px solid ${open ? 'rgba(79,142,247,0.5)' : 'rgba(255,255,255,0.12)'}`,
+          borderRadius: 8,
+          padding: '10px 12px',
+          fontSize: 13,
+          color: value ? '#F2EDE4' : 'rgba(255,255,255,0.3)',
+          outline: 'none',
+          fontFamily: 'var(--font-body)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 6,
+          textAlign: 'left',
+        }}
+      >
+        <span>{selected.label}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.5, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute',
+          bottom: '110%',
+          left: 0, right: 0,
+          background: '#1A1735',
+          border: '1px solid rgba(79,142,247,0.3)',
+          borderRadius: 10,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+          zIndex: 9999,
+          maxHeight: 220,
+          overflowY: 'auto',
+          scrollbarWidth: 'thin' as React.CSSProperties['scrollbarWidth'],
+        }}>
+          {TIME_OPTIONS.map(opt => (
+            <div
+              key={opt.value || '__none'}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+              style={{
+                padding: '9px 14px',
+                fontSize: 13,
+                color: opt.value === value ? '#4F8EF7' : opt.value ? '#F2EDE4' : 'rgba(255,255,255,0.3)',
+                background: opt.value === value ? 'rgba(79,142,247,0.12)' : 'transparent',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-body)',
+                fontWeight: opt.value === value ? 700 : 400,
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(79,142,247,0.08)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = opt.value === value ? 'rgba(79,142,247,0.12)' : 'transparent' }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // Sort events by time: no-time events go last, then sort numerically
 function sortByTime(evs: ScheduleEvent[]): ScheduleEvent[] {
@@ -407,8 +508,7 @@ function EditEventModal({ event, onSave, onDelete, onClose }: {
           <div style={{ display: 'flex', gap: 10 }}>
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
               style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' as React.CSSProperties['colorScheme'] }} />
-            <input type="time" value={time} onChange={e => setTime(e.target.value)}
-              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' as React.CSSProperties['colorScheme'] }} />
+            <TimeSelect value={time} onChange={setTime} />
           </div>
           <input type="text" value={location} onChange={e => setLocation(e.target.value)}
             placeholder="Location (optional)"
@@ -456,8 +556,7 @@ function AddEventModal({ defaultDate, onSave, onClose }: {
       <div style={{ display: 'flex', gap: 10 }}>
         <input type="date" value={date} onChange={e => setDate(e.target.value)}
           style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' as React.CSSProperties['colorScheme'] }} />
-        <input type="time" value={time} onChange={e => setTime(e.target.value)}
-          style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' as React.CSSProperties['colorScheme'] }} />
+        <TimeSelect value={time} onChange={setTime} />
       </div>
       <input type="text" value={location} onChange={e => setLocation(e.target.value)}
         placeholder="Location (optional)"
