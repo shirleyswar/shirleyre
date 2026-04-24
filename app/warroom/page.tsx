@@ -594,46 +594,50 @@ function NavRibbon({
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'flex-start',
-        gap: 8,
-        padding: '4px 12px',  // tighter top/bottom → header↔nav feel unified
+        justifyContent: isVertical ? 'space-evenly' : 'flex-start',
+        gap: isVertical ? 4 : 8,
+        padding: '4px 8px',
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(167,139,250,0.08)',
         flexShrink: 0,
-        overflowX: 'auto',
+        overflowX: isVertical ? 'visible' : 'auto',
         WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
         scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
       }}
     >
-      {/* WAR ROOM wordmark — left of nav cards */}
-      <div className="hidden sm:flex" style={{
-        display: undefined,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        height: 'clamp(72px, 9vw, 60px)',
-        gap: 0,
-        padding: '0 12px',
-        cursor: 'default',
-        userSelect: 'none',
-      }}>
-        <div style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(22px, 4vw, 36px)',
-          fontWeight: 900,
-          color: '#F0F2FF',
-          letterSpacing: '-0.04em',
-          lineHeight: 1,
-          whiteSpace: 'nowrap',
-          textShadow: '0 0 28px rgba(79,142,247,0.45)',
+      {/* WAR ROOM wordmark — hidden on portrait monitor to give nav tiles full room */}
+      {!isVertical && (
+        <div className="hidden sm:flex" style={{
+          display: undefined,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          height: 'clamp(72px, 9vw, 60px)',
+          gap: 0,
+          padding: '0 12px',
+          cursor: 'default',
+          userSelect: 'none',
         }}>
-          WAR ROOM
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(22px, 4vw, 36px)',
+            fontWeight: 900,
+            color: '#F0F2FF',
+            letterSpacing: '-0.04em',
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+            textShadow: '0 0 28px rgba(79,142,247,0.45)',
+          }}>
+            WAR ROOM
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Divider between wordmark and cards */}
-      <div className="hidden sm:block" style={{ width: 1, height: 60, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+      {/* Divider between wordmark and cards — hidden on portrait */}
+      {!isVertical && (
+        <div className="hidden sm:block" style={{ width: 1, height: 60, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+      )}
 
       {NAV_SECTIONS.map(sec => {
         const isActive = activeSection === sec.id
@@ -652,10 +656,10 @@ function NavRibbon({
               alignItems: 'center',
               justifyContent: 'center',
               gap: 5,
-              flex: '1 1 72px',
+              flex: isVertical ? '1 1 0' : '1 1 72px',
               width: '100%',
-              minWidth: 72,
-              maxWidth: 160,
+              minWidth: isVertical ? 0 : 72,
+              maxWidth: isVertical ? 'none' : 160,
               height: 'clamp(72px, 9vw, 60px)',
               background: isActive
                 ? 'linear-gradient(135deg, #2A1F50 0%, #221845 40%, #1E1540 100%)'
@@ -773,10 +777,10 @@ function NavRibbon({
           alignItems: 'center',
           justifyContent: 'center',
           gap: 5,
-          flex: '1 1 72px',
+          flex: isVertical ? '1 1 0' : '1 1 72px',
           width: '100%',
-          minWidth: 72,
-          maxWidth: 160,
+          minWidth: isVertical ? 0 : 72,
+          maxWidth: isVertical ? 'none' : 160,
           height: 'clamp(72px, 9vw, 60px)',
           background: 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
           border: '1px solid rgba(90,70,140,0.35)',
@@ -841,8 +845,8 @@ function NavRibbon({
         </div>
       </motion.button>
 
-      {/* Spacer — pushes link orbits to the right, hidden on mobile */}
-      <div className="hidden sm:block" style={{ flex: 1, minWidth: 24 }} />
+      {/* Spacer — pushes link orbits right; hidden on mobile and portrait (tiles need full room) */}
+      {!isVertical && <div className="hidden sm:block" style={{ flex: 1, minWidth: 24 }} />}
 
       {/* Stats card — hidden on mobile and vertical monitor */}
       {!isVertical && (

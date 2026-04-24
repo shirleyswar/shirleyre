@@ -854,21 +854,26 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
           <DropboxCell dealId={deal.id} url={deal.dropbox_link} onSaved={(id, url) => onUpdate({ ...deal, dropbox_link: url })} />
         </div>
       </td>
-      {/* Col 2: Deal page button — MORE */}
+      {/* Col 2: Deal page button — gold for portfolio/active listings, purple otherwise */}
       <td style={{ width: 38, minWidth: 38, maxWidth: 38, padding: '6px 4px', textAlign: 'center' }}>
-        <a
-          href={`/warroom/deal?id=${deal.id}`}
-          title="Open Deal Dashboard"
-          style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 28, height: 28, borderRadius: 6,
-            background: 'rgba(139,92,246,0.12)',
-            border: '1px solid rgba(139,92,246,0.35)',
-            color: '#A78BFA',
-            textDecoration: 'none', fontSize: 14, lineHeight: 1,
-            transition: 'all 0.15s',
-          }}
-        >↗</a>
+        {(() => {
+          const isListing = deal.type === 'active_listing' || deal.type === 'potential_listing'
+          return (
+            <a
+              href={`/warroom/deal?id=${deal.id}`}
+              title="Open Deal Dashboard"
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, borderRadius: 6,
+                background: isListing ? 'rgba(232,184,75,0.12)' : 'rgba(139,92,246,0.12)',
+                border: `1px solid ${isListing ? 'rgba(232,184,75,0.4)' : 'rgba(139,92,246,0.35)'}`,
+                color: isListing ? '#E8B84B' : '#A78BFA',
+                textDecoration: 'none', fontSize: 14, lineHeight: 1,
+                transition: 'all 0.15s',
+              }}
+            >↗</a>
+          )
+        })()}
       </td>
       {/* Col 3: Address */}
       <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap', fontSize: 13, textAlign: 'left' }}>

@@ -323,18 +323,13 @@ export default function SchedulePanel() {
   async function fetchUpcoming() {
     setLoading(true)
     try {
-      const afterTomorrow = (() => {
-        const d = new Date()
-        d.setDate(d.getDate() + 2)
-        return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-      })()
       const { data, error } = await supabase
         .from('schedule_events')
         .select('*')
-        .gte('date', afterTomorrow)
+        .gte('date', todayCST())
         .order('date', { ascending: true })
         .order('time', { ascending: true })
-        .limit(50)
+        .limit(100)
 
       if (error) {
         if (error.code === '42P01' || error.message?.includes('does not exist')) {
@@ -476,27 +471,15 @@ export default function SchedulePanel() {
     return () => clearInterval(t)
   }, [])
 
-  // Convert stored "H:MM AM/PM" time to 24h "HH:MM" for reliable comparison
-  function to24h(t: string): string {
-    const m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
-    if (!m) return t.slice(0, 5) // already 24h or unknown — take first 5 chars
-    let h = parseInt(m[1])
-    const min = m[2]
-    const ampm = m[3].toUpperCase()
-    if (ampm === 'PM' && h !== 12) h += 12
-    if (ampm === 'AM' && h === 12) h = 0
-    return `${String(h).padStart(2, '0')}:${min}`
-  }
-
   const nowStr = new Date(nowTick).toLocaleString('en-CA', { timeZone: 'America/Chicago', hour12: false }).replace(', ', 'T').slice(0, 16) // "YYYY-MM-DDTHH:MM"
-  // Calendar events only (no deadlines mixed in)
+  // Calendar events only (no deadlines mixed in) — burn off past events
   const liveEvents = upcomingEvents
     .filter(e => {
-      const t24 = to24h(e.time || '23:59')
+      const t24 = rawTo24h(e.time || '23:59')
       const evDT = `${e.date}T${t24}`
       return evDT >= nowStr
     })
-    .sort((a, b) => a.date.localeCompare(b.date) || to24h(a.time || '').localeCompare(to24h(b.time || '')))
+    .sort((a, b) => a.date.localeCompare(b.date) || rawTo24h(a.time || '').localeCompare(rawTo24h(b.time || '')))
 
   // Contract deadlines only — already filtered to ≤45 days out by fetch
   const liveDeadlines = contractDeadlines
@@ -540,7 +523,7 @@ export default function SchedulePanel() {
           Schedule
         </span>
         <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-          {upcomingEvents.length + contractDeadlines.length}
+          {liveEvents.length + liveDeadlines.length}
         </span>
         <div style={{ flex: 1 }} />
         <button
@@ -717,6 +700,35 @@ export default function SchedulePanel() {
       )}
     </div>
   )
+}
+
+// ─── Time helpers (module-level so EventRow can use them) ────────────────────
+
+function rawTo24h(t: string): string {
+  if (!t) return '23:59'
+  if (t.includes('T')) t = t.split('T')[1] ?? t
+  const ampmMatch = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (ampmMatch) {
+    let h = parseInt(ampmMatch[1])
+    const min = ampmMatch[2]
+    const ap = ampmMatch[3].toUpperCase()
+    if (ap === 'PM' && h !== 12) h += 12
+    if (ap === 'AM' && h === 12) h = 0
+    return `${String(h).padStart(2, '0')}:${min}`
+  }
+  return t.slice(0, 5)
+}
+
+function formatEventTime(t: string | null | undefined): string {
+  if (!t) return ''
+  const h24 = rawTo24h(t)
+  const parts = h24.split(':')
+  const h = parseInt(parts[0] ?? '0', 10)
+  const m = parts[1] ?? '00'
+  if (isNaN(h)) return t
+  const period = h >= 12 ? 'PM' : 'AM'
+  const hour12 = h % 12 || 12
+  return `${hour12}:${m} ${period}`
 }
 
 // ─── Event Row ────────────────────────────────────────────────────────────────
@@ -898,7 +910,7 @@ function EventRow({
       }} />
       {/* Time */}
       <div style={{ width: 58, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', flexShrink: 0, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-        {event.time}
+        {formatEventTime(event.time)}
       </div>
       {/* Title + location — allow 2-line wrap, never truncate */}
       <div style={{ flex: 1, minWidth: 0 }}>
