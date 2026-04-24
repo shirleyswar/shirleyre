@@ -88,7 +88,24 @@ export default function Next48Panel() {
 
   const today = todayCST()
   const tomorrow = tomorrowCST()
-  const todayEvents = sortByTime(events.filter(e => e.date === today))
+
+  // Burn off today's events that have already passed (compare against current CST time)
+  function isEventExpired(ev: ScheduleEvent): boolean {
+    if (!ev.time) return false // no-time events never auto-burn
+    let timePart = ev.time
+    if (timePart.includes('T')) timePart = timePart.split('T')[1] ?? ''
+    const parts = timePart.split(':')
+    const h = parseInt(parts[0] ?? '0', 10)
+    const m = parseInt(parts[1] ?? '0', 10)
+    if (isNaN(h) || isNaN(m)) return false
+    const now = new Date()
+    const nowCST = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }))
+    const nowMinutes = nowCST.getHours() * 60 + nowCST.getMinutes()
+    const evMinutes = h * 60 + m
+    return evMinutes < nowMinutes // strictly in the past
+  }
+
+  const todayEvents = sortByTime(events.filter(e => e.date === today && !isEventExpired(e)))
   const tomorrowEvents = sortByTime(events.filter(e => e.date === tomorrow))
 
   return (
@@ -255,7 +272,7 @@ function EventCard({ event, featured, onEdit }: { event: ScheduleEvent; featured
         borderRadius: 12,
         padding: featured ? '16px 18px' : '12px 16px',
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         gap: 14,
         boxShadow: featured
           ? '0 0 28px rgba(79,142,247,0.12), 0 0 56px rgba(79,142,247,0.05), 0 4px 16px rgba(0,0,0,0.3)'
@@ -282,42 +299,34 @@ function EventCard({ event, featured, onEdit }: { event: ScheduleEvent; featured
         </svg>
       </div>
 
-      {/* Middle: title + meta */}
+      {/* Middle: title + location */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: featured ? 17 : 14,
           fontWeight: featured ? 700 : 600,
           color: '#F0F2FF',
           lineHeight: 1.3,
-          marginBottom: 4,
           fontFamily: 'var(--font-body)',
         }}>
           {event.title}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {timeStr && (
-            <span style={{ fontSize: 12, color: featured ? 'rgba(79,142,247,0.85)' : 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-body)', fontWeight: 500 }}>
-              {timeStr}
-            </span>
-          )}
-          {event.location && (
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-body)' }}>
-              · {event.location}
-            </span>
-          )}
-        </div>
+        {event.location && (
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-body)', marginTop: 2 }}>
+            {event.location}
+          </div>
+        )}
       </div>
 
-      {/* Right: time pill for featured */}
-      {featured && timeStr && (
+      {/* Right: time column — always shown when time exists */}
+      {timeStr && (
         <div style={{
           padding: '4px 10px',
-          background: 'rgba(79,142,247,0.15)',
-          border: '1px solid rgba(79,142,247,0.3)',
+          background: featured ? 'rgba(79,142,247,0.15)' : 'rgba(79,142,247,0.08)',
+          border: `1px solid ${featured ? 'rgba(79,142,247,0.3)' : 'rgba(79,142,247,0.18)'}`,
           borderRadius: 8,
-          fontSize: 12,
+          fontSize: featured ? 13 : 12,
           fontWeight: 700,
-          color: '#4F8EF7',
+          color: featured ? '#4F8EF7' : 'rgba(79,142,247,0.75)',
           flexShrink: 0,
           fontFamily: 'var(--font-body)',
           whiteSpace: 'nowrap',

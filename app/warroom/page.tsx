@@ -652,8 +652,9 @@ function NavRibbon({
               alignItems: 'center',
               justifyContent: 'center',
               gap: 5,
-              flex: '1 1 0',
+              flex: '1 1 72px',
               width: '100%',
+              minWidth: 72,
               maxWidth: 160,
               height: 'clamp(72px, 9vw, 60px)',
               background: isActive
@@ -739,12 +740,18 @@ function NavRibbon({
 
             {/* Label */}
             <div style={{
-              fontSize: 'clamp(10px, 2.8vw, 13px)', fontWeight: 700,
+              fontSize: 11, fontWeight: 700,
               color: isActive ? '#EEEAF4' : '#9080B0',
-              letterSpacing: '0.14em',
+              letterSpacing: '0.10em',
               textTransform: 'uppercase',
               fontFamily: 'var(--font-body)',
               textAlign: 'center',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              width: '100%',
+              paddingLeft: 4,
+              paddingRight: 4,
             }}>
               {sec.label}
             </div>
@@ -766,8 +773,9 @@ function NavRibbon({
           alignItems: 'center',
           justifyContent: 'center',
           gap: 5,
-          flex: '1 1 0',
+          flex: '1 1 72px',
           width: '100%',
+          minWidth: 72,
           maxWidth: 160,
           height: 'clamp(72px, 9vw, 60px)',
           background: 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
