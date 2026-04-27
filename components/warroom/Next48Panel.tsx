@@ -136,6 +136,16 @@ interface ScheduleEvent {
   deadlineType?: string
 }
 
+interface ContractDeadlineEvent {
+  id: string
+  deal_id: string | null
+  deadline_type: string
+  deadline_date: string // YYYY-MM-DD
+  status: string
+  notes: string | null
+  deal_name?: string // fetched from deals table
+}
+
 function todayCST(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 }
@@ -148,11 +158,11 @@ function tomorrowCST(): string {
 
 function formatTime(time: string | null): string {
   if (!time) return ''
-  // Handle both "HH:MM:SS", "HH:MM", and full ISO strings like "2026-04-23T06:00:00"
+  // Already in display format "H:MM AM/PM" — return as-is
+  if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(time)) return time
+  // Handle ISO "2026-04-23T06:00:00"
   let timePart = time
-  if (time.includes('T')) {
-    timePart = time.split('T')[1] ?? ''
-  }
+  if (time.includes('T')) timePart = time.split('T')[1] ?? ''
   const parts = timePart.split(':')
   const h = parseInt(parts[0] ?? '0', 10)
   const m = parseInt(parts[1] ?? '0', 10)
@@ -164,6 +174,7 @@ function formatTime(time: string | null): string {
 
 export default function Next48Panel() {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
+  const [deadlines48, setDeadlines48] = useState<ContractDeadlineEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editEvent, setEditEvent] = useState<ScheduleEvent | null>(null)
@@ -183,6 +194,15 @@ export default function Next48Panel() {
         .order('time', { ascending: true })
         .limit(20)
       setEvents((data ?? []) as ScheduleEvent[])
+
+      const { data: deadlines } = await supabase
+        .from('contract_deadlines')
+        .select('*, deals(name, address)')
+        .gte('deadline_date', today)
+        .lte('deadline_date', tomorrow)
+        .neq('status', 'satisfied')
+        .order('deadline_date', { ascending: true })
+      setDeadlines48((deadlines ?? []) as ContractDeadlineEvent[])
     } catch {}
     finally { setLoading(false) }
   }
@@ -208,6 +228,8 @@ export default function Next48Panel() {
 
   const todayEvents = sortByTime(events.filter(e => e.date === today && !isEventExpired(e)))
   const tomorrowEvents = sortByTime(events.filter(e => e.date === tomorrow))
+  const todayDeadlines = deadlines48.filter(d => d.deadline_date === today)
+  const tomorrowDeadlines = deadlines48.filter(d => d.deadline_date === tomorrow)
 
   return (
     <div className="wr-card" style={{
@@ -249,21 +271,22 @@ export default function Next48Panel() {
         ) : (
           <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
             {/* TODAY group — always rendered */}
-            <div style={{ marginBottom: tomorrowEvents.length > 0 ? 20 : 0 }}>
+            <div style={{ marginBottom: (tomorrowEvents.length > 0 || tomorrowDeadlines.length > 0) ? 20 : 0 }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4F8EF7', marginBottom: 10, fontFamily: 'var(--font-body)' }}>
                 Today
               </div>
-              {todayEvents.length > 0 ? (
+              {(todayEvents.length > 0 || todayDeadlines.length > 0) ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {todayEvents.map((ev, i) => (
                     <EventCard key={ev.id} event={ev} featured={i === 0} onEdit={() => setEditEvent(ev)} />
                   ))}
+                  {todayDeadlines.map(dl => <DeadlineRow key={dl.id} deadline={dl} />)}
                 </div>
               ) : (
                 /* Empty state for TODAY */
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: 'rgba(255,255,255,0.12)', letterSpacing: '-0.02em', fontFamily: 'var(--font-body)', lineHeight: 1 }}>
-                    NONE
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic', fontFamily: 'var(--font-body)' }}>
+                    None
                   </div>
                   <button
                     style={{
@@ -284,8 +307,8 @@ export default function Next48Panel() {
                 </div>
               )}
             </div>
-            {/* TOMORROW group — only when events exist */}
-            {tomorrowEvents.length > 0 && (
+            {/* TOMORROW group — only when events or deadlines exist */}
+            {(tomorrowEvents.length > 0 || tomorrowDeadlines.length > 0) && (
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 10, fontFamily: 'var(--font-body)' }}>
                   Tomorrow
@@ -294,6 +317,7 @@ export default function Next48Panel() {
                   {tomorrowEvents.map((ev, i) => (
                     <EventCard key={ev.id} event={ev} featured={false} onEdit={() => setEditEvent(ev)} />
                   ))}
+                  {tomorrowDeadlines.map(dl => <DeadlineRow key={dl.id} deadline={dl} />)}
                 </div>
               </div>
             )}
@@ -355,6 +379,150 @@ export default function Next48Panel() {
         </div>,
         document.body
       )}
+    </div>
+  )
+}
+
+function DeadlineHeroCard({ deadline }: { deadline: ContractDeadlineEvent }) {
+  const daysOut = (() => {
+    const now = new Date()
+    now.setHours(0,0,0,0)
+    const target = new Date(deadline.deadline_date + 'T00:00:00')
+    return Math.floor((target.getTime() - now.getTime()) / 86400000)
+  })()
+
+  const typeColors: Record<string, { color: string; glow: string }> = {
+    closing:            { color: '#fbbf24', glow: 'rgba(251,191,36,0.25)' },
+    contingency:        { color: '#ef4444', glow: 'rgba(239,68,68,0.25)' },
+    inspection:         { color: '#fb923c', glow: 'rgba(251,146,60,0.25)' },
+    financing:          { color: '#4F8EF7', glow: 'rgba(79,142,247,0.25)' },
+    appraisal:          { color: '#a78bfa', glow: 'rgba(167,139,250,0.25)' },
+    title:              { color: '#2dd4bf', glow: 'rgba(45,212,191,0.25)' },
+    survey:             { color: '#9ca3af', glow: 'rgba(156,163,175,0.2)'  },
+    psa_review:         { color: '#a78bfa', glow: 'rgba(167,139,250,0.25)' },
+    lease_review:       { color: '#60a5fa', glow: 'rgba(96,165,250,0.25)'  },
+    psa_draft:          { color: '#c4b5fd', glow: 'rgba(196,181,253,0.2)'  },
+    lease_draft:        { color: '#93c5fd', glow: 'rgba(147,197,253,0.2)'  },
+    lease_execution:    { color: '#2dd4bf', glow: 'rgba(45,212,191,0.25)'  },
+    lease_deliverables: { color: '#22c55e', glow: 'rgba(34,197,94,0.25)'   },
+    custom:             { color: '#6b7280', glow: 'rgba(107,114,128,0.2)'  },
+  }
+  const tc = typeColors[deadline.deadline_type] ?? { color: '#fbbf24', glow: 'rgba(251,191,36,0.2)' }
+  const typeLabel = deadline.deadline_type.replace(/_/g, ' ').toUpperCase()
+  const dealDisplay = (deadline as any).deals?.address || (deadline as any).deals?.name || 'Deal'
+  const [y, m, d] = deadline.deadline_date.split('-').map(Number)
+  const dateDisplay = new Date(y, m-1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%)',
+      border: `1px solid ${tc.color}55`,
+      borderLeft: `3px solid ${tc.color}`,
+      borderRadius: 12,
+      padding: '14px 16px',
+      marginBottom: 10,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 14,
+      boxShadow: `0 0 28px ${tc.glow}, 0 0 56px ${tc.glow.replace('0.25', '0.1')}, 0 4px 16px rgba(0,0,0,0.3)`,
+    }}>
+      {/* Day counter badge */}
+      <div style={{
+        flexShrink: 0,
+        background: `${tc.color}20`,
+        border: `1px solid ${tc.color}60`,
+        borderRadius: 8,
+        padding: '6px 10px',
+        textAlign: 'center',
+        minWidth: 64,
+      }}>
+        <div style={{ fontSize: 16, fontWeight: 900, color: tc.color, lineHeight: 1, fontFamily: 'var(--font-body)' }}>
+          {daysOut === 0 ? '!' : daysOut}
+        </div>
+        <div style={{ fontSize: 8, fontWeight: 700, color: tc.color, letterSpacing: '0.1em', opacity: 0.8, marginTop: 2 }}>
+          {daysOut === 0 ? 'TODAY' : daysOut === 1 ? 'DAY OUT' : 'DAYS OUT'}
+        </div>
+      </div>
+      {/* Center: type + deal */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: tc.color, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-body)' }}>
+          {typeLabel}
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#F0F2FF', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {dealDisplay}
+        </div>
+      </div>
+      {/* Right: date */}
+      <div style={{ flexShrink: 0, fontSize: 13, fontWeight: 700, color: `${tc.color}cc`, fontFamily: 'var(--font-body)' }}>
+        {dateDisplay}
+      </div>
+    </div>
+  )
+}
+
+function DeadlineRow({ deadline }: { deadline: ContractDeadlineEvent }) {
+  const typeColors: Record<string, { color: string; bg: string }> = {
+    closing:            { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
+    contingency:        { color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+    inspection:         { color: '#fb923c', bg: 'rgba(251,146,60,0.15)' },
+    financing:          { color: '#4F8EF7', bg: 'rgba(79,142,247,0.15)' },
+    appraisal:          { color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' },
+    title:              { color: '#2dd4bf', bg: 'rgba(45,212,191,0.15)' },
+    survey:             { color: '#9ca3af', bg: 'rgba(156,163,175,0.15)' },
+    psa_review:         { color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' },
+    lease_review:       { color: '#60a5fa', bg: 'rgba(96,165,250,0.15)' },
+    psa_draft:          { color: '#c4b5fd', bg: 'rgba(196,181,253,0.15)' },
+    lease_draft:        { color: '#93c5fd', bg: 'rgba(147,197,253,0.15)' },
+    lease_execution:    { color: '#2dd4bf', bg: 'rgba(45,212,191,0.15)' },
+    lease_deliverables: { color: '#22c55e', bg: 'rgba(34,197,94,0.15)' },
+    custom:             { color: '#6b7280', bg: 'rgba(107,114,128,0.15)' },
+  }
+  const tc = typeColors[deadline.deadline_type] ?? { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' }
+  const typeLabel = deadline.deadline_type.replace(/_/g, ' ').toUpperCase()
+  const dealDisplay = (deadline as any).deals?.address || (deadline as any).deals?.name || 'Deadline'
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.03)',
+      border: `1px solid ${tc.color}44`,
+      borderLeft: `3px solid ${tc.color}`,
+      borderRadius: 12,
+      padding: '12px 16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 14,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+    }}>
+      <div style={{
+        width: 32, height: 32, borderRadius: 8,
+        background: tc.bg, border: `1px solid ${tc.color}55`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, color: tc.color,
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 14, fontWeight: 600, color: '#F0F2FF', lineHeight: 1.3,
+          fontFamily: 'var(--font-body)', overflow: 'hidden',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {dealDisplay}
+        </div>
+      </div>
+      <div style={{
+        padding: '4px 10px', background: tc.bg, border: `1px solid ${tc.color}55`,
+        borderRadius: 8, fontSize: 11, fontWeight: 700, color: tc.color,
+        flexShrink: 0, fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
+        letterSpacing: '0.05em',
+      }}>
+        {typeLabel}
+      </div>
     </div>
   )
 }

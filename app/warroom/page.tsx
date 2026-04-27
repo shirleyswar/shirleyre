@@ -19,7 +19,6 @@ import ShirleyCREAgentCard from '@/components/warroom/ShirleyCREAgentCard'
 import WinLogPanel from '@/components/warroom/WinLogPanel'
 import LifePanel from '@/components/warroom/LifePanel'
 import Next48Panel from '@/components/warroom/Next48Panel'
-import MoneyMoversPanel from '@/components/warroom/MoneyMoversPanel'
 import EntitiesPanel from '@/components/warroom/EntitiesPanel'
 import PortfolioPanel from '@/components/warroom/PortfolioPanel'
 import { useRouter } from 'next/navigation'
@@ -613,7 +612,7 @@ function NavRibbon({
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          height: 'clamp(72px, 9vw, 60px)',
+          height: 'clamp(80px, 10vw, 96px)',
           gap: 0,
           padding: '0 12px',
           cursor: 'default',
@@ -655,12 +654,12 @@ function NavRibbon({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 5,
+              gap: 8,
               flex: isVertical ? '1 1 0' : '1 1 72px',
               width: '100%',
               minWidth: isVertical ? 0 : 72,
               maxWidth: isVertical ? 'none' : 160,
-              height: 'clamp(72px, 9vw, 60px)',
+              height: 'clamp(80px, 10vw, 96px)',
               background: isActive
                 ? 'linear-gradient(135deg, #2A1F50 0%, #221845 40%, #1E1540 100%)'
                 : 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
@@ -702,44 +701,14 @@ function NavRibbon({
               }} />
             )}
 
-            {/* Orbit icon */}
-            <div style={{ position: 'relative', width: 'clamp(36px, 6vw, 40px)', height: 'clamp(36px, 6vw, 40px)', flexShrink: 0 }}>
-              {/* Outer orbit ring */}
-              <motion.div
-                style={{
-                  position: 'absolute', inset: 0, borderRadius: '50%',
-                  border: '1px solid rgba(130,90,200,0.35)',
-                }}
-                animate={{ scale: [1, 1.45, 1], opacity: [0.5, 0, 0.5] }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-              />
-              {/* Inner orbit ring */}
-              <motion.div
-                style={{
-                  position: 'absolute', inset: '15%', borderRadius: '50%',
-                  border: '1px solid rgba(130,90,200,0.55)',
-                }}
-                animate={{ scale: [1, 1.25, 1], opacity: [0.65, 0.08, 0.65] }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.55 }}
-              />
-              {/* Core glow circle */}
-              <motion.div
-                animate={{
-                  boxShadow: isActive
-                    ? ['0 0 14px rgba(167,139,250,0.4)', '0 0 28px rgba(167,139,250,0.7)', '0 0 14px rgba(167,139,250,0.4)']
-                    : ['0 0 8px rgba(120,80,200,0.2)', '0 0 18px rgba(120,80,200,0.45)', '0 0 8px rgba(120,80,200,0.2)'],
-                }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  position: 'absolute', inset: '22%', borderRadius: '50%',
-                  background: isActive ? 'rgba(75,50,130,0.8)' : 'rgba(40,30,65,0.95)',
-                  border: `1px solid ${isActive ? 'rgba(140,100,220,0.8)' : 'rgba(130,90,200,0.55)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: isActive ? '#C4B5FD' : '#8B6CC1',
-                }}
-              >
-                <sec.icon />
-              </motion.div>
+            {/* Simple icon — no rings */}
+            <div style={{
+              width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              color: isActive ? '#C4B5FD' : '#8B6CC1',
+              filter: isActive ? 'drop-shadow(0 0 10px rgba(167,139,250,0.8))' : 'drop-shadow(0 0 5px rgba(120,80,200,0.4))',
+              transition: 'filter 0.2s ease',
+            }}>
+              <sec.icon />
             </div>
 
             {/* Label */}
@@ -776,12 +745,12 @@ function NavRibbon({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 5,
+          gap: 8,
           flex: isVertical ? '1 1 0' : '1 1 72px',
           width: '100%',
           minWidth: isVertical ? 0 : 72,
           maxWidth: isVertical ? 'none' : 160,
-          height: 'clamp(72px, 9vw, 60px)',
+          height: 'clamp(80px, 10vw, 96px)',
           background: 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
           border: '1px solid rgba(90,70,140,0.35)',
           borderRadius: 12,
@@ -800,46 +769,35 @@ function NavRibbon({
           pointerEvents: 'none',
         }} />
 
-        {/* Orbit icon zone — violet system */}
-        <div style={{ position: 'relative', width: 'clamp(36px, 6vw, 40px)', height: 'clamp(36px, 6vw, 40px)', flexShrink: 0 }}>
-          <motion.div
-            style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(130,90,200,0.35)' }}
-            animate={{ scale: [1, 1.45, 1], opacity: [0.45, 0, 0.45] }}
-            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <motion.div
-            style={{ position: 'absolute', inset: '15%', borderRadius: '50%', border: '1px solid rgba(130,90,200,0.55)' }}
-            animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.08, 0.6] }}
-            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.55 }}
-          />
-          <motion.div
-            animate={{ boxShadow: ['0 0 8px rgba(120,80,200,0.2)', '0 0 18px rgba(120,80,200,0.45)', '0 0 8px rgba(120,80,200,0.2)'] }}
-            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              position: 'absolute', inset: '22%', borderRadius: '50%',
-              background: 'rgba(40,30,65,0.95)',
-              border: '1px solid rgba(130,90,200,0.55)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#8B6CC1',
-            }}
-          >
-            <svg width="65%" height="65%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-          </motion.div>
+        {/* Simple icon — no rings */}
+        <div style={{
+          width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          color: '#8B6CC1',
+          filter: 'drop-shadow(0 0 5px rgba(120,80,200,0.4))',
+          transition: 'filter 0.2s ease',
+        }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
         </div>
 
         {/* Label — violet to match system */}
         <div style={{
-          fontSize: 'clamp(10px, 2.8vw, 13px)', fontWeight: 700,
+          fontSize: 11, fontWeight: 700,
           color: '#9080B0',
-          letterSpacing: '0.14em',
+          letterSpacing: '0.10em',
           textTransform: 'uppercase',
           fontFamily: 'var(--font-body)',
           textAlign: 'center',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          width: '100%',
+          paddingLeft: 4,
+          paddingRight: 4,
         }}>
           Contacts
         </div>
@@ -879,7 +837,7 @@ function NavRibbon({
             flex: '0 0 auto',
             width: 'clamp(90px, 20vw, 160px)',
             maxWidth: 160,
-            height: 'clamp(72px, 9vw, 60px)',
+            height: 'clamp(80px, 10vw, 96px)',
             background: 'linear-gradient(135deg, #0a1e1e 0%, #0d2222 50%, #091a1a 100%)',
             border: '1px solid rgba(14,165,160,0.22)',
             borderRadius: 12,
@@ -898,49 +856,34 @@ function NavRibbon({
             pointerEvents: 'none',
           }} />
 
-          {/* Orbit icon zone */}
-          <div style={{ position: 'relative', width: 'clamp(36px, 6vw, 40px)', height: 'clamp(36px, 6vw, 40px)', flexShrink: 0 }}>
-            {/* Outer ring */}
-            <motion.div
-              style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(14,165,160,0.22)' }}
-              animate={{ scale: [1, 1.45, 1], opacity: [0.45, 0, 0.45] }}
-              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            {/* Inner ring */}
-            <motion.div
-              style={{ position: 'absolute', inset: 7, borderRadius: '50%', border: '1px solid rgba(14,165,160,0.4)' }}
-              animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.08, 0.6] }}
-              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.55 }}
-            />
-            {/* Core */}
-            <motion.div
-              animate={{ boxShadow: ['0 0 6px rgba(14,165,160,0.2)', '0 0 16px rgba(14,165,160,0.5)', '0 0 6px rgba(14,165,160,0.2)'] }}
-              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-              style={{
-                position: 'absolute', inset: '22%', borderRadius: '50%',
-                background: 'rgba(14,165,160,0.15)',
-                border: '1px solid rgba(14,165,160,0.5)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#0ea5a0',
-              }}
-            >
-              {/* External link icon */}
-              <svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
-                <polyline points="15 3 21 3 21 9"/>
-                <line x1="10" y1="14" x2="21" y2="3"/>
-              </svg>
-            </motion.div>
+          {/* Simple icon — no rings */}
+          <div style={{
+            width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            color: '#0ea5a0',
+            filter: 'drop-shadow(0 0 5px rgba(14,165,160,0.4))',
+            transition: 'filter 0.2s ease',
+          }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
           </div>
 
           {/* Label */}
           <div style={{
-            fontSize: 'clamp(10px, 2.8vw, 13px)', fontWeight: 700,
+            fontSize: 11, fontWeight: 700,
             color: 'rgba(14,165,160,0.85)',
-            letterSpacing: '0.14em',
+            letterSpacing: '0.10em',
             textTransform: 'uppercase',
             fontFamily: 'var(--font-body)',
             textAlign: 'center',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            width: '100%',
+            paddingLeft: 4,
+            paddingRight: 4,
           }}>
             {link.label}
           </div>
@@ -1000,7 +943,7 @@ function StatsNavCard() {
       alignItems: 'center',
       justifyContent: 'center',
       flex: '0 0 auto',
-      height: 'clamp(72px, 9vw, 60px)',
+      height: 'clamp(80px, 10vw, 96px)',
       padding: '0 16px',
       background: 'linear-gradient(135deg, #0D1218 0%, #111720 100%)',
       border: '1px solid rgba(232,184,75,0.18)',
@@ -1149,10 +1092,9 @@ function OperationsView({ activePanel }: { activePanel: string }) {
       <motion.div key="overview-v" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1080 }}>
           <Next48Panel />
-          <MoneyMoversPanel />
+          <HotPanel />
           <BattlePlanPanel />
           <SchedulePanel />
-          <HotPanel />
           <UnderContractPanel />
           <DealPipelinePanel />
           <ClientsPanel />
@@ -1173,7 +1115,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 
         {/* Row 2: Money Movers — full width */}
         <div className="lg:col-span-3 card-reveal card-reveal-2" style={{ position: 'relative', zIndex: 55 }}>
-          <MoneyMoversPanel />
+          <HotPanel />
         </div>
 
         {/* Row 3: Battle Plan (2-col) + Schedule (1-col) */}
@@ -1184,12 +1126,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
           <SchedulePanel />
         </div>
 
-        {/* Row 4: Hot Panel (full width) */}
-        <div className="lg:col-span-3 card-reveal card-reveal-5" style={{ position: 'relative', zIndex: 40 }}>
-          <HotPanel />
-        </div>
-
-        {/* Row 5: Under Contract (full width) */}
+        {/* Row 4: Under Contract (full width) */}
         <div className="lg:col-span-3 card-reveal card-reveal-5" style={{ position: 'relative', zIndex: 30 }}>
           <UnderContractPanel />
         </div>

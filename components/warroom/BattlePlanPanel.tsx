@@ -996,52 +996,14 @@ function TaskRow({
               {task.is_family && <span style={{ marginRight: 5, verticalAlign: 'middle' }}><FamilyIcon active={true} /></span>}
               {task.title}
             </div>
-            {/* Subtext row — date string + contact chip */}
-            {(dateSubtext || task.contact_name) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {dateSubtext && (
-                  <span style={{ fontSize: 12, color: dateSubtext.color, fontFamily: 'var(--font-body)' }}>
-                    {dateSubtext.label}
-                  </span>
-                )}
-                {task.contact_name && (
-                  <span style={{
-                    background: 'rgba(255,255,255,0.08)', borderRadius: 4,
-                    padding: '1px 7px', fontSize: 11,
-                    color: 'rgba(255,255,255,0.5)',
-                  }}>
-                    {task.contact_name}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Right: date badge */}
-          <div style={{ flexShrink: 0 }}>
-            {isOverdue && task.due_date && (() => {
-              const [y, m, d] = task.due_date!.split('-').map(Number)
-              const [ty, tm, td] = today.split('-').map(Number)
-              const diff = Math.round((new Date(ty, tm-1, td).getTime() - new Date(y, m-1, d).getTime()) / 86400000)
-              return (
-                <span style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>
-                  {diff}d late
-                </span>
-              )
-            })()}
-            {isDueToday && (
-              <span style={{ background: 'rgba(232,184,75,0.15)', color: '#E8B84B', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>
-                Today
-              </span>
-            )}
-            {!isOverdue && !isDueToday && task.due_date && (
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'monospace' }}>
-                {(() => {
-                  const [y, m, d] = task.due_date!.split('-').map(Number)
-                  const dt = new Date(y, m - 1, d)
-                  const dow = dt.toLocaleDateString('en-US', { weekday: 'short' })
-                  return `${dow} ${m}/${d}`
-                })()}
+            {task.contact_name && (
+              <span style={{
+                background: 'rgba(255,255,255,0.08)', borderRadius: 4,
+                padding: '1px 7px', fontSize: 11,
+                color: 'rgba(255,255,255,0.5)',
+                display: 'inline-block', marginTop: 4,
+              }}>
+                {task.contact_name}
               </span>
             )}
           </div>

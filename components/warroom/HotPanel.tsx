@@ -127,15 +127,23 @@ export default function HotPanel() {
       // Primary: deal_economics (asking_price + sale_commission_pct) — same source as CommissionPanel
       const { data: econData } = await supabase
         .from('deal_economics')
-        .select('deal_id, asking_price, sale_commission_pct, lease_rate_psf, lease_term_years, transaction_type')
+        .select('deal_id, asking_price, sale_commission_pct, lease_rate_psf, lease_term_years, lease_commission_pct, sqft, transaction_type')
         .in('deal_id', ids)
       if (econData) {
         for (const e of econData as any[]) {
           const isLease = e.transaction_type === 'lease'
-          const price = e.asking_price ?? null
-          const pct = isLease ? null : (e.sale_commission_pct ?? null)
-          const commission = price && pct ? Math.round(price * (pct / 100) * 0.75) : null
-          map[e.deal_id] = { value: price, commission }
+          if (isLease) {
+            const leaseGross = e.sqft && e.lease_rate_psf && e.lease_term_years
+              ? Math.round(e.sqft * e.lease_rate_psf * e.lease_term_years) : null
+            const leaseComm = leaseGross && e.lease_commission_pct
+              ? Math.round(leaseGross * (e.lease_commission_pct / 100) * 0.75) : null
+            map[e.deal_id] = { value: leaseGross, commission: leaseComm }
+          } else {
+            const price = e.asking_price ?? null
+            const pct = e.sale_commission_pct ?? null
+            const commission = price && pct ? Math.round(price * (pct / 100) * 0.75) : null
+            map[e.deal_id] = { value: price, commission }
+          }
         }
       }
 
@@ -211,13 +219,13 @@ export default function HotPanel() {
           <thead>
             <tr>
               {[
-                { label: '↗',            align: 'center' },
-                { label: 'Address',      align: 'left'   },
-                { label: 'Action',       align: 'left'   },
-                { label: 'Value',        align: 'right'  },
-                { label: 'Commission',   align: 'right'  },
+                { label: '↗',            align: 'center', hide: false },
+                { label: 'Address',      align: 'left',   hide: false },
+                { label: 'Action',       align: 'left',   hide: false },
+                { label: 'Value',        align: 'right',  hide: true  },
+                { label: 'Commission',   align: 'right',  hide: true  },
               ].map((h, i) => (
-                <th key={i} style={{
+                <th key={i} className={h.hide ? 'hidden md:table-cell' : ''} style={{
                   textAlign: h.align as React.CSSProperties['textAlign'],
                   padding: '7px 8px',
                   fontSize: 10,
@@ -303,12 +311,12 @@ export default function HotPanel() {
                   </td>
 
                   {/* Value */}
-                  <td style={{ padding: '13px 8px', whiteSpace: 'nowrap', textAlign: 'right', fontSize: 14, fontWeight: 600, color: '#F0F2FF', fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums' }}>
+                  <td className="hidden md:table-cell" style={{ padding: '13px 8px', whiteSpace: 'nowrap', textAlign: 'right', fontSize: 14, fontWeight: 600, color: '#F0F2FF', fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCurrency(value)}
                   </td>
 
                   {/* Commission */}
-                  <td style={{ padding: '13px 8px', whiteSpace: 'nowrap', textAlign: 'right', fontSize: 14, fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums' }}>
+                  <td className="hidden md:table-cell" style={{ padding: '13px 8px', whiteSpace: 'nowrap', textAlign: 'right', fontSize: 14, fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums' }}>
                     <span style={{ color: '#22c55e', fontWeight: 700 }}>
                       {formatCurrency(commission)}
                     </span>
