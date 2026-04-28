@@ -28,12 +28,11 @@ export default function ShirleyCREAgentCard() {
 
       {/* Header */}
       <div className="wr-card-header" style={{ borderBottomColor: 'rgba(167,139,250,0.12)' }}>
-        <span style={{ color: 'rgba(167,139,250,0.8)', display: 'flex' }}>
+        <span style={{ color: '#A78BFA', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(167,139,250,0.7))' }}>
           <AgentIcon />
         </span>
-        <span className="wr-card-title" style={{ color: 'rgba(167,139,250,0.6)' }}>
-          ShirleyCRE Agent
-        </span>
+        <span className="wr-rank1" style={{ color: '#A78BFA', textShadow: '0 0 16px rgba(167,139,250,0.5)' }}>ShirleyCRE Agent</span>
+        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(167,139,250,0.35), transparent)' }} />
       </div>
 
       {/* Content */}

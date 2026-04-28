@@ -360,12 +360,12 @@ export default function BattlePlanPanel() {
       }} />
       {/* ── Panel Header — T1 standard ── */}
       <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
-        <span style={{ color: '#A855F7', display: 'flex', alignItems: 'center' }}>
+        <span style={{ color: '#A855F7', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(168,85,247,0.7))' }}>
           <SwordIcon />
         </span>
-        <span className="wr-rank1" style={{ color: '#A855F7' }}>Battle Plan</span>
-        <div className="wr-panel-line" />
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(168,85,247,0.6)', fontVariantNumeric: 'tabular-nums' }}>
+        <span className="wr-rank1" style={{ color: '#A855F7', textShadow: '0 0 16px rgba(168,85,247,0.5)' }}>Battle Plan</span>
+        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(168,85,247,0.35), transparent)' }} />
+        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#A855F7' }}>
           {openTasks.length > 0 ? animatedCount : ''}
         </span>
       </div>

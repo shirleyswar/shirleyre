@@ -279,8 +279,8 @@ export default function AccountsReceivablePanel() {
         <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, background: 'radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
         {/* Header row */}
-        <div style={{ display: 'flex', alignItems: 'center', padding: '0 0 0 0', marginBottom: 20 }}>
-          <span style={{ color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', marginRight: 8 }}>
+        <div className="wr-card-header" style={{ marginBottom: 20 }}>
+          <span style={{ color: '#60A5FA', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(96,165,250,0.7))' }}>
             {/* Stack/layers icon — distinct from $ used by Money Movers */}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="12 2 2 7 12 12 22 7 12 2"/>
@@ -288,13 +288,11 @@ export default function AccountsReceivablePanel() {
               <polyline points="2 12 12 17 22 12"/>
             </svg>
           </span>
-          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', letterSpacing: '-0.01em' }}>
-            Receivables
+          <span className="wr-rank1" style={{ color: '#60A5FA', textShadow: '0 0 16px rgba(96,165,250,0.5)' }}>Receivables</span>
+          <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(96,165,250,0.35), transparent)' }} />
+          <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#60A5FA' }}>
+            {receivable.length || ''}
           </span>
-          <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-            {receivable.length}
-          </span>
-          <div style={{ flex: 1 }} />
           {receivable.length === 0 && (
             <span style={{
               fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase',

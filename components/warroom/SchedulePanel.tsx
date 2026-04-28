@@ -510,8 +510,8 @@ export default function SchedulePanel() {
 
   return (
     <div className="wr-card h-full min-h-[240px]">
-      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 0', marginBottom: 12 }}>
-        <span style={{ color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', marginRight: 8 }}>
+      <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
+        <span style={{ color: 'rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.3))' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2"/>
             <line x1="16" y1="2" x2="16" y2="6"/>
@@ -519,13 +519,11 @@ export default function SchedulePanel() {
             <line x1="3" y1="10" x2="21" y2="10"/>
           </svg>
         </span>
-        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', letterSpacing: '-0.01em' }}>
-          Schedule
+        <span className="wr-rank1" style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16, fontWeight: 900 }}>Schedule</span>
+        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.12), transparent)' }} />
+        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: 'rgba(255,255,255,0.7)' }}>
+          {liveEvents.length + liveDeadlines.length || ''}
         </span>
-        <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-          {liveEvents.length + liveDeadlines.length}
-        </span>
-        <div style={{ flex: 1 }} />
         <button
           onClick={openAddForm}
           style={{

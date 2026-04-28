@@ -304,14 +304,13 @@ export default function LifePanel() {
         <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, background: 'radial-gradient(circle, rgba(139,92,246,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
         {/* ── Header ── */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 18 }}>
-          <span style={{ color: 'rgba(255,255,255,0.35)', display: 'flex', marginRight: 8 }}>
+        <div className="wr-card-header" style={{ marginBottom: 18 }}>
+          <span style={{ color: '#F87171', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(248,113,113,0.7))' }}>
             <LifeIcon />
           </span>
-          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-            LIFE
-          </span>
-          <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          <span className="wr-rank1" style={{ color: '#F87171', textShadow: '0 0 16px rgba(248,113,113,0.5)' }}>Life</span>
+          <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(248,113,113,0.35), transparent)' }} />
+          <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#F87171' }}>
             {totalOpen > 0 ? totalOpen : '—'}
           </span>
         </div>

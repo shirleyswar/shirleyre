@@ -136,9 +136,9 @@ html, body {
 /* Extending line after label */
 .wr-panel-line {
   flex: 1;
-  height: 1px;
-  background: linear-gradient(to right, rgba(255,255,255,0.06), transparent);
-  margin-left: 6px;
+  height: 2px;
+  background: linear-gradient(to right, rgba(var(--section-color-rgb, 255,255,255), 0.18), transparent);
+  margin-left: 8px;
 }
 
 /* Stat in header — right side */
@@ -337,11 +337,11 @@ html, body {
 /* ─── FONT HIERARCHY ─────────────────────────────────────────── */
 /* Rank 1: Panel headers */
 .wr-rank1 {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #C8D8E8;   /* Cool blue-white — readable, not yellow */
+  font-family: var(--font-body);
 }
 /* Rank 2: Column headers */
 .wr-rank2 {

@@ -78,10 +78,10 @@ export default function WinLogPanel() {
     <div className="wr-card">
       {/* Header */}
       <div className="wr-card-header">
-        <span style={{ color: '#22c55e', display: 'flex' }}><TrophyIcon /></span>
-        <span className="wr-rank1">WIN LOG</span>
-        <span className="wr-panel-line" />
-        <span className="wr-panel-stat" style={{ fontSize: 16, color: '#22c55e' }}>
+        <span style={{ color: '#E8B84B', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(232,184,75,0.7))' }}><TrophyIcon /></span>
+        <span className="wr-rank1" style={{ color: '#E8B84B', textShadow: '0 0 16px rgba(232,184,75,0.5)' }}>Win Log</span>
+        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(232,184,75,0.35), transparent)' }} />
+        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#22c55e' }}>
           {loading ? '—' : fmt(totalCollected)}
         </span>
       </div>

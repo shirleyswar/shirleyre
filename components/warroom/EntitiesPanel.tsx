@@ -127,14 +127,12 @@ export default function EntitiesPanel() {
     <div className="wr-card" style={{ minHeight: 400 }}>
       {/* Header */}
       <div className="wr-card-header">
-        <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
+        <span style={{ color: '#2DD4BF', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(45,212,191,0.7))' }}>
           <BuildingIcon />
         </span>
-        <span className="wr-card-title">Entities</span>
-        <span style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(139,92,246,0.12)', color: 'var(--accent-gold)', fontWeight: 600 }}>
-          Registry
-        </span>
-        <span style={{ marginLeft: 'auto' }}>
+        <span className="wr-rank1" style={{ color: '#2DD4BF', textShadow: '0 0 16px rgba(45,212,191,0.5)' }}>Entities</span>
+        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(45,212,191,0.35), transparent)' }} />
+        <span style={{ marginLeft: 0 }}>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             style={{

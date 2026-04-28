@@ -247,17 +247,16 @@ export default function Next48Panel() {
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         {/* Header */}
-        <div style={{ padding: '20px 24px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ color: 'rgba(79,142,247,0.7)', display: 'flex' }}>
+        <div className="wr-card-header" style={{ padding: '20px 24px 0', marginBottom: 0 }}>
+          <span style={{ color: '#4F8EF7', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(79,142,247,0.7))' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
           </span>
-          <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4F8EF7', fontFamily: 'var(--font-body)' }}>
-            Next 48
-          </span>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-body)' }}>
-            {events.length > 0 ? `${events.length} event${events.length !== 1 ? 's' : ''}` : ''}
+          <span className="wr-rank1" style={{ color: '#4F8EF7', textShadow: '0 0 16px rgba(79,142,247,0.5)' }}>Next 48</span>
+          <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(79,142,247,0.35), transparent)' }} />
+          <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#4F8EF7' }}>
+            {events.length + deadlines48.length || ''}
           </span>
         </div>
 
