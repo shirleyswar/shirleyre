@@ -46,8 +46,12 @@ export default function PanelHeader({
       className="wr-card-header"
       style={{
         // Canonical spacing — do not change.
-        // padding-bottom: 14px gives breathing room above the ::after divider line.
-        padding: '16px 20px 14px',
+        // Explicit properties (not shorthand) so nothing in the cascade can
+        // accidentally zero out padding-bottom and collapse the divider gap.
+        paddingTop: 16,
+        paddingRight: 20,
+        paddingBottom: 14,   // <-- this is the gap between text and ::after line
+        paddingLeft: 20,
         marginBottom: 4,
         ...style,
       }}
