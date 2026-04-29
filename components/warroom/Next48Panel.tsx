@@ -251,22 +251,23 @@ export default function Next48Panel() {
                   {todayDeadlines.map(dl => <DeadlineRow key={dl.id} deadline={dl} />)}
                 </div>
               ) : (
-                /* Empty state for TODAY */
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic', fontFamily: 'var(--font-body)' }}>
+                /* Empty state for TODAY — always rendered, never skipped */
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.22)', fontStyle: 'italic', fontFamily: 'var(--font-body)' }}>
                     None
-                  </div>
+                  </span>
                   <button
                     style={{
-                      padding: '7px 16px',
-                      background: 'rgba(79,142,247,0.1)',
-                      border: '1px solid rgba(79,142,247,0.3)',
-                      borderRadius: 8,
-                      color: '#4F8EF7',
-                      fontSize: 12,
+                      padding: '5px 13px',
+                      background: 'rgba(79,142,247,0.08)',
+                      border: '1px solid rgba(79,142,247,0.25)',
+                      borderRadius: 7,
+                      color: 'rgba(79,142,247,0.7)',
+                      fontSize: 11,
                       fontWeight: 600,
                       cursor: 'pointer',
                       fontFamily: 'var(--font-body)',
+                      letterSpacing: '0.02em',
                     }}
                     onClick={() => setShowAddModal(true)}
                   >
@@ -495,6 +496,11 @@ function DeadlineRow({ deadline }: { deadline: ContractDeadlineEvent }) {
   )
 }
 
+// ─── EventCard ────────────────────────────────────────────────────────────────
+// Layout: [icon] [time — fixed-width, right-aligned] [title — fills remaining]
+// Time leads immediately after the icon so the eye scans: icon → time → title.
+// Status/deadline badges stay right-aligned via existing DeadlineRow component.
+// Single-line rows — no two-line stacking.
 function EventCard({ event, featured, onEdit }: { event: ScheduleEvent; featured: boolean; onEdit: () => void }) {
   const timeStr = formatEventTime(event.time)
 
@@ -507,70 +513,71 @@ function EventCard({ event, featured, onEdit }: { event: ScheduleEvent; featured
           : 'rgba(255,255,255,0.03)',
         border: `1px solid ${featured ? 'rgba(79,142,247,0.25)' : 'rgba(255,255,255,0.07)'}`,
         borderRadius: 12,
-        padding: featured ? '16px 18px' : '12px 16px',
+        padding: featured ? '14px 16px' : '10px 14px',
         display: 'flex',
         alignItems: 'center',
-        gap: 14,
+        gap: 10,
         boxShadow: featured
           ? '0 0 28px rgba(79,142,247,0.12), 0 0 56px rgba(79,142,247,0.05), 0 4px 16px rgba(0,0,0,0.3)'
           : '0 2px 8px rgba(0,0,0,0.15)',
         transition: 'all 0.15s ease',
         cursor: 'pointer',
+        minHeight: featured ? 52 : 44,
       }}
     >
-      {/* Left: calendar icon */}
+      {/* 1 — Calendar icon (fixed, left) */}
       <div style={{
-        width: featured ? 40 : 32,
-        height: featured ? 40 : 32,
-        borderRadius: 10,
-        background: featured ? 'rgba(79,142,247,0.2)' : 'rgba(79,142,247,0.1)',
-        border: '1px solid rgba(79,142,247,0.25)',
+        width: 28,
+        height: 28,
+        borderRadius: 8,
+        background: 'rgba(79,142,247,0.1)',
+        border: '1px solid rgba(79,142,247,0.2)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
         color: '#4F8EF7',
       }}>
-        <svg width={featured ? 18 : 14} height={featured ? 18 : 14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
       </div>
 
-      {/* Middle: title + location */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: featured ? 17 : 14,
-          fontWeight: featured ? 700 : 600,
-          color: '#F0F2FF',
-          lineHeight: 1.3,
-          fontFamily: 'var(--font-body)',
-        }}>
-          {event.title}
-        </div>
-        {event.location && (
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-body)', marginTop: 2 }}>
-            {event.location}
-          </div>
-        )}
+      {/* 2 — Time column: fixed width, right-aligned so colons stack */}
+      <div style={{
+        width: 68,           // desktop — enough for "12:00 PM"
+        flexShrink: 0,
+        textAlign: 'right',
+        fontSize: featured ? 13 : 12,
+        fontWeight: 700,
+        color: featured ? '#4F8EF7' : 'rgba(79,142,247,0.8)',
+        fontFamily: 'var(--font-body)',
+        fontVariantNumeric: 'tabular-nums',
+        whiteSpace: 'nowrap',
+        letterSpacing: '0.01em',
+      }}>
+        {timeStr || <span style={{ opacity: 0.25 }}>—</span>}
       </div>
 
-      {/* Right: time column — always shown when time exists */}
-      {timeStr && (
-        <div style={{
-          padding: '4px 10px',
-          background: featured ? 'rgba(79,142,247,0.15)' : 'rgba(79,142,247,0.08)',
-          border: `1px solid ${featured ? 'rgba(79,142,247,0.3)' : 'rgba(79,142,247,0.18)'}`,
-          borderRadius: 8,
-          fontSize: featured ? 13 : 12,
-          fontWeight: 700,
-          color: featured ? '#4F8EF7' : 'rgba(79,142,247,0.75)',
-          flexShrink: 0,
-          fontFamily: 'var(--font-body)',
-          whiteSpace: 'nowrap',
-        }}>
-          {timeStr}
-        </div>
-      )}
+      {/* 3 — Title (fills remaining width, single line) */}
+      <div style={{
+        flex: 1,
+        minWidth: 0,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        fontSize: featured ? 15 : 14,
+        fontWeight: featured ? 700 : 500,
+        color: '#F0F2FF',
+        fontFamily: 'var(--font-body)',
+      }}>
+        {event.title}
+        {event.location && (
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', fontWeight: 400, marginLeft: 8 }}>
+            {event.location}
+          </span>
+        )}
+      </div>
     </div>
   )
 }
