@@ -152,7 +152,10 @@ export default function WarRoomPage() {
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minWidth: 0, maxWidth: '100%' }}>
 
         {/* ── WAR ROOM HEADER ── */}
-        <WarRoomHeader onMenuToggle={() => setSidebarOpen(o => !o)} />
+        <WarRoomHeader
+          onMenuToggle={() => setSidebarOpen(o => !o)}
+          onHome={activeSection !== 'operations' ? () => setActiveSection('operations') : undefined}
+        />
 
         {/* ── NAV RIBBON ── */}
         <NavRibbon
@@ -394,7 +397,7 @@ function useCountUp(target: number, duration = 600): number {
   return display
 }
 
-function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
+function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onHome?: () => void }) {
   const dateLabel = useDateLabel()
   const liveTime  = useLiveTime()
   return (
@@ -415,72 +418,58 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
         minHeight: 42,
       }}
     >
-      {/* Title */}
-      {/* Hamburger — mobile only */}
+      {/* Left spacer — matches the right side live-time width so wordmark stays centered */}
+      <div className="hidden sm:block" style={{ flex: '0 0 auto', minWidth: 100 }} />
+      <div className="sm:hidden" style={{ flex: 1 }} />
+
+      {/* ShirleyCRE wordmark + star — centered on all widths */}
+      {/* Tappable to go home when inside a section */}
       <button
-        onClick={onMenuToggle}
+        onClick={onHome ?? (() => {})}
         style={{
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          gap: 4,
-          width: 34,
-          height: 34,
+          gap: 6,
+          background: 'none',
+          border: 'none',
+          cursor: onHome ? 'pointer' : 'default',
+          padding: '4px 8px',
           borderRadius: 8,
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          cursor: 'pointer',
           flexShrink: 0,
-          marginRight: 10,
-          padding: 0,
+          margin: '0 auto',
         }}
-        title="Menu"
       >
-        {[0,1,2].map(i => (
-          <div key={i} style={{ width: 14, height: 1.5, background: 'rgba(255,255,255,0.7)', borderRadius: 2 }} />
-        ))}
-      </button>
-
-      {/* Star mark — brand co-equal, left of wordmark */}
-      <span style={{ display: 'flex', alignItems: 'center', marginLeft: 4, marginRight: 6, flexShrink: 0 }}>
+        {/* Star mark */}
         <StarMark size={22} />
-      </span>
 
-      {/* ShirleyCRE wordmark — violet with soft gold ambient glow */}
-      <span style={{
-        position: 'relative',
-        display: 'inline-flex',
-        alignItems: 'center',
-        flexShrink: 0,
-        marginLeft: 0,
-      }}>
-        {/* Radial glow orb behind the wordmark */}
-        <span style={{
-          position: 'absolute',
-          inset: '-12px -20px',
-          background: 'radial-gradient(ellipse at center, rgba(192,132,252,0.18) 0%, rgba(232,184,75,0.08) 50%, transparent 75%)',
-          borderRadius: '50%',
-          pointerEvents: 'none',
-          zIndex: 0,
-          filter: 'blur(6px)',
-        }} />
+        {/* Wordmark */}
         <span style={{
           position: 'relative',
-          zIndex: 1,
-          fontSize: 17, fontWeight: 800,
-          color: '#C084FC',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          fontFamily: 'var(--font-body)',
-          /* Gold bloom behind violet type — soft ambient, not a halo */
-          textShadow: '0 0 28px rgba(232,184,75,0.28), 0 0 48px rgba(232,184,75,0.14), 0 0 14px rgba(192,132,252,0.35)',
+          display: 'inline-flex',
+          alignItems: 'center',
         }}>
-          ShirleyCRE
+          <span style={{
+            position: 'absolute',
+            inset: '-12px -20px',
+            background: 'radial-gradient(ellipse at center, rgba(192,132,252,0.18) 0%, rgba(232,184,75,0.08) 50%, transparent 75%)',
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            zIndex: 0,
+            filter: 'blur(6px)',
+          }} />
+          <span style={{
+            position: 'relative', zIndex: 1,
+            fontSize: 17, fontWeight: 800,
+            color: '#C084FC',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            fontFamily: 'var(--font-body)',
+            textShadow: '0 0 28px rgba(232,184,75,0.28), 0 0 48px rgba(232,184,75,0.14), 0 0 14px rgba(192,132,252,0.35)',
+          }}>
+            ShirleyCRE
+          </span>
         </span>
-      </span>
-
-      {/* Mobile: date hidden from header — keeps it as a thin single-line strip */}
+      </button>
 
       <div style={{ flex: 1 }} />
 
@@ -572,63 +561,38 @@ function NavRibbon({
   const insideSection = activeSection !== 'operations'
   const activeNav = NAV_SECTIONS.find(s => s.id === activeSection)
 
-  // When inside a section, show a slim single-row bar instead of full cards
+  // When inside a section, show a slim breadcrumb bar.
+  // No HOME button — the ShirleyCRE wordmark in the top bar handles back navigation.
   if (insideSection && activeNav) {
     return (
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        padding: '6px 12px',
+        padding: '6px 16px',
         background: 'var(--bg-sidebar)',
-        borderBottom: '1px solid rgba(167,139,250,0.12)',
+        borderBottom: '1px solid rgba(167,139,250,0.10)',
         flexShrink: 0,
       }}>
-        {/* Gold home pill */}
-        <motion.button
-          onClick={() => onSectionChange('operations')}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            padding: '6px 14px',
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.4) 100%)',
-            border: '1px solid rgba(167,139,250,0.5)',
-            borderRadius: 999, cursor: 'pointer', color: '#EDE9FE',
-            fontSize: 10, fontWeight: 800, letterSpacing: '0.12em',
-            textTransform: 'uppercase', flexShrink: 0,
-            boxShadow: '0 0 14px rgba(139,92,246,0.3)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 5l-7 7 7 7"/>
-          </svg>
-          Home
-        </motion.button>
-
-        {/* Active section indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-          <div style={{
-            width: 1, height: 20,
-            background: 'rgba(167,139,250,0.2)',
-            flexShrink: 0,
-          }} />
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '5px 12px',
-            background: 'linear-gradient(135deg, #1A1040 0%, #1E1545 100%)',
-            border: '1px solid rgba(140,100,220,0.45)',
-            borderRadius: 10,
-            color: '#C4B5FD',
-          }}>
-            <span style={{ color: '#A78BFA', display: 'flex' }}><activeNav.icon /></span>
-            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
-              {activeNav.label}
-            </span>
-            <span style={{ fontSize: 8, color: 'rgba(167,139,250,0.6)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>● Active</span>
-          </div>
+        {/* Section breadcrumb chip */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '5px 12px',
+          background: 'rgba(139,92,246,0.08)',
+          border: '1px solid rgba(140,100,220,0.30)',
+          borderRadius: 8,
+          color: '#C4B5FD',
+        }}>
+          <span style={{ color: '#A78BFA', display: 'flex' }}><activeNav.icon /></span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#C4B5FD' }}>
+            {activeNav.label}
+          </span>
         </div>
+        <div style={{ flex: 1 }} />
+        {/* Tap wordmark above to go home — hint text on mobile */}
+        <span className="sm:hidden" style={{ fontSize: 9, color: 'rgba(167,139,250,0.4)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          tap name to go home
+        </span>
       </div>
     )
   }
@@ -692,7 +656,7 @@ function NavRibbon({
           display: 'grid',
           // Desktop: 4 columns. Mobile (<640px): 2×2 via CSS class below.
           gridTemplateColumns: isVertical ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-          gap: isVertical ? 8 : 10,
+          gap: isVertical ? 6 : 10,
           flex: isVertical ? undefined : '0 0 auto',
           width: isVertical ? '100%' : 'clamp(440px, 42vw, 620px)',
           minWidth: 0,

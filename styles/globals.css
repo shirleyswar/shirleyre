@@ -783,9 +783,10 @@ select {
     padding: 8px 10px !important;
     gap: 8px !important;
   }
-  /* NavTile 2×2 grid on mobile */
+  /* NavTile 2×2 grid on mobile — tighter gap so rows read as one unit */
   .nav-tile-grid {
     grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
     width: 100% !important;
   }
   /* Legacy wr-nav-card styles (unused but kept for safety) */

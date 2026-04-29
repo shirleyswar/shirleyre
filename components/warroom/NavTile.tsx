@@ -87,26 +87,26 @@ export default function NavTile({
           ? `linear-gradient(180deg, #162040 0%, #0F1729 40%, #090E1C 100%)`
           : `linear-gradient(180deg, #141E35 0%, #0F1729 45%, #0A1020 100%)`,
 
-        // ── Border ──────────────────────────────────────────────────────────
+        // ── Border — per-tile accent tint (not generic dark on all four) ──
         border: `1px solid ${hovered
-          ? 'rgba(255,255,255,0.20)'
+          ? `${accent}44`
           : isActive
-          ? `${accent}55`
-          : 'rgba(255,255,255,0.08)'
+          ? `${accent}66`
+          : `${accent}22`
         }`,
-        borderRadius: 16,
+        borderRadius: 22,
 
-        // ── Shadow: outer depth + inner top highlight ────────────────────────
-        // The inner top highlight (inset) mimics a physical raised edge
+        // ── Shadow: outer depth + inner accent glow + top highlight ─────────
         boxShadow: [
           // Outer: soft depth
           '0 4px 24px rgba(0,0,0,0.55)',
           '0 1px 4px rgba(0,0,0,0.35)',
-          // Inner: top-edge highlight — tactile raised feel
+          // Inner top-edge highlight — tactile raised feel
           'inset 0 1px 0 rgba(255,255,255,0.10)',
-          // Accent glow on hover/active
+          // Inner accent faint glow — gives each tile personality
+          `inset 0 0 20px ${accent}0D`,
+          // Hover/active outer glow
           ...(glowBlur > 0 ? [`0 0 ${glowBlur}px ${accent}4D`] : []),
-          // Active state: stronger glow
           ...(isActive ? [`0 0 20px ${accent}33`] : []),
         ].join(', '),
 
@@ -142,7 +142,7 @@ export default function NavTile({
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        marginBottom: 14,
+        marginBottom: 10,
         // Accent ONLY on the icon — not label, not border, not bg
         color: accent,
         // Glow around icon on hover/active

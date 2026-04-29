@@ -1656,8 +1656,103 @@ function PortfolioTab() {
 }
 
 // ─── Root PortfolioPanel ──────────────────────────────────────────────────────
+// ─── Portfolio Hero Block ────────────────────────────────────────────────────
+// Full-width hero: pulse icon small+left, today's $/% change big+centered,
+// color-coded green/red. Date as a subtle datestamp below. PORTFOLIO / ACTIVE label.
+function PortfolioHero({ positions }: { positions: Position[] }) {
+  const totalMV  = positions.reduce((s, p) => s + (p.market_value ?? 0), 0)
+  const totalGL  = positions.reduce((s, p) => s + (p.unrealized_gl_dollar ?? 0), 0)
+  const totalCost = positions.reduce((s, p) => s + (p.total_cost ?? 0), 0)
+  const glPct = totalCost > 0 ? (totalGL / totalCost) * 100 : 0
+  const isUp = totalGL >= 0
+  const color = isUp ? '#22c55e' : '#ef4444'
+  const today = new Date().toLocaleDateString('en-US', { timeZone: 'America/Chicago', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+
+  return (
+    <div style={{
+      width: '100%',
+      background: 'linear-gradient(135deg, rgba(139,92,246,0.14) 0%, rgba(109,40,217,0.08) 60%, rgba(80,20,160,0.05) 100%)',
+      border: '1px solid rgba(139,92,246,0.25)',
+      borderRadius: 16,
+      padding: '18px 20px 14px',
+      marginBottom: 14,
+      display: 'flex',
+      alignItems: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+      boxShadow: '0 0 40px rgba(139,92,246,0.10), inset 0 1px 0 rgba(167,139,250,0.12)',
+    }}>
+      {/* Ambient glow */}
+      <div style={{ position: 'absolute', top: -40, left: -40, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      {/* Left: pulse icon + PORTFOLIO / ACTIVE */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0, marginRight: 16 }}>
+        {/* Pulse icon — smaller, left-anchored */}
+        <div style={{ color: P.purple, filter: 'drop-shadow(0 0 6px rgba(139,92,246,0.7))' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: P.purple, lineHeight: 1 }}>
+            Portfolio
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 4px rgba(34,197,94,0.8)' }} />
+            <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#22c55e' }}>Active</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Center: today's $/% change — the hero stat */}
+      <div style={{ flex: 1, textAlign: 'center' }}>
+        <div style={{
+          fontSize: 28,
+          fontWeight: 800,
+          color,
+          fontVariantNumeric: 'tabular-nums',
+          fontFamily: 'var(--font-mono)',
+          lineHeight: 1,
+          textShadow: `0 0 20px ${isUp ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+        }}>
+          {totalGL >= 0 ? '+' : ''}{fmt$(totalGL)}
+        </div>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color,
+          fontVariantNumeric: 'tabular-nums',
+          fontFamily: 'var(--font-mono)',
+          marginTop: 3,
+          opacity: 0.85,
+        }}>
+          {glPct >= 0 ? '+' : ''}{glPct.toFixed(2)}%
+        </div>
+        {/* Datestamp — subtle, 50% smaller than old treatment */}
+        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          {today}
+        </div>
+      </div>
+
+      {/* Right: market value */}
+      <div style={{ flexShrink: 0, textAlign: 'right', marginLeft: 16 }}>
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.5)', marginBottom: 3 }}>Market Value</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: P.text, fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--font-mono)' }}>
+          {fmt$(totalMV)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PortfolioPanel() {
   const [tab, setTab] = useState<Tab>('portfolio')
+  // For hero — load positions summary
+  const [heroPositions, setHeroPositions] = useState<Position[]>([])
+  useEffect(() => {
+    supabase.from('portfolio_positions').select('market_value,total_cost,unrealized_gl_dollar').limit(500)
+      .then(({ data }) => { if (data) setHeroPositions(data as Position[]) })
+  }, [])
 
   const tabs: { id: Tab; label: string; color: string }[] = [
     { id: 'portfolio', label: 'Portfolio', color: P.purple },
@@ -1666,23 +1761,28 @@ export default function PortfolioPanel() {
   ]
 
   return (
-    <div className="wr-card">
-      {/* Tab strip */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 20, borderBottom: `1px solid ${P.purpleBorder}`, paddingBottom: 0 }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            padding: '8px 18px', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
-            background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-            color: tab === t.id ? t.color : P.muted,
-            borderBottom: tab === t.id ? `2px solid ${t.color}` : '2px solid transparent',
-            marginBottom: -1, transition: 'all 0.15s',
-          }}>{t.label}</button>
-        ))}
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {/* Hero block — full width, above the card */}
+      <PortfolioHero positions={heroPositions} />
 
-      {tab === 'portfolio' && <PortfolioTab />}
-      {tab === 'sleeve'    && <SleeveTab />}
-      {tab === 'sold'      && <SoldTab />}
+      <div className="wr-card">
+        {/* Tab strip */}
+        <div style={{ display: 'flex', gap: 2, marginBottom: 20, borderBottom: `1px solid ${P.purpleBorder}`, paddingBottom: 0 }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              padding: '8px 18px', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+              background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              color: tab === t.id ? t.color : P.muted,
+              borderBottom: tab === t.id ? `2px solid ${t.color}` : '2px solid transparent',
+              marginBottom: -1, transition: 'all 0.15s',
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        {tab === 'portfolio' && <PortfolioTab />}
+        {tab === 'sleeve'    && <SleeveTab />}
+        {tab === 'sold'      && <SoldTab />}
+      </div>
     </div>
   )
 }
