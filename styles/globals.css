@@ -34,6 +34,12 @@
   /* Legacy aliases */
   --accent-gold-light: #F5CE7A;
 
+  /* ── Tile accent palette ── */
+  --tile-life:      #F472B6;
+  --tile-entities:  #60A5FA;
+  --tile-portfolio: #34D399;
+  --tile-contacts:  #A78BFA;
+
   /* ── Text ── */
   --text-primary:   #F2EDE4;   /* Warm white for readability             */
   --text-primary-bright: #F2EDE4; /* Row data — same warm white           */

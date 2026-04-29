@@ -97,7 +97,7 @@ function KpiCards({ positions, glLabel = 'Unrealized G/L' }: { positions: Positi
     : 0
   const uniqueSymbols = new Set(positions.map(p => p.symbol)).size
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 20 }}>
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6" style={{ gap: 10, marginBottom: 20 }}>
       {[
         { label: 'Market Value',  value: fmt$(totalMV),         sub: null,              color: P.purple },
         { label: 'Cost Basis',    value: fmt$(totalCost),        sub: null,              color: P.muted  },
@@ -1669,6 +1669,7 @@ function PortfolioHero({ positions }: { positions: Position[] }) {
   const today = new Date().toLocaleDateString('en-US', { timeZone: 'America/Chicago', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 
   return (
+    <>
     <div style={{
       width: '100%',
       background: 'linear-gradient(135deg, rgba(139,92,246,0.14) 0%, rgba(109,40,217,0.08) 60%, rgba(80,20,160,0.05) 100%)',
@@ -1741,7 +1742,33 @@ function PortfolioHero({ positions }: { positions: Position[] }) {
           {fmt$(totalMV)}
         </div>
       </div>
+
+      {/* Sparkline — mobile texture, bottom of hero */}
+      <div className="sm:hidden" style={{ position:'absolute', bottom:0, left:0, right:0, height:24, opacity:0.35, pointerEvents:'none' }}>
+        <svg width="100%" height="24" preserveAspectRatio="none" viewBox="0 0 100 24">
+          <polyline
+            points={positions.slice(0,12).map((p,i) => {
+              const v = Math.max(0, Math.min(24, 12 + (p.unrealized_gl_dollar ?? 0) / Math.max(1, Math.abs(positions.reduce((s,x) => Math.max(s, Math.abs(x.unrealized_gl_dollar??0)), 1))) * 10))
+              return `${(i / 11) * 100},${24 - v}`
+            }).join(' ')}
+            fill="none"
+            stroke={isUp ? '#22c55e' : '#ef4444'}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
     </div>
+
+    {/* Desktop chart placeholder — hidden on mobile */}
+    <div className="hidden sm:block" style={{ width:'100%', marginTop:12, height:56, border:'1px solid rgba(139,92,246,0.2)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(139,92,246,0.04)', overflow:'hidden', position:'relative' }}>
+      <svg width="100%" height="56" preserveAspectRatio="none" viewBox="0 0 400 56" style={{ position:'absolute', inset:0, opacity:0.25 }}>
+        <polyline points="0,40 40,35 80,28 120,38 160,20 200,32 240,18 280,30 320,22 360,28 400,15" fill="none" stroke="#A78BFA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <span style={{ position:'relative', fontSize:10, color:'rgba(167,139,250,0.5)', letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:600 }}>Intraday · Live prices coming soon</span>
+    </div>
+    </>
   )
 }
 
