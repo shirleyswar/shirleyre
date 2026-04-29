@@ -893,6 +893,8 @@ function SectionView({ children, onBack, title }: { children: React.ReactNode; o
 
 function OperationsView({ activePanel }: { activePanel: string }) {
   const isVertical = useVerticalMonitor()
+  const [arRefreshKey, setArRefreshKey] = useState(0)
+  const handleLanded = useCallback(() => setArRefreshKey(k => k + 1), [])
 
   // ── Single-panel focused views ──
   if (activePanel === 'battleplan') {
@@ -914,7 +916,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
       <motion.div key="contracts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <HotPanel />
-          <UnderContractPanel />
+          <UnderContractPanel onLanded={handleLanded} />
         </div>
       </motion.div>
     )
@@ -929,7 +931,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
   if (activePanel === 'ar') {
     return (
       <motion.div key="ar" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
-        <AccountsReceivablePanel />
+        <AccountsReceivablePanel refreshKey={arRefreshKey} />
       </motion.div>
     )
   }
@@ -951,10 +953,10 @@ function OperationsView({ activePanel }: { activePanel: string }) {
           <HotPanel />
           <BattlePlanPanel />
           <SchedulePanel />
-          <UnderContractPanel />
+          <UnderContractPanel onLanded={handleLanded} />
           <DealPipelinePanel />
           <ClientsPanel />
-          <AccountsReceivablePanel />
+          <AccountsReceivablePanel refreshKey={arRefreshKey} />
         </div>
       </motion.div>
     )
@@ -984,7 +986,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 
         {/* Row 4: Under Contract (full width) */}
         <div className="lg:col-span-3 card-reveal card-reveal-5" style={{ position: 'relative', zIndex: 30 }}>
-          <UnderContractPanel />
+          <UnderContractPanel onLanded={handleLanded} />
         </div>
 
         {/* Row 6: Deal Pipeline (full width) */}
@@ -999,7 +1001,7 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 
         {/* Row 8: AR — full width */}
         <div className="lg:col-span-3 card-reveal card-reveal-7" style={{ position: 'relative', zIndex: 10 }}>
-          <AccountsReceivablePanel />
+          <AccountsReceivablePanel refreshKey={arRefreshKey} />
         </div>
 
         {/* Row 9: ShirleyCRE Agent Card */}

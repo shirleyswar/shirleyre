@@ -73,7 +73,7 @@ function msBal(item: ArItem): number {
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
-export default function AccountsReceivablePanel() {
+export default function AccountsReceivablePanel({ refreshKey }: { refreshKey?: number } = {}) {
   const [items, setItems] = useState<ArItem[]>([])
   const [payments, setPayments] = useState<Record<string, ArPayment[]>>({}) // keyed by ar_item_id
   const [loading, setLoading] = useState(true)
@@ -98,7 +98,7 @@ export default function AccountsReceivablePanel() {
   const [collectPinErr, setCollectPinErr] = useState(false)
   const [collecting, setCollecting] = useState(false)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function load() {
     setLoading(true)

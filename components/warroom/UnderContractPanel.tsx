@@ -1377,7 +1377,7 @@ interface UCDetails {
   dual_rep: boolean | null
 }
 
-export default function UnderContractPanel() {
+export default function UnderContractPanel({ onLanded }: { onLanded?: () => void } = {}) {
   const [deals, setDeals] = useState<ContractDeal[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedDeal, setExpandedDeal] = useState<string | null>(null)
@@ -1671,6 +1671,7 @@ export default function UnderContractPanel() {
           onSuccess={(id) => {
             setDeals(prev => prev.filter(d => d.id !== id))
             setLandedDealId(null)
+            onLanded?.()
           }}
         />,
         document.body
