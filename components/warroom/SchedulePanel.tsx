@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { rawTo24h, formatEventTime } from '@/lib/scheduleUtils'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -458,7 +459,7 @@ export default function SchedulePanel() {
       if (!error && data) {
         setUpcomingEvents(prev =>
           prev.map(e => e.id === id ? { ...e, ...data } : e)
-            .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+            .sort((a, b) => a.date.localeCompare(b.date) || rawTo24h(a.time || '').localeCompare(rawTo24h(b.time || '')))
         )
       }
     } catch {}
@@ -606,6 +607,7 @@ export default function SchedulePanel() {
       )}
 
       {/* ── Upcoming Events List ── */}
+      {/* ── Calendar Events ── always rendered independently of Contract Deadlines ── */}
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 44, borderRadius: 6 }} />)}
@@ -615,75 +617,27 @@ export default function SchedulePanel() {
           Schedule table not yet created. Add your first event above.
         </div>
       ) : grouped.length === 0 ? (
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0', fontStyle: 'italic' }}>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0', fontStyle: 'italic' }}>
           No upcoming events. Tap + Add Event to schedule one.
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {/* ── Calendar Events ── */}
-          {grouped.length === 0 ? (
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0', fontStyle: 'italic' }}>
-              No upcoming events. Tap + Add Event to schedule one.
-            </div>
-          ) : (
-            (() => {
-              const tomorrowStr = (() => { const t = new Date(); t.setDate(t.getDate() + 1); return t.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) })()
-              return grouped.map(group => (
-              <div key={group.date} style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, marginTop: 16 }}>
-                  <span style={{
-                    fontSize: (group.date === todayCST() || group.date === tomorrowStr) ? 13 : 12,
-                    fontWeight: (group.date === todayCST() || group.date === tomorrowStr) ? 700 : 500,
-                    color: group.date === todayCST() ? 'rgba(255,255,255,0.85)' : group.date === tomorrowStr ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.35)',
-                    fontFamily: 'var(--font-body)',
-                    letterSpacing: '-0.01em',
-                  }}>
-                    {formatGroupHeader(group.date)}
-                  </span>
-                  <div style={{ flex: 1, height: 1, background: group.date === todayCST() ? 'rgba(167,139,250,0.2)' : 'var(--border-subtle)' }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 4 }}>
-                  {group.events.map(event => (
-                    <EventRow key={event.id} event={event} onDelete={deleteEvent} onSave={saveEvent} deals={deals} />
-                  ))}
-                </div>
-              </div>
-              ))
-            })()
-          )}
-
-          {/* ── Contract Deadlines Section ── */}
-          {liveDeadlines.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              {/* Section header bubble */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
-                padding: '7px 12px',
-                background: 'rgba(59,130,246,0.08)',
-                border: '1px solid rgba(59,130,246,0.25)',
-                borderRadius: 8,
-              }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#60a5fa' }}>
-                  Contract Deadlines
-                </span>
-                <div style={{ flex: 1, height: 1, background: 'rgba(59,130,246,0.2)' }} />
-                <span style={{ fontSize: 9, color: 'rgba(96,165,250,0.6)', fontWeight: 600 }}>Next 21 days</span>
-              </div>
-
-              {/* Deadline groups by date */}
-              {deadlineGrouped.map(group => (
-                <div key={group.date}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, marginTop: 6 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(96,165,250,0.7)', fontFamily: 'var(--font-body)' }}>
+        (() => {
+          const tomorrowStr = (() => { const t = new Date(); t.setDate(t.getDate() + 1); return t.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) })()
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {grouped.map(group => (
+                <div key={group.date} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, marginTop: 16 }}>
+                    <span style={{
+                      fontSize: (group.date === todayCST() || group.date === tomorrowStr) ? 13 : 12,
+                      fontWeight: (group.date === todayCST() || group.date === tomorrowStr) ? 700 : 500,
+                      color: group.date === todayCST() ? 'rgba(255,255,255,0.85)' : group.date === tomorrowStr ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.35)',
+                      fontFamily: 'var(--font-body)',
+                      letterSpacing: '-0.01em',
+                    }}>
                       {formatGroupHeader(group.date)}
                     </span>
-                    <div style={{ flex: 1, height: 1, background: 'rgba(59,130,246,0.15)' }} />
+                    <div style={{ flex: 1, height: 1, background: group.date === todayCST() ? 'rgba(167,139,250,0.2)' : 'var(--border-subtle)' }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 4 }}>
                     {group.events.map(event => (
@@ -693,41 +647,59 @@ export default function SchedulePanel() {
                 </div>
               ))}
             </div>
-          )}
+          )
+        })()
+      )}
+
+      {/* ── Contract Deadlines Section ──
+          Independent of calendar events. Renders whenever deadlines exist,
+          regardless of whether any schedule_events are present. */}
+      {liveDeadlines.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          {/* Section header bubble */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
+            padding: '7px 12px',
+            background: 'rgba(59,130,246,0.08)',
+            border: '1px solid rgba(59,130,246,0.25)',
+            borderRadius: 8,
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#60a5fa' }}>
+              Contract Deadlines
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(59,130,246,0.2)' }} />
+            <span style={{ fontSize: 9, color: 'rgba(96,165,250,0.6)', fontWeight: 600 }}>Next 45 days</span>
+          </div>
+
+          {/* Deadline groups by date */}
+          {deadlineGrouped.map(group => (
+            <div key={group.date}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, marginTop: 6 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(96,165,250,0.7)', fontFamily: 'var(--font-body)' }}>
+                  {formatGroupHeader(group.date)}
+                </span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(59,130,246,0.15)' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 4 }}>
+                {group.events.map(event => (
+                  <EventRow key={event.id} event={event} onDelete={deleteEvent} onSave={saveEvent} deals={deals} />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-// ─── Time helpers (module-level so EventRow can use them) ────────────────────
-
-function rawTo24h(t: string): string {
-  if (!t) return '23:59'
-  if (t.includes('T')) t = t.split('T')[1] ?? t
-  const ampmMatch = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
-  if (ampmMatch) {
-    let h = parseInt(ampmMatch[1])
-    const min = ampmMatch[2]
-    const ap = ampmMatch[3].toUpperCase()
-    if (ap === 'PM' && h !== 12) h += 12
-    if (ap === 'AM' && h === 12) h = 0
-    return `${String(h).padStart(2, '0')}:${min}`
-  }
-  return t.slice(0, 5)
-}
-
-function formatEventTime(t: string | null | undefined): string {
-  if (!t) return ''
-  const h24 = rawTo24h(t)
-  const parts = h24.split(':')
-  const h = parseInt(parts[0] ?? '0', 10)
-  const m = parts[1] ?? '00'
-  if (isNaN(h)) return t
-  const period = h >= 12 ? 'PM' : 'AM'
-  const hour12 = h % 12 || 12
-  return `${hour12}:${m} ${period}`
-}
+// rawTo24h and formatEventTime are imported from @/lib/scheduleUtils above.
 
 // ─── Event Row ────────────────────────────────────────────────────────────────
 

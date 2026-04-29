@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
+import { rawTo24h, formatEventTime, sortEventsByTime } from '@/lib/scheduleUtils'
 
 // ─── TIME PICKER — 15-minute intervals, 12-hour format ───────────────────────
 // Replaces the native <input type="time"> which shows every minute
@@ -105,24 +106,7 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
   )
 }
 
-// Sort events by time: no-time events go last, then sort numerically
-function sortByTime(evs: ScheduleEvent[]): ScheduleEvent[] {
-  return [...evs].sort((a, b) => {
-    if (!a.time && !b.time) return 0
-    if (!a.time) return 1
-    if (!b.time) return -1
-    // Normalize both to "HH:MM" for reliable numeric sort
-    const toMinutes = (t: string) => {
-      let s = t
-      if (s.includes('T')) s = s.split('T')[1] ?? ''
-      const parts = s.split(':')
-      const h = parseInt(parts[0] ?? '0', 10)
-      const m = parseInt(parts[1] ?? '0', 10)
-      return isNaN(h) || isNaN(m) ? 9999 : h * 60 + m
-    }
-    return toMinutes(a.time) - toMinutes(b.time)
-  })
-}
+// sortByTime is now sortEventsByTime from @/lib/scheduleUtils — imported above
 
 interface ScheduleEvent {
   id: string
@@ -156,21 +140,7 @@ function tomorrowCST(): string {
   return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 }
 
-function formatTime(time: string | null): string {
-  if (!time) return ''
-  // Already in display format "H:MM AM/PM" — return as-is
-  if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(time)) return time
-  // Handle ISO "2026-04-23T06:00:00"
-  let timePart = time
-  if (time.includes('T')) timePart = time.split('T')[1] ?? ''
-  const parts = timePart.split(':')
-  const h = parseInt(parts[0] ?? '0', 10)
-  const m = parseInt(parts[1] ?? '0', 10)
-  if (isNaN(h) || isNaN(m)) return ''
-  const period = h >= 12 ? 'PM' : 'AM'
-  const hour = h % 12 || 12
-  return `${hour}:${String(m).padStart(2, '0')} ${period}`
-}
+// formatTime is now formatEventTime from @/lib/scheduleUtils — imported above
 
 export default function Next48Panel() {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
@@ -213,9 +183,8 @@ export default function Next48Panel() {
   // Burn off today's events that have already passed (compare against current CST time)
   function isEventExpired(ev: ScheduleEvent): boolean {
     if (!ev.time) return false // no-time events never auto-burn
-    let timePart = ev.time
-    if (timePart.includes('T')) timePart = timePart.split('T')[1] ?? ''
-    const parts = timePart.split(':')
+    const h24 = rawTo24h(ev.time)
+    const parts = h24.split(':')
     const h = parseInt(parts[0] ?? '0', 10)
     const m = parseInt(parts[1] ?? '0', 10)
     if (isNaN(h) || isNaN(m)) return false
@@ -226,8 +195,8 @@ export default function Next48Panel() {
     return evMinutes < nowMinutes // strictly in the past
   }
 
-  const todayEvents = sortByTime(events.filter(e => e.date === today && !isEventExpired(e)))
-  const tomorrowEvents = sortByTime(events.filter(e => e.date === tomorrow))
+  const todayEvents = sortEventsByTime(events.filter(e => e.date === today && !isEventExpired(e)))
+  const tomorrowEvents = sortEventsByTime(events.filter(e => e.date === tomorrow))
   const todayDeadlines = deadlines48.filter(d => d.deadline_date === today)
   const tomorrowDeadlines = deadlines48.filter(d => d.deadline_date === tomorrow)
 
@@ -256,7 +225,7 @@ export default function Next48Panel() {
           <span className="wr-rank1" style={{ color: '#4F8EF7', textShadow: '0 0 16px rgba(79,142,247,0.5)' }}>Next 48</span>
           <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(79,142,247,0.35), transparent)' }} />
           <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#4F8EF7' }}>
-            {events.length + deadlines48.length || ''}
+            {(todayEvents.length + tomorrowEvents.length + todayDeadlines.length + tomorrowDeadlines.length) || ''}
           </span>
         </div>
 
@@ -527,7 +496,7 @@ function DeadlineRow({ deadline }: { deadline: ContractDeadlineEvent }) {
 }
 
 function EventCard({ event, featured, onEdit }: { event: ScheduleEvent; featured: boolean; onEdit: () => void }) {
-  const timeStr = formatTime(event.time)
+  const timeStr = formatEventTime(event.time)
 
   return (
     <div
