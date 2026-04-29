@@ -21,6 +21,7 @@ import LifePanel from '@/components/warroom/LifePanel'
 import Next48Panel from '@/components/warroom/Next48Panel'
 import EntitiesPanel from '@/components/warroom/EntitiesPanel'
 import PortfolioPanel from '@/components/warroom/PortfolioPanel'
+import NavTile from '@/components/warroom/NavTile'
 import { useRouter } from 'next/navigation'
 
 const SESSION_KEY = 'wr_session_exp_v2'
@@ -513,6 +514,37 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
 }
 
 // ─── NAV RIBBON ─────────────────────────────────────────────────────────────
+// ── Heroicons outline paths — 24×24 viewBox, strokeWidth 2, identical family ──
+// All four tiles use paths from the same library so stroke weight / corners match.
+
+const ICON_LIFE = (
+  <>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+  </>
+)
+const ICON_ENTITIES = (
+  <>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+  </>
+)
+const ICON_PORTFOLIO = (
+  <>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+  </>
+)
+const ICON_CONTACTS = (
+  <>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+  </>
+)
+
+// ── Accent colors per tile ─────────────────────────────────────────────────────
+const TILE_ACCENTS: Record<string, string> = {
+  life:      '#F472B6',   // pink
+  entities:  '#60A5FA',   // blue
+  portfolio: '#34D399',   // emerald
+  contacts:  '#A78BFA',   // violet
+}
 
 function NavRibbon({
   activeSection,
@@ -638,172 +670,52 @@ function NavRibbon({
         <div className="hidden sm:block" style={{ width: 1, height: 60, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
       )}
 
-      {NAV_SECTIONS.map(sec => {
-        const isActive = activeSection === sec.id
-        return (
-          <motion.button
-            key={sec.id}
-            className="wr-nav-card"
-            onClick={() => onSectionChange(isActive ? 'operations' : sec.id)}
-            whileHover={{ scale: 1.10, y: -6 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 14 }}
-            style={{
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              flex: isVertical ? '1 1 0' : '1 1 72px',
-              width: '100%',
-              minWidth: isVertical ? 0 : 72,
-              maxWidth: isVertical ? 'none' : 160,
-              height: 'clamp(80px, 10vw, 96px)',
-              background: isActive
-                ? 'linear-gradient(135deg, #2A1F50 0%, #221845 40%, #1E1540 100%)'
-                : 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
-              border: `1px solid ${isActive ? 'rgba(140,100,220,0.65)' : 'rgba(90,70,140,0.35)'}`,
-              borderRadius: 12,
-              cursor: 'pointer',
-              overflow: 'hidden',
-              boxShadow: isActive
-                ? '0 0 0 1px rgba(140,100,220,0.2), 0 8px 32px rgba(0,0,0,0.6), 0 0 32px rgba(100,60,180,0.25), inset 0 1px 0 rgba(167,139,250,0.15)'
-                : '0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(80,50,140,0.15), inset 0 1px 0 rgba(140,100,220,0.06)',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-            }}
-          >
-            {/* Atmospheric glow orb — top right */}
-            <div style={{
-              position: 'absolute', top: -30, right: -30,
-              width: 100, height: 100,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(100,60,180,0.20) 0%, transparent 70%)',
-              pointerEvents: 'none',
-            }} />
+      {/* ── NavTile grid: 4 equal columns (Life, Entities, Portfolio, Contacts) ── */}
+      {/* CSS grid guarantees identical width for every tile — no flex drift */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: isVertical ? 4 : 8,
+        flex: isVertical ? undefined : '0 0 auto',
+        width: isVertical ? '100%' : 'clamp(320px, 40vw, 560px)',
+        minWidth: 0,
+      }}>
+        {/* Life */}
+        <NavTile
+          iconPaths={ICON_LIFE}
+          label="Life"
+          isActive={activeSection === 'life'}
+          accent={TILE_ACCENTS.life}
+          onClick={() => onSectionChange(activeSection === 'life' ? 'operations' : 'life')}
+        />
+        {/* Entities */}
+        <NavTile
+          iconPaths={ICON_ENTITIES}
+          label="Entities"
+          isActive={activeSection === 'entities'}
+          accent={TILE_ACCENTS.entities}
+          onClick={() => onSectionChange(activeSection === 'entities' ? 'operations' : 'entities')}
+        />
+        {/* Portfolio */}
+        <NavTile
+          iconPaths={ICON_PORTFOLIO}
+          label="Portfolio"
+          isActive={activeSection === 'portfolio'}
+          accent={TILE_ACCENTS.portfolio}
+          onClick={() => onSectionChange(activeSection === 'portfolio' ? 'operations' : 'portfolio')}
+        />
+        {/* Contacts — hidden on mobile (4th slot, always) */}
+        <NavTile
+          className="hidden sm:block"
+          iconPaths={ICON_CONTACTS}
+          label="Contacts"
+          isActive={false}
+          accent={TILE_ACCENTS.contacts}
+          onClick={() => router.push('/warroom/contacts')}
+        />
+      </div>
 
-            {/* Active top edge line */}
-            {isActive && (
-              <div style={{
-                position: 'absolute', top: 0, left: '15%', right: '15%', height: 1,
-                background: 'linear-gradient(to right, transparent, #A78BFA, transparent)',
-                pointerEvents: 'none',
-              }} />
-            )}
-
-            {/* Active inner glow */}
-            {isActive && (
-              <div style={{
-                position: 'absolute', inset: 0,
-                background: 'radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.09) 0%, transparent 65%)',
-                pointerEvents: 'none',
-              }} />
-            )}
-
-            {/* Simple icon — no rings */}
-            <div style={{
-              width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              color: isActive ? '#C4B5FD' : '#8B6CC1',
-              filter: isActive ? 'drop-shadow(0 0 10px rgba(167,139,250,0.8))' : 'drop-shadow(0 0 5px rgba(120,80,200,0.4))',
-              transition: 'filter 0.2s ease',
-            }}>
-              <sec.icon />
-            </div>
-
-            {/* Label */}
-            <div style={{
-              fontSize: 11, fontWeight: 700,
-              color: isActive ? '#EEEAF4' : '#9080B0',
-              letterSpacing: '0.10em',
-              textTransform: 'uppercase',
-              fontFamily: 'var(--font-body)',
-              textAlign: 'center',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              width: '100%',
-              paddingLeft: 4,
-              paddingRight: 4,
-            }}>
-              {sec.label}
-            </div>
-          </motion.button>
-        )
-      })}
-
-      {/* CONTACTS orbit card — blue, between Portfolio and spacer — hidden on mobile */}
-      <motion.button
-        className="wr-nav-card hidden sm:flex"
-        onClick={() => router.push('/warroom/contacts')}
-        whileHover={{ scale: 1.10, y: -6 }}
-        whileTap={{ scale: 0.95 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 14 }}
-        style={{
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          flex: isVertical ? '1 1 0' : '1 1 72px',
-          width: '100%',
-          minWidth: isVertical ? 0 : 72,
-          maxWidth: isVertical ? 'none' : 160,
-          height: 'clamp(80px, 10vw, 96px)',
-          background: 'linear-gradient(135deg, #1E1832 0%, #1A1428 50%, #191228 100%)',
-          border: '1px solid rgba(90,70,140,0.35)',
-          borderRadius: 12,
-          cursor: 'pointer',
-          overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(120,60,200,0.1), inset 0 1px 0 rgba(140,100,220,0.06)',
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-        }}
-      >
-        {/* Atmospheric glow — violet to match brand */}
-        <div style={{
-          position: 'absolute', top: -30, right: -30,
-          width: 100, height: 100, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(100,60,180,0.20) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-
-        {/* Simple icon — no rings */}
-        <div style={{
-          width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          color: '#8B6CC1',
-          filter: 'drop-shadow(0 0 5px rgba(120,80,200,0.4))',
-          transition: 'filter 0.2s ease',
-        }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-        </div>
-
-        {/* Label — violet to match system */}
-        <div style={{
-          fontSize: 11, fontWeight: 700,
-          color: '#9080B0',
-          letterSpacing: '0.10em',
-          textTransform: 'uppercase',
-          fontFamily: 'var(--font-body)',
-          textAlign: 'center',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          width: '100%',
-          paddingLeft: 4,
-          paddingRight: 4,
-        }}>
-          Contacts
-        </div>
-      </motion.button>
-
-      {/* Spacer — pushes link orbits right; hidden on mobile and portrait (tiles need full room) */}
+      {/* Spacer — pushes link orbits right; hidden on mobile and portrait */}
       {!isVertical && <div className="hidden sm:block" style={{ flex: 1, minWidth: 24 }} />}
 
       {/* Stats card — hidden on mobile and vertical monitor */}
@@ -819,75 +731,37 @@ function NavRibbon({
         { label: 'CREXI', url: 'https://www.crexi.com/' },
       ].map(link => (
         <div key={link.label} className="hidden sm:block" style={{ display: isVertical ? 'none' : undefined }}>
-        <motion.a
-          key={link.label}
-          href={link.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          whileHover={{ scale: 1.10, y: -6 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 14 }}
-          style={{
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 5,
-            flex: '0 0 auto',
-            width: 'clamp(90px, 20vw, 160px)',
-            maxWidth: 160,
-            height: 'clamp(80px, 10vw, 96px)',
-            background: 'linear-gradient(135deg, #0a1e1e 0%, #0d2222 50%, #091a1a 100%)',
-            border: '1px solid rgba(14,165,160,0.22)',
-            borderRadius: 12,
-            cursor: 'pointer',
-            overflow: 'hidden',
-            textDecoration: 'none',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 12px rgba(14,165,160,0.08), inset 0 1px 0 rgba(14,165,160,0.06)',
-            userSelect: 'none',
-          }}
-        >
-          {/* Atmospheric glow orb */}
-          <div style={{
-            position: 'absolute', top: -30, right: -30,
-            width: 100, height: 100, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(14,165,160,0.12) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }} />
-
-          {/* Simple icon — no rings */}
-          <div style={{
-            width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            color: '#0ea5a0',
-            filter: 'drop-shadow(0 0 5px rgba(14,165,160,0.4))',
-            transition: 'filter 0.2s ease',
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
-              <polyline points="15 3 21 3 21 9"/>
-              <line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-          </div>
-
-          {/* Label */}
-          <div style={{
-            fontSize: 11, fontWeight: 700,
-            color: 'rgba(14,165,160,0.85)',
-            letterSpacing: '0.10em',
-            textTransform: 'uppercase',
-            fontFamily: 'var(--font-body)',
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            width: '100%',
-            paddingLeft: 4,
-            paddingRight: 4,
-          }}>
-            {link.label}
-          </div>
-        </motion.a>
+          <motion.a
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 10,
+              width: 92, height: 92,
+              paddingTop: 20, paddingBottom: 16, paddingLeft: 16, paddingRight: 16,
+              background: 'linear-gradient(160deg, #0a1e1e 0%, #091a1a 100%)',
+              border: '1px solid rgba(14,165,160,0.28)',
+              borderRadius: 12,
+              textDecoration: 'none',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+              userSelect: 'none',
+            }}
+          >
+            <div style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2DD4BF' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(45,212,191,0.8)', fontFamily: 'var(--font-body)' }}>
+              {link.label}
+            </span>
+          </motion.a>
         </div>
       ))}
     </div>

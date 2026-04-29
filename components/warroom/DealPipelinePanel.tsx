@@ -490,7 +490,6 @@ export default function DealPipelinePanel() {
                   { label: 'ID / Client', cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: null },
                   { label: 'Type',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: null },
                   { label: 'Status',      cls: '',                      align: 'center', width: undefined, sortField: null },
-                  { label: 'Tier',        cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: null },
                   { label: 'Priority',    cls: 'deal-rating-col hidden sm:table-cell', align: 'center', width: undefined, sortField: 'rating' as SortField },
                   { label: 'Actions',     cls: 'hidden sm:table-cell',  align: 'center', width: undefined, sortField: null },
                 ] as { label: string; cls: string; align: string; width: number | undefined; sortField: SortField | null }[]).map(h => {
@@ -519,7 +518,7 @@ export default function DealPipelinePanel() {
             <tbody>
               {filteredDeals.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
                     No deals match this filter. Add one above ↑
                   </td>
                 </tr>
@@ -800,7 +799,8 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
           </select>
         </td>
         {/* Col 7: Tier — hidden on mobile */}
-        <td className="hidden sm:table-cell" style={{ padding: '6px 8px' }}>
+        {/* Tier edit cell removed */}
+        <td className="hidden sm:table-cell" style={{ padding: '6px 8px', display: 'none' }}>
           <select value={draft.tier} onChange={e => setDraft(p => ({ ...p, tier: e.target.value as Deal['tier'] }))} style={{ fontSize: 11, padding: '3px 4px', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, color: 'var(--text-primary)' }}>
             {['tracked','filed'].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
           </select>
@@ -847,7 +847,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         >↗</a>
       </td>
       {/* Col 3: Address */}
-      <td style={{ padding: '10px 10px', fontWeight: 500, whiteSpace: 'nowrap', fontSize: 13, textAlign: 'left' }}>
+      <td style={{ padding: '10px 10px', fontWeight: 700, whiteSpace: 'nowrap', fontSize: 14, textAlign: 'left' }}>
         {isSubDeal && <span style={{ marginRight: 8, color: 'var(--text-dim)', fontSize: 11 }}>↳</span>}
         {isPortfolio && onToggleExpand ? (
           <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: '#E8B84B', fontWeight: 700 }}>
@@ -869,12 +869,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       <td style={{ padding: '10px 10px', textAlign: 'center' }}>
         <span className={`badge ${STATUS_CLASS[deal.status as DealStatus]}`}><StatusLabel status={deal.status} /></span>
       </td>
-      {/* Col 7: Tier — hidden on mobile */}
-      <td className="hidden sm:table-cell" style={{ padding: '10px 10px', textAlign: 'center' }}>
-        <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: deal.tier === 'filed' ? 'rgba(96,165,250,0.1)' : 'rgba(255,255,255,0.05)', color: deal.tier === 'filed' ? '#60A5FA' : 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-          {deal.tier ? deal.tier.charAt(0).toUpperCase() + deal.tier.slice(1) : '—'}
-        </span>
-      </td>
+      {/* Tier column removed */}
       <td className="deal-rating-col hidden sm:table-cell" style={{ padding: '6px 10px', textAlign: 'center' }}>
         <StarRating dealId={deal.id} value={deal.rating ?? null} onSave={(v) => onUpdate({ ...deal, rating: v })} />
       </td>
@@ -1203,7 +1198,7 @@ function AddSubDealRow({ parentId, onAdd }: { parentId: string; onAdd: (d: Deal)
 
   return (
     <tr style={{ background: 'rgba(232,184,75,0.03)', borderBottom: '1px solid var(--border-subtle)' }}>
-      <td colSpan={9} style={{ padding: '6px 20px' }}>
+      <td colSpan={8} style={{ padding: '6px 20px' }}>
         {open ? (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 11, flexShrink: 0 }}>↳</span>
