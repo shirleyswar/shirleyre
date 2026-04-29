@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase, Deal } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
+import PanelHeader from '@/components/warroom/PanelHeader'
 
 function formatCurrency(n: number | null | undefined): string {
   if (!n) return '—'
@@ -182,16 +183,14 @@ export default function HotPanel() {
   if (loading) return null
 
   const header = (
-    <div className="wr-card-header" style={{ marginBottom: 4 }}>
-      <span style={{ color: 'var(--accent-gold)', display: 'flex' }}>
-        <RocketIcon />
-      </span>
-      <span className="wr-card-title" style={{ fontSize: 16, fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.06em', textShadow: '0 0 16px rgba(232,184,75,0.4)' }}>
-        Money Movers
-      </span>
-      <span className="wr-panel-line" />
-      <span className="wr-panel-stat wr-panel-stat-gold" style={{ fontSize: 18, fontWeight: 800 }}>{deals.length}</span>
-    </div>
+    <PanelHeader
+      icon={<span style={{ color: 'var(--accent-gold)', display: 'flex' }}><RocketIcon /></span>}
+      title="Money Movers"
+      titleColor="var(--accent-gold)"
+      titleStyle={{ textShadow: '0 0 16px rgba(232,184,75,0.4)' }}
+      stat={deals.length}
+      statColor="var(--accent-gold)"
+    />
   )
 
   if (deals.length === 0) return (

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { rawTo24h, formatEventTime } from '@/lib/scheduleUtils'
+import PanelHeader from '@/components/warroom/PanelHeader'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -511,20 +512,14 @@ export default function SchedulePanel() {
 
   return (
     <div className="wr-card h-full min-h-[240px]">
-      <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
-        <span style={{ color: 'rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.3))' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-        </span>
-        <span className="wr-rank1" style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16, fontWeight: 900 }}>Schedule</span>
-        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.12), transparent)' }} />
-        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: 'rgba(255,255,255,0.7)' }}>
-          {liveEvents.length + liveDeadlines.length || ''}
-        </span>
+      <PanelHeader
+        icon={<span style={{ color: 'rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.3))' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>}
+        title="Schedule"
+        titleColor="rgba(255,255,255,0.85)"
+        stat={liveEvents.length + liveDeadlines.length || ''}
+        statColor="rgba(255,255,255,0.7)"
+        lineColor="rgba(255,255,255,0.12)"
+      >
         <button
           onClick={openAddForm}
           style={{
@@ -543,7 +538,7 @@ export default function SchedulePanel() {
           <span style={{ fontSize: 15, lineHeight: 1, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>+</span>
           Add event
         </button>
-      </div>
+      </PanelHeader>
 
       {/* Add Event Modal */}
       {showAddForm && (

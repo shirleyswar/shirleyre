@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { formatAddress } from '@/lib/formatAddress'
 import { createPortal } from 'react-dom'
 import { supabase, Deal, ContractDeadline, DeadlineType, DeadlineStatus, DealType } from '@/lib/supabase'
+import PanelHeader from '@/components/warroom/PanelHeader'
 
 interface ContractDeal extends Deal {
   days_since_contract?: number
@@ -1452,21 +1453,15 @@ export default function UnderContractPanel() {
   return (
     <div className="wr-card" style={{ boxShadow: '0 0 0 1px rgba(45,212,191,0.08), 0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(45,212,191,0.04)' }}>
       {/* Panel header */}
-      <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
-        <span style={{ color: '#22C55E', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(34,197,94,0.7))' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="8" y1="13" x2="16" y2="13"/>
-            <line x1="8" y1="17" x2="13" y2="17"/>
-          </svg>
-        </span>
-        <span className="wr-rank1" style={{ color: '#22C55E', textShadow: '0 0 16px rgba(34,197,94,0.5)' }}>Under Contract</span>
-        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(34,197,94,0.35), transparent)' }} />
-        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#22C55E' }}>
-          {loading ? '—' : deals.length}
-        </span>
-      </div>
+      <PanelHeader
+        icon={<span style={{ color: '#22C55E', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(34,197,94,0.7))' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span>}
+        title="Under Contract"
+        titleColor="#22C55E"
+        titleStyle={{ textShadow: '0 0 16px rgba(34,197,94,0.5)' }}
+        stat={loading ? '—' : deals.length}
+        statColor="#22C55E"
+        lineColor="rgba(34,197,94,0.35)"
+      />
 
       {loading ? (
         <SkeletonTable />

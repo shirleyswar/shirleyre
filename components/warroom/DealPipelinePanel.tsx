@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase, Deal, DealStatus, DealTier } from '@/lib/supabase'
+import PanelHeader from '@/components/warroom/PanelHeader'
 
 // ─── Address Parser ───────────────────────────────────────────────────────────
 const STREET_TYPES: Record<string, string> = {
@@ -382,19 +383,16 @@ export default function DealPipelinePanel() {
 
   return (
     <div className="wr-card">
-      {/* DEALS section header — T1 standard */}
-      <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
-        <span style={{ color: '#C084FC', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(192,132,252,0.7))' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-          </svg>
-        </span>
-        <span className="wr-rank1" style={{ color: '#C084FC', textShadow: '0 0 16px rgba(192,132,252,0.5)' }}>Deals</span>
-        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(192,132,252,0.35), transparent)' }} />
-        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#C084FC' }}>
-          {filteredCount}
-        </span>
-      </div>
+      {/* DEALS section header */}
+      <PanelHeader
+        icon={<span style={{ color: '#C084FC', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(192,132,252,0.7))' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>}
+        title="Deals"
+        titleColor="#C084FC"
+        titleStyle={{ textShadow: '0 0 16px rgba(192,132,252,0.5)' }}
+        stat={filteredCount}
+        statColor="#C084FC"
+        lineColor="rgba(192,132,252,0.35)"
+      />
       {/* Force-hide on mobile regardless of scroll container context */}
       <style>{`
         @media (max-width: 639px) {

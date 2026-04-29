@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
 import { rawTo24h, formatEventTime, sortEventsByTime } from '@/lib/scheduleUtils'
+import PanelHeader from '@/components/warroom/PanelHeader'
 
 // ─── TIME PICKER — 15-minute intervals, 12-hour format ───────────────────────
 // Replaces the native <input type="time"> which shows every minute
@@ -219,18 +220,15 @@ export default function Next48Panel() {
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         {/* Header */}
-        <div className="wr-card-header" style={{ padding: '20px 24px 0', marginBottom: 0 }}>
-          <span style={{ color: '#4F8EF7', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(79,142,247,0.7))' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-          </span>
-          <span className="wr-rank1" style={{ color: '#4F8EF7', textShadow: '0 0 16px rgba(79,142,247,0.5)' }}>Next 48</span>
-          <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(79,142,247,0.35), transparent)' }} />
-          <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#4F8EF7' }}>
-            {(todayEvents.length + tomorrowEvents.length + todayDeadlines.length + tomorrowDeadlines.length) || ''}
-          </span>
-        </div>
+        <PanelHeader
+          icon={<span style={{ color: '#4F8EF7', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(79,142,247,0.7))' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>}
+          title="Next 48"
+          titleColor="#4F8EF7"
+          titleStyle={{ textShadow: '0 0 16px rgba(79,142,247,0.5)' }}
+          stat={(todayEvents.length + tomorrowEvents.length + todayDeadlines.length + tomorrowDeadlines.length) || ''}
+          statColor="#4F8EF7"
+          lineColor="rgba(79,142,247,0.35)"
+        />
 
         {/* Content */}
         {loading ? (

@@ -26,6 +26,7 @@ function useCountUp(target: number, duration = 600): number {
 }
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
+import PanelHeader from '@/components/warroom/PanelHeader'
 
 interface BattlePlanTask {
   id: string
@@ -358,17 +359,16 @@ export default function BattlePlanPanel() {
         position: 'absolute', inset: 0, borderRadius: 12, pointerEvents: 'none', zIndex: 0,
         background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139,92,246,0.04) 0%, transparent 70%)',
       }} />
-      {/* ── Panel Header — T1 standard ── */}
-      <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
-        <span style={{ color: '#A855F7', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(168,85,247,0.7))' }}>
-          <SwordIcon />
-        </span>
-        <span className="wr-rank1" style={{ color: '#A855F7', textShadow: '0 0 16px rgba(168,85,247,0.5)' }}>Battle Plan</span>
-        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(168,85,247,0.35), transparent)' }} />
-        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#A855F7' }}>
-          {openTasks.length > 0 ? animatedCount : ''}
-        </span>
-      </div>
+      {/* ── Panel Header ── */}
+      <PanelHeader
+        icon={<span style={{ color: '#A855F7', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(168,85,247,0.7))' }}><SwordIcon /></span>}
+        title="Battle Plan"
+        titleColor="#A855F7"
+        titleStyle={{ textShadow: '0 0 16px rgba(168,85,247,0.5)' }}
+        stat={openTasks.length > 0 ? animatedCount : ''}
+        statColor="#A855F7"
+        lineColor="rgba(168,85,247,0.35)"
+      />
 
       {/* ── Toolbar: Add Item button + sort dropdown ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px', marginBottom: 12 }}>
