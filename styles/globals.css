@@ -780,28 +780,25 @@ select {
   .wr-nav-ribbon {
     justify-content: stretch !important;
     overflow-x: hidden !important;
-    padding: 4px 8px !important;
-    gap: 6px !important;
+    padding: 8px 10px !important;
+    gap: 8px !important;
   }
+  /* NavTile 2×2 grid on mobile */
+  .nav-tile-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    width: 100% !important;
+  }
+  /* Legacy wr-nav-card styles (unused but kept for safety) */
   .wr-nav-card {
     flex: 1 1 0 !important;
     width: auto !important;
     max-width: none !important;
     min-width: 0 !important;
-    /* Aspect ratio ~1:1 — square tiles on mobile */
     aspect-ratio: 1 / 1 !important;
     height: auto !important;
   }
-  /* Icon container fills ~40% of tile height on mobile */
-  .wr-nav-card-icon-wrap {
-    width: 40% !important;
-    height: 40% !important;
-  }
-  /* Label: slightly smaller on mobile tiles */
-  .wr-nav-card-label {
-    font-size: 9px !important;
-    letter-spacing: 0.1em !important;
-  }
+  .wr-nav-card-icon-wrap { width: 40% !important; height: 40% !important; }
+  .wr-nav-card-label { font-size: 9px !important; letter-spacing: 0.1em !important; }
 }
 
 /* ── Card corner radius — 12px everywhere (tight, premium) ── */

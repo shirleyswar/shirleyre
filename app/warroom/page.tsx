@@ -515,26 +515,40 @@ function WarRoomHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
 
 // ─── NAV RIBBON ─────────────────────────────────────────────────────────────
 // ── Heroicons outline paths — 24×24 viewBox, strokeWidth 2, identical family ──
-// All four tiles use paths from the same library so stroke weight / corners match.
+// ── Lucide icon paths — 24×24 viewBox, strokeWidth driven by NavTile SVG wrapper ──
+// Lucide icons: clean geometric construction, consistent optical weight at large sizes.
+// These are the canonical Lucide paths for Heart, Building2, TrendingUp, Users.
 
 const ICON_LIFE = (
-  <>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-  </>
+  // Lucide: Heart
+  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
 )
 const ICON_ENTITIES = (
+  // Lucide: Building2
   <>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+    <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+    <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+    <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+    <path d="M10 6h4" />
+    <path d="M10 10h4" />
+    <path d="M10 14h4" />
+    <path d="M10 18h4" />
   </>
 )
 const ICON_PORTFOLIO = (
+  // Lucide: TrendingUp
   <>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+    <polyline points="16 7 22 7 22 13" />
   </>
 )
 const ICON_CONTACTS = (
+  // Lucide: Users
   <>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
   </>
 )
 
@@ -626,8 +640,8 @@ function NavRibbon({
         display: 'flex',
         alignItems: 'center',
         justifyContent: isVertical ? 'space-evenly' : 'flex-start',
-        gap: isVertical ? 4 : 8,
-        padding: '4px 8px',
+        gap: isVertical ? 8 : 10,
+        padding: '10px 12px',
         background: 'var(--bg-sidebar)',
         borderBottom: '1px solid rgba(167,139,250,0.08)',
         flexShrink: 0,
@@ -644,7 +658,7 @@ function NavRibbon({
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          height: 'clamp(80px, 10vw, 96px)',
+          height: 140,
           gap: 0,
           padding: '0 12px',
           cursor: 'default',
@@ -667,19 +681,23 @@ function NavRibbon({
 
       {/* Divider between wordmark and cards — hidden on portrait */}
       {!isVertical && (
-        <div className="hidden sm:block" style={{ width: 1, height: 60, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
+        <div className="hidden sm:block" style={{ width: 1, height: 120, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
       )}
 
-      {/* ── NavTile grid: 4 equal columns (Life, Entities, Portfolio, Contacts) ── */}
-      {/* CSS grid guarantees identical width for every tile — no flex drift */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: isVertical ? 4 : 8,
-        flex: isVertical ? undefined : '0 0 auto',
-        width: isVertical ? '100%' : 'clamp(320px, 40vw, 560px)',
-        minWidth: 0,
-      }}>
+      {/* ── NavTile grid: 4 equal columns desktop, 2×2 mobile ─────────────── */}
+      {/* CSS grid: equal-column, no flex drift, 140px fixed height tiles */}
+      <div
+        className="nav-tile-grid"
+        style={{
+          display: 'grid',
+          // Desktop: 4 columns. Mobile (<640px): 2×2 via CSS class below.
+          gridTemplateColumns: isVertical ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+          gap: isVertical ? 8 : 10,
+          flex: isVertical ? undefined : '0 0 auto',
+          width: isVertical ? '100%' : 'clamp(440px, 42vw, 620px)',
+          minWidth: 0,
+        }}
+      >
         {/* Life */}
         <NavTile
           iconPaths={ICON_LIFE}
@@ -817,7 +835,7 @@ function StatsNavCard() {
       alignItems: 'center',
       justifyContent: 'center',
       flex: '0 0 auto',
-      height: 'clamp(80px, 10vw, 96px)',
+      height: 140,
       padding: '0 16px',
       background: 'linear-gradient(135deg, #0D1218 0%, #111720 100%)',
       border: '1px solid rgba(232,184,75,0.18)',
