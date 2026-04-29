@@ -148,6 +148,9 @@ export default function Next48Panel() {
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editEvent, setEditEvent] = useState<ScheduleEvent | null>(null)
+  // mounted guard — portals need document to exist (Next.js static export hydration)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => { fetchEvents() }, [])
 
@@ -293,7 +296,7 @@ export default function Next48Panel() {
           </div>
         )}
       </div>
-      {editEvent && typeof document !== 'undefined' && createPortal(
+      {editEvent && mounted && createPortal(
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
           onClick={e => { if (e.target === e.currentTarget) setEditEvent(null) }}
@@ -324,7 +327,7 @@ export default function Next48Panel() {
         </div>,
         document.body
       )}
-      {showAddModal && typeof document !== 'undefined' && createPortal(
+      {showAddModal && mounted && createPortal(
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
           onClick={e => { if (e.target === e.currentTarget) setShowAddModal(false) }}
