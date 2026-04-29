@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase, Deal, DealStatus, DealTier } from '@/lib/supabase'
-import PanelHeader from '@/components/warroom/PanelHeader'
+import SectionHeader from '@/components/warroom/SectionHeader'
 
 // ─── Address Parser ───────────────────────────────────────────────────────────
 const STREET_TYPES: Record<string, string> = {
@@ -384,14 +384,20 @@ export default function DealPipelinePanel() {
   return (
     <div className="wr-card">
       {/* DEALS section header */}
-      <PanelHeader
-        icon={<span style={{ color: '#C084FC', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(192,132,252,0.7))' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>}
-        title="Deals"
-        titleColor="#C084FC"
-        titleStyle={{ textShadow: '0 0 16px rgba(192,132,252,0.5)' }}
+      <SectionHeader
+        icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>}
+        label="Deals"
+        color="#C084FC"
         stat={filteredCount}
-        statColor="#C084FC"
-        lineColor="rgba(192,132,252,0.35)"
+        action={
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="wr-btn-orbit"
+            style={{ borderRadius: 999, fontSize: 13, padding: '7px 18px', height: 34, flexShrink: 0 }}
+          >
+            + Deal
+          </button>
+        }
       />
       {/* Force-hide on mobile regardless of scroll container context */}
       <style>{`
@@ -403,37 +409,9 @@ export default function DealPipelinePanel() {
           .deal-mobile-filter { display: none !important; }
         }
       `}</style>
-      {/* Header */}
+      {/* Filters toolbar */}
       <div style={{ marginBottom: 16 }}>
-        {/* Top row: +Deal left | ShirleyCRE center | filters right */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 0 }}>
-
-          {/* + Deal — compact, left */}
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="wr-btn-orbit"
-            style={{ borderRadius: 999, fontSize: 12, padding: '7px 16px', flexShrink: 0 }}
-          >
-            + Deal
-          </button>
-
-          {/* ShirleyCRE — bold section header, centered */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <span style={{
-              fontSize: 26,
-              fontWeight: 900,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: '#E8B84B',
-              fontFamily: 'var(--font-display, var(--font-body))',
-              textShadow: '0 0 28px rgba(232,184,75,0.5), 0 2px 0 rgba(0,0,0,0.4)',
-              userSelect: 'none',
-              lineHeight: 1,
-            }}>
-              SHIRLEYCRE
-            </span>
-          </div>
-
           {/* ── Desktop filters (sm+): full pills ── */}
           <div className="deal-desktop-filters hidden sm:flex" style={{ gap: 6, alignItems: 'center', flexShrink: 0 }}>
             <input

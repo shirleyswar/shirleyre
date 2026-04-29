@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { rawTo24h, formatEventTime } from '@/lib/scheduleUtils'
-import PanelHeader from '@/components/warroom/PanelHeader'
+import SectionHeader from '@/components/warroom/SectionHeader'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -512,33 +512,32 @@ export default function SchedulePanel() {
 
   return (
     <div className="wr-card h-full min-h-[240px]">
-      <PanelHeader
-        icon={<span style={{ color: 'rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.3))' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>}
-        title="Schedule"
-        titleColor="rgba(255,255,255,0.85)"
+      <SectionHeader
+        icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>}
+        label="Schedule"
+        color="rgba(255,255,255,0.85)"
         stat={liveEvents.length + liveDeadlines.length || ''}
-        statColor="rgba(255,255,255,0.7)"
-        lineColor="rgba(255,255,255,0.12)"
-      >
-        <button
-          onClick={openAddForm}
-          style={{
-            height: 30, padding: '0 12px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 7,
-            color: 'rgba(255,255,255,0.7)',
-            fontSize: 12, fontWeight: 500,
-            fontFamily: 'var(--font-body)',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 5,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <span style={{ fontSize: 15, lineHeight: 1, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>+</span>
-          Add event
-        </button>
-      </PanelHeader>
+        action={
+          <button
+            onClick={openAddForm}
+            style={{
+              height: 34, padding: '0 14px',
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 7,
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: 13, fontWeight: 500,
+              fontFamily: 'var(--font-body)',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 5,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span style={{ fontSize: 16, lineHeight: 1, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>+</span>
+            Add event
+          </button>
+        }
+      />
 
       {/* Add Event Modal */}
       {showAddForm && (

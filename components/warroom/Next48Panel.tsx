@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
 import { rawTo24h, formatEventTime, sortEventsByTime } from '@/lib/scheduleUtils'
-import PanelHeader from '@/components/warroom/PanelHeader'
+import SectionHeader from '@/components/warroom/SectionHeader'
 
 // ─── TIME PICKER — 15-minute intervals, 12-hour format ───────────────────────
 // Replaces the native <input type="time"> which shows every minute
@@ -220,14 +220,11 @@ export default function Next48Panel() {
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         {/* Header */}
-        <PanelHeader
-          icon={<span style={{ color: '#4F8EF7', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(79,142,247,0.7))' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>}
-          title="Next 48"
-          titleColor="#4F8EF7"
-          titleStyle={{ textShadow: '0 0 16px rgba(79,142,247,0.5)' }}
+        <SectionHeader
+          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+          label="Next 48"
+          color="#4F8EF7"
           stat={(todayEvents.length + tomorrowEvents.length + todayDeadlines.length + tomorrowDeadlines.length) || ''}
-          statColor="#4F8EF7"
-          lineColor="rgba(79,142,247,0.35)"
         />
 
         {/* Content */}

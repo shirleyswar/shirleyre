@@ -26,7 +26,7 @@ function useCountUp(target: number, duration = 600): number {
 }
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
-import PanelHeader from '@/components/warroom/PanelHeader'
+import SectionHeader from '@/components/warroom/SectionHeader'
 
 interface BattlePlanTask {
   id: string
@@ -360,59 +360,51 @@ export default function BattlePlanPanel() {
         background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139,92,246,0.04) 0%, transparent 70%)',
       }} />
       {/* ── Panel Header ── */}
-      <PanelHeader
-        icon={<span style={{ color: '#A855F7', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(168,85,247,0.7))' }}><SwordIcon /></span>}
-        title="Battle Plan"
-        titleColor="#A855F7"
-        titleStyle={{ textShadow: '0 0 16px rgba(168,85,247,0.5)' }}
+      <SectionHeader
+        icon={<SwordIcon />}
+        label="Battle Plan"
+        color="#A855F7"
         stat={openTasks.length > 0 ? animatedCount : ''}
-        statColor="#A855F7"
-        lineColor="rgba(168,85,247,0.35)"
+        action={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="wr-btn-orbit"
+              style={{ height: 34, padding: '0 16px', fontSize: 13, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 5 }}
+            >
+              + Add Item
+            </button>
+            <select
+              value={sortMode}
+              onChange={e => setSortMode(e.target.value as typeof sortMode)}
+              style={{
+                height: 34,
+                padding: '0 26px 0 10px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 7,
+                fontSize: 12,
+                fontWeight: 500,
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: 'var(--font-body)',
+                cursor: 'pointer',
+                outline: 'none',
+                appearance: 'none' as React.CSSProperties['appearance'],
+                WebkitAppearance: 'none' as React.CSSProperties['WebkitAppearance'],
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='rgba(255,255,255,0.22)'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 8px center',
+                minWidth: 108,
+              }}
+            >
+              <option value="due_date">Due date</option>
+              <option value="priority">Priority</option>
+              <option value="assignee">Assignee</option>
+              <option value="recent">Recently added</option>
+            </select>
+          </div>
+        }
       />
-
-      {/* ── Toolbar: Add Item button + sort dropdown ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px', marginBottom: 12 }}>
-        {/* Add Item button — pill style */}
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="wr-btn-orbit"
-          style={{ height: 30, padding: '0 14px', fontSize: 12, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 5 }}
-        >
-          + Add Item
-        </button>
-
-        <div style={{ flex: 1 }} />
-
-        {/* Sort dropdown — identical visual treatment to Add Item */}
-        <select
-          value={sortMode}
-          onChange={e => setSortMode(e.target.value as typeof sortMode)}
-          style={{
-            height: 30,
-            padding: '0 26px 0 10px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 7,
-            fontSize: 12,
-            fontWeight: 500,
-            color: 'rgba(255,255,255,0.6)',
-            fontFamily: 'var(--font-body)',
-            cursor: 'pointer',
-            outline: 'none',
-            appearance: 'none' as React.CSSProperties['appearance'],
-            WebkitAppearance: 'none' as React.CSSProperties['WebkitAppearance'],
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='rgba(255,255,255,0.22)'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 8px center',
-            minWidth: 108,
-          }}
-        >
-          <option value="due_date">Due date</option>
-          <option value="priority">Priority</option>
-          <option value="assignee">Assignee</option>
-          <option value="recent">Recently added</option>
-        </select>
-      </div>
 
       {/* ── Add Task Modal ── */}
       {showAddForm && typeof document !== 'undefined' && createPortal(
