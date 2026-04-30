@@ -53,7 +53,7 @@ export default function NavTile({
 
   return (
     <button
-      className={className}
+      className={`nav-tile-btn${className ? ' ' + className : ''}`}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setPressed(false) }}
@@ -135,23 +135,27 @@ export default function NavTile({
       )}
 
       {/* ── Icon: 48px, Lucide stroke 2.5, accent-colored ──────────────────── */}
-      <div style={{
-        width: 48,
-        height: 48,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        marginBottom: 10,
-        // Accent ONLY on the icon — not label, not border, not bg
-        color: accent,
-        // Glow around icon on hover/active
-        filter: (hovered || isActive)
-          ? `drop-shadow(0 0 10px ${accent}99) drop-shadow(0 0 20px ${accent}44)`
-          : `drop-shadow(0 0 6px ${accent}44)`,
-        transition: 'filter 200ms cubic-bezier(0.16, 1, 0.3, 1)',
-      }}>
+      <div
+        className="nav-tile-icon"
+        style={{
+          width: 48,
+          height: 48,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          marginBottom: 10,
+          // Accent ONLY on the icon — not label, not border, not bg
+          color: accent,
+          // Glow around icon on hover/active
+          filter: (hovered || isActive)
+            ? `drop-shadow(0 0 10px ${accent}99) drop-shadow(0 0 20px ${accent}44)`
+            : `drop-shadow(0 0 6px ${accent}44)`,
+          transition: 'filter 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
         <svg
+          className="nav-tile-svg"
           width="48"
           height="48"
           viewBox="0 0 24 24"
@@ -166,21 +170,24 @@ export default function NavTile({
       </div>
 
       {/* ── Label: 16px / 700 / uppercase / 0.1em / white 95% ───────────────── */}
-      <span style={{
-        fontSize: 16,
-        fontWeight: 700,
-        letterSpacing: '0.10em',
-        textTransform: 'uppercase',
-        fontFamily: 'var(--font-body)',
-        // Label is always white 95% — accent is icon-only
-        color: 'rgba(255,255,255,0.95)',
-        textAlign: 'center',
-        whiteSpace: 'nowrap',
-        lineHeight: 1,
-        // Subtle text glow on hover — very restrained
-        textShadow: hovered ? '0 0 12px rgba(255,255,255,0.25)' : 'none',
-        transition: 'text-shadow 200ms',
-      }}>
+      <span
+        className="nav-tile-label"
+        style={{
+          fontSize: 16,
+          fontWeight: 700,
+          letterSpacing: '0.10em',
+          textTransform: 'uppercase',
+          fontFamily: 'var(--font-body)',
+          // Label is always white 95% — accent is icon-only
+          color: 'rgba(255,255,255,0.95)',
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+          lineHeight: 1,
+          // Subtle text glow on hover — very restrained
+          textShadow: hovered ? '0 0 12px rgba(255,255,255,0.25)' : 'none',
+          transition: 'text-shadow 200ms',
+        }}
+      >
         {label}
       </span>
     </button>

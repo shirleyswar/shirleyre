@@ -40,6 +40,39 @@ async function sha256(text: string): Promise<string> {
 
 type NavSection = 'life' | 'entities' | 'portfolio'
 
+// ─── Scroll-direction hook for sticky nav hide/reveal ───────────────────────
+function useScrollDirection(scrollRef: React.RefObject<HTMLElement | null>) {
+  const [navVisible, setNavVisible] = useState(true)
+  const lastScrollY = useRef(0)
+  const ticking = useRef(false)
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    function onScroll() {
+      if (ticking.current) return
+      ticking.current = true
+      requestAnimationFrame(() => {
+        if (!el) { ticking.current = false; return }
+        const currentY = el.scrollTop
+        const delta = currentY - lastScrollY.current
+        // Only trigger after 8px movement to avoid jitter
+        if (Math.abs(delta) > 8) {
+          setNavVisible(delta < 0 || currentY < 40)
+          lastScrollY.current = currentY
+        }
+        ticking.current = false
+      })
+    }
+
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [scrollRef])
+
+  return navVisible
+}
+
 // ─── NAV SECTION CONFIG ─────────────────────────────────────────────────────
 const NAV_SECTIONS: {
   id: NavSection
@@ -80,6 +113,7 @@ export default function WarRoomPage() {
   }, [])
 
   const { pullY, refreshing } = usePullToRefresh(mainScrollRef, useCallback(() => setRefreshKey(k => k + 1), []))
+  const navVisible = useScrollDirection(mainScrollRef)
 
   const handlePinSuccess = useCallback(() => {
     const expiry = Date.now() + SESSION_HOURS * 60 * 60 * 1000
@@ -157,11 +191,13 @@ export default function WarRoomPage() {
           onHome={activeSection !== 'operations' ? () => setActiveSection('operations') : undefined}
         />
 
-        {/* ── NAV RIBBON ── */}
-        <NavRibbon
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-        />
+        {/* ── NAV RIBBON — sticky on mobile, hide on scroll-down ── */}
+        <div className={`wr-nav-sticky-wrapper ${navVisible ? 'nav-visible' : 'nav-hidden'}`}>
+          <NavRibbon
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+          />
+        </div>
 
         {/* StatsRibbon now lives inline in header */}
 

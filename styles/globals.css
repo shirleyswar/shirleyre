@@ -781,20 +781,77 @@ select {
   color-scheme: dark;
 }
 
-/* ── War Room Nav Ribbon — Mobile full-width square-ish tiles ── */
-@media (max-width: 640px) {
+/* ── War Room Nav Ribbon — Mobile: 4-across compact single row ── */
+@media (max-width: 767px) {
+  /* Sticky container — hides on scroll down, reveals on scroll up */
+  .wr-nav-sticky-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1), opacity 280ms ease;
+    will-change: transform;
+  }
+  .wr-nav-sticky-wrapper.nav-hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .wr-nav-sticky-wrapper.nav-visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .wr-nav-ribbon {
     justify-content: stretch !important;
     overflow-x: hidden !important;
-    padding: 8px 10px !important;
-    gap: 8px !important;
+    padding: 6px 8px !important;
+    gap: 0 !important;
   }
-  /* NavTile 2×2 grid on mobile — tighter gap so rows read as one unit */
+
+  /* Hide WAR ROOM wordmark + divider + StatsNavCard + external links on mobile */
+  .wr-nav-ribbon > .hidden { display: none !important; }
+
+  /* NavTile grid: 4 tiles across in a single row */
   .nav-tile-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 6px !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8px !important;
     width: 100% !important;
+    flex: 1 !important;
   }
+
+  /* Compact tile sizing on mobile */
+  .nav-tile-btn {
+    height: 84px !important;
+    padding-top: 12px !important;
+    padding-bottom: 10px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    border-radius: 12px !important;
+    min-width: 0 !important;
+  }
+
+  /* Icon: 28px box */
+  .nav-tile-icon {
+    width: 28px !important;
+    height: 28px !important;
+    margin-bottom: 6px !important;
+  }
+  .nav-tile-svg {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  /* Label: 10px, ALL CAPS, Syne Mono, no truncation */
+  .nav-tile-label {
+    font-size: 10px !important;
+    letter-spacing: 0.08em !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+  }
+
   /* Legacy wr-nav-card styles (unused but kept for safety) */
   .wr-nav-card {
     flex: 1 1 0 !important;
