@@ -1474,8 +1474,8 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
             <thead>
               <tr>
                 {[
-                  { label: '↗',            align: 'center' },
-                  { label: 'Address',       align: 'left'   },
+                  { label: '',             align: 'center' },
+                  { label: 'Address',      align: 'left'   },
                   { label: 'Client',        align: 'left'   },
                   { label: 'Price',         align: 'right'  },
                   { label: 'Commission',    align: 'right'  },
@@ -1533,34 +1533,42 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                         borderBottom: isExpanded
                           ? 'none'
                           : i < deals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                        transition: 'background 0.1s',
-                        cursor: 'pointer',
                       }}
-                      onClick={() => handleToggleExpand(deal.id)}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.015)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                     >
-                      {/* Deal page arrow */}
-                      <td style={{ width: 38, minWidth: 38, maxWidth: 38, padding: '6px 4px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                        <a
-                          href={`/warroom/deal?id=${deal.id}`}
-                          title="Open deal dashboard"
-                          onClick={e => e.stopPropagation()}
+                      {/* Expand toggle — ONLY this button expands/collapses. 44×44 tap target. */}
+                      <td style={{ width: 44, minWidth: 44, maxWidth: 44, padding: '4px 2px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => handleToggleExpand(deal.id)}
+                          title={isExpanded ? 'Collapse' : 'Expand deal'}
                           style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                            width: 28, height: 28, borderRadius: 6,
-                            background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.35)',
-                            color: '#2dd4bf', textDecoration: 'none', fontSize: 14, lineHeight: 1,
+                            width: 44, height: 44, borderRadius: 8,
+                            background: isExpanded ? 'rgba(45,212,191,0.18)' : 'rgba(45,212,191,0.08)',
+                            border: `1px solid ${isExpanded ? 'rgba(45,212,191,0.55)' : 'rgba(45,212,191,0.25)'}`,
+                            color: '#2dd4bf', cursor: 'pointer', fontSize: 16, lineHeight: 1,
                             transition: 'all 0.15s',
-                          }}>
-                          ↗
-                        </a>
+                            WebkitTapHighlightColor: 'transparent',
+                          } as React.CSSProperties}
+                        >
+                          {isExpanded ? '▲' : '▼'}
+                        </button>
                       </td>
 
-                      {/* Address */}
-                      <td style={{ padding: '13px 8px', maxWidth: 220 }}>
-                        <div className="wr-address" style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)' }}>
-                          {formatAddress((deal as any).addr_display || deal.address || deal.name)}
+                      {/* Address + deal page link */}
+                      <td style={{ padding: '10px 8px', maxWidth: 220 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                          <div className="wr-address" style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)', flex: 1, minWidth: 0 }}>
+                            {formatAddress((deal as any).addr_display || deal.address || deal.name)}
+                          </div>
+                          <a
+                            href={`/warroom/deal?id=${deal.id}`}
+                            title="Open deal dashboard"
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                              width: 22, height: 22, borderRadius: 5, flexShrink: 0, marginTop: 1,
+                              background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)',
+                              color: '#2dd4bf', textDecoration: 'none', fontSize: 11, lineHeight: 1,
+                            }}>↗</a>
                         </div>
                       </td>
 
@@ -1583,36 +1591,28 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                         </span>
                       </td>
 
-                      {/* Next Deadline */}
-                      <td style={{ padding: '6px 8px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                      {/* Next Deadline — display only, no expand trigger */}
+                      <td style={{ padding: '6px 8px', textAlign: 'center' }}>
                         {nextDeadline ? (
-                          <button
-                            onClick={() => handleToggleExpand(deal.id)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textAlign: 'left' }}>
-                            {/* Date — hero line */}
+                          <div style={{ padding: '4px 6px', textAlign: 'left' }}>
                             <div style={{ fontSize: 13, fontWeight: 800, color: deadlineColor, whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
                               {new Date(nextDeadline.deadline_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </div>
-                            {/* Label + countdown */}
                             <div style={{ fontSize: 10, color: deadlineColor, fontWeight: 600, whiteSpace: 'nowrap', opacity: 0.75, marginTop: 2 }}>
                               {nextDeadline.label.length > 18 ? nextDeadline.label.slice(0, 18) + '…' : nextDeadline.label}
                               {' · '}
                               {nextDays! < 0 ? `${Math.abs(nextDays!)}d overdue` : nextDays === 0 ? 'TODAY' : `${nextDays}d`}
                             </div>
-                          </button>
+                          </div>
                         ) : (
-                          <button
-                            onClick={() => handleToggleExpand(deal.id)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#2dd4bf', padding: '2px 4px', fontWeight: 600 }}>
-                            + Add
-                          </button>
+                          <span style={{ fontSize: 11, color: 'rgba(45,212,191,0.4)', fontStyle: 'italic' }}>None</span>
                         )}
                       </td>
 
                       {/* LANDED hero button */}
-                      <td style={{ padding: '6px 10px 6px 4px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                      <td style={{ padding: '6px 10px 6px 4px', textAlign: 'right' }}>
                         <button
-                          onClick={e => { e.stopPropagation(); setLandedDealId(deal.id) }}
+                          onClick={() => setLandedDealId(deal.id)}
                           style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             gap: 6,
@@ -1689,27 +1689,39 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                   borderRadius: 10,
                   overflow: 'hidden',
                 }}>
-                  {/* Card header row: arrow + address + LANDED */}
-                  <div
-                    style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 12px 8px', cursor: 'pointer' }}
-                    onClick={() => handleToggleExpand(deal.id)}
-                  >
-                    {/* Arrow link */}
-                    <a
-                      href={`/warroom/deal?id=${deal.id}`}
-                      onClick={e => e.stopPropagation()}
+                  {/* Card header row: expand button + address + deal link + LANDED */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 12px 8px' }}>
+                    {/* Expand toggle — ONLY trigger. 44×44 tap target. */}
+                    <button
+                      onClick={() => handleToggleExpand(deal.id)}
+                      title={isExpanded ? 'Collapse' : 'Expand deal'}
                       style={{
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        width: 28, height: 28, borderRadius: 6, flexShrink: 0, marginTop: 1,
-                        background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.35)',
-                        color: '#2dd4bf', textDecoration: 'none', fontSize: 14, lineHeight: 1,
-                      }}
-                    >↗</a>
+                        width: 44, height: 44, borderRadius: 8, flexShrink: 0,
+                        background: isExpanded ? 'rgba(45,212,191,0.18)' : 'rgba(45,212,191,0.08)',
+                        border: `1px solid ${isExpanded ? 'rgba(45,212,191,0.55)' : 'rgba(45,212,191,0.25)'}`,
+                        color: '#2dd4bf', cursor: 'pointer', fontSize: 14, lineHeight: 1,
+                        WebkitTapHighlightColor: 'transparent',
+                      } as React.CSSProperties}
+                    >
+                      {isExpanded ? '▲' : '▼'}
+                    </button>
 
-                    {/* Address + client */}
+                    {/* Address + client + deal link */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)', lineHeight: 1.35, wordBreak: 'normal', overflowWrap: 'break-word' }}>
-                        {formatAddress((deal as any).addr_display || deal.address || deal.name)}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)', lineHeight: 1.35, wordBreak: 'normal', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>
+                          {formatAddress((deal as any).addr_display || deal.address || deal.name)}
+                        </div>
+                        <a
+                          href={`/warroom/deal?id=${deal.id}`}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            width: 22, height: 22, borderRadius: 5, flexShrink: 0, marginTop: 1,
+                            background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)',
+                            color: '#2dd4bf', textDecoration: 'none', fontSize: 11, lineHeight: 1,
+                          }}
+                        >↗</a>
                       </div>
                       {deal.name && (
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1720,7 +1732,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
 
                     {/* LANDED button */}
                     <button
-                      onClick={e => { e.stopPropagation(); setLandedDealId(deal.id) }}
+                      onClick={() => setLandedDealId(deal.id)}
                       style={{
                         flexShrink: 0,
                         padding: '6px 10px',
@@ -1737,7 +1749,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                     >✓ LANDED</button>
                   </div>
 
-                  {/* Data row: Price / Commission / Deadline */}
+                  {/* Data row: Price / Commission / Deadline — display only, no tap handlers */}
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr 1fr',
@@ -1759,11 +1771,8 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                         {myCommission ? formatCurrency(myCommission) : '—'}
                       </div>
                     </div>
-                    {/* Next Deadline */}
-                    <div
-                      onClick={() => handleToggleExpand(deal.id)}
-                      style={{ cursor: 'pointer' }}
-                    >
+                    {/* Next Deadline — display only */}
+                    <div>
                       <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>Next Deadline</div>
                       {nextDeadline ? (
                         <>
@@ -1771,11 +1780,11 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                             {new Date(nextDeadline.deadline_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </div>
                           <div style={{ fontSize: 10, color: deadlineColor, fontWeight: 600, opacity: 0.75, marginTop: 1, whiteSpace: 'nowrap' }}>
-                            {nextDays! < 0 ? `${Math.abs(nextDays!)}d overdue` : nextDays === 0 ? 'TODAY' : `${nextDays}d`} {isExpanded ? '▲' : '▼'}
+                            {nextDays! < 0 ? `${Math.abs(nextDays!)}d overdue` : nextDays === 0 ? 'TODAY' : `${nextDays}d`}
                           </div>
                         </>
                       ) : (
-                        <div style={{ fontSize: 11, color: '#2dd4bf', fontWeight: 600 }}>+ Add {isExpanded ? '▲' : '▼'}</div>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>None</div>
                       )}
                     </div>
                   </div>
