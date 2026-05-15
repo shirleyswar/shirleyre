@@ -475,24 +475,44 @@ function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onH
           margin: '0 auto',
         }}
       >
-        {/* Star mark */}
-        <StarMark size={28} />
+        {/* Star mark — bare icon, no container */}
+        <StarMark size={35} />
 
-        {/* Wordmark */}
-        <span style={{
-          position: 'relative',
-          display: 'inline-flex',
-          alignItems: 'center',
-        }}>
-          <span style={{
+        {/* Wordmark — razor-sharp text, all glow lives on layers behind */}
+        <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+          {/* Layer 1: tight backlight — same text shape, tight blur */}
+          <span aria-hidden="true" style={{
             position: 'absolute',
-            inset: '-12px -20px',
-            background: 'radial-gradient(ellipse at center, rgba(192,132,252,0.18) 0%, rgba(232,184,75,0.08) 50%, transparent 75%)',
-            borderRadius: '50%',
+            inset: 0,
+            fontSize: 22, fontWeight: 800,
+            color: '#C084FC',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            fontFamily: 'var(--font-body)',
+            opacity: 0.35,
+            filter: 'blur(9px)',
             pointerEvents: 'none',
             zIndex: 0,
-            filter: 'blur(6px)',
-          }} />
+            userSelect: 'none',
+            whiteSpace: 'nowrap',
+          }}>ShirleyCRE</span>
+          {/* Layer 2: wide atmospheric glow */}
+          <span aria-hidden="true" style={{
+            position: 'absolute',
+            inset: 0,
+            fontSize: 22, fontWeight: 800,
+            color: '#C084FC',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            fontFamily: 'var(--font-body)',
+            opacity: 0.1,
+            filter: 'blur(22px)',
+            pointerEvents: 'none',
+            zIndex: 0,
+            userSelect: 'none',
+            whiteSpace: 'nowrap',
+          }}>ShirleyCRE</span>
+          {/* Actual text — crisp, no shadow */}
           <span style={{
             position: 'relative', zIndex: 1,
             fontSize: 22, fontWeight: 800,
@@ -500,10 +520,8 @@ function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onH
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
             fontFamily: 'var(--font-body)',
-            textShadow: '0 0 28px rgba(232,184,75,0.28), 0 0 48px rgba(232,184,75,0.14), 0 0 14px rgba(192,132,252,0.35)',
-          }}>
-            ShirleyCRE
-          </span>
+            textShadow: 'none',
+          }}>ShirleyCRE</span>
         </span>
       </button>
 
@@ -1041,11 +1059,9 @@ function StarMark({ size = 20 }: { size?: number }) {
       className="star-pulse"
       style={{
         flexShrink: 0,
-        // Black background of the JPG blends away; star glows remain
         mixBlendMode: 'lighten',
-        borderRadius: '50%',         // soft mask keeps it from being a hard square
-        objectFit: 'cover',
-        filter: 'drop-shadow(0 0 8px rgba(232,184,75,0.35))',
+        objectFit: 'contain',
+        filter: 'drop-shadow(0 0 6px rgba(232,184,75,0.4))',
       }}
       aria-hidden="true"
     />
