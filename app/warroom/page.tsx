@@ -579,10 +579,58 @@ const ICON_CONTACTS = (
 
 // ── Accent colors per tile ─────────────────────────────────────────────────────
 const TILE_ACCENTS: Record<string, string> = {
-  life:      '#F472B6',   // pink
-  entities:  '#60A5FA',   // blue
-  portfolio: '#34D399',   // emerald
-  contacts:  '#A78BFA',   // violet
+  life:      '#E85D9B',   // pink
+  entities:  '#8B7BF7',   // purple
+  portfolio: '#34D399',   // green
+  contacts:  '#9B8EC4',   // blue-purple
+}
+
+// ── Search Bar ────────────────────────────────────────────────────────────────
+function SearchBar() {
+  const [focused, setFocused] = React.useState(false)
+  return (
+    <div style={{
+      padding: '8px 16px 0 16px',
+      background: 'var(--bg-sidebar)',
+      flexShrink: 0,
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        height: 38,
+        background: 'rgba(255,255,255,0.04)',
+        border: `1px solid ${focused ? 'rgba(139,123,247,0.20)' : 'rgba(255,255,255,0.06)'}`,
+        borderRadius: 10,
+        paddingLeft: 10,
+        paddingRight: 10,
+        boxShadow: focused ? '0 0 0 3px rgba(139,123,247,0.06)' : 'none',
+        transition: 'border-color 150ms ease, box-shadow 150ms ease',
+      }}>
+        {/* Search icon */}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          placeholder="Search deals, contacts, properties…"
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            flex: 1,
+            background: 'none',
+            border: 'none',
+            outline: 'none',
+            fontSize: 13,
+            color: 'rgba(255,255,255,0.75)',
+            fontFamily: 'var(--font-body)',
+            letterSpacing: '0.01em',
+          }}
+        />
+      </div>
+    </div>
+  )
 }
 
 function NavRibbon({
@@ -634,71 +682,21 @@ function NavRibbon({
   }
 
   return (
-    <div
-      className="wr-nav-ribbon"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: isVertical ? 'space-evenly' : 'flex-start',
-        gap: isVertical ? 8 : 10,
-        padding: '10px 12px',
-        background: 'var(--bg-sidebar)',
-        borderBottom: '1px solid rgba(167,139,250,0.08)',
-        flexShrink: 0,
-        overflowX: isVertical ? 'visible' : 'auto',
-        WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
-        scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
-      }}
-    >
-      {/* WAR ROOM wordmark — hidden on portrait monitor to give nav tiles full room */}
-      {!isVertical && (
-        <div className="hidden sm:flex" style={{
-          display: undefined,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          height: 140,
-          gap: 0,
-          padding: '0 12px',
-          cursor: 'default',
-          userSelect: 'none',
-        }}>
-          <div style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(22px, 4vw, 36px)',
-            fontWeight: 900,
-            color: '#F0F2FF',
-            letterSpacing: '-0.04em',
-            lineHeight: 1,
-            whiteSpace: 'nowrap',
-            textShadow: '0 0 28px rgba(79,142,247,0.45)',
-          }}>
-            WAR ROOM
-          </div>
-        </div>
-      )}
+    <div className="wr-nav-ribbon" style={{ background: 'var(--bg-sidebar)', flexShrink: 0 }}>
+      {/* Search bar */}
+      <SearchBar />
 
-      {/* Divider between wordmark and cards — hidden on portrait */}
-      {!isVertical && (
-        <div className="hidden sm:block" style={{ width: 1, height: 120, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
-      )}
-
-      {/* ── NavTile grid: 4 equal columns desktop, 2×2 mobile ─────────────── */}
-      {/* CSS grid: equal-column, no flex drift, 140px fixed height tiles */}
+      {/* ── Nav row: 4 equal tabs ─────────────────────────────────────────── */}
       <div
-        className="nav-tile-grid"
         style={{
-          display: 'grid',
-          // Desktop: 4 columns. Mobile (<640px): 2×2 via CSS class below.
-          gridTemplateColumns: isVertical ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-          gap: isVertical ? 6 : 10,
-          flex: isVertical ? undefined : '0 0 auto',
-          width: isVertical ? '100%' : 'clamp(440px, 42vw, 620px)',
-          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'stretch',
+          gap: 6,
+          padding: '8px 16px 10px 16px',
+          borderBottom: '1px solid rgba(167,139,250,0.08)',
         }}
       >
-        {/* Life */}
         <NavTile
           iconPaths={ICON_LIFE}
           label="Life"
@@ -706,7 +704,6 @@ function NavRibbon({
           accent={TILE_ACCENTS.life}
           onClick={() => onSectionChange(activeSection === 'life' ? 'operations' : 'life')}
         />
-        {/* Entities */}
         <NavTile
           iconPaths={ICON_ENTITIES}
           label="Entities"
@@ -714,7 +711,6 @@ function NavRibbon({
           accent={TILE_ACCENTS.entities}
           onClick={() => onSectionChange(activeSection === 'entities' ? 'operations' : 'entities')}
         />
-        {/* Portfolio */}
         <NavTile
           iconPaths={ICON_PORTFOLIO}
           label="Portfolio"
@@ -722,9 +718,7 @@ function NavRibbon({
           accent={TILE_ACCENTS.portfolio}
           onClick={() => onSectionChange(activeSection === 'portfolio' ? 'operations' : 'portfolio')}
         />
-        {/* Contacts — hidden on mobile (4th slot, always) */}
         <NavTile
-          className="hidden sm:block"
           iconPaths={ICON_CONTACTS}
           label="Contacts"
           isActive={false}
@@ -733,55 +727,39 @@ function NavRibbon({
         />
       </div>
 
-      {/* Spacer — pushes link orbits right; hidden on mobile and portrait */}
-      {!isVertical && <div className="hidden sm:block" style={{ flex: 1, minWidth: 24 }} />}
-
-      {/* Stats card — hidden on mobile and vertical monitor */}
-      {!isVertical && (
-        <div className="hidden sm:block">
-          <StatsNavCard />
-        </div>
-      )}
-
-      {/* Teal link orbits — LACDB & CREXI — hidden on mobile and vertical monitor */}
-      {[
-        { label: 'LACDB', url: 'https://roam.clareityiam.net/idp/login/lacdb' },
-        { label: 'CREXI', url: 'https://www.crexi.com/' },
-      ].map(link => (
-        <div key={link.label} className="hidden sm:block" style={{ display: isVertical ? 'none' : undefined }}>
-          <motion.a
+      {/* LACDB & CREXI quick links — desktop only, below nav row */}
+      <div className="hidden sm:flex" style={{ gap: 8, padding: '0 16px 10px 16px', flexDirection: 'row' }}>
+        {[
+          { label: 'LACDB', url: 'https://roam.clareityiam.net/idp/login/lacdb' },
+          { label: 'CREXI', url: 'https://www.crexi.com/' },
+        ].map(link => (
+          <a
+            key={link.label}
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 18 }}
             style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: 10,
-              width: 92, height: 92,
-              paddingTop: 20, paddingBottom: 16, paddingLeft: 16, paddingRight: 16,
-              background: 'linear-gradient(160deg, #0a1e1e 0%, #091a1a 100%)',
-              border: '1px solid rgba(14,165,160,0.28)',
-              borderRadius: 12,
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '4px 10px',
+              background: 'rgba(14,165,160,0.06)',
+              border: '1px solid rgba(14,165,160,0.18)',
+              borderRadius: 7,
               textDecoration: 'none',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
-              userSelect: 'none',
+              color: 'rgba(45,212,191,0.7)',
+              fontSize: 11, fontWeight: 600, letterSpacing: '0.08em',
+              textTransform: 'uppercase' as const,
+              fontFamily: 'var(--font-body)',
             }}
           >
-            <div style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2DD4BF' }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
-                <polyline points="15 3 21 3 21 9"/>
-                <line x1="10" y1="14" x2="21" y2="3"/>
-              </svg>
-            </div>
-            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(45,212,191,0.8)', fontFamily: 'var(--font-body)' }}>
-              {link.label}
-            </span>
-          </motion.a>
-        </div>
-      ))}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            {link.label}
+          </a>
+        ))}
+      </div>
     </div>
   )
 }
