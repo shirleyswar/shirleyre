@@ -76,11 +76,11 @@ export default function MoneyMoversPanel() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(232,184,75,0.15)' }}>
-                  {['Address', 'Next Action', 'Value', 'Commission'].map(col => (
+                  {['Address', 'Value', 'Commission'].map(col => (
                     <th key={col} style={{
                       padding: '6px 12px', fontSize: 10, fontWeight: 700,
                       letterSpacing: '0.12em', textTransform: 'uppercase',
-                      color: 'rgba(255,255,255,0.3)', textAlign: col === 'Address' || col === 'Next Action' ? 'left' : 'right',
+                      color: 'rgba(255,255,255,0.3)', textAlign: col === 'Address' ? 'left' : 'right',
                       whiteSpace: 'nowrap',
                     }}>{col}</th>
                   ))}
@@ -107,13 +107,16 @@ export default function MoneyMoversPanel() {
 }
 
 function DesktopDealRow({ deal, onUpdate }: { deal: Deal; onUpdate: (d: Deal) => void }) {
+  const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const displayAction = (deal as any).next_action || autoSuggestAction(deal.status)
   const isCustom = !!(deal as any).next_action
+  const addr = (deal as any).addr_display || deal.address || deal.name || '—'
 
-  function startEdit() {
+  function startEdit(e: React.MouseEvent) {
+    e.stopPropagation()
     setDraft((deal as any).next_action || '')
     setEditing(true)
     setTimeout(() => inputRef.current?.focus(), 50)
@@ -128,58 +131,131 @@ function DesktopDealRow({ deal, onUpdate }: { deal: Deal; onUpdate: (d: Deal) =>
     setEditing(false)
   }
 
-  const addr = (deal as any).addr_display || deal.address || deal.name || '—'
-
   return (
-    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-      onMouseLeave={e => (e.currentTarget.style.background = '')}
-    >
-      {/* Address */}
-      <td style={{ padding: '10px 12px', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', whiteSpace: 'nowrap', maxWidth: 220 }}>
-        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, textTransform: 'capitalize' }}>{deal.status.replace(/_/g, ' ')}</div>
-      </td>
-      {/* Next Action — editable */}
-      <td style={{ padding: '10px 12px', maxWidth: 260 }} onClick={startEdit}>
-        {editing ? (
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onBlur={saveAction}
-            onKeyDown={e => { if (e.key === 'Enter') saveAction(); if (e.key === 'Escape') setEditing(false) }}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
-          />
-        ) : (
-          <div style={{ fontSize: 12, color: isCustom ? '#F0F2FF' : 'var(--text-muted)', cursor: 'pointer', fontStyle: isCustom ? 'normal' : 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            title="Click to set custom action"
-          >
-            {displayAction}
+    <>
+      <tr
+        style={{ borderBottom: expanded ? 'none' : '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }}
+        onClick={() => setExpanded(p => !p)}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+        onMouseLeave={e => (e.currentTarget.style.background = '')}
+      >
+        {/* Address + subtitle */}
+        <td style={{ padding: '11px 12px', maxWidth: 240 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {deal.status.replace(/_/g, ' ')}
           </div>
-        )}
-      </td>
-      {/* Value */}
-      <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 13, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>
-        {deal.value ? formatCurrency(deal.value) : '—'}
-      </td>
-      {/* Commission */}
-      <td style={{ padding: '10px 12px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#E8B84B', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-        {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
-      </td>
-    </tr>
+        </td>
+        {/* Value */}
+        <td style={{ padding: '11px 12px', textAlign: 'right', fontSize: 14, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>
+          {deal.value ? formatCurrency(deal.value) : '—'}
+        </td>
+        {/* Commission */}
+        <td style={{ padding: '11px 12px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#E8B84B', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+          {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
+        </td>
+      </tr>
+
+      {/* Action dropdown row */}
+      {expanded && (
+        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          <td colSpan={3} style={{ padding: '0 12px 10px 20px' }}>
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onBlur={saveAction}
+                onKeyDown={e => { if (e.key === 'Enter') saveAction(); if (e.key === 'Escape') setEditing(false) }}
+                style={{ width: '100%', maxWidth: 400, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 6, padding: '5px 10px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+              />
+            ) : (
+              <span
+                onClick={startEdit}
+                title="Click to edit action"
+                style={{ fontSize: 13, color: '#E8B84B', fontStyle: isCustom ? 'normal' : 'italic', cursor: 'text' }}
+              >
+                {displayAction}
+              </span>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
   )
 }
 
 function MobileDealRow({ deal, onUpdate }: { deal: Deal; onUpdate: (d: Deal) => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
   const displayAction = (deal as any).next_action || autoSuggestAction(deal.status)
   const isCustom = !!(deal as any).next_action
   const addr = (deal as any).addr_display || deal.address || deal.name || '—'
 
+  function startEdit(e: React.MouseEvent) {
+    e.stopPropagation()
+    setDraft((deal as any).next_action || '')
+    setEditing(true)
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }
+
+  async function saveAction() {
+    const val = draft.trim() || null
+    try {
+      await supabase.from('deals').update({ next_action: val } as Record<string, unknown>).eq('id', deal.id)
+      onUpdate({ ...deal, next_action: val } as Deal)
+    } catch {}
+    setEditing(false)
+  }
+
   return (
-    <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.3 }}>{addr}</div>
-      <div style={{ fontSize: 12, color: isCustom ? 'rgba(255,255,255,0.5)' : 'var(--text-muted)', fontStyle: isCustom ? 'normal' : 'italic' }}>{displayAction}</div>
+    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      {/* Main row — tap anywhere to expand/collapse */}
+      <div
+        onClick={() => setExpanded(p => !p)}
+        style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' } as React.CSSProperties}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, textTransform: 'capitalize' }}>
+            {deal.status.replace(/_/g, ' ')}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#E8B84B', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+            {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
+          </div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>
+            {deal.value ? formatCurrency(deal.value) : '—'}
+          </div>
+        </div>
+      </div>
+
+      {/* Action dropdown — shows on tap */}
+      {expanded && (
+        <div style={{ padding: '0 20px 12px' }} onClick={e => e.stopPropagation()}>
+          {editing ? (
+            <input
+              ref={inputRef}
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              onBlur={saveAction}
+              onKeyDown={e => { if (e.key === 'Enter') saveAction(); if (e.key === 'Escape') setEditing(false) }}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 6, padding: '6px 10px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' } as React.CSSProperties}
+            />
+          ) : (
+            <span
+              onClick={startEdit}
+              title="Tap to edit"
+              style={{ fontSize: 13, color: '#E8B84B', fontStyle: isCustom ? 'normal' : 'italic', cursor: 'text' }}
+            >
+              {displayAction}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
