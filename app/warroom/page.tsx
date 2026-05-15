@@ -476,7 +476,7 @@ function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onH
         }}
       >
         {/* Star mark */}
-        <StarMark size={22} />
+        <StarMark size={28} />
 
         {/* Wordmark */}
         <span style={{
@@ -495,7 +495,7 @@ function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onH
           }} />
           <span style={{
             position: 'relative', zIndex: 1,
-            fontSize: 17, fontWeight: 800,
+            fontSize: 22, fontWeight: 800,
             color: '#C084FC',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
