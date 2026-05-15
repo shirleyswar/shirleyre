@@ -882,9 +882,10 @@ select {
   .uc-label-short { display: none; }
 }
 
-/* ── Address/deal-name: wrap on mobile, truncate on desktop ── */
+/* ── Address/deal-name: never break mid-word on mobile or desktop ── */
 .wr-address {
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: break-word;
   line-height: 1.35;
 }
 @media (min-width: 641px) {
@@ -893,5 +894,41 @@ select {
     overflow: hidden;
     text-overflow: ellipsis;
     word-break: normal;
+    overflow-wrap: normal;
+  }
+}
+
+/* ── UC table: mobile card layout ── */
+@media (max-width: 640px) {
+  /* Allow wr-card to scroll internally for the UC table */
+  .uc-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -20px;
+    padding: 0 20px;
+  }
+
+  /* Hide desktop table on mobile */
+  .uc-desktop-table {
+    display: none;
+  }
+
+  /* Show mobile card list on mobile */
+  .uc-mobile-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+@media (min-width: 641px) {
+  /* Show desktop table on larger screens */
+  .uc-desktop-table {
+    display: table;
+    width: 100%;
+  }
+
+  /* Hide mobile card list on desktop */
+  .uc-mobile-list {
+    display: none !important;
   }
 }

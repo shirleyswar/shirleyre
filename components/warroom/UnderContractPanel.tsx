@@ -1468,8 +1468,9 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
           <div className="wr-empty-line" />
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+        <div>
+          {/* ── Desktop table (hidden on mobile via CSS) ── */}
+          <table className="uc-desktop-table" style={{ borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr>
                 {[
@@ -1565,7 +1566,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
 
                       {/* Client / ID */}
                       <td style={{ padding: '13px 8px', maxWidth: 160 }}>
-                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontWeight: 400 }}>
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 14, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontWeight: 400 }}>
                           {deal.name || '—'}
                         </div>
                       </td>
@@ -1659,6 +1660,139 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
               })}
             </tbody>
           </table>
+
+          {/* ── Mobile card list (hidden on desktop via CSS) ── */}
+          <div className="uc-mobile-list" style={{ display: 'none' }}>
+            {deals.map((deal) => {
+              const isExpanded = expandedDeal === deal.id
+              const deadlines = dealDeadlines[deal.id] || []
+              const uc = ucDetails[deal.id]
+              const contractPrice = uc?.contract_price ?? deal.value ?? null
+              let myCommission: number | null = null
+              if (uc?.commission_pct && contractPrice && uc.deal_category !== 'lease') {
+                myCommission = Math.round(contractPrice * (uc.commission_pct / 100) * 0.75)
+              } else if (uc?.commission_pct && uc.lease_rate && uc.lease_term_months) {
+                if (uc.commission_amount) myCommission = uc.commission_amount
+              }
+              const pendingDeadlines = deadlines.filter(d => d.status === 'pending')
+              const nextDeadline = pendingDeadlines.sort((a, b) => a.deadline_date.localeCompare(b.deadline_date))[0] ?? null
+              const nextDays = nextDeadline ? daysUntil(nextDeadline.deadline_date) : null
+              const deadlineColor = nextDays == null ? 'var(--text-dim)'
+                : nextDays < 0 ? '#ef4444'
+                : nextDays === 0 ? '#22c55e'
+                : '#4F8EF7'
+
+              return (
+                <div key={deal.id} style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                }}>
+                  {/* Card header row: arrow + address + LANDED */}
+                  <div
+                    style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 12px 8px', cursor: 'pointer' }}
+                    onClick={() => handleToggleExpand(deal.id)}
+                  >
+                    {/* Arrow link */}
+                    <a
+                      href={`/warroom/deal?id=${deal.id}`}
+                      onClick={e => e.stopPropagation()}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: 28, height: 28, borderRadius: 6, flexShrink: 0, marginTop: 1,
+                        background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.35)',
+                        color: '#2dd4bf', textDecoration: 'none', fontSize: 14, lineHeight: 1,
+                      }}
+                    >↗</a>
+
+                    {/* Address + client */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)', lineHeight: 1.35, wordBreak: 'normal', overflowWrap: 'break-word' }}>
+                        {formatAddress((deal as any).addr_display || deal.address || deal.name)}
+                      </div>
+                      {deal.name && (
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {deal.name}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* LANDED button */}
+                    <button
+                      onClick={e => { e.stopPropagation(); setLandedDealId(deal.id) }}
+                      style={{
+                        flexShrink: 0,
+                        padding: '6px 10px',
+                        fontSize: 11, fontWeight: 900,
+                        letterSpacing: '0.08em', textTransform: 'uppercase',
+                        background: 'linear-gradient(135deg, rgba(34,197,94,0.25) 0%, rgba(21,128,61,0.35) 100%)',
+                        border: '1.5px solid rgba(34,197,94,0.7)',
+                        borderRadius: 8,
+                        color: '#bbf7d0',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >✓ LANDED</button>
+                  </div>
+
+                  {/* Data row: Price / Commission / Deadline */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gap: 0,
+                    borderTop: '1px solid rgba(255,255,255,0.04)',
+                    padding: '8px 12px 10px',
+                  }}>
+                    {/* Price */}
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>Price</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#F0F2FF', fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                        {contractPrice ? formatCurrency(contractPrice) : '—'}
+                      </div>
+                    </div>
+                    {/* Commission */}
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>Comm.</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#22c55e', fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                        {myCommission ? formatCurrency(myCommission) : '—'}
+                      </div>
+                    </div>
+                    {/* Next Deadline */}
+                    <div
+                      onClick={() => handleToggleExpand(deal.id)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>Next Deadline</div>
+                      {nextDeadline ? (
+                        <>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: deadlineColor, whiteSpace: 'nowrap' }}>
+                            {new Date(nextDeadline.deadline_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </div>
+                          <div style={{ fontSize: 10, color: deadlineColor, fontWeight: 600, opacity: 0.75, marginTop: 1, whiteSpace: 'nowrap' }}>
+                            {nextDays! < 0 ? `${Math.abs(nextDays!)}d overdue` : nextDays === 0 ? 'TODAY' : `${nextDays}d`} {isExpanded ? '▲' : '▼'}
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: 11, color: '#2dd4bf', fontWeight: 600 }}>+ Add {isExpanded ? '▲' : '▼'}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Expanded subpanel */}
+                  {isExpanded && (
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      <DealSubpanel
+                        deal={deal}
+                        onDeadlinesChange={handleDeadlinesChange}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
