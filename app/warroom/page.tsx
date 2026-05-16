@@ -1050,22 +1050,49 @@ function OperationsView({ activePanel }: { activePanel: string }) {
 // 8-pointed violet star with atmospheric particle haze
 // Drawn as pure SVG so it scales cleanly and stays sharp at all sizes
 function StarMark({ size = 20 }: { size?: number }) {
-  // Real brand mark — PNG image, black background transparent via mix-blend-mode
+  // Pure SVG sparkle — no background, no container, fully transparent
+  // 4-pointed star (classic sparkle) with a subtle diagonal cross
   return (
-    <img
-      src="/shirleycre-star.jpg"
-      alt="ShirleyCRE star mark"
+    <svg
       width={size}
       height={size}
+      viewBox="0 0 40 40"
+      fill="none"
       className="star-pulse"
       style={{
         flexShrink: 0,
-        mixBlendMode: 'lighten',
-        objectFit: 'contain',
-        filter: 'drop-shadow(0 0 6px rgba(232,184,75,0.4))',
+        filter: 'drop-shadow(0 0 5px rgba(232,184,75,0.55)) drop-shadow(0 0 12px rgba(192,132,252,0.35))',
+        overflow: 'visible',
       }}
       aria-hidden="true"
-    />
+    >
+      {/* 4-pointed star — vertical/horizontal arms */}
+      <path
+        d="M20 2 C20 2, 22 14, 20 20 C18 14, 20 2, 20 2Z
+           M20 38 C20 38, 22 26, 20 20 C18 26, 20 38, 20 38Z
+           M2 20 C2 20, 14 22, 20 20 C14 18, 2 20, 2 20Z
+           M38 20 C38 20, 26 22, 20 20 C26 18, 38 20, 38 20Z"
+        fill="url(#sparkleGrad)"
+      />
+      {/* Diagonal cross — smaller, adds sparkle character */}
+      <path
+        d="M7.5 7.5 C7.5 7.5, 16 16, 20 20 C16 16, 7.5 7.5, 7.5 7.5Z
+           M32.5 32.5 C32.5 32.5, 24 24, 20 20 C24 24, 32.5 32.5, 32.5 32.5Z
+           M32.5 7.5 C32.5 7.5, 24 16, 20 20 C24 16, 32.5 7.5, 32.5 7.5Z
+           M7.5 32.5 C7.5 32.5, 16 24, 20 20 C16 24, 7.5 32.5, 7.5 32.5Z"
+        fill="url(#sparkleGrad)"
+        opacity="0.55"
+      />
+      {/* Center glow dot */}
+      <circle cx="20" cy="20" r="2.2" fill="white" opacity="0.9" />
+      <defs>
+        <radialGradient id="sparkleGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
+          <stop offset="40%" stopColor="#E8B84B" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#C084FC" stopOpacity="0.7" />
+        </radialGradient>
+      </defs>
+    </svg>
   )
 }
 

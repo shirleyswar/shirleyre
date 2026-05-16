@@ -1535,22 +1535,26 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                           : i < deals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                       }}
                     >
-                      {/* Expand toggle — ONLY this button expands/collapses. 44×44 tap target. */}
-                      <td style={{ width: 44, minWidth: 44, maxWidth: 44, padding: '4px 2px', textAlign: 'center' }}>
+                      {/* Expand toggle — bare chevron, no background shape */}
+                      <td style={{ width: 40, minWidth: 40, maxWidth: 40, padding: '4px 2px', textAlign: 'center' }}>
                         <button
                           onClick={() => handleToggleExpand(deal.id)}
                           title={isExpanded ? 'Collapse' : 'Expand deal'}
                           style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                            width: 44, height: 44, borderRadius: 8,
-                            background: isExpanded ? 'rgba(45,212,191,0.18)' : 'rgba(45,212,191,0.08)',
-                            border: `1px solid ${isExpanded ? 'rgba(45,212,191,0.55)' : 'rgba(45,212,191,0.25)'}`,
-                            color: '#2dd4bf', cursor: 'pointer', fontSize: 16, lineHeight: 1,
-                            transition: 'all 0.15s',
+                            width: 40, height: 40,
+                            background: 'none', border: 'none',
+                            color: isExpanded ? '#2dd4bf' : 'rgba(45,212,191,0.5)',
+                            cursor: 'pointer',
                             WebkitTapHighlightColor: 'transparent',
+                            padding: 0,
                           } as React.CSSProperties}
                         >
-                          {isExpanded ? '▲' : '▼'}
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            {isExpanded
+                              ? <polyline points="18 15 12 9 6 15" />
+                              : <polyline points="6 9 12 15 18 9" />}
+                          </svg>
                         </button>
                       </td>
 
@@ -1689,46 +1693,52 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                   borderRadius: 10,
                   overflow: 'hidden',
                 }}>
-                  {/* Card header row: expand button + address + deal link + LANDED */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 12px 8px' }}>
-                    {/* Expand toggle — ONLY trigger. 44×44 tap target. */}
-                    <button
-                      onClick={() => handleToggleExpand(deal.id)}
-                      title={isExpanded ? 'Collapse' : 'Expand deal'}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        width: 44, height: 44, borderRadius: 8, flexShrink: 0,
-                        background: isExpanded ? 'rgba(45,212,191,0.18)' : 'rgba(45,212,191,0.08)',
-                        border: `1px solid ${isExpanded ? 'rgba(45,212,191,0.55)' : 'rgba(45,212,191,0.25)'}`,
-                        color: '#2dd4bf', cursor: 'pointer', fontSize: 14, lineHeight: 1,
-                        WebkitTapHighlightColor: 'transparent',
-                      } as React.CSSProperties}
-                    >
-                      {isExpanded ? '▲' : '▼'}
-                    </button>
-
-                    {/* Address + client + deal link */}
+                  {/* Row: address (full width) + chevron + LANDED */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px 6px' }}>
+                    {/* Address block — takes all available space, never wraps */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)', lineHeight: 1.35, wordBreak: 'normal', overflowWrap: 'break-word', flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {formatAddress((deal as any).addr_display || deal.address || deal.name)}
                         </div>
                         <a
                           href={`/warroom/deal?id=${deal.id}`}
                           style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                            width: 22, height: 22, borderRadius: 5, flexShrink: 0, marginTop: 1,
-                            background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)',
-                            color: '#2dd4bf', textDecoration: 'none', fontSize: 11, lineHeight: 1,
+                            width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                            background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.18)',
+                            color: '#2dd4bf', textDecoration: 'none', fontSize: 10, lineHeight: 1,
                           }}
                         >↗</a>
                       </div>
+                      {/* Client name — second line, muted */}
                       {deal.name && (
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {deal.name}
                         </div>
                       )}
                     </div>
+
+                    {/* Bare chevron expand button — no background, no border */}
+                    <button
+                      onClick={() => handleToggleExpand(deal.id)}
+                      title={isExpanded ? 'Collapse' : 'Expand details'}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: 44, height: 44, flexShrink: 0,
+                        background: 'none', border: 'none',
+                        color: isExpanded ? '#2dd4bf' : 'rgba(45,212,191,0.5)',
+                        cursor: 'pointer',
+                        WebkitTapHighlightColor: 'transparent',
+                        padding: 0,
+                      } as React.CSSProperties}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        {isExpanded
+                          ? <polyline points="18 15 12 9 6 15" />
+                          : <polyline points="6 9 12 15 18 9" />}
+                      </svg>
+                    </button>
 
                     {/* LANDED button */}
                     <button
@@ -1749,54 +1759,55 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                     >✓ LANDED</button>
                   </div>
 
-                  {/* Data row: Price / Commission / Deadline — display only, no tap handlers */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr 1fr',
-                    gap: 0,
-                    borderTop: '1px solid rgba(255,255,255,0.04)',
-                    padding: '8px 12px 10px',
-                  }}>
-                    {/* Price */}
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>Price</div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#F0F2FF', fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                        {contractPrice ? formatCurrency(contractPrice) : '—'}
-                      </div>
-                    </div>
-                    {/* Commission */}
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>Comm.</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#22c55e', fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                        {myCommission ? formatCurrency(myCommission) : '—'}
-                      </div>
-                    </div>
-                    {/* Next Deadline — display only */}
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>Next Deadline</div>
-                      {nextDeadline ? (
-                        <>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: deadlineColor, whiteSpace: 'nowrap' }}>
-                            {new Date(nextDeadline.deadline_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </div>
-                          <div style={{ fontSize: 10, color: deadlineColor, fontWeight: 600, opacity: 0.75, marginTop: 1, whiteSpace: 'nowrap' }}>
-                            {nextDays! < 0 ? `${Math.abs(nextDays!)}d overdue` : nextDays === 0 ? 'TODAY' : `${nextDays}d`}
-                          </div>
-                        </>
-                      ) : (
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>None</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Expanded subpanel */}
+                  {/* Data row — hidden until expanded */}
                   {isExpanded && (
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                      <DealSubpanel
-                        deal={deal}
-                        onDeadlinesChange={handleDeadlinesChange}
-                      />
-                    </div>
+                    <>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr 1fr',
+                        gap: 0,
+                        borderTop: '1px solid rgba(255,255,255,0.04)',
+                        padding: '8px 12px 10px',
+                      }}>
+                        {/* Price */}
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>Price</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#F0F2FF', fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                            {contractPrice ? formatCurrency(contractPrice) : '—'}
+                          </div>
+                        </div>
+                        {/* Commission */}
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>Comm.</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#22c55e', fontFamily: 'var(--font-body)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                            {myCommission ? formatCurrency(myCommission) : '—'}
+                          </div>
+                        </div>
+                        {/* Next Deadline */}
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>Next Deadline</div>
+                          {nextDeadline ? (
+                            <>
+                              <div style={{ fontSize: 13, fontWeight: 800, color: deadlineColor, whiteSpace: 'nowrap' }}>
+                                {new Date(nextDeadline.deadline_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </div>
+                              <div style={{ fontSize: 10, color: deadlineColor, fontWeight: 600, opacity: 0.75, marginTop: 1, whiteSpace: 'nowrap' }}>
+                                {nextDays! < 0 ? `${Math.abs(nextDays!)}d overdue` : nextDays === 0 ? 'TODAY' : `${nextDays}d`}
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>None</div>
+                          )}
+                        </div>
+                      </div>
+                      {/* Contingency subpanel */}
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                        <DealSubpanel
+                          deal={deal}
+                          onDeadlinesChange={handleDeadlinesChange}
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               )
