@@ -618,7 +618,7 @@ function SearchBar() {
         gap: 8,
         height: 38,
         background: 'rgba(255,255,255,0.04)',
-        border: `1px solid ${focused ? 'rgba(139,123,247,0.20)' : 'rgba(255,255,255,0.06)'}`,
+        border: `1px solid ${focused ? 'rgba(139,123,247,0.20)' : 'rgba(255,255,255,0.10)'}`,
         borderRadius: 10,
         paddingLeft: 10,
         paddingRight: 10,
@@ -626,12 +626,13 @@ function SearchBar() {
         transition: 'border-color 150ms ease, box-shadow 150ms ease',
       }}>
         {/* Search icon */}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.50)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
           <circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
           type="text"
+          className="wr-search-input"
           placeholder="Search deals, contacts, properties…"
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}

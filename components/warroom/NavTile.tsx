@@ -47,14 +47,14 @@ export default function NavTile({
   const iconColor = isActive
     ? accent
     : hovered
-    ? 'rgba(255,255,255,0.55)'
-    : 'rgba(255,255,255,0.28)'
+    ? 'rgba(255,255,255,0.70)'
+    : 'rgba(255,255,255,0.55)'
 
   const labelColor = isActive
     ? accent
     : hovered
-    ? 'rgba(255,255,255,0.55)'
-    : 'rgba(255,255,255,0.28)'
+    ? 'rgba(255,255,255,0.70)'
+    : 'rgba(255,255,255,0.55)'
 
   const scale = pressed ? 0.97 : 1
 

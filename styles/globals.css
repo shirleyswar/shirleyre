@@ -932,3 +932,9 @@ select {
     display: none !important;
   }
 }
+
+/* ── Search bar placeholder contrast boost ── */
+.wr-search-input::placeholder {
+  color: rgba(255,255,255,0.45);
+  opacity: 1;
+}
