@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -546,6 +546,181 @@ function SleeveTable({ positions }: { positions: Position[] }) {
   )
 }
 
+// ─── Consolidated Sleeve Table (ALL view only) ────────────────────────────────
+// Groups rows by symbol, shows combined stats, expand to see per-tranche lots
+
+interface SleeveConsolidatedRow {
+  symbol: string
+  name: string
+  lots: (Position & { tranche?: string })[]
+  qty: number
+  market_value: number
+  total_cost: number
+  gl_dollar: number
+  gl_pct: number
+  ann_return: number | null
+}
+
+function buildSleeveConsolidated(positions: (Position & { tranche?: string })[]): SleeveConsolidatedRow[] {
+  const map = new Map<string, (Position & { tranche?: string })[]>()
+  for (const p of positions) {
+    const sym = p.symbol ?? '??'
+    if (!map.has(sym)) map.set(sym, [])
+    map.get(sym)!.push(p)
+  }
+  const rows: SleeveConsolidatedRow[] = []
+  for (const [symbol, lots] of Array.from(map.entries())) {
+    const mv   = lots.reduce((s, l) => s + (l.market_value ?? 0), 0)
+    const tc   = lots.reduce((s, l) => s + (l.total_cost ?? 0), 0)
+    const gl$  = lots.reduce((s, l) => s + (l.unrealized_gl_dollar ?? 0), 0)
+    const glPct = tc > 0 ? (gl$ / tc) * 100 : 0
+    const annRet = mv > 0
+      ? lots.reduce((s, l) => s + ((l.annualized_return_pct ?? 0) * (l.market_value ?? 0)), 0) / mv
+      : null
+    rows.push({
+      symbol,
+      name: lots[0].name ?? symbol,
+      lots,
+      qty:          lots.reduce((s, l) => s + (l.qty ?? 0), 0),
+      market_value: mv,
+      total_cost:   tc,
+      gl_dollar:    gl$,
+      gl_pct:       glPct,
+      ann_return:   annRet,
+    })
+  }
+  return rows
+}
+
+function ConsolidatedSleeveTable({ positions }: { positions: (Position & { tranche?: string })[] }) {
+  type SF = 'symbol' | 'market_value' | 'total_cost' | 'gl_dollar' | 'gl_pct' | 'ann_return'
+  const [sortField, setSortField] = useState<SF>('market_value')
+  const [sortDir,   setSortDir]   = useState<'asc' | 'desc'>('desc')
+  const [expanded,  setExpanded]  = useState<Set<string>>(new Set())
+
+  function handleSort(f: SF) {
+    if (sortField === f) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(f); setSortDir('desc') }
+  }
+  function arrow(f: SF) {
+    if (sortField !== f) return <span style={{ color: P.muted, fontSize: 9 }}>⇅</span>
+    return <span style={{ color: P.purple, fontSize: 9 }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
+  }
+  function toggleExpand(sym: string) {
+    setExpanded(prev => { const n = new Set(prev); n.has(sym) ? n.delete(sym) : n.add(sym); return n })
+  }
+
+  const rows = buildSleeveConsolidated(positions)
+  const sorted = [...rows].sort((a, b) => {
+    let av: number | string = 0, bv: number | string = 0
+    if      (sortField === 'symbol')       { av = a.symbol;        bv = b.symbol }
+    else if (sortField === 'market_value') { av = a.market_value;  bv = b.market_value }
+    else if (sortField === 'total_cost')   { av = a.total_cost;    bv = b.total_cost }
+    else if (sortField === 'gl_dollar')    { av = a.gl_dollar;     bv = b.gl_dollar }
+    else if (sortField === 'gl_pct')       { av = a.gl_pct;        bv = b.gl_pct }
+    else if (sortField === 'ann_return')   { av = a.ann_return ?? -999; bv = b.ann_return ?? -999 }
+    if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv as string) : (bv as string).localeCompare(av)
+    return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number)
+  })
+
+  const TRANCHE_LABELS: Record<string, string> = { tranche1: 'T1', tranche2: 'T2' }
+  const TRANCHE_COLORS: Record<string, string> = { tranche1: P.purple, tranche2: '#E8B84B' }
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+        <thead>
+          <tr style={{ borderBottom: `1px solid ${P.purpleBorder}`, background: P.purpleFaint }}>
+            {/* expand col */}
+            <th style={{ width: 36, padding: '8px 4px' }} />
+            {([
+              { label: 'Symbol',      field: 'symbol'       },
+              { label: 'Name',        field: null           },
+              { label: 'Qty',         field: null           },
+              { label: 'Mkt Value',   field: 'market_value' },
+              { label: 'Cost Basis',  field: 'total_cost'   },
+              { label: 'G/L $',       field: 'gl_dollar'    },
+              { label: 'G/L %',       field: 'gl_pct'       },
+              { label: 'Ann. Return', field: 'ann_return'   },
+            ] as { label: string; field: SF | null }[]).map((col, i) => (
+              <th key={i}
+                onClick={() => col.field && handleSort(col.field)}
+                style={{ padding: '8px 10px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: col.field ? 'pointer' : 'default', whiteSpace: 'nowrap', userSelect: 'none' }}>
+                {col.label} {col.field && arrow(col.field)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.length === 0 ? (
+            <tr><td colSpan={9} style={{ textAlign: 'center', padding: '32px 0', color: P.muted, fontSize: 13 }}>No positions.</td></tr>
+          ) : sorted.map(row => {
+            const isExpanded  = expanded.has(row.symbol)
+            const isMultiLot  = row.lots.length > 1
+            return (
+              <React.Fragment key={row.symbol}>
+                {/* Consolidated row */}
+                <tr
+                  onClick={() => isMultiLot && toggleExpand(row.symbol)}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.06)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = isExpanded ? P.purpleFaint : '')}
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: isExpanded ? P.purpleFaint : '', cursor: isMultiLot ? 'pointer' : 'default', transition: 'background 0.1s' }}
+                >
+                  {/* Expand chevron */}
+                  <td style={{ padding: '9px 4px', textAlign: 'center', width: 36 }}>
+                    {isMultiLot && (
+                      <span style={{ fontSize: 9, color: P.purpleDim }}>
+                        {isExpanded ? '▼' : '▶'}
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ padding: '9px 10px', textAlign: 'center', fontWeight: 700, color: P.text, whiteSpace: 'nowrap' }}>
+                    {row.symbol}
+                    {isMultiLot && (
+                      <span style={{ marginLeft: 5, fontSize: 9, padding: '1px 5px', background: P.purpleFaint, border: `1px solid ${P.purpleBorder}`, borderRadius: 3, color: P.purpleDim }}>{row.lots.length}</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '9px 10px', textAlign: 'left', color: P.muted, fontSize: 12, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name || '—'}</td>
+                  <td style={{ padding: '9px 10px', textAlign: 'center', fontFamily: 'monospace', color: P.muted, fontSize: 12 }}>{fmtNum(row.qty, 0)}</td>
+                  <td style={{ padding: '9px 10px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, color: P.text }}>{fmt$(row.market_value)}</td>
+                  <td style={{ padding: '9px 10px', textAlign: 'center', fontFamily: 'monospace', color: P.muted }}>{fmt$(row.total_cost)}</td>
+                  <td style={{ padding: '9px 10px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.gl_dollar), fontWeight: 600 }}>{fmt$(row.gl_dollar)}</td>
+                  <td style={{ padding: '9px 10px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.gl_pct), fontWeight: 600 }}>{fmtPct(row.gl_pct)}</td>
+                  <td style={{ padding: '9px 10px', textAlign: 'center', fontFamily: 'monospace', color: pctColor(row.ann_return), fontWeight: 700 }}>{fmtPct(row.ann_return)}</td>
+                </tr>
+
+                {/* Per-tranche lot rows — visible when expanded */}
+                {isExpanded && row.lots.map((lot, li) => {
+                  const tranche = (lot as any).tranche as string | undefined
+                  const tLabel = tranche ? (TRANCHE_LABELS[tranche] ?? tranche) : `Lot ${li + 1}`
+                  const tColor = tranche ? (TRANCHE_COLORS[tranche] ?? P.muted) : P.muted
+                  return (
+                    <tr key={lot.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.025)', background: 'rgba(139,92,246,0.03)' }}>
+                      <td style={{ padding: '7px 4px', textAlign: 'center' }} />
+                      <td style={{ padding: '7px 10px', textAlign: 'center' }}>
+                        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, background: `${tColor}18`, border: `1px solid ${tColor}40`, color: tColor, fontWeight: 700, letterSpacing: '0.06em' }}>
+                          {tLabel}
+                        </span>
+                      </td>
+                      <td style={{ padding: '7px 10px', textAlign: 'left', color: P.muted, fontSize: 11 }}>{lot.name || '—'}</td>
+                      <td style={{ padding: '7px 10px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: P.muted }}>{fmtNum(lot.qty, 0)}</td>
+                      <td style={{ padding: '7px 10px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: P.muted }}>{fmt$(lot.market_value)}</td>
+                      <td style={{ padding: '7px 10px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: P.muted }}>{fmt$(lot.total_cost)}</td>
+                      <td style={{ padding: '7px 10px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.unrealized_gl_dollar) }}>{fmt$(lot.unrealized_gl_dollar)}</td>
+                      <td style={{ padding: '7px 10px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.unrealized_gl_pct) }}>{fmtPct(lot.unrealized_gl_pct)}</td>
+                      <td style={{ padding: '7px 10px', textAlign: 'center', fontFamily: 'monospace', fontSize: 11, color: pctColor(lot.annualized_return_pct) }}>{fmtPct(lot.annualized_return_pct)}</td>
+                    </tr>
+                  )
+                })}
+              </React.Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 // ─── Sleeve Tab ───────────────────────────────────────────────────────────────
 type SleeveView = 'tranche1' | 'tranche2' | 'all'
 
@@ -699,7 +874,10 @@ function SleeveTab() {
       ) : (
         <>
           <KpiCards positions={viewPositions} />
-          <SleeveTable positions={viewPositions} />
+          {view === 'all'
+            ? <ConsolidatedSleeveTable positions={viewPositions as (Position & { tranche?: string })[]} />
+            : <SleeveTable positions={viewPositions} />
+          }
         </>
       )}
     </div>
