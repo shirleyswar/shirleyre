@@ -240,14 +240,18 @@ const SLEEVE_COL_ALIASES: Record<string, string[]> = {
   annualized_return_pct:['ANN. RETURN', 'ANNUALIZED RETURN', 'ANN RETURN', 'ANN RTN'],
 }
 
-function resolveHeaders(rawHeaders: string[], colMap: Record<string, string>): Record<string, string> {
+function resolveHeaders(
+  rawHeaders: string[],
+  colMap: Record<string, string>,
+  aliasMap: Record<string, string[]> = SLEEVE_COL_ALIASES,
+): Record<string, string> {
   // Build a map from field -> actual header found in the file
   const norm = (s: string) => s.toUpperCase().replace(/\s+/g, ' ').trim()
   const normHeaders = rawHeaders.map(norm)
   const result: Record<string, string> = {}
 
   for (const [field, primary] of Object.entries(colMap)) {
-    const aliases = SLEEVE_COL_ALIASES[field] ?? [primary]
+    const aliases = aliasMap[field] ?? [primary]
     const allAliases = Array.from(new Set([primary, ...aliases])).map(norm)
     const found = rawHeaders.find((h, i) => allAliases.includes(normHeaders[i]))
     if (found) result[field] = found
@@ -255,7 +259,7 @@ function resolveHeaders(rawHeaders: string[], colMap: Record<string, string>): R
   return result
 }
 
-async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Record<string, unknown>[] | string> {
+async function parseXlsx(file: File, colMap: Record<string, string>, aliasMap: Record<string, string[]> = SLEEVE_COL_ALIASES): Promise<Record<string, unknown>[] | string> {
   try {
     const XLSX = await import('xlsx')
     const buf  = await file.arrayBuffer()
@@ -319,7 +323,7 @@ async function parseXlsx(file: File, colMap: Record<string, string>): Promise<Re
 
     // Resolve actual header names from the file (case-insensitive, alias-aware)
     const fileHeaders = raw2.length > 0 ? Object.keys(raw2[0]) : []
-    const resolved = resolveHeaders(fileHeaders, colMap)
+    const resolved = resolveHeaders(fileHeaders, colMap, aliasMap)
 
     const symKey = resolved['symbol'] ?? colMap['symbol']
     const rows = raw2.filter(r => {
@@ -434,6 +438,17 @@ const PORTFOLIO_COL_MAP: Record<string, string> = {
   qty: 'Quantity', market_value: 'Market Value', total_cost: 'Total Cost',
   unrealized_gl_pct: 'Unrealized G/L %', unrealized_gl_dollar: 'Unrealized G/L $',
   years_held: 'Years Held', annualized_return_pct: 'Annualized Return %',
+}
+// Portfolio upload uses the same alias map as Sleeve — MS exports use different column names
+// depending on the export type. Merge so resolveHeaders gets all fallbacks.
+const PORTFOLIO_COL_ALIASES: Record<string, string[]> = {
+  ...SLEEVE_COL_ALIASES,
+  // Portfolio-specific extras
+  name:   [...(SLEEVE_COL_ALIASES.name   ?? []), 'Name', 'Security Name', 'Description'],
+  symbol: [...(SLEEVE_COL_ALIASES.symbol ?? []), 'Symbol', 'Ticker'],
+  acquired: [...(SLEEVE_COL_ALIASES.acquired ?? []), 'Date Acquired', 'Acquisition Date', 'Purchase Date'],
+  market_value: [...(SLEEVE_COL_ALIASES.market_value ?? []), 'Market Value', 'Current Value', 'Mkt Val'],
+  total_cost: [...(SLEEVE_COL_ALIASES.total_cost ?? []), 'Total Cost', 'Cost Basis', 'Adjusted Cost Basis', 'Adj Cost Basis', 'Adj. Cost Basis', 'Total Investment'],
 }
 const SLEEVE_COL_MAP: Record<string, string> = {
   name: 'NAME', symbol: 'SYM', acquired: 'ACQUIRED', period: 'PERIOD',
@@ -1608,13 +1623,17 @@ function PortfolioTab() {
   const handleFile = useCallback(async (file: File) => {
     if (!file.name.match(/\.xlsx?$/i)) { setUploadError('Please upload an .xlsx file.'); return }
     setUploading(true); setUploadMsg(null); setUploadError(null)
-    const rows = await parseXlsx(file, PORTFOLIO_COL_MAP)
+    const rows = await parseXlsx(file, PORTFOLIO_COL_MAP, PORTFOLIO_COL_ALIASES)
     if (typeof rows === 'string') { setUploadError(rows); setUploading(false); return }
 
-    // Debug: check first row to surface what cost value came in
-    const sampleCost = (rows as Record<string,unknown>[])[0]?.total_cost
-    const sampleSymbol = (rows as Record<string,unknown>[])[0]?.symbol
-    setUploadError(`DEBUG — first row: ${sampleSymbol} cost=${JSON.stringify(sampleCost)} (dismiss after checking)`)
+    // Validate cost basis parsed correctly — abort if all zeros
+    const typedRowsArr = rows as Record<string,unknown>[]
+    const anyCost = typedRowsArr.some(r => r.total_cost != null && (r.total_cost as number) !== 0)
+    if (!anyCost) {
+      setUploadError('⚠ Cost basis parsed as $0 for all rows. Check that your .xlsx has a Cost Basis / Adjusted Cost Basis column. Upload cancelled.')
+      setUploading(false)
+      return
+    }
 
     const batch = new Date().toISOString()
     const { error: delError } = await supabase.from('portfolio_positions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
