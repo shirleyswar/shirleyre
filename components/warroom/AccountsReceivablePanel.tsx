@@ -267,7 +267,7 @@ export default function AccountsReceivablePanel({ refreshKey }: { refreshKey?: n
 
       {/* ── HERO — matches Sale Commission card style ── */}
       <div style={{
-        background: 'linear-gradient(135deg, #0a1628 0%, #0d1f3c 50%, #091520 100%)',
+        background: '#101017',
         border: '1.5px solid rgba(167,139,250,0.3)',
         borderRadius: 16,
         padding: '22px 28px',
@@ -289,7 +289,7 @@ export default function AccountsReceivablePanel({ refreshKey }: { refreshKey?: n
             </svg>
           </span>
           <span className="wr-rank1" style={{ color: '#60A5FA', textShadow: '0 0 16px rgba(96,165,250,0.5)' }}>Receivables</span>
-          <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(96,165,250,0.35), transparent)' }} />
+          <div className="wr-panel-line" style={{  }} />
           <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#60A5FA' }}>
             {receivable.length || ''}
           </span>

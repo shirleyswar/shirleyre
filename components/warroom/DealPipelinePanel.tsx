@@ -915,13 +915,13 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       {confirmUC && createPortal(
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setConfirmUC(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(20,184,166,0.4)', borderRadius: 14, padding: 28, minWidth: 320, maxWidth: 400, width: '90vw' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 14, padding: 28, minWidth: 320, maxWidth: 400, width: '90vw' }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#34D399', marginBottom: 12 }}>Move to Under Contract?</div>
             <div style={{ fontSize: 12, color: '#aaa', marginBottom: 16, lineHeight: 1.6 }}>
               <div><span style={{ color: '#ccc', fontWeight: 600 }}>{deal.address || '—'}</span></div>
               <div style={{ color: '#888' }}>{deal.name} · {DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type}</div>
             </div>
-            <div style={{ fontSize: 12, color: '#34D399', marginBottom: 16, padding: '8px 12px', background: 'rgba(20,184,166,0.08)', borderRadius: 6, border: '1px solid rgba(20,184,166,0.2)' }}>
+            <div style={{ fontSize: 12, color: '#34D399', marginBottom: 16, padding: '8px 12px', background: 'rgba(52,211,153,0.08)', borderRadius: 6, border: '1px solid rgba(52,211,153,0.2)' }}>
               Moves deal to Under Contract and adds to UC tracking panel.
             </div>
             <input
@@ -953,7 +953,7 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setConfirmKill(false)}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 14, padding: 28, minWidth: 320, maxWidth: 400, width: '90vw' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#F59E0B', marginBottom: 12 }}>End Deal?</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#FFA23A', marginBottom: 12 }}>End Deal?</div>
             <div style={{ fontSize: 12, color: '#aaa', marginBottom: 16, lineHeight: 1.6 }}>
               <div><span style={{ color: '#ccc', fontWeight: 600 }}>{deal.address || '—'}</span></div>
               <div style={{ color: '#888' }}>{deal.name} · {DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type} · <span style={{ textTransform: 'capitalize' }}>{deal.tier ? deal.tier.charAt(0).toUpperCase() + deal.tier.slice(1) : '—'}</span></div>
@@ -962,15 +962,15 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Action</div>
                 {killOptions.map(opt => (
-                  <label key={opt.status} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer', fontSize: 13, color: selectedKill?.status === opt.status ? '#F59E0B' : '#aaa' }}>
-                    <input type="radio" name="killAction" checked={selectedKill?.status === opt.status} onChange={() => setSelectedKill(opt)} style={{ accentColor: '#F59E0B' }} />
+                  <label key={opt.status} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer', fontSize: 13, color: selectedKill?.status === opt.status ? '#FFA23A' : '#aaa' }}>
+                    <input type="radio" name="killAction" checked={selectedKill?.status === opt.status} onChange={() => setSelectedKill(opt)} style={{ accentColor: '#FFA23A' }} />
                     {opt.label}
                   </label>
                 ))}
               </div>
             )}
             {killOptions.length === 1 && (
-              <div style={{ fontSize: 12, color: '#F59E0B', marginBottom: 16, padding: '8px 12px', background: 'rgba(245,158,11,0.08)', borderRadius: 6, border: '1px solid rgba(245,158,11,0.2)' }}>
+              <div style={{ fontSize: 12, color: '#FFA23A', marginBottom: 16, padding: '8px 12px', background: 'rgba(255,162,58,0.08)', borderRadius: 6, border: '1px solid rgba(255,162,58,0.2)' }}>
                 {killOptions[0].label}
               </div>
             )}
@@ -987,9 +987,9 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
                 if (v.length === 4 && selectedKill) handleKill(v)
               }}
               placeholder="· · · ·"
-              style={{ width: '100%', fontSize: 28, textAlign: 'center', letterSpacing: '0.4em', padding: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${killError ? '#F59E0B' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', marginBottom: 6, boxSizing: 'border-box' as const }}
+              style={{ width: '100%', fontSize: 28, textAlign: 'center', letterSpacing: '0.4em', padding: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${killError ? '#FFA23A' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', marginBottom: 6, boxSizing: 'border-box' as const }}
             />
-            {killError && <div style={{ color: '#F59E0B', fontSize: 11, marginTop: 6, textAlign: 'center' }}>Incorrect PIN</div>}
+            {killError && <div style={{ color: '#FFA23A', fontSize: 11, marginTop: 6, textAlign: 'center' }}>Incorrect PIN</div>}
             <div style={{ marginTop: 16, textAlign: 'center' }}>
               <button onClick={() => setConfirmKill(false)} style={{ padding: '8px 24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#888', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
             </div>

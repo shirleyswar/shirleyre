@@ -77,7 +77,7 @@ export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
     {
       label: 'UC Commission',
       value: ucValue,
-      accentColor: ucFlag ? '#f59e0b' : 'var(--accent-gold)',
+      accentColor: ucFlag ? '#FFA23A' : 'var(--accent-gold)',
       title: ucTitle,
     },
     {

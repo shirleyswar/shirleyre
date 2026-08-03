@@ -674,7 +674,7 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
         <div
           onClick={e => e.stopPropagation()}
           style={{
-            background: 'linear-gradient(160deg, #0a1f14 0%, #0d2818 50%, #091a10 100%)',
+            background: '#101017',
             border: '2px solid rgba(34,197,94,0.55)',
             borderRadius: 16,
             padding: '36px 32px',

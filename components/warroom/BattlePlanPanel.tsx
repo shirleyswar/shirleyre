@@ -698,7 +698,7 @@ export default function BattlePlanPanel() {
                     if (e.key === 'Escape') setNextFlowMode(false)
                   }}
                   placeholder="What's the next action?"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(20,184,166,0.4)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
                 />
                 <div>
                   <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Due Date</div>
@@ -727,7 +727,7 @@ export default function BattlePlanPanel() {
                   <button
                     onClick={() => confirmNextFlow(pendingComplete)}
                     disabled={!nextFlowTitle.trim()}
-                    style={{ flex: 2, padding: '10px', background: nextFlowTitle.trim() ? 'rgba(20,184,166,0.2)' : 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.4)', borderRadius: 8, color: '#14b8a6', fontSize: 14, fontWeight: 700, cursor: nextFlowTitle.trim() ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-body)', opacity: nextFlowTitle.trim() ? 1 : 0.5 }}
+                    style={{ flex: 2, padding: '10px', background: nextFlowTitle.trim() ? 'rgba(52,211,153,0.2)' : 'rgba(20,184,166,0.06)', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 8, color: '#14b8a6', fontSize: 14, fontWeight: 700, cursor: nextFlowTitle.trim() ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-body)', opacity: nextFlowTitle.trim() ? 1 : 0.5 }}
                   >
                     Complete + Create
                   </button>

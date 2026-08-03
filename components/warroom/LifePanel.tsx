@@ -291,7 +291,7 @@ export default function LifePanel() {
       `}</style>
 
       <div style={{
-        background: 'linear-gradient(135deg, #0a1628 0%, #0d1f3c 50%, #091520 100%)',
+        background: '#101017',
         border: '1.5px solid rgba(139,92,246,0.2)',
         borderRadius: 16,
         padding: '22px 24px 72px',  /* bottom padding for FAB clearance */
@@ -309,7 +309,7 @@ export default function LifePanel() {
             <LifeIcon />
           </span>
           <span className="wr-rank1" style={{ color: '#F87171', textShadow: '0 0 16px rgba(248,113,113,0.5)' }}>Life</span>
-          <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(248,113,113,0.35), transparent)' }} />
+          <div className="wr-panel-line" style={{  }} />
           <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#F87171' }}>
             {totalOpen > 0 ? totalOpen : '—'}
           </span>

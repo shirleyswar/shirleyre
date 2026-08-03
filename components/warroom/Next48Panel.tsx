@@ -206,7 +206,7 @@ export default function Next48Panel() {
 
   return (
     <div className="wr-card" style={{
-      background: 'linear-gradient(160deg, #0d1a2e 0%, #101828 60%, #0a1520 100%)',
+      background: '#101017',
       border: '1px solid rgba(139,92,246,0.2)',
       position: 'relative',
       overflow: 'hidden',
