@@ -225,7 +225,7 @@ export default function WarRoomPage() {
                   }} />
                   <span style={{
                     fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
-                    color: 'rgba(167,139,250,0.8)', fontFamily: 'var(--font-body)',
+                    color: 'rgba(167,139,250,0.8)', fontFamily: 'var(--font-mono)',
                   }}>Refreshing</span>
                 </div>
               ) : (
@@ -841,7 +841,7 @@ function StatsNavCard() {
       minWidth: 'clamp(120px, 20vw, 180px)',
       boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 12px rgba(139,92,246,0.06), inset 0 1px 0 rgba(139,92,246,0.06)',
     }}>
-      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.4)', fontFamily: 'var(--font-body)' }}>
+      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.4)', fontFamily: 'var(--font-mono)' }}>
         PIPELINE
       </div>
       <div style={{ display: 'flex', gap: 12 }}>
