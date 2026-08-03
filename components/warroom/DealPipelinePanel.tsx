@@ -501,7 +501,7 @@ export default function DealPipelinePanel() {
                       textAlign: h.align as React.CSSProperties['textAlign'],
                       width: h.width, minWidth: h.width, maxWidth: h.width,
                       padding: '8px 4px', fontSize: 9, fontWeight: 800,
-                      color: isActive ? '#E8B84B' : 'rgba(255,255,255,0.3)',
+                      color: isActive ? '#A78BFA' : 'rgba(255,255,255,0.3)',
                       textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap',
                       cursor: h.sortField ? 'pointer' : 'default', userSelect: 'none',
                       borderRight: h.label === 'FILES' ? '1px solid rgba(139,92,246,0.15)' : undefined,
@@ -850,12 +850,12 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
       <td style={{ padding: '10px 10px', fontWeight: 700, whiteSpace: 'nowrap', fontSize: 14, textAlign: 'left' }}>
         {isSubDeal && <span style={{ marginRight: 8, color: 'var(--text-dim)', fontSize: 11 }}>↳</span>}
         {isPortfolio && onToggleExpand ? (
-          <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: '#E8B84B', fontWeight: 700 }}>
+          <button onClick={onToggleExpand} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: '#A78BFA', fontWeight: 700 }}>
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', transition: 'transform 0.15s', display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
             {displayAddress || (deal as any).addr_display || deal.address?.replace(/^📁\s*/, '')}
           </button>
         ) : deal.address?.startsWith('📁') ? (
-          <span style={{ color: '#E8B84B', fontWeight: 700 }}>{deal.address?.replace(/^📁\s*/, '')}</span>
+          <span style={{ color: '#A78BFA', fontWeight: 700 }}>{deal.address?.replace(/^📁\s*/, '')}</span>
         ) : (
           <span className="wr-address" style={{ color: isSubDeal ? '#F0F2FF' : 'var(--text-primary)' }}>
             {displayAddress || (deal as any).addr_display || deal.address || '—'}
@@ -1094,7 +1094,7 @@ function AddDealForm({ onAdd }: { onAdd: (d: Deal) => void }) {
   const labelStyle: React.CSSProperties = { fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, textAlign: 'center' }
 
   return (
-    <div style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(201,147,58,0.2)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+    <div style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
         {/* Address */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 200px' }}>
@@ -1197,7 +1197,7 @@ function AddSubDealRow({ parentId, onAdd }: { parentId: string; onAdd: (d: Deal)
   }
 
   return (
-    <tr style={{ background: 'rgba(232,184,75,0.03)', borderBottom: '1px solid var(--border-subtle)' }}>
+    <tr style={{ background: 'rgba(139,92,246,0.03)', borderBottom: '1px solid var(--border-subtle)' }}>
       <td colSpan={8} style={{ padding: '6px 20px' }}>
         {open ? (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1214,7 +1214,7 @@ function AddSubDealRow({ parentId, onAdd }: { parentId: string; onAdd: (d: Deal)
               <option value="tracked">Tracked</option>
               <option value="filed">Filed</option>
             </select>
-            <button onClick={save} disabled={saving || !address.trim()} style={{ padding: '4px 12px', background: 'rgba(232,184,75,0.2)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 5, color: '#E8B84B', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{saving ? '…' : '+ Add'}</button>
+            <button onClick={save} disabled={saving || !address.trim()} style={{ padding: '4px 12px', background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 5, color: '#A78BFA', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{saving ? '…' : '+ Add'}</button>
             <button onClick={() => setOpen(false)} style={{ padding: '4px 8px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12 }}>✕</button>
           </div>
         ) : (
@@ -1309,7 +1309,7 @@ function StarRating({ dealId, value, onSave }: { dealId: string; value: number |
           style={{
             fontSize: 16,
             cursor: 'pointer',
-            color: i <= display ? '#E8B84B' : 'rgba(255,255,255,0.15)',
+            color: i <= display ? '#A78BFA' : 'rgba(255,255,255,0.15)',
             lineHeight: 1,
             transition: 'color 0.1s',
             userSelect: 'none',

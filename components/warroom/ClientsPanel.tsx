@@ -30,7 +30,7 @@ export interface Client {
 const TYPE_COLORS: Record<string, { bg: string; border: string; color: string; label: string }> = {
   buyer:    { bg: 'rgba(79,142,247,0.12)',  border: 'rgba(79,142,247,0.4)',  color: '#4F8EF7', label: 'Buyer' },
   tenant:   { bg: 'rgba(34,197,94,0.12)',   border: 'rgba(34,197,94,0.4)',   color: '#22c55e', label: 'Tenant' },
-  investor: { bg: 'rgba(232,184,75,0.12)',  border: 'rgba(232,184,75,0.4)',  color: '#E8B84B', label: 'Investor' },
+  investor: { bg: 'rgba(139,92,246,0.12)',  border: 'rgba(139,92,246,0.4)',  color: '#A78BFA', label: 'Investor' },
   other:    { bg: 'rgba(156,163,175,0.12)', border: 'rgba(156,163,175,0.3)', color: '#9ca3af', label: 'Other' },
 }
 

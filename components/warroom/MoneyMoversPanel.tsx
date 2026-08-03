@@ -49,15 +49,15 @@ export default function MoneyMoversPanel() {
     <div className="wr-card h-full min-h-[200px]">
       {/* T1 Header */}
       <div className="wr-card-header" style={{ padding: '16px 20px 0', marginBottom: 12 }}>
-        <span style={{ color: '#E8B84B', display: 'flex', alignItems: 'center' }}>
+        <span style={{ color: '#A78BFA', display: 'flex', alignItems: 'center' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="1" x2="12" y2="23"/>
             <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
           </svg>
         </span>
-        <span className="wr-rank1" style={{ color: '#E8B84B' }}>Money Movers</span>
+        <span className="wr-rank1" style={{ color: '#A78BFA' }}>Money Movers</span>
         <div className="wr-panel-line" />
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(232,184,75,0.6)', fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(167,139,250,0.6)', fontVariantNumeric: 'tabular-nums' }}>
           {loading ? '—' : deals.length}
         </span>
       </div>
@@ -75,7 +75,7 @@ export default function MoneyMoversPanel() {
           <div className="hidden sm:block" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(232,184,75,0.15)' }}>
+                <tr style={{ borderBottom: '1px solid rgba(139,92,246,0.15)' }}>
                   {['Address', 'Value', 'Commission'].map(col => (
                     <th key={col} style={{
                       padding: '6px 12px', fontSize: 10, fontWeight: 700,
@@ -151,7 +151,7 @@ function DesktopDealRow({ deal, onUpdate }: { deal: Deal; onUpdate: (d: Deal) =>
           {deal.value ? formatCurrency(deal.value) : '—'}
         </td>
         {/* Commission */}
-        <td style={{ padding: '11px 12px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#E8B84B', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+        <td style={{ padding: '11px 12px', textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#A78BFA', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
           {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
         </td>
       </tr>
@@ -167,13 +167,13 @@ function DesktopDealRow({ deal, onUpdate }: { deal: Deal; onUpdate: (d: Deal) =>
                 onChange={e => setDraft(e.target.value)}
                 onBlur={saveAction}
                 onKeyDown={e => { if (e.key === 'Enter') saveAction(); if (e.key === 'Escape') setEditing(false) }}
-                style={{ width: '100%', maxWidth: 400, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 6, padding: '5px 10px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+                style={{ width: '100%', maxWidth: 400, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 6, padding: '5px 10px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
               />
             ) : (
               <span
                 onClick={startEdit}
                 title="Click to edit action"
-                style={{ fontSize: 13, color: '#E8B84B', fontStyle: isCustom ? 'normal' : 'italic', cursor: 'text' }}
+                style={{ fontSize: 13, color: '#A78BFA', fontStyle: isCustom ? 'normal' : 'italic', cursor: 'text' }}
               >
                 {displayAction}
               </span>
@@ -224,7 +224,7 @@ function MobileDealRow({ deal, onUpdate }: { deal: Deal; onUpdate: (d: Deal) => 
           </div>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#E8B84B', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#A78BFA', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
             {deal.commission_estimated ? formatCurrency(deal.commission_estimated) : '—'}
           </div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>
@@ -243,13 +243,13 @@ function MobileDealRow({ deal, onUpdate }: { deal: Deal; onUpdate: (d: Deal) => 
               onChange={e => setDraft(e.target.value)}
               onBlur={saveAction}
               onKeyDown={e => { if (e.key === 'Enter') saveAction(); if (e.key === 'Escape') setEditing(false) }}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(232,184,75,0.4)', borderRadius: 6, padding: '6px 10px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' } as React.CSSProperties}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 6, padding: '6px 10px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' } as React.CSSProperties}
             />
           ) : (
             <span
               onClick={startEdit}
               title="Tap to edit"
-              style={{ fontSize: 13, color: '#E8B84B', fontStyle: isCustom ? 'normal' : 'italic', cursor: 'text' }}
+              style={{ fontSize: 13, color: '#A78BFA', fontStyle: isCustom ? 'normal' : 'italic', cursor: 'text' }}
             >
               {displayAction}
             </span>

@@ -299,7 +299,7 @@ html, body {
    Urgency accent     → HOT gets orange flame dot, UNDER CONTRACT gets pulse dot */
 
 /* Pre-deal — warm amber/orange */
-.badge-pipeline  { background: rgba(201,147,58,0.12);  color: #C9933A; border: 1px solid rgba(201,147,58,0.3);  }
+.badge-pipeline  { background: rgba(139,92,246,0.08);  color: #8B8A9B; border: 1px solid rgba(255,255,255,0.14); }
 .badge-hot       { background: rgba(251,100,36,0.15);  color: #f97316; border: 1px solid rgba(249,115,22,0.45); font-weight: 700; }
 
 /* In-deal — blue/indigo */
@@ -484,7 +484,7 @@ html, body {
 }
 .pin-digit:focus {
   border-color: var(--accent-gold);
-  box-shadow: 0 0 0 2px rgba(232,184,75,0.2);
+  box-shadow: 0 0 0 2px rgba(139,92,246,0.2);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -844,8 +844,8 @@ html, body {
   50% { opacity: 1; }
 }
 @keyframes portfolioIconPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(232,184,75,0.12); }
-  50% { box-shadow: 0 0 0 12px rgba(232,184,75,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.12); }
+  50% { box-shadow: 0 0 0 12px rgba(139,92,246,0); }
 }
 @keyframes portfolioDot {
   0%, 100% { opacity: 1; }

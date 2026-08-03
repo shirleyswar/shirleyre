@@ -639,7 +639,7 @@ function ConsolidatedSleeveTable({ positions }: { positions: (Position & { tranc
   })
 
   const TRANCHE_LABELS: Record<string, string> = { tranche1: 'T1', tranche2: 'T2' }
-  const TRANCHE_COLORS: Record<string, string> = { tranche1: P.purple, tranche2: '#E8B84B' }
+  const TRANCHE_COLORS: Record<string, string> = { tranche1: P.purple, tranche2: '#A78BFA' }
 
   return (
     <div style={{ overflowX: 'auto' }}>
@@ -869,7 +869,7 @@ function SleeveTab() {
 
         {/* Upload T2 */}
         <button onClick={() => t2Ref.current?.click()} disabled={!!uploading}
-          style={{ padding: '6px 12px', fontSize: 11, fontWeight: 800, background: 'rgba(232,184,75,0.12)', border: '1px solid rgba(232,184,75,0.5)', borderRadius: 8, color: '#E8B84B', cursor: 'pointer', opacity: uploading ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+          style={{ padding: '6px 12px', fontSize: 11, fontWeight: 800, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.5)', borderRadius: 8, color: '#A78BFA', cursor: 'pointer', opacity: uploading ? 0.5 : 1, whiteSpace: 'nowrap' }}>
           {uploading === 'tranche2' ? 'Loading T2…' : '↑ T2 .xlsx'}
         </button>
         <input ref={t2Ref} type="file" accept=".xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f, 'tranche2'); e.target.value = '' }} style={{ display: 'none' }} />
@@ -1410,7 +1410,7 @@ function SoldTab() {
           style={{ display: 'none' }} />
         {/* Basket B upload */}
         <button onClick={() => fileBInputRef.current?.click()} disabled={!!uploading}
-          style={{ padding: '6px 12px', fontSize: 11, fontWeight: 800, background: 'rgba(232,184,75,0.12)', border: '1px solid rgba(232,184,75,0.5)', borderRadius: 8, color: '#E8B84B', cursor: 'pointer', opacity: uploading ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+          style={{ padding: '6px 12px', fontSize: 11, fontWeight: 800, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.5)', borderRadius: 8, color: '#A78BFA', cursor: 'pointer', opacity: uploading ? 0.5 : 1, whiteSpace: 'nowrap' }}>
           {uploading === 'basket_b' ? 'Loading B…' : '↑ Basket B'}
         </button>
         <input ref={fileBInputRef} type="file" accept=".xlsx,.xls"

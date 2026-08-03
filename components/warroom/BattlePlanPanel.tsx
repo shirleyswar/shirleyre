@@ -412,8 +412,8 @@ export default function BattlePlanPanel() {
           style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
           onClick={e => { if (e.target === e.currentTarget) closeAddForm() }}
         >
-          <div style={{ background: '#13112A', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', fontFamily: 'monospace' }}>
+          <div style={{ background: '#13112A', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', fontFamily: 'monospace' }}>
               Add Action Item
             </div>
             <input
@@ -427,7 +427,7 @@ export default function BattlePlanPanel() {
             />
             {/* ID / Contact — autofill from existing deal names */}
             <div>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>ID / Contact</div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>ID / Contact</div>
               <input
                 type="text"
                 value={newContactName}
@@ -444,7 +444,7 @@ export default function BattlePlanPanel() {
             </div>
             {/* Deadline */}
             <div>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Deadline</div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Deadline</div>
               <input
                 type="date"
                 value={newDueDate}
@@ -533,7 +533,7 @@ export default function BattlePlanPanel() {
           const week7 = new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
           const buckets: { key: keyof typeof collapsedBuckets; label: string; color: string; tasks: BattlePlanTask[] }[] = [
             { key: 'overdue',  label: 'Overdue',      color: '#ef4444',              tasks: sorted.filter(t => t.due_date && t.due_date < today) },
-            { key: 'today',    label: 'Today',        color: '#E8B84B',              tasks: sorted.filter(t => t.due_date === today) },
+            { key: 'today',    label: 'Today',        color: '#A78BFA',              tasks: sorted.filter(t => t.due_date === today) },
             { key: 'thisWeek', label: 'This Week',    color: '#4F8EF7',              tasks: sorted.filter(t => t.due_date && t.due_date > today && t.due_date <= week7) },
             { key: 'later',    label: 'Later',        color: 'rgba(255,255,255,0.35)', tasks: sorted.filter(t => t.due_date && t.due_date > week7) },
             { key: 'none',     label: 'No Due Date',  color: 'rgba(255,255,255,0.2)', tasks: sorted.filter(t => !t.due_date) },
@@ -664,9 +664,9 @@ export default function BattlePlanPanel() {
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: '#13112A', border: '1px solid rgba(232,184,75,0.35)', borderRadius: 14, padding: 28, minWidth: 300, maxWidth: 420, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.7)' }}
+            style={{ background: '#13112A', border: '1px solid rgba(139,92,246,0.35)', borderRadius: 14, padding: 28, minWidth: 300, maxWidth: 420, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.7)' }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 8, fontFamily: 'monospace' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', marginBottom: 8, fontFamily: 'monospace' }}>
               Battle Plan
             </div>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#F0F2FF', marginBottom: 4, lineHeight: 1.4 }}>
@@ -701,7 +701,7 @@ export default function BattlePlanPanel() {
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(20,184,166,0.4)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
                 />
                 <div>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Due Date</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Due Date</div>
                   <input
                     type="date"
                     value={nextFlowDueDate}
@@ -852,7 +852,7 @@ function TaskRow({
       return { label: `${Math.abs(diffDays)} days late`, color: 'rgba(239,68,68,0.7)' }
     }
     if (diffDays === 0) {
-      return { label: 'Today', color: 'rgba(232,184,75,0.8)' }
+      return { label: 'Today', color: 'rgba(167,139,250,0.8)' }
     }
     if (diffDays === 1) {
       return { label: 'Tomorrow', color: 'rgba(255,255,255,0.4)' }
@@ -883,14 +883,14 @@ function TaskRow({
       onMouseLeave={() => setHovered(false)}
       style={{
         background: isDragTarget
-          ? 'rgba(232,184,75,0.06)'
+          ? 'rgba(139,92,246,0.06)'
           : isOverdue
           ? 'rgba(239,68,68,0.04)'
           : isDueToday
-          ? 'rgba(232,184,75,0.05)'
+          ? 'rgba(139,92,246,0.05)'
           : 'rgba(255,255,255,0.025)',
         borderRadius: 12,
-        border: `1px solid ${isOverdue ? 'rgba(239,68,68,0.15)' : isDueToday ? 'rgba(232,184,75,0.2)' : 'rgba(255,255,255,0.06)'}`,
+        border: `1px solid ${isOverdue ? 'rgba(239,68,68,0.15)' : isDueToday ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.06)'}`,
         padding: editing ? '14px 16px' : '14px 16px',
         marginBottom: 8,
         position: 'relative',
@@ -899,7 +899,7 @@ function TaskRow({
         boxShadow: isFeatured
           ? '0 0 32px rgba(239,68,68,0.18), 0 0 64px rgba(239,68,68,0.08), 0 4px 24px rgba(0,0,0,0.4)'
           : isDueToday
-          ? '0 0 20px rgba(232,184,75,0.1), 0 2px 12px rgba(0,0,0,0.3)'
+          ? '0 0 20px rgba(139,92,246,0.1), 0 2px 12px rgba(0,0,0,0.3)'
           : '0 2px 8px rgba(0,0,0,0.2)',
       }}
     >
@@ -1055,7 +1055,7 @@ const BP_STATUS_BADGE_COLORS: Record<string, { bg: string; border: string; color
   pipeline:        { bg: 'rgba(79,142,247,0.1)',   border: 'rgba(79,142,247,0.35)', color: '#4F8EF7' },
   closed:          { bg: 'rgba(107,114,128,0.1)',  border: 'rgba(107,114,128,0.3)', color: '#9ca3af' },
 }
-const BP_NEUTRAL_BADGE = { bg: 'rgba(232,184,75,0.08)', border: 'rgba(232,184,75,0.25)', color: 'rgba(232,184,75,0.8)' }
+const BP_NEUTRAL_BADGE = { bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.25)', color: 'rgba(167,139,250,0.8)' }
 
 // Color rule: LIFE = red, entity/company = purple, person = gold
 // is_entity flag = true → purple regardless of deal linkage
@@ -1158,7 +1158,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
       <span style={{
         display: 'inline-flex', alignItems: 'center',
         fontSize: 13, fontWeight: 700,
-        color: '#E8B84B', whiteSpace: 'nowrap', letterSpacing: '0.06em',
+        color: '#A78BFA', whiteSpace: 'nowrap', letterSpacing: '0.06em',
         textTransform: 'uppercase', fontFamily: 'monospace',
       }}>
         Today

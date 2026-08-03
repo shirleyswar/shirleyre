@@ -1159,7 +1159,7 @@ function DeadlinesSummary({ deadlines, onExpand, isExpanded }: DeadlinesSummaryP
     : nearest && nearest.days <= 7
     ? '#fb923c'
     : nearest && nearest.days <= 45
-    ? '#E8B84B'
+    ? '#A78BFA'
     : 'var(--text-muted)'
 
   const showCountdown = nearest && nearest.days <= 45

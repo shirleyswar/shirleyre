@@ -256,7 +256,7 @@ export default function LifePanel() {
 
   const bucketConfig: Array<{ key: Bucket; label: string; color: string }> = [
     { key: 'overdue',  label: 'Overdue',    color: '#ef4444' },
-    { key: 'today',    label: 'Today',      color: '#E8B84B' },
+    { key: 'today',    label: 'Today',      color: '#A78BFA' },
     { key: 'thisWeek', label: 'This Week',  color: '#4F8EF7' },
     { key: 'later',    label: 'Later',      color: 'rgba(255,255,255,0.3)' },
     { key: 'none',     label: 'No Due Date',color: 'rgba(255,255,255,0.2)' },

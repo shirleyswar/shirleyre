@@ -175,7 +175,7 @@ function SidebarPipelineStats() {
   }
 
   const items = [
-    { label: 'PIPE', value: loading ? '—' : fmt(stats.pipeline), color: '#E8B84B' },
+    { label: 'PIPE', value: loading ? '—' : fmt(stats.pipeline), color: '#A78BFA' },
     { label: 'OPEN', value: loading ? '—' : String(stats.openDeals), color: '#22C55E' },
     { label: 'A/R',  value: loading ? '—' : fmt(stats.ar),          color: '#60A5FA' },
   ]

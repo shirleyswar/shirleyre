@@ -121,7 +121,7 @@ function CalendarPicker({
     <div
       style={{
         background: '#0E0C1E',
-        border: '1px solid rgba(232,184,75,0.35)',
+        border: '1px solid rgba(139,92,246,0.35)',
         borderRadius: 12,
         padding: '14px 12px',
         width: 260,
@@ -178,9 +178,9 @@ function CalendarPicker({
                 background: isSelected
                   ? 'var(--accent-violet)'
                   : isToday
-                  ? 'rgba(232,184,75,0.15)'
+                  ? 'rgba(139,92,246,0.15)'
                   : 'transparent',
-                border: isToday && !isSelected ? '1px solid rgba(232,184,75,0.4)' : '1px solid transparent',
+                border: isToday && !isSelected ? '1px solid rgba(139,92,246,0.4)' : '1px solid transparent',
                 borderRadius: 6,
                 color: isSelected ? '#0D0F14' : isToday ? 'var(--accent-violet)' : '#D1D5DB',
                 cursor: 'pointer',
@@ -188,10 +188,10 @@ function CalendarPicker({
                 padding: 0,
               }}
               onMouseEnter={e => {
-                if (!isSelected) e.currentTarget.style.background = 'rgba(232,184,75,0.2)'
+                if (!isSelected) e.currentTarget.style.background = 'rgba(139,92,246,0.2)'
               }}
               onMouseLeave={e => {
-                if (!isSelected) e.currentTarget.style.background = isToday ? 'rgba(232,184,75,0.15)' : 'transparent'
+                if (!isSelected) e.currentTarget.style.background = isToday ? 'rgba(139,92,246,0.15)' : 'transparent'
               }}
             >
               {day}
@@ -209,7 +209,7 @@ function CalendarPicker({
             background: 'none',
             border: 'none',
             fontSize: 11,
-            color: 'rgba(232,184,75,0.55)',
+            color: 'rgba(167,139,250,0.55)',
             cursor: 'pointer',
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
@@ -264,7 +264,7 @@ function DateSelector({ value, onChange }: { value: string; onChange: (v: string
       >
         <CalIconSmall />
         <span>{formatDisplayDate(value)}</span>
-        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(232,184,75,0.5)' }}>▾</span>
+        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'rgba(139,92,246,0.5)' }}>▾</span>
       </button>
 
       {open && (
@@ -544,8 +544,8 @@ export default function SchedulePanel() {
           style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 24px' }}
           onClick={e => { if (e.target === e.currentTarget) closeModal() }}
         >
-          <div style={{ background: '#13112A', border: '1px solid rgba(232,184,75,0.3)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.5)', fontFamily: 'monospace' }}>Add Event</div>
+          <div style={{ background: '#13112A', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', fontFamily: 'monospace' }}>Add Event</div>
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Date</div>
               <DateSelector value={formDate} onChange={setFormDate} />
@@ -735,9 +735,9 @@ function EventRow({
       <div style={{
         display: 'flex', flexDirection: 'column', gap: 8,
         padding: '10px 10px',
-        background: 'rgba(232,184,75,0.05)',
+        background: 'rgba(139,92,246,0.05)',
         borderRadius: 6,
-        border: '1px solid rgba(232,184,75,0.25)',
+        border: '1px solid rgba(139,92,246,0.25)',
       }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <TimeWheel value={editTime} onChange={setEditTime} />
@@ -746,7 +746,7 @@ function EventRow({
             value={editTitle}
             onChange={e => setEditTitle(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel() }}
-            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(232,184,75,0.35)', borderRadius: 6, padding: '8px 10px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(139,92,246,0.35)', borderRadius: 6, padding: '8px 10px', fontSize: 13, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
           />
         </div>
         <input
@@ -850,7 +850,7 @@ function EventRow({
         display: 'flex',
         gap: 10,
         padding: '7px 10px 7px 14px',
-        background: hovered ? 'rgba(232,184,75,0.04)' : 'var(--bg-elevated)',
+        background: hovered ? 'rgba(139,92,246,0.04)' : 'var(--bg-elevated)',
         borderRadius: 6,
         border: '1px solid transparent',
         alignItems: 'center',
@@ -1008,7 +1008,7 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
             zIndex: 10001,
             marginTop: 4,
             background: '#13112A',
-            border: '1px solid rgba(232,184,75,0.3)',
+            border: '1px solid rgba(139,92,246,0.3)',
             borderRadius: 10,
             padding: '12px 10px 12px 10px',
             boxShadow: '0 12px 40px rgba(0,0,0,0.8)',
@@ -1036,7 +1036,7 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
                     fontSize: 13, fontWeight: h === hour ? 700 : 400, cursor: 'pointer',
                     fontVariantNumeric: 'tabular-nums', transition: 'all 0.1s',
                   }}
-                  onMouseEnter={e => { if (h !== hour) e.currentTarget.style.background = 'rgba(232,184,75,0.12)' }}
+                  onMouseEnter={e => { if (h !== hour) e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
                   onMouseLeave={e => { if (h !== hour) e.currentTarget.style.background = 'transparent' }}
                 >{h}</button>
               ))}
@@ -1056,7 +1056,7 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
                   fontSize: 13, fontWeight: m === minute ? 700 : 400, cursor: 'pointer',
                   fontVariantNumeric: 'tabular-nums', transition: 'all 0.1s',
                 }}
-                onMouseEnter={e => { if (m !== minute) e.currentTarget.style.background = 'rgba(232,184,75,0.12)' }}
+                onMouseEnter={e => { if (m !== minute) e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
                 onMouseLeave={e => { if (m !== minute) e.currentTarget.style.background = 'transparent' }}
               >{m.toString().padStart(2,'0')}</button>
             ))}

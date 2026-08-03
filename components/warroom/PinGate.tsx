@@ -63,7 +63,7 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse 60% 40% at 50% 50%, rgba(201,147,58,0.06) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse 60% 40% at 50% 50%, rgba(139,92,246,0.06) 0%, transparent 70%)',
           pointerEvents: 'none',
         }}
       />
