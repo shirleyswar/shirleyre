@@ -488,7 +488,7 @@ function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onH
             color: '#C084FC',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            fontFamily: 'var(--font-body)',
+            fontFamily: 'var(--font-mono)',
             opacity: 0.35,
             filter: 'blur(9px)',
             pointerEvents: 'none',
@@ -504,7 +504,7 @@ function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onH
             color: '#C084FC',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            fontFamily: 'var(--font-body)',
+            fontFamily: 'var(--font-mono)',
             opacity: 0.1,
             filter: 'blur(22px)',
             pointerEvents: 'none',
@@ -519,7 +519,7 @@ function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onH
             color: '#C084FC',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            fontFamily: 'var(--font-body)',
+            fontFamily: 'var(--font-mono)',
             textShadow: 'none',
           }}>ShirleyCRE</span>
         </span>
@@ -534,7 +534,7 @@ function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onH
           <span className="hidden sm:inline" style={{
             position: 'absolute', left: '50%', transform: 'translateX(-50%)',
             fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
-            color: '#22c55e', fontFamily: 'var(--font-body)',
+            color: '#22c55e', fontFamily: 'var(--font-mono)',
             textShadow: '0 0 10px rgba(34,197,94,0.4)',
             whiteSpace: 'nowrap', pointerEvents: 'none',
           }}>{day}, {date}</span>
@@ -545,7 +545,7 @@ function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onH
       {liveTime && (
         <span className="hidden sm:inline" style={{
           fontSize: 12, fontWeight: 700, color: 'rgba(167,139,250,0.75)',
-          fontFamily: 'var(--font-body)', letterSpacing: '0.04em',
+          fontFamily: 'var(--font-mono)', letterSpacing: '0.04em',
           marginRight: 10, flexShrink: 0, fontVariantNumeric: 'tabular-nums',
         }}>{liveTime}</span>
       )}
@@ -760,14 +760,14 @@ function NavRibbon({
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
               padding: '4px 10px',
-              background: 'rgba(14,165,160,0.06)',
-              border: '1px solid rgba(14,165,160,0.18)',
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.14)',
               borderRadius: 7,
               textDecoration: 'none',
-              color: 'rgba(45,212,191,0.7)',
-              fontSize: 11, fontWeight: 600, letterSpacing: '0.08em',
+              color: '#8B8A9B',
+              fontSize: 11, fontWeight: 500, letterSpacing: '0.08em',
               textTransform: 'uppercase' as const,
-              fontFamily: 'var(--font-body)',
+              fontFamily: 'var(--font-mono)',
             }}
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -914,7 +914,7 @@ function SectionView({ children, onBack, title }: { children: React.ReactNode; o
         <div style={{ textAlign: 'center', marginBottom: 14 }}>
           <span style={{
             fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
-            color: '#22c55e', fontFamily: 'var(--font-body)',
+            color: '#22c55e', fontFamily: 'var(--font-mono)',
             textShadow: '0 0 10px rgba(34,197,94,0.4)',
           }}>{dateLabel}</span>
         </div>

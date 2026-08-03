@@ -866,7 +866,7 @@ function EventRow({
           if (t.includes('closing') || t.includes('close')) return '#22c55e'
           if (t.includes('inspection') || t.includes('inspect')) return '#fb923c'
           if (t.includes('personal') || t.includes('family')) return '#f87171'
-          if (t.includes('meeting') || t.includes('call') || t.includes('mtg')) return '#4F8EF7'
+          if (t.includes('meeting') || t.includes('call') || t.includes('mtg')) return '#8B5CF6'
           return 'rgba(255,255,255,0.06)'
         })(),
         pointerEvents: 'none',

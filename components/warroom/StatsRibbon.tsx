@@ -88,7 +88,7 @@ export default function StatsRibbon({ inline = false }: { inline?: boolean }) {
     {
       label: 'A/R',
       value: loading ? '—' : formatCurrency(stats.arOutstanding),
-      accentColor: 'var(--accent-blue)',
+      accentColor: 'var(--accent-gold)',
     },
     {
       label: 'Next Closing',

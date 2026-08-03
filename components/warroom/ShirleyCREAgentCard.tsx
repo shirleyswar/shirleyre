@@ -22,7 +22,7 @@ export default function ShirleyCREAgentCard() {
         bottom: -30, left: -20,
         width: 140, height: 140,
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(79,142,247,0.08) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 

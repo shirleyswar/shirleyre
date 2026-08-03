@@ -229,10 +229,10 @@ function MobileFilterPill({
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '5px 12px',
           fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const,
-          background: isFiltered ? 'rgba(14,165,160,0.15)' : 'transparent',
-          border: `1px solid ${isFiltered ? 'rgba(14,165,160,0.5)' : 'rgba(255,255,255,0.12)'}`,
+          background: isFiltered ? 'rgba(52,211,153,0.15)' : 'transparent',
+          border: `1px solid ${isFiltered ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.12)'}`,
           borderRadius: 8,
-          color: isFiltered ? '#2dd4bf' : 'var(--text-muted)',
+          color: isFiltered ? '#34D399' : 'var(--text-muted)',
           cursor: 'pointer', fontFamily: 'var(--font-body)',
         }}
       >
@@ -257,7 +257,7 @@ function MobileFilterPill({
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
               {STATUS_OPTS.map(opt => (
                 <button key={opt.value} onClick={() => { onFilterChange(opt.value); if (opt.value === 'all' && tierFilter === 'all') setOpen(false) }}
-                  style={{ padding: '4px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: filter === opt.value ? 'rgba(14,165,160,0.2)' : 'transparent', border: `1px solid ${filter === opt.value ? 'rgba(14,165,160,0.6)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, color: filter === opt.value ? '#2dd4bf' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                  style={{ padding: '4px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: filter === opt.value ? 'rgba(52,211,153,0.2)' : 'transparent', border: `1px solid ${filter === opt.value ? 'rgba(52,211,153,0.6)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, color: filter === opt.value ? '#34D399' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}
                 >{opt.label}</button>
               ))}
             </div>
@@ -268,7 +268,7 @@ function MobileFilterPill({
             <div style={{ display: 'flex', gap: 4 }}>
               {TIER_OPTS.map(opt => (
                 <button key={opt.value} onClick={() => { onTierChange(opt.value) }}
-                  style={{ padding: '4px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: tierFilter === opt.value ? 'rgba(96,165,250,0.15)' : 'transparent', border: `1px solid ${tierFilter === opt.value ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, color: tierFilter === opt.value ? '#60A5FA' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                  style={{ padding: '4px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: tierFilter === opt.value ? 'rgba(96,165,250,0.15)' : 'transparent', border: `1px solid ${tierFilter === opt.value ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, color: tierFilter === opt.value ? '#60A5FA' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}
                 >{opt.label}</button>
               ))}
             </div>
@@ -276,10 +276,10 @@ function MobileFilterPill({
           {/* Reset + Done */}
           <div style={{ display: 'flex', gap: 6, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <button onClick={() => { onFilterChange('all'); onTierChange('all') }}
-              style={{ flex: 1, padding: '6px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+              style={{ flex: 1, padding: '6px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}
             >Reset</button>
             <button onClick={() => setOpen(false)}
-              style={{ flex: 1, padding: '6px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: 'rgba(14,165,160,0.12)', border: '1px solid rgba(14,165,160,0.4)', borderRadius: 8, color: '#2dd4bf', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+              style={{ flex: 1, padding: '6px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 8, color: '#34D399', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}
             >Done</button>
           </div>
         </div>
@@ -437,7 +437,7 @@ export default function DealPipelinePanel() {
                 { value: 'pipeline', label: 'Pipe' },
               ].map(opt => (
                 <button key={opt.value} onClick={() => setFilter(opt.value as DealStatus | 'all')}
-                  style={{ padding: '4px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: filter === opt.value ? 'rgba(14,165,160,0.2)' : 'transparent', border: `1px solid ${filter === opt.value ? 'rgba(14,165,160,0.6)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, color: filter === opt.value ? '#2dd4bf' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s' }}
+                  style={{ padding: '4px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, background: filter === opt.value ? 'rgba(52,211,153,0.2)' : 'transparent', border: `1px solid ${filter === opt.value ? 'rgba(52,211,153,0.6)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, color: filter === opt.value ? '#34D399' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-mono)', transition: 'all 0.15s' }}
                 >{opt.label}</button>
               ))}
             </div>
@@ -916,12 +916,12 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setConfirmUC(false)}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#13112A', border: '1px solid rgba(20,184,166,0.4)', borderRadius: 14, padding: 28, minWidth: 320, maxWidth: 400, width: '90vw' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#2DD4BF', marginBottom: 12 }}>Move to Under Contract?</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#34D399', marginBottom: 12 }}>Move to Under Contract?</div>
             <div style={{ fontSize: 12, color: '#aaa', marginBottom: 16, lineHeight: 1.6 }}>
               <div><span style={{ color: '#ccc', fontWeight: 600 }}>{deal.address || '—'}</span></div>
               <div style={{ color: '#888' }}>{deal.name} · {DEAL_TYPES.find(t => t.value === deal.type)?.label ?? deal.type}</div>
             </div>
-            <div style={{ fontSize: 12, color: '#2DD4BF', marginBottom: 16, padding: '8px 12px', background: 'rgba(20,184,166,0.08)', borderRadius: 6, border: '1px solid rgba(20,184,166,0.2)' }}>
+            <div style={{ fontSize: 12, color: '#34D399', marginBottom: 16, padding: '8px 12px', background: 'rgba(20,184,166,0.08)', borderRadius: 6, border: '1px solid rgba(20,184,166,0.2)' }}>
               Moves deal to Under Contract and adds to UC tracking panel.
             </div>
             <input
@@ -937,9 +937,9 @@ function DealRow({ deal, isLast, onUpdate, onDelete, isPortfolio, isExpanded, on
                 if (v.length === 4) handleUC(v)
               }}
               placeholder="· · · ·"
-              style={{ width: '100%', fontSize: 28, textAlign: 'center', letterSpacing: '0.4em', padding: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${ucError ? '#2DD4BF' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', marginBottom: 6, boxSizing: 'border-box' as const }}
+              style={{ width: '100%', fontSize: 28, textAlign: 'center', letterSpacing: '0.4em', padding: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${ucError ? '#34D399' : 'rgba(255,255,255,0.12)'}`, borderRadius: 8, color: '#f0f0f0', outline: 'none', marginBottom: 6, boxSizing: 'border-box' as const }}
             />
-            {ucError && <div style={{ color: '#2DD4BF', fontSize: 11, marginTop: 6, textAlign: 'center' }}>Incorrect PIN</div>}
+            {ucError && <div style={{ color: '#34D399', fontSize: 11, marginTop: 6, textAlign: 'center' }}>Incorrect PIN</div>}
             <div style={{ marginTop: 16, textAlign: 'center' }}>
               <button onClick={() => setConfirmUC(false)} style={{ padding: '8px 24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#888', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
             </div>
@@ -1345,9 +1345,9 @@ function DropboxCell({ dealId, url, onSaved }: { dealId: string; url: string | n
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ background: '#1A1E25', border: '1px solid rgba(79,142,247,0.4)', borderRadius: 12, padding: '20px 24px', width: '90%', maxWidth: 480, boxShadow: '0 16px 48px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 12 }}
+        style={{ background: '#1A1E25', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 12, padding: '20px 24px', width: '90%', maxWidth: 480, boxShadow: '0 16px 48px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 12 }}
       >
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(79,142,247,0.6)', fontFamily: 'monospace' }}>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)', fontFamily: 'monospace' }}>
           Dropbox Folder Link
         </div>
         <input
@@ -1356,11 +1356,11 @@ function DropboxCell({ dealId, url, onSaved }: { dealId: string; url: string | n
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
           placeholder="https://www.dropbox.com/sh/..."
-          style={{ width: '100%', fontSize: 13, padding: '9px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(79,142,247,0.35)', borderRadius: 7, color: '#F0F2FF', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const }}
+          style={{ width: '100%', fontSize: 13, padding: '9px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(139,92,246,0.35)', borderRadius: 7, color: '#F0F2FF', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const }}
         />
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setEditing(false)} style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, color: '#6b7280', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-          <button onClick={save} disabled={saving} style={{ flex: 2, padding: '8px', background: 'rgba(79,142,247,0.15)', border: '1px solid rgba(79,142,247,0.4)', borderRadius: 7, color: '#4F8EF7', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button onClick={save} disabled={saving} style={{ flex: 2, padding: '8px', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 7, color: '#8B5CF6', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
             {saving ? 'Saving…' : 'Save Link'}
           </button>
         </div>
@@ -1385,7 +1385,7 @@ function DropboxCell({ dealId, url, onSaved }: { dealId: string; url: string | n
             width: 28, height: 28, borderRadius: 6,
             background: 'rgba(0,97,255,0.12)',
             border: '1px solid rgba(0,97,255,0.3)',
-            color: '#4F8EF7',
+            color: '#8B5CF6',
             textDecoration: 'none', transition: 'all 0.15s',
           }}
         >

@@ -28,7 +28,7 @@ export interface Client {
 }
 
 const TYPE_COLORS: Record<string, { bg: string; border: string; color: string; label: string }> = {
-  buyer:    { bg: 'rgba(79,142,247,0.12)',  border: 'rgba(79,142,247,0.4)',  color: '#4F8EF7', label: 'Buyer' },
+  buyer:    { bg: 'rgba(139,92,246,0.12)',  border: 'rgba(139,92,246,0.4)',  color: '#8B5CF6', label: 'Buyer' },
   tenant:   { bg: 'rgba(34,197,94,0.12)',   border: 'rgba(34,197,94,0.4)',   color: '#22c55e', label: 'Tenant' },
   investor: { bg: 'rgba(139,92,246,0.12)',  border: 'rgba(139,92,246,0.4)',  color: '#A78BFA', label: 'Investor' },
   other:    { bg: 'rgba(156,163,175,0.12)', border: 'rgba(156,163,175,0.3)', color: '#9ca3af', label: 'Other' },
@@ -130,7 +130,7 @@ export default function ClientsPanel() {
     <div className="wr-card">
       {/* Header */}
       <div className="wr-card-header">
-        <span style={{ color: '#2DD4BF', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(45,212,191,0.7))' }}>
+        <span style={{ color: '#34D399', display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(52,211,153,0.7))' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
             <circle cx="9" cy="7" r="4"/>
@@ -138,16 +138,16 @@ export default function ClientsPanel() {
             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
         </span>
-        <span className="wr-rank1" style={{ color: '#2DD4BF', textShadow: '0 0 16px rgba(45,212,191,0.5)' }}>Clients</span>
-        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(45,212,191,0.35), transparent)' }} />
-        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#2DD4BF' }}>
+        <span className="wr-rank1" style={{ color: '#34D399', textShadow: '0 0 16px rgba(52,211,153,0.5)' }}>Clients</span>
+        <div className="wr-panel-line" style={{ background: 'linear-gradient(to right, rgba(52,211,153,0.35), transparent)' }} />
+        <span className="wr-panel-stat" style={{ fontSize: 18, fontWeight: 800, color: '#34D399' }}>
           {clients.length > 0 ? clients.length : '—'}
         </span>
       </div>
 
       {/* Add button */}
       <div style={{ marginBottom: 14 }}>
-        <button onClick={() => setShowAdd(true)} className="wr-btn-orbit" style={{ fontSize: 12, borderColor: 'rgba(79,142,247,0.4)', color: '#4F8EF7' }}>
+        <button onClick={() => setShowAdd(true)} className="wr-btn-orbit" style={{ fontSize: 12, borderColor: 'rgba(139,92,246,0.4)', color: '#8B5CF6' }}>
           + Add Client
         </button>
       </div>
@@ -158,8 +158,8 @@ export default function ClientsPanel() {
           style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.78)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '60px 16px 24px' }}
           onClick={e => { if (e.target === e.currentTarget) { setShowAdd(false); resetForm() } }}
         >
-          <div style={{ background: '#13112A', border: '1px solid rgba(79,142,247,0.35)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 480, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '80vh', overflowY: 'auto' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(79,142,247,0.6)', fontFamily: 'monospace' }}>
+          <div style={{ background: '#13112A', border: '1px solid rgba(139,92,246,0.35)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 480, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '80vh', overflowY: 'auto' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)', fontFamily: 'monospace' }}>
               New Client Lead
             </div>
 
@@ -243,7 +243,7 @@ export default function ClientsPanel() {
                 Cancel
               </button>
               <button onClick={addClient} disabled={saving || !newName.trim()}
-                style={{ flex: 2, padding: '11px', background: saving || !newName.trim() ? 'rgba(79,142,247,0.1)' : 'rgba(79,142,247,0.2)', border: '1px solid rgba(79,142,247,0.5)', borderRadius: 8, color: '#4F8EF7', fontSize: 14, fontWeight: 700, cursor: saving || !newName.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: saving || !newName.trim() ? 0.5 : 1 }}>
+                style={{ flex: 2, padding: '11px', background: saving || !newName.trim() ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.5)', borderRadius: 8, color: '#8B5CF6', fontSize: 14, fontWeight: 700, cursor: saving || !newName.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: saving || !newName.trim() ? 0.5 : 1 }}>
                 {saving ? 'Saving...' : 'Save Client'}
               </button>
             </div>
@@ -299,8 +299,8 @@ function ClientRow({ client, isEven, onClick }: { client: Client; isEven: boolea
         borderRadius: 8,
         background: isHot
           ? (hovered ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.06)')
-          : hovered ? 'rgba(79,142,247,0.07)' : isEven ? 'rgba(255,255,255,0.015)' : 'transparent',
-        borderLeft: isHot ? '2px solid rgba(239,68,68,0.5)' : hovered ? '2px solid rgba(79,142,247,0.5)' : '2px solid transparent',
+          : hovered ? 'rgba(139,92,246,0.07)' : isEven ? 'rgba(255,255,255,0.015)' : 'transparent',
+        borderLeft: isHot ? '2px solid rgba(239,68,68,0.5)' : hovered ? '2px solid rgba(139,92,246,0.5)' : '2px solid transparent',
         cursor: 'pointer',
         transition: 'all 0.1s',
       }}
@@ -333,7 +333,7 @@ function ClientRow({ client, isEven, onClick }: { client: Client; isEven: boolea
       </div>
 
       {/* Arrow */}
-      <span style={{ color: 'rgba(79,142,247,0.5)', fontSize: 14, flexShrink: 0, transition: 'color 0.1s', ...(hovered ? { color: '#4F8EF7' } : {}) }}>›</span>
+      <span style={{ color: 'rgba(139,92,246,0.5)', fontSize: 14, flexShrink: 0, transition: 'color 0.1s', ...(hovered ? { color: '#8B5CF6' } : {}) }}>›</span>
     </div>
   )
 }
@@ -355,7 +355,7 @@ const inputStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   fontSize: 9, fontWeight: 700, letterSpacing: '0.12em',
-  textTransform: 'uppercase', color: 'rgba(79,142,247,0.6)',
+  textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)',
   marginBottom: 5, fontFamily: 'monospace',
 }
 

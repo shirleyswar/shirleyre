@@ -11,7 +11,7 @@
  * marginBottom: 4 keeps the divider close to content (matches Money Movers).
  *
  * Usage:
- *   <PanelHeader icon={<SomeIcon />} title="Section Name" stat={count} statColor="#4F8EF7" lineColor="rgba(79,142,247,0.35)">
+ *   <PanelHeader icon={<SomeIcon />} title="Section Name" stat={count} statColor="#8B5CF6" lineColor="rgba(139,92,246,0.35)">
  *     <button>optional right-side actions</button>
  *   </PanelHeader>
  */

@@ -46,7 +46,7 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
         style={{
           width: '100%',
           background: 'rgba(255,255,255,0.05)',
-          border: `1px solid ${open ? 'rgba(79,142,247,0.5)' : 'rgba(255,255,255,0.12)'}`,
+          border: `1px solid ${open ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.12)'}`,
           borderRadius: 8,
           padding: '10px 12px',
           fontSize: 13,
@@ -73,7 +73,7 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
           bottom: '110%',
           left: 0, right: 0,
           background: '#1A1735',
-          border: '1px solid rgba(79,142,247,0.3)',
+          border: '1px solid rgba(139,92,246,0.3)',
           borderRadius: 10,
           boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
           zIndex: 9999,
@@ -88,15 +88,15 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
               style={{
                 padding: '9px 14px',
                 fontSize: 13,
-                color: opt.value === value ? '#4F8EF7' : opt.value ? '#F2EDE4' : 'rgba(255,255,255,0.3)',
-                background: opt.value === value ? 'rgba(79,142,247,0.12)' : 'transparent',
+                color: opt.value === value ? '#8B5CF6' : opt.value ? '#F2EDE4' : 'rgba(255,255,255,0.3)',
+                background: opt.value === value ? 'rgba(139,92,246,0.12)' : 'transparent',
                 cursor: 'pointer',
                 fontFamily: 'var(--font-body)',
                 fontWeight: opt.value === value ? 700 : 400,
                 transition: 'background 0.1s',
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(79,142,247,0.08)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = opt.value === value ? 'rgba(79,142,247,0.12)' : 'transparent' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(139,92,246,0.08)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = opt.value === value ? 'rgba(139,92,246,0.12)' : 'transparent' }}
             >
               {opt.label}
             </div>
@@ -207,7 +207,7 @@ export default function Next48Panel() {
   return (
     <div className="wr-card" style={{
       background: 'linear-gradient(160deg, #0d1a2e 0%, #101828 60%, #0a1520 100%)',
-      border: '1px solid rgba(79,142,247,0.2)',
+      border: '1px solid rgba(139,92,246,0.2)',
       position: 'relative',
       overflow: 'hidden',
       padding: 0,
@@ -215,7 +215,7 @@ export default function Next48Panel() {
       {/* Atmospheric gradient */}
       <div style={{
         position: 'absolute', inset: 0, borderRadius: 12, pointerEvents: 'none', zIndex: 0,
-        background: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(79,142,247,0.06) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(139,92,246,0.06) 0%, transparent 70%)',
       }} />
 
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -223,7 +223,7 @@ export default function Next48Panel() {
         <SectionHeader
           icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
           label="Next 48"
-          color="#4F8EF7"
+          color="#8B5CF6"
         />
 
         {/* Content */}
@@ -237,7 +237,7 @@ export default function Next48Panel() {
           <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
             {/* TODAY group — always rendered */}
             <div style={{ marginBottom: (tomorrowEvents.length > 0 || tomorrowDeadlines.length > 0) ? 20 : 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4F8EF7', marginBottom: 10, fontFamily: 'var(--font-body)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8B5CF6', marginBottom: 10, fontFamily: 'var(--font-body)' }}>
                 Today
               </div>
               {(todayEvents.length > 0 || todayDeadlines.length > 0) ? (
@@ -256,10 +256,10 @@ export default function Next48Panel() {
                   <button
                     style={{
                       padding: '5px 13px',
-                      background: 'rgba(79,142,247,0.08)',
-                      border: '1px solid rgba(79,142,247,0.25)',
+                      background: 'rgba(139,92,246,0.08)',
+                      border: '1px solid rgba(139,92,246,0.25)',
                       borderRadius: 7,
-                      color: 'rgba(79,142,247,0.7)',
+                      color: 'rgba(167,139,250,0.7)',
                       fontSize: 11,
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -361,15 +361,15 @@ function DeadlineHeroCard({ deadline }: { deadline: ContractDeadlineEvent }) {
     closing:            { color: '#fbbf24', glow: 'rgba(251,191,36,0.25)' },
     contingency:        { color: '#ef4444', glow: 'rgba(239,68,68,0.25)' },
     inspection:         { color: '#fb923c', glow: 'rgba(251,146,60,0.25)' },
-    financing:          { color: '#4F8EF7', glow: 'rgba(79,142,247,0.25)' },
+    financing:          { color: '#8B5CF6', glow: 'rgba(139,92,246,0.25)' },
     appraisal:          { color: '#a78bfa', glow: 'rgba(167,139,250,0.25)' },
-    title:              { color: '#2dd4bf', glow: 'rgba(45,212,191,0.25)' },
+    title:              { color: '#34D399', glow: 'rgba(52,211,153,0.25)' },
     survey:             { color: '#9ca3af', glow: 'rgba(156,163,175,0.2)'  },
     psa_review:         { color: '#a78bfa', glow: 'rgba(167,139,250,0.25)' },
     lease_review:       { color: '#60a5fa', glow: 'rgba(96,165,250,0.25)'  },
     psa_draft:          { color: '#c4b5fd', glow: 'rgba(196,181,253,0.2)'  },
     lease_draft:        { color: '#93c5fd', glow: 'rgba(147,197,253,0.2)'  },
-    lease_execution:    { color: '#2dd4bf', glow: 'rgba(45,212,191,0.25)'  },
+    lease_execution:    { color: '#34D399', glow: 'rgba(52,211,153,0.25)'  },
     lease_deliverables: { color: '#22c55e', glow: 'rgba(34,197,94,0.25)'   },
     custom:             { color: '#6b7280', glow: 'rgba(107,114,128,0.2)'  },
   }
@@ -431,15 +431,15 @@ function DeadlineRow({ deadline }: { deadline: ContractDeadlineEvent }) {
     closing:            { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
     contingency:        { color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
     inspection:         { color: '#fb923c', bg: 'rgba(251,146,60,0.15)' },
-    financing:          { color: '#4F8EF7', bg: 'rgba(79,142,247,0.15)' },
+    financing:          { color: '#8B5CF6', bg: 'rgba(139,92,246,0.15)' },
     appraisal:          { color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' },
-    title:              { color: '#2dd4bf', bg: 'rgba(45,212,191,0.15)' },
+    title:              { color: '#34D399', bg: 'rgba(52,211,153,0.15)' },
     survey:             { color: '#9ca3af', bg: 'rgba(156,163,175,0.15)' },
     psa_review:         { color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' },
     lease_review:       { color: '#60a5fa', bg: 'rgba(96,165,250,0.15)' },
     psa_draft:          { color: '#c4b5fd', bg: 'rgba(196,181,253,0.15)' },
     lease_draft:        { color: '#93c5fd', bg: 'rgba(147,197,253,0.15)' },
-    lease_execution:    { color: '#2dd4bf', bg: 'rgba(45,212,191,0.15)' },
+    lease_execution:    { color: '#34D399', bg: 'rgba(52,211,153,0.15)' },
     lease_deliverables: { color: '#22c55e', bg: 'rgba(34,197,94,0.15)' },
     custom:             { color: '#6b7280', bg: 'rgba(107,114,128,0.15)' },
   }
@@ -506,16 +506,16 @@ function EventCard({ event, featured, onEdit }: { event: ScheduleEvent; featured
       onClick={onEdit}
       style={{
         background: featured
-          ? 'linear-gradient(135deg, rgba(79,142,247,0.12) 0%, rgba(79,142,247,0.06) 100%)'
+          ? 'linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(139,92,246,0.06) 100%)'
           : 'rgba(255,255,255,0.03)',
-        border: `1px solid ${featured ? 'rgba(79,142,247,0.25)' : 'rgba(255,255,255,0.07)'}`,
+        border: `1px solid ${featured ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.07)'}`,
         borderRadius: 12,
         padding: featured ? '14px 16px' : '10px 14px',
         display: 'flex',
         alignItems: 'center',
         gap: 10,
         boxShadow: featured
-          ? '0 0 28px rgba(79,142,247,0.12), 0 0 56px rgba(79,142,247,0.05), 0 4px 16px rgba(0,0,0,0.3)'
+          ? '0 0 28px rgba(139,92,246,0.12), 0 0 56px rgba(139,92,246,0.05), 0 4px 16px rgba(0,0,0,0.3)'
           : '0 2px 8px rgba(0,0,0,0.15)',
         transition: 'all 0.15s ease',
         cursor: 'pointer',
@@ -527,13 +527,13 @@ function EventCard({ event, featured, onEdit }: { event: ScheduleEvent; featured
         width: 28,
         height: 28,
         borderRadius: 8,
-        background: 'rgba(79,142,247,0.1)',
-        border: '1px solid rgba(79,142,247,0.2)',
+        background: 'rgba(139,92,246,0.1)',
+        border: '1px solid rgba(139,92,246,0.2)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        color: '#4F8EF7',
+        color: '#8B5CF6',
       }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
@@ -547,7 +547,7 @@ function EventCard({ event, featured, onEdit }: { event: ScheduleEvent; featured
         textAlign: 'right',
         fontSize: featured ? 13 : 12,
         fontWeight: 700,
-        color: featured ? '#4F8EF7' : 'rgba(79,142,247,0.8)',
+        color: featured ? '#8B5CF6' : 'rgba(167,139,250,0.8)',
         fontFamily: 'var(--font-body)',
         fontVariantNumeric: 'tabular-nums',
         whiteSpace: 'nowrap',
@@ -616,9 +616,9 @@ function EditEventModal({ event, onSave, onDelete, onClose }: {
   }
 
   return (
-    <div style={{ background: '#13112A', border: '1px solid rgba(79,142,247,0.35)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ background: '#13112A', border: '1px solid rgba(139,92,246,0.35)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(79,142,247,0.6)', fontFamily: 'var(--font-body)' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)', fontFamily: 'var(--font-body)' }}>
           Edit Event
         </div>
         {!confirmDelete && (
@@ -656,7 +656,7 @@ function EditEventModal({ event, onSave, onDelete, onClose }: {
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onClose} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Cancel</button>
             <button onClick={handleSave} disabled={saving || !title.trim()}
-              style={{ flex: 2, padding: '11px', background: saving || !title.trim() ? 'rgba(79,142,247,0.1)' : 'rgba(79,142,247,0.2)', border: '1px solid rgba(79,142,247,0.5)', borderRadius: 8, color: '#4F8EF7', fontSize: 14, fontWeight: 700, cursor: saving || !title.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: saving || !title.trim() ? 0.5 : 1 }}>
+              style={{ flex: 2, padding: '11px', background: saving || !title.trim() ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.5)', borderRadius: 8, color: '#8B5CF6', fontSize: 14, fontWeight: 700, cursor: saving || !title.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: saving || !title.trim() ? 0.5 : 1 }}>
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
@@ -685,8 +685,8 @@ function AddEventModal({ defaultDate, onSave, onClose }: {
   }
 
   return (
-    <div style={{ background: '#13112A', border: '1px solid rgba(79,142,247,0.35)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(79,142,247,0.6)', fontFamily: 'var(--font-body)' }}>
+    <div style={{ background: '#13112A', border: '1px solid rgba(139,92,246,0.35)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)', fontFamily: 'var(--font-body)' }}>
         Add Event
       </div>
       <input autoFocus type="text" value={title} onChange={e => setTitle(e.target.value)}
@@ -704,7 +704,7 @@ function AddEventModal({ defaultDate, onSave, onClose }: {
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={onClose} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Cancel</button>
         <button onClick={handleSave} disabled={saving || !title.trim()}
-          style={{ flex: 2, padding: '11px', background: saving || !title.trim() ? 'rgba(79,142,247,0.1)' : 'rgba(79,142,247,0.2)', border: '1px solid rgba(79,142,247,0.5)', borderRadius: 8, color: '#4F8EF7', fontSize: 14, fontWeight: 700, cursor: saving || !title.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: saving || !title.trim() ? 0.5 : 1 }}>
+          style={{ flex: 2, padding: '11px', background: saving || !title.trim() ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.5)', borderRadius: 8, color: '#8B5CF6', fontSize: 14, fontWeight: 700, cursor: saving || !title.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: saving || !title.trim() ? 0.5 : 1 }}>
           {saving ? 'Saving...' : 'Add Event'}
         </button>
       </div>

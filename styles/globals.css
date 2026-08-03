@@ -238,7 +238,7 @@ html, body {
 .wr-panel-stat {
   font-size: 18px;
   font-weight: 700;
-  color: var(--accent-blue);
+  color: var(--accent-gold);
   font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
   letter-spacing: -0.02em;
@@ -303,7 +303,7 @@ html, body {
 .badge-hot       { background: rgba(251,100,36,0.15);  color: #f97316; border: 1px solid rgba(249,115,22,0.45); font-weight: 700; }
 
 /* In-deal — blue/indigo */
-.badge-contract  { background: rgba(79,142,247,0.12);  color: #4F8EF7; border: 1px solid rgba(79,142,247,0.35); }
+.badge-contract  { background: rgba(139,92,246,0.12);  color: #A78BFA; border: 1px solid rgba(139,92,246,0.35); }
 .badge-pending   { background: rgba(139,92,246,0.12);  color: #a78bfa; border: 1px solid rgba(139,92,246,0.35); }
 
 /* Post-deal — green */
@@ -325,17 +325,17 @@ html, body {
   width: 100%;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  caret-color: var(--accent-blue);
+  caret-color: var(--accent-gold);
 }
 .wr-input::placeholder { color: var(--text-muted); opacity: 0.5; }
 .wr-input:focus {
-  border-color: rgba(79,142,247,0.45);
-  box-shadow: 0 0 0 2px rgba(79,142,247,0.10);
+  border-color: rgba(139,92,246,0.45);
+  box-shadow: 0 0 0 2px rgba(139,92,246,0.10);
 }
 
 /* ─── BUTTONS ────────────────────────────────────────────────── */
 .wr-btn {
-  background: var(--accent-blue);
+  background: var(--accent-gold);
   color: #fff;
   border: none;
   border-radius: 7px;

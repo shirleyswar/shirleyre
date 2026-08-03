@@ -58,9 +58,9 @@ function buildSparkPaths(values: number[], w: number, h: number) {
 // Stage badge colors
 const TYPE_COLORS: Record<DeadlineType, { bg: string; text: string; label: string }> = {
   inspection:       { bg: 'rgba(251,146,60,0.15)',  text: '#fb923c', label: 'Inspection' },
-  financing:        { bg: 'rgba(79,142,247,0.15)',  text: '#4F8EF7', label: 'Financing' },
+  financing:        { bg: 'rgba(139,92,246,0.15)',  text: '#8B5CF6', label: 'Financing' },
   appraisal:        { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa', label: 'Appraisal' },
-  title:            { bg: 'rgba(45,212,191,0.15)',  text: '#2dd4bf', label: 'Title' },
+  title:            { bg: 'rgba(52,211,153,0.15)',  text: '#34D399', label: 'Title' },
   survey:           { bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', label: 'Survey' },
   closing:          { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24', label: 'Closing' },
   custom:           { bg: 'rgba(107,114,128,0.12)', text: '#6b7280', label: 'Custom' },
@@ -69,12 +69,12 @@ const TYPE_COLORS: Record<DeadlineType, { bg: string; text: string; label: strin
   lease_review:     { bg: 'rgba(59,130,246,0.15)',  text: '#60a5fa', label: 'Lease Review' },
   psa_draft:        { bg: 'rgba(139,92,246,0.10)',  text: '#c4b5fd', label: 'PSA Draft' },
   lease_draft:      { bg: 'rgba(59,130,246,0.10)',  text: '#93c5fd', label: 'Lease Draft' },
-  lease_execution:  { bg: 'rgba(45,212,191,0.12)',  text: '#2dd4bf', label: 'Lease Execution' },
+  lease_execution:  { bg: 'rgba(52,211,153,0.12)',  text: '#34D399', label: 'Lease Execution' },
   lease_deliverables:{ bg: 'rgba(34,197,94,0.12)',  text: '#22c55e', label: 'Lease Deliverables' },
 }
 
 const STATUS_STYLES: Record<DeadlineStatus, { bg: string; text: string; label: string }> = {
-  pending:   { bg: 'rgba(79,142,247,0.15)', text: '#4F8EF7', label: 'Pending' },
+  pending:   { bg: 'rgba(139,92,246,0.15)', text: '#8B5CF6', label: 'Pending' },
   satisfied: { bg: 'rgba(34,197,94,0.15)', text: '#22c55e', label: 'Satisfied' },
   extended:  { bg: 'rgba(251,146,60,0.15)', text: '#fb923c', label: 'Extended' },
   missed:    { bg: 'rgba(239,68,68,0.15)', text: '#ef4444', label: 'Missed' },
@@ -85,7 +85,7 @@ function getDaysColor(days: number, status: DeadlineStatus): string {
   if (days < 0) return '#ef4444'
   if (days <= 2) return '#ef4444'
   if (days <= 7) return '#fb923c'
-  return '#4F8EF7'
+  return '#8B5CF6'
 }
 
 // ─── Deadline Row ────────────────────────────────────────────────────────────
@@ -311,8 +311,8 @@ function DeadlineForm({ dealId, editing, onSaved, onCancel }: DeadlineFormProps)
   return (
     <div style={{
       padding: '10px 12px',
-      background: 'rgba(45,212,191,0.04)',
-      border: '1px solid rgba(45,212,191,0.15)',
+      background: 'rgba(52,211,153,0.04)',
+      border: '1px solid rgba(52,211,153,0.15)',
       borderRadius: 8,
       marginTop: 8,
     }}>
@@ -368,9 +368,9 @@ function DeadlineForm({ dealId, editing, onSaved, onCancel }: DeadlineFormProps)
           disabled={saving}
           style={{
             padding: '5px 14px', fontSize: 13, fontWeight: 700,
-            background: saving ? 'rgba(45,212,191,0.08)' : 'rgba(45,212,191,0.18)',
-            border: '1px solid rgba(45,212,191,0.4)',
-            borderRadius: 6, color: '#2dd4bf', cursor: saving ? 'default' : 'pointer',
+            background: saving ? 'rgba(52,211,153,0.08)' : 'rgba(52,211,153,0.18)',
+            border: '1px solid rgba(52,211,153,0.4)',
+            borderRadius: 6, color: '#34D399', cursor: saving ? 'default' : 'pointer',
             whiteSpace: 'nowrap',
           }}>
           {saving ? '…' : (editing ? 'Update' : 'Save')}
@@ -1040,13 +1040,13 @@ function DealSubpanel({ deal, onDeadlinesChange }: DealSubpanelProps) {
     <div style={{
       padding: '12px 16px 14px',
       background: 'rgba(255,255,255,0.02)',
-      borderLeft: '2px solid rgba(45,212,191,0.3)',
+      borderLeft: '2px solid rgba(52,211,153,0.3)',
       marginLeft: 8,
       borderRadius: '0 0 6px 6px',
     }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#2dd4bf', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#34D399', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           Contingency Tracker
         </div>
         {!showAddForm && !editingDeadline && (
@@ -1054,8 +1054,8 @@ function DealSubpanel({ deal, onDeadlinesChange }: DealSubpanelProps) {
             onClick={() => setShowAddForm(true)}
             style={{
               fontSize: 11, padding: '3px 10px', fontWeight: 600,
-              background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.25)',
-              borderRadius: 5, color: '#2dd4bf', cursor: 'pointer',
+              background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.25)',
+              borderRadius: 5, color: '#34D399', cursor: 'pointer',
             }}>
             + Add Deadline
           </button>
@@ -1083,7 +1083,7 @@ function DealSubpanel({ deal, onDeadlinesChange }: DealSubpanelProps) {
           No deadlines tracked yet.{' '}
           <button
             onClick={() => setShowAddForm(true)}
-            style={{ background: 'none', border: 'none', color: '#2dd4bf', cursor: 'pointer', fontSize: 11, fontWeight: 600, padding: 0 }}>
+            style={{ background: 'none', border: 'none', color: '#34D399', cursor: 'pointer', fontSize: 11, fontWeight: 600, padding: 0 }}>
             + Add one
           </button>
         </div>
@@ -1143,7 +1143,7 @@ function DeadlinesSummary({ deadlines, onExpand, isExpanded }: DeadlinesSummaryP
         onClick={onExpand}
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          fontSize: 11, color: '#2dd4bf', padding: '2px 4px', fontWeight: 600,
+          fontSize: 11, color: '#34D399', padding: '2px 4px', fontWeight: 600,
         }}>
         + Add
       </button>
@@ -1172,7 +1172,7 @@ function DeadlinesSummary({ deadlines, onExpand, isExpanded }: DeadlinesSummaryP
         padding: '2px 4px', textAlign: 'center',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
       }}>
-      <span style={{ fontSize: 13, fontWeight: 700, color: pending.length > 0 ? '#4F8EF7' : 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: pending.length > 0 ? '#8B5CF6' : 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
         {pending.length}
       </span>
       {showCountdown && (
@@ -1451,7 +1451,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
   }, [])
 
   return (
-    <div className="wr-card" style={{ boxShadow: '0 0 0 1px rgba(45,212,191,0.08), 0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(45,212,191,0.04)' }}>
+    <div className="wr-card" style={{ boxShadow: '0 0 0 1px rgba(52,211,153,0.08), 0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(52,211,153,0.04)' }}>
       {/* Panel header */}
       <SectionHeader
         icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>}
@@ -1523,7 +1523,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                 const deadlineColor = nextDays == null ? 'var(--text-dim)'
                   : nextDays < 0 ? '#ef4444'
                   : nextDays === 0 ? '#22c55e'
-                  : '#4F8EF7'
+                  : '#8B5CF6'
 
                 return (
                   <>
@@ -1544,7 +1544,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             width: 40, height: 40,
                             background: 'none', border: 'none',
-                            color: isExpanded ? '#2dd4bf' : 'rgba(45,212,191,0.5)',
+                            color: isExpanded ? '#34D399' : 'rgba(52,211,153,0.5)',
                             cursor: 'pointer',
                             WebkitTapHighlightColor: 'transparent',
                             padding: 0,
@@ -1570,8 +1570,8 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                             style={{
                               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                               width: 22, height: 22, borderRadius: 5, flexShrink: 0, marginTop: 1,
-                              background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)',
-                              color: '#2dd4bf', textDecoration: 'none', fontSize: 11, lineHeight: 1,
+                              background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)',
+                              color: '#34D399', textDecoration: 'none', fontSize: 11, lineHeight: 1,
                             }}>↗</a>
                         </div>
                       </td>
@@ -1609,7 +1609,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                             </div>
                           </div>
                         ) : (
-                          <span style={{ fontSize: 11, color: 'rgba(45,212,191,0.4)', fontStyle: 'italic' }}>None</span>
+                          <span style={{ fontSize: 11, color: 'rgba(52,211,153,0.4)', fontStyle: 'italic' }}>None</span>
                         )}
                       </td>
 
@@ -1684,7 +1684,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
               const deadlineColor = nextDays == null ? 'var(--text-dim)'
                 : nextDays < 0 ? '#ef4444'
                 : nextDays === 0 ? '#22c55e'
-                : '#4F8EF7'
+                : '#8B5CF6'
 
               return (
                 <div key={deal.id} style={{
@@ -1706,8 +1706,8 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                           style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                            background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.18)',
-                            color: '#2dd4bf', textDecoration: 'none', fontSize: 10, lineHeight: 1,
+                            background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.18)',
+                            color: '#34D399', textDecoration: 'none', fontSize: 10, lineHeight: 1,
                           }}
                         >↗</a>
                       </div>
@@ -1727,7 +1727,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         width: 44, height: 44, flexShrink: 0,
                         background: 'none', border: 'none',
-                        color: isExpanded ? '#2dd4bf' : 'rgba(45,212,191,0.5)',
+                        color: isExpanded ? '#34D399' : 'rgba(52,211,153,0.5)',
                         cursor: 'pointer',
                         WebkitTapHighlightColor: 'transparent',
                         padding: 0,
@@ -1893,7 +1893,7 @@ function DropboxCell({ dealId, url, onSaved }: { dealId: string; url: string | n
           placeholder="Paste Dropbox link..."
           style={{ flex: 1, fontSize: 11, padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid rgba(0,97,255,0.4)', borderRadius: 5, color: 'var(--text-primary)', outline: 'none', minWidth: 0 }}
         />
-        <button onClick={save} disabled={saving} style={{ padding: '4px 8px', fontSize: 11, fontWeight: 700, background: 'rgba(0,97,255,0.2)', border: '1px solid rgba(0,97,255,0.4)', borderRadius: 5, color: '#4F8EF7', cursor: 'pointer' }}>
+        <button onClick={save} disabled={saving} style={{ padding: '4px 8px', fontSize: 11, fontWeight: 700, background: 'rgba(0,97,255,0.2)', border: '1px solid rgba(0,97,255,0.4)', borderRadius: 5, color: '#8B5CF6', cursor: 'pointer' }}>
           {saving ? '…' : '✓'}
         </button>
         <button onClick={() => setEditing(false)} style={{ padding: '4px 6px', fontSize: 11, background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
@@ -1906,7 +1906,7 @@ function DropboxCell({ dealId, url, onSaved }: { dealId: string; url: string | n
       <a href={url || DROPBOX_FALLBACK} target="_blank" rel="noopener noreferrer"
         title={url ? 'Open deal folder' : 'Open Active Listings folder'}
         onClick={e => e.stopPropagation()}
-        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, background: url ? 'rgba(0,97,255,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${url ? 'rgba(0,97,255,0.3)' : 'rgba(255,255,255,0.08)'}`, color: url ? '#4F8EF7' : 'var(--text-dim)', textDecoration: 'none' }}>
+        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 6, background: url ? 'rgba(0,97,255,0.12)' : 'rgba(255,255,255,0.05)', border: `1px solid ${url ? 'rgba(0,97,255,0.3)' : 'rgba(255,255,255,0.08)'}`, color: url ? '#8B5CF6' : 'var(--text-dim)', textDecoration: 'none' }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L6 6.5L12 11L18 6.5L12 2ZM6 6.5L0 11L6 15.5L12 11L6 6.5ZM18 6.5L12 11L18 15.5L24 11L18 6.5ZM6 15.5L12 20L18 15.5L12 11L6 15.5Z"/></svg>
       </a>
       <button onClick={() => { setDraft(url || ''); setEditing(true) }}

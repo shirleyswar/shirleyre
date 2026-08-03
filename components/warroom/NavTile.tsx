@@ -135,7 +135,7 @@ export default function NavTile({
         fontWeight: 600,
         letterSpacing: '0.10em',
         textTransform: 'uppercase',
-        fontFamily: 'var(--font-body)',
+        fontFamily: 'var(--font-mono)',  /* §3.1 — UPPERCASE → JetBrains Mono */
         color: labelColor,
         textAlign: 'center',
         whiteSpace: 'nowrap',

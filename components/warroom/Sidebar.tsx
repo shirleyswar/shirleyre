@@ -98,8 +98,8 @@ function SidebarContent({ activePanel, onPanelSelect, isVertical }: { activePane
     <>
       {/* Logo mark */}
       <div style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.04)', flexShrink: 0 }}>
-        <div style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(14,165,160,0.10)', border: '1px solid rgba(14,165,160,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(14,165,160,0.9)" strokeWidth="2.5">
+        <div style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(139,92,246,0.10)', border: '1px solid rgba(139,92,246,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(139,92,246,0.9)" strokeWidth="2.5">
             <path d="M12 2L2 7l10 5 10-5-10-5z"/>
             <path d="M2 17l10 5 10-5"/>
             <path d="M2 12l10 5 10-5"/>
@@ -211,9 +211,9 @@ function SidebarLinkBtn({ label, url }: { label: string; url: string }) {
     >
       <div style={{
         width: 28, height: 28, borderRadius: 8,
-        background: 'rgba(14,165,160,0.12)', border: '1px solid rgba(14,165,160,0.3)',
+        background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.3)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: 'rgba(14,165,160,0.85)',
+        color: 'rgba(52,211,153,0.85)',
       }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
@@ -221,7 +221,7 @@ function SidebarLinkBtn({ label, url }: { label: string; url: string }) {
           <line x1="10" y1="14" x2="21" y2="3"/>
         </svg>
       </div>
-      <span style={{ fontSize: 7, fontWeight: 700, color: 'rgba(14,165,160,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+      <span style={{ fontSize: 7, fontWeight: 700, color: 'rgba(52,211,153,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
         {label}
       </span>
     </a>
@@ -251,15 +251,15 @@ function NavBtn({
           style={{
             position: 'absolute',
             inset: '7px 8px',
-            background: 'rgba(14,165,160,0.14)',
-            border: '1px solid rgba(14,165,160,0.28)',
+            background: 'rgba(52,211,153,0.14)',
+            border: '1px solid rgba(52,211,153,0.28)',
             borderRadius: 8,
             zIndex: 0,
-            boxShadow: 'inset 0 1px 0 rgba(14,165,160,0.12)',
+            boxShadow: 'inset 0 1px 0 rgba(52,211,153,0.12)',
           }}
         />
       )}
-      <span style={{ position: 'relative', zIndex: 1, color: isActive ? 'rgba(14,165,160,1)' : 'inherit' }}>
+      <span style={{ position: 'relative', zIndex: 1, color: isActive ? 'rgba(52,211,153,1)' : 'inherit' }}>
         <item.icon />
       </span>
     </button>

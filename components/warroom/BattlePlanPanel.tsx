@@ -534,7 +534,7 @@ export default function BattlePlanPanel() {
           const buckets: { key: keyof typeof collapsedBuckets; label: string; color: string; tasks: BattlePlanTask[] }[] = [
             { key: 'overdue',  label: 'Overdue',      color: '#ef4444',              tasks: sorted.filter(t => t.due_date && t.due_date < today) },
             { key: 'today',    label: 'Today',        color: '#A78BFA',              tasks: sorted.filter(t => t.due_date === today) },
-            { key: 'thisWeek', label: 'This Week',    color: '#4F8EF7',              tasks: sorted.filter(t => t.due_date && t.due_date > today && t.due_date <= week7) },
+            { key: 'thisWeek', label: 'This Week',    color: '#8B5CF6',              tasks: sorted.filter(t => t.due_date && t.due_date > today && t.due_date <= week7) },
             { key: 'later',    label: 'Later',        color: 'rgba(255,255,255,0.35)', tasks: sorted.filter(t => t.due_date && t.due_date > week7) },
             { key: 'none',     label: 'No Due Date',  color: 'rgba(255,255,255,0.2)', tasks: sorted.filter(t => !t.due_date) },
           ]
@@ -1049,10 +1049,10 @@ const BP_STATUS_BADGE_COLORS: Record<string, { bg: string; border: string; color
   active:          { bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.35)',   color: '#22c55e' },
   hot:             { bg: 'rgba(251,146,60,0.1)',   border: 'rgba(251,146,60,0.35)',  color: '#fb923c' },
   in_review:       { bg: 'rgba(251,191,36,0.1)',   border: 'rgba(251,191,36,0.35)',  color: '#fbbf24' },
-  in_service:      { bg: 'rgba(45,212,191,0.1)',   border: 'rgba(45,212,191,0.35)', color: '#2dd4bf' },
-  under_contract:  { bg: 'rgba(45,212,191,0.1)',   border: 'rgba(45,212,191,0.35)', color: '#2dd4bf' },
+  in_service:      { bg: 'rgba(52,211,153,0.1)',   border: 'rgba(52,211,153,0.35)', color: '#34D399' },
+  under_contract:  { bg: 'rgba(52,211,153,0.1)',   border: 'rgba(52,211,153,0.35)', color: '#34D399' },
   pending_payment: { bg: 'rgba(251,191,36,0.1)',   border: 'rgba(251,191,36,0.35)', color: '#fbbf24' },
-  pipeline:        { bg: 'rgba(79,142,247,0.1)',   border: 'rgba(79,142,247,0.35)', color: '#4F8EF7' },
+  pipeline:        { bg: 'rgba(139,92,246,0.1)',   border: 'rgba(139,92,246,0.35)', color: '#8B5CF6' },
   closed:          { bg: 'rgba(107,114,128,0.1)',  border: 'rgba(107,114,128,0.3)', color: '#9ca3af' },
 }
 const BP_NEUTRAL_BADGE = { bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.25)', color: 'rgba(167,139,250,0.8)' }

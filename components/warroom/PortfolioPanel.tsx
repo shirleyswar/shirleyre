@@ -837,12 +837,12 @@ function SleeveTab() {
     <div>
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-        <span style={{ display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(79,142,247,0.7))' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F8EF7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <span style={{ display: 'flex', alignItems: 'center', filter: 'drop-shadow(0 0 8px rgba(167,139,250,0.7))' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
           </svg>
         </span>
-        <span className="wr-rank1" style={{ color: '#4F8EF7', textShadow: '0 0 16px rgba(79,142,247,0.5)' }}>Sleeve</span>
+        <span className="wr-rank1" style={{ color: '#8B5CF6', textShadow: '0 0 16px rgba(139,92,246,0.5)' }}>Sleeve</span>
 
         {/* Tranche toggles */}
         <div style={{ display: 'flex', gap: 5 }}>
