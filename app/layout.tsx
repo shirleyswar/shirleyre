@@ -1,5 +1,22 @@
 import type { Metadata } from 'next'
+import { Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import '../styles/globals.css'
+
+// ─── Spec §3.1 — Space Grotesk (sentence case body) ─────────────────────────
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-space-grotesk',
+  display: 'swap',
+})
+
+// ─── Spec §3.1 — JetBrains Mono (UPPERCASE labels, figures) ─────────────────
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-jetbrains-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'ShirleyCRE',
@@ -22,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <head>
         <link rel="icon"             type="image/x-icon" href="/favicon.ico" />
         <link rel="icon"             type="image/png"    sizes="32x32" href="/favicon.png?v=4" />

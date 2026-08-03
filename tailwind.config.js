@@ -7,6 +7,7 @@ module.exports = {
   ],
   theme: {
     extend: {
+      // ─── Legacy tokens (warroom / warroom2) ───────────────────────────────
       colors: {
         'bg-base':     '#0D0F14',
         'bg-card':     '#1A1D27',
@@ -17,23 +18,61 @@ module.exports = {
         'text-muted':  '#8a8070',
         'success':     '#22C55E',
         'danger':      '#EF4444',
-        // Custom border-subtle via CSS variable / arbitrary value
+
+        // ─── Spec §9 tokens (warroom3 / mobile spec) ──────────────────────
+        // Surfaces
+        base:      '#08080C',
+        panel:     '#101017',
+        raise:     '#16161F',
+        hi:        '#EFEEF4',
+        mid:       '#8B8A9B',
+        low:       '#5C5B6B',
+        invert:    '#0A0A0F',
+
+        // Accents — the four (plus lift) from §2.4
+        late:      '#FF4D4D',
+        hot:       '#FFA23A',
+        moneyIn:   '#34D399',
+        brand:     '#8B5CF6',
+        brandLift: '#A78BFA',
       },
+
       fontFamily: {
+        // Legacy
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+
+        // Spec §9 — loaded via next/font/google as CSS variables
+        display: ['var(--font-space-grotesk)', 'system-ui', 'sans-serif'],
+        code:    ['var(--font-jetbrains-mono)', 'ui-monospace', 'monospace'],
       },
+
       borderColor: {
         'subtle': 'rgba(255,255,255,0.06)',
       },
       backgroundColor: {
         'subtle': 'rgba(255,255,255,0.03)',
       },
-      boxShadow: {
-        'card': '0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)',
-        'card-hover': '0 4px 12px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4)',
-        'gold-glow': '0 0 20px rgba(201,147,58,0.15)',
+
+      // Spec §4.2 radius scale
+      borderRadius: {
+        pill: '4px',
+        ctl:  '9px',
+        card: '16px',
+        hero: '20px',
+        sheet: '26px',
       },
+
+      // Spec §4.3 glow — one per screen
+      boxShadow: {
+        'card':      '0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)',
+        'card-hover':'0 4px 12px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4)',
+        'gold-glow': '0 0 20px rgba(201,147,58,0.15)',
+        'fab':       '0 0 22px rgba(139,92,246,0.40)',
+        'glow-late': '0 0 22px rgba(255,77,77,0.40)',
+        'glow-money':'0 0 22px rgba(52,211,153,0.40)',
+      },
+
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out forwards',
         'slide-up': 'slideUp 0.4s ease-out forwards',

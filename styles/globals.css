@@ -5,6 +5,93 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ═══════════════════════════════════════════════════════════════
+   WARROOM3 — MOBILE SPEC DESIGN SYSTEM (STEP 1: TOKENS + FONTS)
+   Mobile Spec §2 · §3 · §4 · §9
+   These tokens are the single source of truth for /warroom3.
+   Existing /warroom and /warroom2 are unaffected.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── §2.1 Surfaces ── */
+  --wr3-bg-base:   #08080C;
+  --wr3-bg-panel:  #101017;
+  --wr3-bg-raise:  #16161F;
+  --wr3-bg-scrim:  rgba(0,0,0,0.60);
+  --wr3-bg-bar:    rgba(8,8,12,0.94);
+
+  /* ── §2.2 Text ── */
+  --wr3-text-hi:     #EFEEF4;
+  --wr3-text-mid:    #8B8A9B;
+  --wr3-text-low:    #5C5B6B;
+  --wr3-text-invert: #0A0A0F;
+
+  /* ── §2.3 Borders ── */
+  --wr3-border-default: 1px solid rgba(255,255,255,0.08);
+  --wr3-border-strong:  1px solid rgba(255,255,255,0.13);
+  --wr3-border-hair:    1px solid rgba(255,255,255,0.05);
+
+  /* ── §2.4 Accents (four only — no fifth hue permitted) ── */
+  --wr3-late:       #FF4D4D;
+  --wr3-hot:        #FFA23A;
+  --wr3-money-in:   #34D399;
+  --wr3-brand:      #8B5CF6;
+  --wr3-brand-lift: #A78BFA;
+
+  /* ── §3.1 Font families (loaded via next/font/google as CSS vars) ── */
+  --wr3-font-display: var(--font-space-grotesk, 'Space Grotesk', system-ui, sans-serif);
+  --wr3-font-mono:    var(--font-jetbrains-mono, 'JetBrains Mono', ui-monospace, monospace);
+
+  /* ── §4.2 Radius ── */
+  --wr3-r-pill:  4px;
+  --wr3-r-ctl:   9px;
+  --wr3-r-card:  16px;
+  --wr3-r-hero:  20px;
+  --wr3-r-sheet: 26px 26px 0 0;
+}
+
+/* ── §3.3 Tabular figures — mandatory on every numeric string ── */
+.wr3-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── §5.2 Row spine — 3px left accent bar ── */
+.wr3-spine {
+  position: relative;
+  overflow: hidden;
+}
+.wr3-spine::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+.wr3-spine-late::before    { background: var(--wr3-late);     }
+.wr3-spine-hot::before     { background: var(--wr3-hot);      }
+.wr3-spine-money::before   { background: var(--wr3-money-in); }
+.wr3-spine-brand::before   { background: var(--wr3-brand);    }
+
+/* Spine tint (5% of accent) */
+.wr3-spine-late  { background: rgba(255, 77,  77,  0.05); padding-left: 13px; }
+.wr3-spine-hot   { background: rgba(255,162,  58,  0.05); padding-left: 13px; }
+.wr3-spine-money { background: rgba( 52,211,153,  0.05); padding-left: 13px; }
+.wr3-spine-brand { background: rgba(139, 92,246,  0.05); padding-left: 13px; }
+
+/* ── §4.3 Glow — one per screen maximum ── */
+.wr3-glow-money {
+  text-shadow: 0 0 22px rgba(52,211,153,0.40);
+}
+.wr3-glow-brand {
+  text-shadow: 0 0 22px rgba(139,92,246,0.35);
+}
+.wr3-glow-late {
+  text-shadow: 0 0 22px rgba(255,77,77,0.35);
+}
+
+/* ─── End warroom3 token block ─────────────────────────────────────────────── */
+
+/* ═══════════════════════════════════════════════════════════════
    SESSION 4 — AWARD-LEVEL DESIGN SYSTEM
    4-tier elevation · teal pill nav · sparklines · ticker strip
    ═══════════════════════════════════════════════════════════════ */
