@@ -80,8 +80,8 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
             style={{
               width: 48,
               height: 48,
-              background: 'rgba(201,147,58,0.12)',
-              border: '1px solid rgba(201,147,58,0.3)',
+              background: 'rgba(139,92,246,0.12)',
+              border: '1px solid rgba(139,92,246,0.3)',
               borderRadius: 12,
               display: 'flex',
               alignItems: 'center',
@@ -89,9 +89,9 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
             }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#c9933a" strokeWidth="1.5" strokeLinejoin="round"/>
-              <path d="M2 17l10 5 10-5" stroke="#c9933a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2 12l10 5 10-5" stroke="#c9933a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#8B5CF6" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M2 17l10 5 10-5" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 12l10 5 10-5" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <span style={{ fontSize: 13, color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 500 }}>

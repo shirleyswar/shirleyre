@@ -165,8 +165,8 @@ export default function WarRoomPage() {
         ['--bg-base' as string]: 'var(--bg-page)',
         ['--bg-card' as string]: '#1A1E25',
         ['--bg-elevated' as string]: '#22272F',
-        ['--accent-gold' as string]: '#E8B84B',
-        ['--accent-gold-light' as string]: '#F5CE7A',
+        ['--accent-gold' as string]: '#8B5CF6',
+        ['--accent-gold-light' as string]: '#A78BFA',
         ['--text-primary' as string]: '#F0F2FF',
         ['--text-muted' as string]: '#6B7280',
         ['--success' as string]: '#22C55E',
@@ -220,12 +220,12 @@ export default function WarRoomPage() {
                   <div style={{
                     width: 36, height: 36, borderRadius: '50%',
                     background: 'radial-gradient(circle at 35% 35%, #C084FC, #7C3AED)',
-                    boxShadow: '0 0 20px rgba(232,184,75,0.7), 0 0 40px rgba(201,147,58,0.4)',
+                    boxShadow: '0 0 20px rgba(139,92,246,0.7), 0 0 40px rgba(139,92,246,0.4)',
                     animation: 'ptr-spin 0.8s linear infinite',
                   }} />
                   <span style={{
                     fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
-                    color: 'rgba(232,184,75,0.8)', fontFamily: 'var(--font-body)',
+                    color: 'rgba(167,139,250,0.8)', fontFamily: 'var(--font-body)',
                   }}>Refreshing</span>
                 </div>
               ) : (
@@ -233,14 +233,14 @@ export default function WarRoomPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                   <div style={{
                     width: 32, height: 32, borderRadius: '50%',
-                    border: `3px solid rgba(201,147,58,0.15)`,
+                    border: `3px solid rgba(139,92,246,0.15)`,
                     borderTopColor: pullY >= 64 ? '#A855F7' : `rgba(168,85,247,${Math.min(pullY / 64, 1) * 0.8})`,
                     transition: 'border-top-color 0.15s',
                     transform: `rotate(${pullY * 2.8}deg)`,
                   }} />
                   <span style={{
                     fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-                    color: pullY >= 64 ? 'rgba(232,184,75,0.9)' : 'rgba(232,184,75,0.4)',
+                    color: pullY >= 64 ? 'rgba(167,139,250,0.9)' : 'rgba(167,139,250,0.4)',
                     fontFamily: 'var(--font-body)', transition: 'color 0.15s',
                   }}>
                     {pullY >= 64 ? 'Release' : 'Pull to refresh'}
@@ -544,7 +544,7 @@ function WarRoomHeader({ onMenuToggle, onHome }: { onMenuToggle: () => void; onH
       {/* Live time — desktop only */}
       {liveTime && (
         <span className="hidden sm:inline" style={{
-          fontSize: 12, fontWeight: 700, color: 'rgba(232,184,75,0.75)',
+          fontSize: 12, fontWeight: 700, color: 'rgba(167,139,250,0.75)',
           fontFamily: 'var(--font-body)', letterSpacing: '0.04em',
           marginRight: 10, flexShrink: 0, fontVariantNumeric: 'tabular-nums',
         }}>{liveTime}</span>
@@ -835,13 +835,13 @@ function StatsNavCard() {
       height: 140,
       padding: '0 16px',
       background: 'linear-gradient(135deg, #0D1218 0%, #111720 100%)',
-      border: '1px solid rgba(232,184,75,0.18)',
+      border: '1px solid rgba(139,92,246,0.18)',
       borderRadius: 12,
       gap: 6,
       minWidth: 'clamp(120px, 20vw, 180px)',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 12px rgba(232,184,75,0.06), inset 0 1px 0 rgba(232,184,75,0.06)',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 12px rgba(139,92,246,0.06), inset 0 1px 0 rgba(139,92,246,0.06)',
     }}>
-      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(232,184,75,0.4)', fontFamily: 'var(--font-body)' }}>
+      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.4)', fontFamily: 'var(--font-body)' }}>
         PIPELINE
       </div>
       <div style={{ display: 'flex', gap: 12 }}>
@@ -1061,7 +1061,7 @@ function StarMark({ size = 20 }: { size?: number }) {
       className="star-pulse"
       style={{
         flexShrink: 0,
-        filter: 'drop-shadow(0 0 5px rgba(232,184,75,0.55)) drop-shadow(0 0 12px rgba(192,132,252,0.35))',
+        filter: 'drop-shadow(0 0 5px rgba(139,92,246,0.55)) drop-shadow(0 0 12px rgba(192,132,252,0.35))',
         overflow: 'visible',
       }}
       aria-hidden="true"
@@ -1088,7 +1088,7 @@ function StarMark({ size = 20 }: { size?: number }) {
       <defs>
         <radialGradient id="sparkleGrad" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-          <stop offset="40%" stopColor="#E8B84B" stopOpacity="0.9" />
+          <stop offset="40%" stopColor="#A78BFA" stopOpacity="0.9" />
           <stop offset="100%" stopColor="#C084FC" stopOpacity="0.7" />
         </radialGradient>
       </defs>

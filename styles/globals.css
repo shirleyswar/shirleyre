@@ -115,11 +115,11 @@
   --accent-violet:  #A855F7;    /* Brand primary — violet (from star mark) */
   --accent-violet-lt: #C084FC; /* Lighter violet for text on dark bg     */
   --accent-violet-glow: rgba(168,85,247,0.35); /* Glow atmosphere       */
-  --accent-gold:    #D4A847;    /* Signal accent — money + urgency only   */
-  --accent-gold-lt: #E8C068;
+  --accent-gold:    #8B5CF6;    /* Remapped to spec brand token — gold retired */
+  --accent-gold-lt: #A78BFA;
 
-  /* Legacy aliases */
-  --accent-gold-light: #F5CE7A;
+  /* Legacy aliases — remapped to spec tokens */
+  --accent-gold-light: #A78BFA;
 
   /* ── Tile accent palette ── */
   --tile-life:      #F472B6;
@@ -601,7 +601,7 @@ html, body {
 }
 .gold-flash-overlay {
   position: fixed; inset: 0;
-  background: radial-gradient(ellipse at center, rgba(232,184,75,0.3) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(139,92,246,0.3) 0%, transparent 70%);
   pointer-events: none;
   animation: goldFlashOverlay 0.8s ease-out forwards;
   z-index: 100;
