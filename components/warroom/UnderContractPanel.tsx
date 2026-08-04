@@ -55,37 +55,38 @@ function buildSparkPaths(values: number[], w: number, h: number) {
   return { linePath, areaPath }
 }
 
-// Stage badge colors
+// Stage badge colors — spec tokens only (§2.4)
+// late #FF4D4D | hot #FFA23A | money-in #34D399 | brand #8B5CF6 | brand-lift #A78BFA
 const TYPE_COLORS: Record<DeadlineType, { bg: string; text: string; label: string }> = {
-  inspection:       { bg: 'rgba(251,146,60,0.15)',  text: '#fb923c', label: 'Inspection' },
-  financing:        { bg: 'rgba(139,92,246,0.15)',  text: '#8B5CF6', label: 'Financing' },
-  appraisal:        { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa', label: 'Appraisal' },
-  title:            { bg: 'rgba(52,211,153,0.15)',  text: '#34D399', label: 'Title' },
-  survey:           { bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', label: 'Survey' },
-  closing:          { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24', label: 'Closing' },
-  custom:           { bg: 'rgba(107,114,128,0.12)', text: '#6b7280', label: 'Custom' },
-  contingency:      { bg: 'rgba(239,68,68,0.12)',   text: '#ef4444', label: 'Contingency' },
-  psa_review:       { bg: 'rgba(139,92,246,0.15)',  text: '#a78bfa', label: 'PSA Review' },
-  lease_review:     { bg: 'rgba(59,130,246,0.15)',  text: '#60a5fa', label: 'Lease Review' },
-  psa_draft:        { bg: 'rgba(139,92,246,0.10)',  text: '#c4b5fd', label: 'PSA Draft' },
-  lease_draft:      { bg: 'rgba(59,130,246,0.10)',  text: '#93c5fd', label: 'Lease Draft' },
-  lease_execution:  { bg: 'rgba(52,211,153,0.12)',  text: '#34D399', label: 'Lease Execution' },
-  lease_deliverables:{ bg: 'rgba(34,197,94,0.12)',  text: '#22c55e', label: 'Lease Deliverables' },
+  inspection:        { bg: 'rgba(255,162,58,0.12)',  text: '#FFA23A', label: 'Inspection' },    // hot
+  financing:         { bg: 'rgba(139,92,246,0.15)',  text: '#8B5CF6', label: 'Financing' },     // brand
+  appraisal:         { bg: 'rgba(167,139,250,0.15)', text: '#A78BFA', label: 'Appraisal' },     // brand-lift
+  title:             { bg: 'rgba(52,211,153,0.15)',  text: '#34D399', label: 'Title' },          // money-in
+  survey:            { bg: 'rgba(139,139,155,0.12)', text: '#8B8A9B', label: 'Survey' },         // text-mid (neutral)
+  closing:           { bg: 'rgba(52,211,153,0.12)',  text: '#34D399', label: 'Closing' },        // money-in (closing = money event)
+  custom:            { bg: 'rgba(139,139,155,0.10)', text: '#8B8A9B', label: 'Custom' },         // neutral
+  contingency:       { bg: 'rgba(255,77,77,0.12)',   text: '#FF4D4D', label: 'Contingency' },    // late
+  psa_review:        { bg: 'rgba(167,139,250,0.15)', text: '#A78BFA', label: 'PSA Review' },     // brand-lift
+  lease_review:      { bg: 'rgba(167,139,250,0.12)', text: '#A78BFA', label: 'Lease Review' },   // brand-lift (was blue)
+  psa_draft:         { bg: 'rgba(139,92,246,0.10)',  text: '#A78BFA', label: 'PSA Draft' },      // brand-lift
+  lease_draft:       { bg: 'rgba(139,92,246,0.10)',  text: '#A78BFA', label: 'Lease Draft' },    // brand-lift (was blue)
+  lease_execution:   { bg: 'rgba(52,211,153,0.12)',  text: '#34D399', label: 'Lease Execution' },// money-in
+  lease_deliverables:{ bg: 'rgba(52,211,153,0.10)',  text: '#34D399', label: 'Lease Deliverables' }, // money-in
 }
 
 const STATUS_STYLES: Record<DeadlineStatus, { bg: string; text: string; label: string }> = {
-  pending:   { bg: 'rgba(139,92,246,0.15)', text: '#8B5CF6', label: 'Pending' },
-  satisfied: { bg: 'rgba(34,197,94,0.15)', text: '#22c55e', label: 'Satisfied' },
-  extended:  { bg: 'rgba(251,146,60,0.15)', text: '#fb923c', label: 'Extended' },
-  missed:    { bg: 'rgba(239,68,68,0.15)', text: '#ef4444', label: 'Missed' },
+  pending:   { bg: 'rgba(139,92,246,0.15)',  text: '#8B5CF6', label: 'Pending' },   // brand
+  satisfied: { bg: 'rgba(52,211,153,0.15)',  text: '#34D399', label: 'Satisfied' }, // money-in
+  extended:  { bg: 'rgba(255,162,58,0.15)',  text: '#FFA23A', label: 'Extended' },  // hot (was fb923c)
+  missed:    { bg: 'rgba(255,77,77,0.15)',   text: '#FF4D4D', label: 'Missed' },    // late
 }
 
 function getDaysColor(days: number, status: DeadlineStatus): string {
   if (status === 'satisfied') return 'var(--text-dim)'
-  if (days < 0) return '#ef4444'
-  if (days <= 2) return '#ef4444'
-  if (days <= 7) return '#fb923c'
-  return '#8B5CF6'
+  if (days < 0) return '#FF4D4D'   // late
+  if (days <= 1) return '#FF4D4D'  // late
+  if (days <= 7) return '#FFA23A'  // hot
+  return '#8B5CF6'                 // brand (outstanding balance)
 }
 
 // ─── Deadline Row ────────────────────────────────────────────────────────────
@@ -213,8 +214,8 @@ function DeadlineRow({ deadline, onSatisfy, onUndo, onDelete, onEdit }: Deadline
             title="Revert to Pending"
             style={{
               width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)',
-              borderRadius: 5, color: '#fbbf24', cursor: 'pointer', fontSize: 14, fontWeight: 700,
+              background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.25)',
+              borderRadius: 5, color: '#A78BFA', cursor: 'pointer', fontSize: 14, fontWeight: 700,
             }}
           >↩</button>
         )}
@@ -874,7 +875,7 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: contacts.length > 0 ? 8 : 0 }}>
               {contacts.map(dc => (
-                <div key={dc.id} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 20, fontSize: 12, color: '#c4b5fd' }}>
+                <div key={dc.id} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 20, fontSize: 12, color: '#A78BFA' }}>
                   <span>{dc.contacts?.name || '—'}</span>
                   {dc.relationship && <span style={{ opacity: 0.6 }}>· {dc.relationship}</span>}
                 </div>
@@ -1154,12 +1155,13 @@ function DeadlinesSummary({ deadlines, onExpand, isExpanded }: DeadlinesSummaryP
     .map(d => ({ d, days: daysUntil(d.deadline_date) }))
     .sort((a, b) => a.days - b.days)[0]
 
-  const urgentColor = nearest && nearest.days <= 3
-    ? '#ef4444'
+  // Spec tokens only: 0–1 = late, 2–7 = hot, 8+ = brand
+  const urgentColor = nearest && nearest.days <= 1
+    ? '#FF4D4D'
     : nearest && nearest.days <= 7
-    ? '#fb923c'
+    ? '#FFA23A'
     : nearest && nearest.days <= 45
-    ? '#A78BFA'
+    ? '#8B5CF6'
     : 'var(--text-muted)'
 
   const showCountdown = nearest && nearest.days <= 45

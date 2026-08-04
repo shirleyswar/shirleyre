@@ -590,7 +590,7 @@ export default function SchedulePanel() {
               <button
                 onClick={addEvent}
                 disabled={adding || !formTitle.trim() || !formTime}
-                style={{ flex: 2, padding: '11px', background: adding || !formTitle.trim() || !formTime ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.5) 100%)', border: '1px solid rgba(167,139,250,0.5)', borderRadius: 8, color: '#c4b5fd', fontSize: 14, fontWeight: 700, cursor: adding || !formTitle.trim() || !formTime ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: adding || !formTitle.trim() || !formTime ? 0.5 : 1 }}
+                style={{ flex: 2, padding: '11px', background: adding || !formTitle.trim() || !formTime ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.5) 100%)', border: '1px solid rgba(167,139,250,0.5)', borderRadius: 8, color: '#A78BFA', fontSize: 14, fontWeight: 700, cursor: adding || !formTitle.trim() || !formTime ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: adding || !formTitle.trim() || !formTime ? 0.5 : 1 }}
               >
                 {adding ? 'Saving...' : `Save — ${formatDisplayDate(formDate)}`}
               </button>
@@ -649,35 +649,35 @@ export default function SchedulePanel() {
           regardless of whether any schedule_events are present. */}
       {liveDeadlines.length > 0 && (
         <div style={{ marginTop: 16 }}>
-          {/* Section header bubble */}
+          {/* Section header bubble — spec tokens only: brand #8B5CF6 */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
             padding: '7px 12px',
-            background: 'rgba(59,130,246,0.08)',
-            border: '1px solid rgba(59,130,246,0.25)',
+            background: 'rgba(139,92,246,0.08)',
+            border: '1px solid rgba(139,92,246,0.20)',
             borderRadius: 8,
           }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2"/>
               <line x1="16" y1="2" x2="16" y2="6"/>
               <line x1="8" y1="2" x2="8" y2="6"/>
               <line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
-            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#60a5fa' }}>
+            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#8B5CF6' }}>
               Contract Deadlines
             </span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(59,130,246,0.2)' }} />
-            <span style={{ fontSize: 9, color: 'rgba(96,165,250,0.6)', fontWeight: 600 }}>Next 45 days</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(139,92,246,0.18)' }} />
+            <span style={{ fontSize: 9, color: 'rgba(167,139,250,0.6)', fontWeight: 600 }}>Next 45 days</span>
           </div>
 
-          {/* Deadline groups by date */}
+          {/* Deadline groups by date — text-mid #8B8A9B per spec: beyond-7-day = neutral */}
           {deadlineGrouped.map(group => (
             <div key={group.date}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, marginTop: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(96,165,250,0.7)', fontFamily: 'var(--font-body)' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#8B8A9B', fontFamily: 'var(--font-body)' }}>
                   {formatGroupHeader(group.date)}
                 </span>
-                <div style={{ flex: 1, height: 1, background: 'rgba(59,130,246,0.15)' }} />
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 4 }}>
                 {group.events.map(event => (
@@ -775,9 +775,11 @@ function EventRow({
     const isSoon = daysOut <= 7
 
     // Urgency color
-    const urgentColor = isToday ? '#ef4444' : isUrgent ? '#fb923c' : isSoon ? '#fbbf24' : '#60a5fa'
-    const urgentBg = isToday ? 'rgba(239,68,68,0.12)' : isUrgent ? 'rgba(251,146,60,0.12)' : isSoon ? 'rgba(251,191,36,0.1)' : 'rgba(30,41,59,0.6)'
-    const urgentBorder = isToday ? 'rgba(239,68,68,0.4)' : isUrgent ? 'rgba(251,146,60,0.35)' : isSoon ? 'rgba(251,191,36,0.3)' : 'rgba(59,130,246,0.2)'
+    // Urgency color — spec tokens only (§2.4):
+    // 0–1 days = late #FF4D4D | 2–7 days = hot #FFA23A | 8+ days = neutral text-mid #8B8A9B
+    const urgentColor = isToday ? '#FF4D4D' : isUrgent ? '#FFA23A' : isSoon ? '#FFA23A' : '#8B8A9B'
+    const urgentBg = isToday ? 'rgba(255,77,77,0.12)' : isUrgent ? 'rgba(255,162,58,0.12)' : isSoon ? 'rgba(255,162,58,0.08)' : 'rgba(255,255,255,0.03)'
+    const urgentBorder = isToday ? 'rgba(255,77,77,0.4)' : isUrgent ? 'rgba(255,162,58,0.35)' : isSoon ? 'rgba(255,162,58,0.25)' : 'rgba(255,255,255,0.08)'
 
     const daysLabel = isToday ? 'TODAY' : daysOut === 1 ? '1 day' : `${daysOut} days`
 
@@ -862,11 +864,13 @@ function EventRow({
       <div style={{
         position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, borderRadius: 0,
         background: (() => {
+          // Spec tokens only: money-in for closed/landing, hot for active negotiations,
+          // late for urgent/personal, brand for meetings. No unauthorized hues.
           const t = (event.title || '').toLowerCase()
-          if (t.includes('closing') || t.includes('close')) return '#22c55e'
-          if (t.includes('inspection') || t.includes('inspect')) return '#fb923c'
-          if (t.includes('personal') || t.includes('family')) return '#f87171'
-          if (t.includes('meeting') || t.includes('call') || t.includes('mtg')) return '#8B5CF6'
+          if (t.includes('closing') || t.includes('close')) return '#34D399'   // money-in
+          if (t.includes('inspection') || t.includes('inspect')) return '#FFA23A' // hot
+          if (t.includes('personal') || t.includes('family')) return '#FF4D4D'  // late
+          if (t.includes('meeting') || t.includes('call') || t.includes('mtg')) return '#8B5CF6' // brand
           return 'rgba(255,255,255,0.06)'
         })(),
         pointerEvents: 'none',
@@ -1072,7 +1076,7 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
                   background: ap === ampm ? 'rgba(139,92,246,0.35)' : 'transparent',
                   border: ap === ampm ? '1px solid rgba(167,139,250,0.5)' : '1px solid transparent',
                   borderRadius: 6,
-                  color: ap === ampm ? '#c4b5fd' : 'var(--text-muted)',
+                  color: ap === ampm ? '#A78BFA' : 'var(--text-muted)',
                   fontSize: 12, fontWeight: 700, cursor: 'pointer',
                   letterSpacing: '0.05em', transition: 'all 0.15s',
                 }}
@@ -1089,7 +1093,7 @@ function TimeWheel({ value, onChange }: { value: string; onChange: (v: string) =
 
 function CalIconSmall() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ flexShrink: 0, color: 'var(--accent-gold)' }}>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ flexShrink: 0, color: '#8B5CF6' }}>
       <rect x="3" y="4" width="18" height="18" rx="2"/>
       <line x1="16" y1="2" x2="16" y2="6"/>
       <line x1="8" y1="2" x2="8" y2="6"/>

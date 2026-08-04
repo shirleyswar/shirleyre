@@ -357,23 +357,21 @@ function DeadlineHeroCard({ deadline }: { deadline: ContractDeadlineEvent }) {
     return Math.floor((target.getTime() - now.getTime()) / 86400000)
   })()
 
-  const typeColors: Record<string, { color: string; glow: string }> = {
-    closing:            { color: '#fbbf24', glow: 'rgba(251,191,36,0.25)' },
-    contingency:        { color: '#ef4444', glow: 'rgba(239,68,68,0.25)' },
-    inspection:         { color: '#fb923c', glow: 'rgba(251,146,60,0.25)' },
-    financing:          { color: '#8B5CF6', glow: 'rgba(139,92,246,0.25)' },
-    appraisal:          { color: '#a78bfa', glow: 'rgba(167,139,250,0.25)' },
-    title:              { color: '#34D399', glow: 'rgba(52,211,153,0.25)' },
-    survey:             { color: '#9ca3af', glow: 'rgba(156,163,175,0.2)'  },
-    psa_review:         { color: '#a78bfa', glow: 'rgba(167,139,250,0.25)' },
-    lease_review:       { color: '#60a5fa', glow: 'rgba(96,165,250,0.25)'  },
-    psa_draft:          { color: '#c4b5fd', glow: 'rgba(196,181,253,0.2)'  },
-    lease_draft:        { color: '#93c5fd', glow: 'rgba(147,197,253,0.2)'  },
-    lease_execution:    { color: '#34D399', glow: 'rgba(52,211,153,0.25)'  },
-    lease_deliverables: { color: '#22c55e', glow: 'rgba(34,197,94,0.25)'   },
-    custom:             { color: '#6b7280', glow: 'rgba(107,114,128,0.2)'  },
+  // Spec tokens only (§2.4): late #FF4D4D | hot #FFA23A | money-in #34D399 | brand #8B5CF6 | brand-lift #A78BFA
+  // Urgency (days out) drives colour, not deadline type — type provides the label only.
+  const daysOutForColor = (() => {
+    const now = new Date(); now.setHours(0,0,0,0)
+    const target = new Date(deadline.deadline_date + 'T00:00:00')
+    return Math.floor((target.getTime() - now.getTime()) / 86400000)
+  })()
+  const urgencyColor = daysOutForColor <= 1 ? '#FF4D4D' : daysOutForColor <= 7 ? '#FFA23A' : '#8B8A9B'
+  const urgencyGlow  = daysOutForColor <= 1 ? 'rgba(255,77,77,0.25)'   : daysOutForColor <= 7 ? 'rgba(255,162,58,0.25)' : 'rgba(139,139,155,0.15)'
+  // Money/landed states always use money-in
+  const isMoneyState = ['title', 'lease_execution', 'lease_deliverables'].includes(deadline.deadline_type)
+  const tc = {
+    color: isMoneyState ? '#34D399' : urgencyColor,
+    glow:  isMoneyState ? 'rgba(52,211,153,0.25)' : urgencyGlow,
   }
-  const tc = typeColors[deadline.deadline_type] ?? { color: '#fbbf24', glow: 'rgba(251,191,36,0.2)' }
   const typeLabel = deadline.deadline_type.replace(/_/g, ' ').toUpperCase()
   const dealDisplay = (deadline as any).deals?.address || (deadline as any).deals?.name || 'Deal'
   const [y, m, d] = deadline.deadline_date.split('-').map(Number)
@@ -427,23 +425,16 @@ function DeadlineHeroCard({ deadline }: { deadline: ContractDeadlineEvent }) {
 }
 
 function DeadlineRow({ deadline }: { deadline: ContractDeadlineEvent }) {
-  const typeColors: Record<string, { color: string; bg: string }> = {
-    closing:            { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
-    contingency:        { color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-    inspection:         { color: '#fb923c', bg: 'rgba(251,146,60,0.15)' },
-    financing:          { color: '#8B5CF6', bg: 'rgba(139,92,246,0.15)' },
-    appraisal:          { color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' },
-    title:              { color: '#34D399', bg: 'rgba(52,211,153,0.15)' },
-    survey:             { color: '#9ca3af', bg: 'rgba(156,163,175,0.15)' },
-    psa_review:         { color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' },
-    lease_review:       { color: '#60a5fa', bg: 'rgba(96,165,250,0.15)' },
-    psa_draft:          { color: '#c4b5fd', bg: 'rgba(196,181,253,0.15)' },
-    lease_draft:        { color: '#93c5fd', bg: 'rgba(147,197,253,0.15)' },
-    lease_execution:    { color: '#34D399', bg: 'rgba(52,211,153,0.15)' },
-    lease_deliverables: { color: '#22c55e', bg: 'rgba(34,197,94,0.15)' },
-    custom:             { color: '#6b7280', bg: 'rgba(107,114,128,0.15)' },
-  }
-  const tc = typeColors[deadline.deadline_type] ?? { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' }
+  // Spec tokens only (§2.4) — urgency drives colour, type provides label only.
+  const daysOutForColor2 = (() => {
+    const now = new Date(); now.setHours(0,0,0,0)
+    const target = new Date(deadline.deadline_date + 'T00:00:00')
+    return Math.floor((target.getTime() - now.getTime()) / 86400000)
+  })()
+  const isMoneyState2 = ['title', 'lease_execution', 'lease_deliverables'].includes(deadline.deadline_type)
+  const baseColor = isMoneyState2 ? '#34D399' : daysOutForColor2 <= 1 ? '#FF4D4D' : daysOutForColor2 <= 7 ? '#FFA23A' : '#8B8A9B'
+  const baseBg    = isMoneyState2 ? 'rgba(52,211,153,0.12)' : daysOutForColor2 <= 1 ? 'rgba(255,77,77,0.12)' : daysOutForColor2 <= 7 ? 'rgba(255,162,58,0.10)' : 'rgba(255,255,255,0.04)'
+  const tc = { color: baseColor, bg: baseBg }
   const typeLabel = deadline.deadline_type.replace(/_/g, ' ').toUpperCase()
   const dealDisplay = (deadline as any).deals?.address || (deadline as any).deals?.name || 'Deadline'
 
