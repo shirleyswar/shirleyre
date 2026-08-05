@@ -9,6 +9,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PinGate from '@/components/warroom/PinGate'
 import BottomTabBar, { TabId } from '@/components/warroom3/BottomTabBar'
+import BottomSheet from '@/components/warroom3/BottomSheet'
+import BattlePlanSheet from '@/components/warroom3/BattlePlanSheet'
 import { supabase } from '@/lib/supabase'
 
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -129,33 +131,48 @@ function daysUntil(dateStr: string): number {
 async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[] }> {
   const today = todayCST()
 
-  // Parallel fetches
-  const [tasksRes, deadlinesRes, dealsRes] = await Promise.allSettled([
+  // Parallel fetches — queries mirror /warroom panel sources exactly.
+  const [tasksRes, deadlinesRes, mmRes, ucRes] = await Promise.allSettled([
+    // Battle Plan: status = 'open' OR 'in_progress' — matches BattlePlanPanel.tsx filter
     supabase
       .from('tasks')
-      .select('id, title, due_date, completed_at, list, deal_id, deals(name, address)')
-      .is('completed_at', null)
-      .order('due_date', { ascending: true })
-      .limit(100),
+      .select('id, title, due_date, status, deal_id, deals(name, address)')
+      .in('status', ['open', 'in_progress'])
+      .order('created_at', { ascending: true })
+      .limit(200),
+    // Deadlines: 45-day window, not satisfied — matches SchedulePanel liveDeadlines
     supabase
       .from('contract_deadlines')
       .select('id, deadline_type, deadline_date, status, deals(name, address)')
       .neq('status', 'satisfied')
       .gte('deadline_date', today)
+      .lte('deadline_date', (() => {
+        const d = new Date(); d.setDate(d.getDate() + 45)
+        return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+      })())
       .order('deadline_date', { ascending: true })
       .limit(50),
+    // Money Movers: is_money_mover = true, active statuses — matches MoneyMoversPanel / HotPanel
     supabase
       .from('deals')
       .select('id, status')
+      .eq('is_money_mover', true)
+      .not('status', 'in', '("closed","dead","expired","dormant","terminated")')
+      .limit(200),
+    // Under Contract: status = under_contract
+    supabase
+      .from('deals')
+      .select('id, status')
+      .eq('status', 'under_contract')
       .limit(200),
   ])
 
-  const tasks  = (tasksRes.status === 'fulfilled' ? tasksRes.value.data  : null) ?? []
+  const tasks     = (tasksRes.status     === 'fulfilled' ? tasksRes.value.data     : null) ?? []
   const deadlines = (deadlinesRes.status === 'fulfilled' ? deadlinesRes.value.data : null) ?? []
-  const deals  = (dealsRes.status === 'fulfilled' ? dealsRes.value.data  : null) ?? []
+  const mmDeals   = (mmRes.status        === 'fulfilled' ? mmRes.value.data        : null) ?? []
+  const ucDeals   = (ucRes.status        === 'fulfilled' ? ucRes.value.data        : null) ?? []
 
   // ── Hero card: nearest hard deadline, else oldest overdue task ──
-  // Per §5.10: "the nearest hard deadline, else the oldest overdue task"
   let hero: HeroItem | null = null
 
   if (deadlines.length > 0) {
@@ -170,41 +187,40 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       type: 'deadline',
     }
   } else {
-    // Find oldest overdue task
+    // Oldest overdue open task
     const overdue = (tasks as any[]).filter(t => t.due_date && t.due_date < today)
     if (overdue.length > 0) {
       const oldest = overdue[overdue.length - 1]
-      const deal = oldest.deals?.address || oldest.deals?.name || null
+      const deal = (oldest.deals as any)?.address || (oldest.deals as any)?.name || null
       hero = {
         title: oldest.title || 'Overdue task',
-        subtitle: deal || oldest.list || '',
+        subtitle: deal || '',
         accentToken: 'late',
         type: 'task',
       }
     }
   }
 
-  // ── Tile counts ──
+  // ── Tile counts — each mirrors its /warroom panel source ──
   const allTasks = tasks as any[]
   const allDeadlines = deadlines as any[]
-  const allDeals = deals as any[]
 
-  // Battle Plan: all incomplete tasks
+  // Battle Plan: open/in_progress tasks — same population as BattlePlanPanel
   const bpTotal = allTasks.length
   const bpOverdue = allTasks.filter(t => t.due_date && t.due_date < today).length
   const bpHot = allTasks.filter(t => t.due_date && t.due_date >= today && daysUntil(t.due_date) <= 7).length
 
-  // Money Movers: hot/active deals (status = hot or active)
-  const mmTotal = allDeals.filter((d: any) => ['hot', 'active', 'in_review'].includes(d.status)).length
-  const mmHot = allDeals.filter((d: any) => d.status === 'hot').length
+  // Money Movers: is_money_mover=true, non-closed — same as HotPanel / MoneyMoversPanel
+  const mmTotal = mmDeals.length
+  const mmHot = (mmDeals as any[]).filter((d: any) => d.status === 'hot').length
 
-  // Deadlines: from contract_deadlines
+  // Deadlines: 45-day window, not satisfied — same as SchedulePanel liveDeadlines
   const dlTotal = allDeadlines.length
   const dlOverdue = allDeadlines.filter((d: any) => daysUntil(d.deadline_date) < 0).length
   const dlHot = allDeadlines.filter((d: any) => { const days = daysUntil(d.deadline_date); return days >= 0 && days <= 7 }).length
 
-  // Under Contract
-  const ucTotal = allDeals.filter((d: any) => d.status === 'under_contract').length
+  // Under Contract: same as UnderContractPanel
+  const ucTotal = ucDeals.length
 
   const tiles: TileStat[] = [
     {
@@ -326,7 +342,9 @@ function HeroCard({ item, onAction }: { item: HeroItem; onAction?: () => void })
 // 2. 18px gap
 // 3. T1 label
 // Optional spine when urgent. Whole surface is a button.
+// §7 tile press: scale 0.98, 90ms
 function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
+  const [pressed, setPressed] = React.useState(false)
   const hasSpine = stat.urgentToken !== null && stat.urgentCount > 0
   const spineColor = stat.urgentToken === 'late' ? T.late : stat.urgentToken === 'hot' ? T.hot : T.brand
   // §5.2: spined row gets 5% tint of accent as bg
@@ -351,6 +369,11 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
   return (
     <button
       onClick={onPress}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => { setTimeout(() => setPressed(false), 90) }}
       style={{
         position: 'relative',
         overflow: 'hidden',
@@ -366,6 +389,9 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
         WebkitTapHighlightColor: 'transparent',
         textAlign: 'left',
         width: '100%',
+        // §7 tile press: scale 0.98, 90ms
+        transform: pressed ? 'scale(0.98)' : 'scale(1)',
+        transition: 'transform 90ms ease',
       } as React.CSSProperties}
     >
       {/* §5.2 spine */}
@@ -418,6 +444,7 @@ function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
   const [loading, setLoading] = useState(true)
   const [hero, setHero] = useState<HeroItem | null>(null)
   const [tiles, setTiles] = useState<TileStat[]>([])
+  const [openSheet, setOpenSheet] = useState<string | null>(null)
   const dateLabel = formatDateLabel()
 
   useEffect(() => {
@@ -542,10 +569,22 @@ function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
             <PanelTile
               key={stat.panelKey}
               stat={stat}
-              onPress={() => onTilePress(stat.panelKey)}
+              onPress={() => {
+                if (stat.panelKey === 'battleplan') {
+                  setOpenSheet('battleplan')
+                } else {
+                  onTilePress(stat.panelKey)
+                }
+              }}
             />
           ))
         )}
+
+      {/* Battle Plan sheet — §12 step 4: sheet wired to Battle Plan first */}
+      <BattlePlanSheet
+        open={openSheet === 'battleplan'}
+        onClose={() => setOpenSheet(null)}
+      />
       </div>
 
       <style>{`
