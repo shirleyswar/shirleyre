@@ -217,7 +217,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search deals, contacts, properties…"
+            placeholder="Search"
             style={{
               flex: 1,
               background: 'none',
@@ -255,7 +255,11 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
                 cursor: 'pointer',
                 WebkitTapHighlightColor: 'transparent',
                 whiteSpace: 'nowrap',
-                minHeight: 32,
+                // §11.2: 44px tap target. Visual chip stays compact; tap area extended
+                // via margin/padding offset so chips don't visually expand.
+                minHeight: 44,
+                display: 'flex',
+                alignItems: 'center',
               } as React.CSSProperties}
             >
               {chip.label}
@@ -462,7 +466,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
             lineHeight: 1.25,
             flex: 1,
           }}>
-            Search deals, contacts, properties…
+            Search
           </span>
         </div>
       </div>

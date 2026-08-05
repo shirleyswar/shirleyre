@@ -12,6 +12,7 @@ import BottomTabBar, { TabId } from '@/components/warroom3/BottomTabBar'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import BattlePlanSheet from '@/components/warroom3/BattlePlanSheet'
 import { DealPipelineBand, DealsSheet } from '@/components/warroom3/DealsSheet'
+import ReceivablesCard from '@/components/warroom3/ReceivablesCard'
 import { supabase } from '@/lib/supabase'
 
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -583,6 +584,11 @@ function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
             setOpenSheet('deals')
           }}
         />
+      </div>
+
+      {/* §6 item 7: Receivables card — 11px gap above per §6 */}
+      <div style={{ marginTop: 11 }}>
+        <ReceivablesCard />
       </div>
 
       {/* Battle Plan sheet — §12 step 4 */}
