@@ -13,6 +13,9 @@ import BottomSheet from '@/components/warroom3/BottomSheet'
 import BattlePlanSheet from '@/components/warroom3/BattlePlanSheet'
 import { DealPipelineBand, DealsSheet } from '@/components/warroom3/DealsSheet'
 import ReceivablesCard from '@/components/warroom3/ReceivablesCard'
+import MoneyMoversSheet from '@/components/warroom3/MoneyMoversSheet'
+import DeadlinesSheet from '@/components/warroom3/DeadlinesSheet'
+import UnderContractSheet from '@/components/warroom3/UnderContractSheet'
 import { supabase } from '@/lib/supabase'
 
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -448,7 +451,7 @@ function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
   const [loading, setLoading] = useState(true)
   const [hero, setHero] = useState<HeroItem | null>(null)
   const [tiles, setTiles] = useState<TileStat[]>([])
-  const [openSheet, setOpenSheet] = useState<string | null>(null)
+  const [openSheet, setOpenSheet] = useState<'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract' | null>(null)
   const [dealsSearch, setDealsSearch] = useState('')
   const dateLabel = formatDateLabel()
 
@@ -568,6 +571,12 @@ function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
               onPress={() => {
                 if (stat.panelKey === 'battleplan') {
                   setOpenSheet('battleplan')
+                } else if (stat.panelKey === 'moneymovers') {
+                  setOpenSheet('moneymovers')
+                } else if (stat.panelKey === 'deadlines') {
+                  setOpenSheet('deadlines')
+                } else if (stat.panelKey === 'undercontract') {
+                  setOpenSheet('undercontract')
                 } else {
                   onTilePress(stat.panelKey)
                 }
@@ -575,6 +584,7 @@ function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
             />
           ))
         )}
+      </div>{/* ── end 2×2 grid — items below are full-width ── */}
 
       {/* §6 item 6: Deal Pipeline band — 11px gap above per §6 */}
       <div style={{ marginTop: 11 }}>
@@ -603,7 +613,20 @@ function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
         onClose={() => setOpenSheet(null)}
         initialSearch={dealsSearch}
       />
-      </div>
+
+      {/* §12 step 7: remaining panel sheets */}
+      <MoneyMoversSheet
+        open={openSheet === 'moneymovers'}
+        onClose={() => setOpenSheet(null)}
+      />
+      <DeadlinesSheet
+        open={openSheet === 'deadlines'}
+        onClose={() => setOpenSheet(null)}
+      />
+      <UnderContractSheet
+        open={openSheet === 'undercontract'}
+        onClose={() => setOpenSheet(null)}
+      />
 
       <style>{`
         @keyframes shimmer {

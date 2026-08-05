@@ -68,12 +68,16 @@ interface ARData {
 }
 
 async function loadARData(): Promise<ARData> {
-  // ar_items: commission_amount, status, paid_to_date
-  // ar_payments: amount per item (source of truth for collected)
+  // Mirrors AccountsReceivablePanel.tsx exactly.
+  // sr_portion_amount = MS Portion — the column the panel tracks.
+  // payments_total per item = sum of ar_payments rows for that item.
+  // Collected = sum(payments_total ?? paid_to_date ?? 0) across ALL items.
+  // Outstanding = sum of msBal for receivable items only,
+  //   where msBal = max(0, sr_portion_amount - payments_total).
   const [itemsRes, paymentsRes] = await Promise.all([
     supabase
       .from('ar_items')
-      .select('id, commission_amount, paid_to_date, status')
+      .select('id, sr_portion_amount, paid_to_date, status')
       .limit(100),
     supabase
       .from('ar_payments')
@@ -84,20 +88,24 @@ async function loadARData(): Promise<ARData> {
   const items    = (itemsRes.data    ?? []) as any[]
   const payments = (paymentsRes.data ?? []) as any[]
 
-  // Collected = sum of all payments received
-  const collected = payments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
-
-  // Outstanding = commission_amount on receivable items minus payments already made on them
+  // Build payments_total per item (mirrors panel enrichment)
   const paymentsByItem: Record<string, number> = {}
   for (const p of payments) {
     paymentsByItem[p.ar_item_id] = (paymentsByItem[p.ar_item_id] || 0) + (p.amount || 0)
   }
+
+  // Collected = sum(payments_total ?? paid_to_date ?? 0) across ALL items
+  const collected = items.reduce((sum: number, i: any) => {
+    return sum + (paymentsByItem[i.id] ?? (i.paid_to_date || 0))
+  }, 0)
+
+  // Outstanding = sum of msBal(receivable items)
   const outstanding = items
     .filter((i: any) => i.status === 'receivable')
     .reduce((sum: number, i: any) => {
-      const paid = paymentsByItem[i.id] || 0
-      const owed = Math.max(0, (i.commission_amount || 0) - paid)
-      return sum + owed
+      const ms = i.sr_portion_amount ?? 0
+      const paid = paymentsByItem[i.id] ?? (i.paid_to_date || 0)
+      return sum + Math.max(0, ms - paid)
     }, 0)
 
   return { collected, outstanding, dealCount: items.length }
