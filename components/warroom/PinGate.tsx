@@ -76,7 +76,8 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
       >
         {/* Official mark — mark-256.png above WAR ROOM.
             74px desktop / 52px mobile per WHERE-TO-USE-WHAT §4.
-            No CSS glow or box-shadow — glow is in the pixels (README §notes). */}
+            No CSS glow or box-shadow — glow is in the pixels.
+            ONE mark, responsive size via media query. No inline display override. */}
         <div className="flex flex-col items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -85,16 +86,14 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
             className="hidden sm:block"
             width={74}
             height={74}
-            style={{ display: 'block' }}
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/mark-256.png"
             alt=""
-            className="sm:hidden"
+            className="block sm:hidden"
             width={52}
             height={52}
-            style={{ display: 'block' }}
           />
           <span style={{ fontSize: 13, color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 500 }}>
             War Room

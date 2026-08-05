@@ -41,11 +41,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <head>
-        <link rel="icon"             type="image/x-icon" href="/favicon.ico" />
-        <link rel="icon"             type="image/png"    sizes="32x32" href="/favicon.png?v=4" />
-        <link rel="apple-touch-icon" sizes="180x180"    href="/apple-touch-icon.png?v=4" />
-        <link rel="manifest"         href="/site.webmanifest" />
-        <meta name="theme-color"     content="#0D0F14" />
+        {/* Inline tags removed — root layout metadata export handles public-site icons.
+            Segment-level metadata in /warroom and /warroom3 layouts override apple-touch-icon
+            for the War Room routes. Removing inline tags eliminates the injection-order race. */}
         <meta name="viewport"        content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body>{children}</body>

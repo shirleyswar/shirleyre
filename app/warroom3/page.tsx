@@ -11,6 +11,7 @@ import PinGate from '@/components/warroom/PinGate'
 import BottomTabBar, { TabId } from '@/components/warroom3/BottomTabBar'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import BattlePlanSheet from '@/components/warroom3/BattlePlanSheet'
+import { DealPipelineBand, DealsSheet } from '@/components/warroom3/DealsSheet'
 import { supabase } from '@/lib/supabase'
 
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -152,12 +153,13 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       })())
       .order('deadline_date', { ascending: true })
       .limit(50),
-    // Money Movers: is_money_mover = true, active statuses — matches MoneyMoversPanel / HotPanel
+    // Money Movers: status = 'hot' ONLY — exact HotPanel predicate
+    // HotPanel.tsx: supabase.from('deals').select('*').eq('status','hot')
+    // HOT chip count = same result set length (every row IS hot)
     supabase
       .from('deals')
       .select('id, status')
-      .eq('is_money_mover', true)
-      .not('status', 'in', '("closed","dead","expired","dormant","terminated")')
+      .eq('status', 'hot')
       .limit(200),
     // Under Contract: status = under_contract
     supabase
@@ -210,9 +212,10 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
   const bpOverdue = allTasks.filter(t => t.due_date && t.due_date < today).length
   const bpHot = allTasks.filter(t => t.due_date && t.due_date >= today && daysUntil(t.due_date) <= 7).length
 
-  // Money Movers: is_money_mover=true, non-closed — same as HotPanel / MoneyMoversPanel
+  // Money Movers: exact HotPanel predicate = status='hot'. All results ARE hot.
+  // Total and HOT chip both come from the same result set — agreement by construction.
   const mmTotal = mmDeals.length
-  const mmHot = (mmDeals as any[]).filter((d: any) => d.status === 'hot').length
+  const mmHot = mmDeals.length  // every deal in result has status=hot
 
   // Deadlines: 45-day window, not satisfied — same as SchedulePanel liveDeadlines
   const dlTotal = allDeadlines.length
@@ -445,6 +448,7 @@ function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
   const [hero, setHero] = useState<HeroItem | null>(null)
   const [tiles, setTiles] = useState<TileStat[]>([])
   const [openSheet, setOpenSheet] = useState<string | null>(null)
+  const [dealsSearch, setDealsSearch] = useState('')
   const dateLabel = formatDateLabel()
 
   useEffect(() => {
@@ -571,10 +575,27 @@ function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
           ))
         )}
 
-      {/* Battle Plan sheet — §12 step 4: sheet wired to Battle Plan first */}
+      {/* §6 item 6: Deal Pipeline band — 11px gap above per §6 */}
+      <div style={{ marginTop: 11 }}>
+        <DealPipelineBand
+          onOpenSheet={(search) => {
+            setDealsSearch(search ?? '')
+            setOpenSheet('deals')
+          }}
+        />
+      </div>
+
+      {/* Battle Plan sheet — §12 step 4 */}
       <BattlePlanSheet
         open={openSheet === 'battleplan'}
         onClose={() => setOpenSheet(null)}
+      />
+
+      {/* Deals sheet — §12 step 5 */}
+      <DealsSheet
+        open={openSheet === 'deals'}
+        onClose={() => setOpenSheet(null)}
+        initialSearch={dealsSearch}
       />
       </div>
 
