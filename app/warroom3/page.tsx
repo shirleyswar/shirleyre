@@ -473,25 +473,16 @@ function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
         marginBottom: 18,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* App mark — 30px radius-9, brand fill. NO glow (FAB owns the one glow). */}
-          <div style={{
-            width: 30,
-            height: 30,
-            borderRadius: 9,
-            background: T.brand,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <svg width="14" height="14" viewBox="0 0 40 40" fill="none">
-              <path
-                d="M20 2C20 2,22 14,20 20C18 14,20 2,20 2ZM20 38C20 38,22 26,20 20C18 26,20 38,20 38ZM2 20C2 20,14 22,20 20C14 18,2 20,2 20ZM38 20C38 20,26 22,20 20C26 18,38 20,38 20Z"
-                fill="white"
-                opacity="0.9"
-              />
-            </svg>
-          </div>
+          {/* App mark — official mark-64.png at 30px per WHERE-TO-USE-WHAT §4.
+              No CSS glow, no box-shadow — glow is in the pixels (README §notes). */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/mark-64.png"
+            alt=""
+            width={30}
+            height={30}
+            style={{ flexShrink: 0, display: 'block' }}
+          />
           {/* Stacked date + greeting */}
           <div>
             {/* T2 date — per §6 */}

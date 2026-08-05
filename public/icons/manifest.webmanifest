@@ -1,0 +1,28 @@
+{
+  "name": "ShirleyCRE War Room",
+  "short_name": "War Room",
+  "description": "ShirleyCRE commercial real estate operations dashboard",
+  "background_color": "#08080C",
+  "theme_color": "#08080C",
+  "display": "standalone",
+  "start_url": "/warroom3/",
+  "scope": "/warroom3/",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

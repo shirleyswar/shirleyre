@@ -74,26 +74,28 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className="flex flex-col items-center gap-8 relative"
       >
-        {/* Logo / wordmark */}
-        <div className="flex flex-col items-center gap-2">
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              background: 'rgba(139,92,246,0.12)',
-              border: '1px solid rgba(139,92,246,0.3)',
-              borderRadius: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#8B5CF6" strokeWidth="1.5" strokeLinejoin="round"/>
-              <path d="M2 17l10 5 10-5" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2 12l10 5 10-5" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
+        {/* Official mark — mark-256.png above WAR ROOM.
+            74px desktop / 52px mobile per WHERE-TO-USE-WHAT §4.
+            No CSS glow or box-shadow — glow is in the pixels (README §notes). */}
+        <div className="flex flex-col items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/mark-256.png"
+            alt=""
+            className="hidden sm:block"
+            width={74}
+            height={74}
+            style={{ display: 'block' }}
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/mark-256.png"
+            alt=""
+            className="sm:hidden"
+            width={52}
+            height={52}
+            style={{ display: 'block' }}
+          />
           <span style={{ fontSize: 13, color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 500 }}>
             War Room
           </span>
