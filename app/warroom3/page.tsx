@@ -447,11 +447,20 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
 }
 
 // ── Home Screen §6 ────────────────────────────────────────────────────────────
-function HomeScreen({ onTilePress }: { onTilePress: (key: string) => void }) {
+type SheetId = 'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract'
+
+function HomeScreen({
+  onTilePress,
+  openSheet,
+  setOpenSheet,
+}: {
+  onTilePress: (key: string) => void
+  openSheet: SheetId | null
+  setOpenSheet: (id: SheetId | null) => void
+}) {
   const [loading, setLoading] = useState(true)
   const [hero, setHero] = useState<HeroItem | null>(null)
   const [tiles, setTiles] = useState<TileStat[]>([])
-  const [openSheet, setOpenSheet] = useState<'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract' | null>(null)
   const [dealsSearch, setDealsSearch] = useState('')
   const dateLabel = formatDateLabel()
 
@@ -681,6 +690,8 @@ export default function WarRoom3Page() {
   const [unlocked, setUnlocked] = useState(false)
   const [showFlash, setShowFlash] = useState(false)
   const [activeTab, setActiveTab] = useState<TabId>('home')
+  // Sheet state lifted to root so FAB can reflect open state across all sheets
+  const [openSheet, setOpenSheet] = useState<SheetId | null>(null)
 
   useEffect(() => {
     const expiry = localStorage.getItem(SESSION_KEY)
@@ -695,9 +706,13 @@ export default function WarRoom3Page() {
   }, [])
 
   const handleTilePress = useCallback((key: string) => {
-    // Step 4+: tiles open bottom sheets
-    // For now, no action — shell only
+    // non-home-screen tiles — no action yet
   }, [])
+
+  // FAB tap: if a sheet is open, close it; otherwise no-op (future: open new-item sheet)
+  const handleFab = useCallback(() => {
+    if (openSheet) setOpenSheet(null)
+  }, [openSheet])
 
   if (!unlocked) {
     return (
@@ -710,7 +725,13 @@ export default function WarRoom3Page() {
 
   function renderScreen() {
     switch (activeTab) {
-      case 'home':  return <HomeScreen onTilePress={handleTilePress} />
+      case 'home':  return (
+        <HomeScreen
+          onTilePress={handleTilePress}
+          openSheet={openSheet}
+          setOpenSheet={setOpenSheet}
+        />
+      )
       case 'deals': return <PlaceholderScreen label="DEALS" />
       case 'money': return <PlaceholderScreen label="MONEY" />
       case 'more':  return <PlaceholderScreen label="MORE" />
@@ -738,7 +759,7 @@ export default function WarRoom3Page() {
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }} />
 
-      {/* Screen content */}
+      {/* Screen content — §7: tab change is instant (opacity 0.1s only) */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
@@ -750,11 +771,13 @@ export default function WarRoom3Page() {
         </motion.div>
       </AnimatePresence>
 
-      {/* §5.7 Bottom tab bar — FAB carries the one glow per §4.3/§11.4 */}
+      {/* §5.7 Bottom tab bar + FAB "Deep aperture" 14b
+          fabOpen: any sheet open → aria-expanded true → plus rotates to × */}
       <BottomTabBar
         active={activeTab}
         onTab={setActiveTab}
-        onFab={() => { /* Step 4+: FAB opens new item sheet */ }}
+        onFab={handleFab}
+        fabOpen={openSheet !== null}
       />
     </div>
   )

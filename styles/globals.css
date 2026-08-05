@@ -1027,3 +1027,155 @@ select {
   color: rgba(255,255,255,0.45);
   opacity: 1;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   WAR ROOM FAB — "Deep aperture" (14b). Final.
+   Verbatim from War Room FAB.zip / fab.css.
+   README rules: no outer drop-shadow/box-shadow, never lighten face,
+   glyph pure white, one FAB per screen, desktop gets none.
+   ═══════════════════════════════════════════════════════════════ */
+
+.wr-fab {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  margin-top: -20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wr-fab__halo {
+  position: absolute;
+  inset: -23px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(155, 105, 255, .54),
+    rgba(124, 58, 237, .12) 46%,
+    transparent 72%);
+  animation: wr-fab-breathe 7s ease-in-out infinite;
+  transition: opacity .22s ease, transform .22s ease;
+  pointer-events: none;
+}
+
+.wr-fab__body {
+  position: absolute;
+  inset: 0;
+  border-radius: 19px;
+  padding: 1.5px;
+  background: #09080F;
+  box-shadow: 0 8px 22px rgba(70, 25, 175, .44);
+  transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.wr-fab__rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 19px;
+  overflow: hidden;
+}
+
+.wr-fab__rim::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 158%;
+  height: 158%;
+  margin: -79% 0 0 -79%;
+  background: conic-gradient(from 0deg,
+    transparent 0deg,
+    rgba(214, 196, 255, .90) 38deg,
+    rgba(124, 58, 237, .90) 80deg,
+    transparent 134deg,
+    transparent 272deg,
+    rgba(139, 92, 246, .72) 320deg,
+    transparent 352deg);
+  animation: wr-fab-sweep 16s linear infinite;
+}
+
+.wr-fab__face {
+  position: absolute;
+  inset: 1.5px;
+  border-radius: 17.5px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 47%,
+    #5B3FA8 0%,
+    #2A1D52 26%,
+    #120E22 62%,
+    #07060C 100%);
+  box-shadow: inset 0 1px 0 rgba(196, 181, 253, .24),
+              inset 0 0 15px 5px rgba(0, 0, 0, .5);
+}
+
+.wr-fab__core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 37px;
+  height: 37px;
+  margin: -18.5px 0 0 -18.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(186, 148, 255, .55),
+    rgba(139, 92, 246, .16) 52%,
+    transparent 74%);
+}
+
+.wr-fab__bar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 2px;
+  background: #FFFFFF;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 1),
+              0 0 22px rgba(222, 206, 255, .95),
+              0 0 46px rgba(139, 92, 246, .7);
+  transition: transform .22s cubic-bezier(.34, 1.56, .64, 1);
+}
+.wr-fab__bar--h { width: 23px;  height: 3.6px; margin: -1.8px 0 0 -11.5px; }
+.wr-fab__bar--v { width: 3.6px; height: 23px;  margin: -11.5px 0 0 -1.8px; }
+
+.wr-fab:hover  .wr-fab__body { transform: translateY(-3px) scale(1.04); }
+.wr-fab:active .wr-fab__body { transform: translateY(0) scale(.95); }
+.wr-fab:hover  .wr-fab__halo { opacity: 1; transform: scale(1.22); }
+
+.wr-fab:focus-visible { outline: none; }
+.wr-fab:focus-visible .wr-fab__body {
+  box-shadow: 0 8px 22px rgba(70, 25, 175, .44),
+              0 0 0 3px rgba(167, 139, 250, .55);
+}
+
+.wr-fab[aria-expanded="true"] .wr-fab__bar--h { transform: rotate(45deg); }
+.wr-fab[aria-expanded="true"] .wr-fab__bar--v { transform: rotate(45deg); }
+
+@keyframes wr-fab-breathe {
+  0%, 100% { opacity: .42; transform: scale(1); }
+  50%      { opacity: .72; transform: scale(1.13); }
+}
+@keyframes wr-fab-sweep { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .wr-fab__halo,
+  .wr-fab__rim::before { animation: none; }
+  .wr-fab__halo { opacity: .6; }
+  .wr-fab__body,
+  .wr-fab__bar,
+  .wr-fab__halo { transition-duration: .01ms; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STEP 8 — Motion pass: task row exit animation (§7)
+   opacity 1→0, height→0, 220ms easeOut — available for future
+   task complete gestures (§13, when directed).
+   ═══════════════════════════════════════════════════════════════ */
+.wr3-task-exit {
+  overflow: hidden;
+  animation: wr3-task-out 220ms cubic-bezier(0, 0, 0.58, 1) forwards;
+}
+@keyframes wr3-task-out {
+  from { opacity: 1; max-height: 200px; }
+  to   { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin: 0; }
+}

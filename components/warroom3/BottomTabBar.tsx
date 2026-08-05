@@ -1,13 +1,16 @@
 'use client'
 
 // §5.7 Bottom tab bar — ShirleyCRE mobile spec v1
-// Fixed, 94px total height incl. safe-area-inset-bottom, box-sizing: border-box
+// Fixed, 94px total height incl. safe-area-inset-bottom.
 // Five slots: HOME · DEALS · FAB · MONEY · MORE
 // Active tab: text-hi (#EFEEF4). Inactive: text-low (#5C5B6B). No purple on tabs.
-// FAB: brand (#8B5CF6), pulled up margin-top:-20px, 56×56px squircle radius-16.
-// Labels: T5 = JetBrains Mono 9px/500/0.11em/UPPER per §3.2
+// FAB: "Deep aperture" 14b — 58×58px, radius 19, lift margin-top:-20px.
+//   Authorized spec deviation (Matthew directive): 58×58 / radius 19 supersedes §5.7 56×56/radius-16.
+//   README rules binding: no outer drop-shadow/box-shadow, face stays near-black, glyph pure white.
+// Tab change: instant (§7 — no transition).
 
 import React from 'react'
+import Fab from '@/components/warroom3/Fab'
 
 export type TabId = 'home' | 'deals' | 'money' | 'more'
 
@@ -15,6 +18,8 @@ interface BottomTabBarProps {
   active: TabId
   onTab: (id: TabId) => void
   onFab?: () => void
+  /** FAB open state — any sheet open → true → plus rotates to ×, tap closes sheet */
+  fabOpen?: boolean
 }
 
 function HomeIcon({ active }: { active: boolean }) {
@@ -54,15 +59,6 @@ function MoreIcon({ active }: { active: boolean }) {
       <circle cx="5" cy="12" r="1.5" fill={c}/>
       <circle cx="12" cy="12" r="1.5" fill={c}/>
       <circle cx="19" cy="12" r="1.5" fill={c}/>
-    </svg>
-  )
-}
-
-function FabIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#EFEEF4" strokeWidth="2" strokeLinecap="round">
-      <line x1="12" y1="5" x2="12" y2="19"/>
-      <line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
   )
 }
@@ -114,7 +110,7 @@ function TabSlot({ label, icon, active, onClick }: TabSlotProps) {
   )
 }
 
-export default function BottomTabBar({ active, onTab, onFab }: BottomTabBarProps) {
+export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: BottomTabBarProps) {
   return (
     <nav
       aria-label="Bottom navigation"
@@ -138,39 +134,17 @@ export default function BottomTabBar({ active, onTab, onFab }: BottomTabBarProps
       <TabSlot id="home"  label="HOME"  icon={<HomeIcon  active={active==='home'}  />} active={active==='home'}  onClick={() => onTab('home')}  />
       <TabSlot id="deals" label="DEALS" icon={<DealsIcon active={active==='deals'} />} active={active==='deals'} onClick={() => onTab('deals')} />
 
-      {/* FAB — centre slot */}
+      {/* FAB centre slot — "Deep aperture" 14b */}
+      {/* Slot width keeps the 58px FAB centred; margin-top:-20px lifts it above the bar */}
       <div style={{
-        width: 56,
+        width: 64,
         flexShrink: 0,
         display: 'flex',
         alignItems: 'flex-end',
         justifyContent: 'center',
-        paddingBottom: 8,
-        position: 'relative',
+        paddingBottom: 10,
       }}>
-        <button
-          onClick={onFab}
-          aria-label="Add"
-          style={{
-            position: 'absolute',
-            bottom: 8,
-            width: 56,
-            height: 56,
-            borderRadius: 16,
-            background: '#8B5CF6',
-            boxShadow: '0 0 22px rgba(139,92,246,0.40)',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            WebkitTapHighlightColor: 'transparent',
-            zIndex: 10,
-            transform: 'translateY(-50%)',
-          } as React.CSSProperties}
-        >
-          <FabIcon />
-        </button>
+        <Fab open={fabOpen} onClick={onFab} label="Add" />
       </div>
 
       <TabSlot id="money" label="MONEY" icon={<MoneyIcon active={active==='money'} />} active={active==='money'} onClick={() => onTab('money')} />
