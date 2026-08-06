@@ -230,29 +230,44 @@ export default function UnderContractSheet({
                   borderLeft: '3px solid ' + T.brand,
                 }}
               >
-                {/* Row 1: address + price */}
+                {/* Row 1: address + commission (money-in green) — mirrors desktop UnderContractPanel */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                   <span style={{ ...styleT3, fontSize: 14 }}>{addr}</span>
-                  {priceLabel && (
+                  {commissionLabel && (
                     <span style={{
                       fontFamily: FONT_MONO,
                       fontSize: 11,
-                      fontWeight: 600,
+                      fontWeight: 700,
                       color: T.moneyIn,
                       letterSpacing: '-0.01em',
                       flexShrink: 0,
                       fontVariantNumeric: 'tabular-nums',
                     }}>
-                      {priceLabel}
+                      {commissionLabel}
                     </span>
                   )}
                 </div>
-                {/* Row 2: deal name + days since contract */}
+                {/* Row 2: deal name + price (demoted secondary) + days since contract */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: nextDL ? 8 : 0 }}>
-                  {name ? (
-                    <span style={{ ...styleT4, fontSize: 11 }}>{name}</span>
-                  ) : <span />}
-                  <span style={{ ...styleT2, fontSize: 9, color: T.textLow }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+                    {name ? (
+                      <span style={{ ...styleT4, fontSize: 11 }}>{name}</span>
+                    ) : <span />}
+                    {priceLabel && (
+                      <span style={{
+                        fontFamily: FONT_MONO,
+                        fontSize: 9.5,
+                        fontWeight: 500,
+                        color: T.textLow,
+                        letterSpacing: '-0.01em',
+                        fontVariantNumeric: 'tabular-nums',
+                        flexShrink: 0,
+                      }}>
+                        {priceLabel}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ ...styleT2, fontSize: 9, color: T.textLow, flexShrink: 0 }}>
                     Day {deal.daysSinceContract}
                   </span>
                 </div>
@@ -279,12 +294,6 @@ export default function UnderContractSheet({
                         {formatDateShort(nextDL.date)}
                       </span>
                     </div>
-                  </div>
-                )}
-                {/* Commission if no price shown */}
-                {!priceLabel && commissionLabel && (
-                  <div style={{ ...styleT4, fontSize: 11, color: T.moneyIn, marginTop: 4 }}>
-                    Commission: {commissionLabel}
                   </div>
                 )}
               </div>
