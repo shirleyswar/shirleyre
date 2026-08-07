@@ -210,8 +210,8 @@ export default function ReceivablesCard() {
         </div>
       )}
 
-      {/* Footer row: outstanding in brand-lift · deal count in mono */}
-      <div style={{
+      {/* Footer row: outstanding in brand-lift · deal count in mono — hidden during error */}
+      {!loadError && <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -244,7 +244,7 @@ export default function ReceivablesCard() {
         }}>
           {loading ? '—' : `${dealCount} ${dealCount === 1 ? 'deal' : 'deals'}`}
         </span>
-      </div>
+      </div>}
 
       <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
     </div>
