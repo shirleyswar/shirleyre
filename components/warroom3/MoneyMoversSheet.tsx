@@ -114,6 +114,7 @@ export default function MoneyMoversSheet({
         .limit(100)
       if (error) {
         console.error('[MoneyMoversSheet] load error:', error)
+        setLoadError(true)
         setLoading(false)
         return
       }
