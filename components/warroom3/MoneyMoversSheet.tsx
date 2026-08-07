@@ -65,9 +65,10 @@ interface HotDeal {
   address: string | null
   notes: string | null
   updated_at: string | null
-  sale_price: number | null
-  lease_rate: number | null
-  deal_type: string | null
+  // actual deals table columns for price
+  value: number | null
+  commission_estimated: number | null
+  type: string | null
 }
 
 function formatCurrency(n: number | null | undefined): string {
@@ -96,6 +97,7 @@ export default function MoneyMoversSheet({
   const [deals, setDeals] = useState<HotDeal[]>([])
   const [loading, setLoading] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     if (open && !loaded) load()
@@ -104,15 +106,23 @@ export default function MoneyMoversSheet({
   async function load() {
     setLoading(true)
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('deals')
-        .select('id, name, address, notes, updated_at, sale_price, lease_rate, deal_type')
+        .select('id, name, address, notes, updated_at, value, commission_estimated, type')
         .eq('status', 'hot')
         .order('updated_at', { ascending: false })
         .limit(100)
+      if (error) {
+        console.error('[MoneyMoversSheet] load error:', error)
+        setLoading(false)
+        return
+      }
       setDeals((data ?? []) as HotDeal[])
       setLoaded(true)
-    } catch {}
+    } catch (e) {
+      console.error('[MoneyMoversSheet] unexpected error:', e)
+      setLoadError(true)
+    }
     setLoading(false)
   }
 
@@ -136,6 +146,10 @@ export default function MoneyMoversSheet({
             }} />
           ))}
         </div>
+      ) : loadError ? (
+        <div style={{ textAlign: 'center', padding: '32px 18px', color: '#FF4D4D', fontFamily: FONT_DISPLAY, fontSize: 13 }}>
+          Could not load — tap to retry
+        </div>
       ) : deals.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '32px 18px', color: T.textLow, fontFamily: FONT_DISPLAY, fontSize: 13 }}>
           No hot deals right now
@@ -145,10 +159,8 @@ export default function MoneyMoversSheet({
           {deals.map((deal, idx) => {
             const addr = formatAddress(deal.address) || deal.name || '—'
             const name = (deal.name ?? '').replace(/^📁\s*/, '')
-            const price = deal.sale_price ?? deal.lease_rate
-            const priceLabel = deal.sale_price ? formatCurrency(deal.sale_price)
-              : deal.lease_rate ? formatCurrency(deal.lease_rate) + '/mo'
-              : null
+            const priceLabel = deal.value ? formatCurrency(deal.value) : null
+            const commLabel = deal.commission_estimated ? formatCurrency(deal.commission_estimated) : null
 
             return (
               <div
@@ -163,10 +175,10 @@ export default function MoneyMoversSheet({
                   marginBottom: idx < deals.length - 1 ? 8 : 0,
                 }}
               >
-                {/* Row 1: address + price */}
+                {/* Row 1: address + commission (money-in) or value */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                   <span style={{ ...styleT3, fontSize: 14 }}>{addr}</span>
-                  {priceLabel && (
+                  {(commLabel || priceLabel) && (
                     <span style={{
                       fontFamily: FONT_MONO,
                       fontSize: 11,
@@ -176,7 +188,7 @@ export default function MoneyMoversSheet({
                       flexShrink: 0,
                       fontVariantNumeric: 'tabular-nums',
                     }}>
-                      {priceLabel}
+                      {commLabel ?? priceLabel}
                     </span>
                   )}
                 </div>
