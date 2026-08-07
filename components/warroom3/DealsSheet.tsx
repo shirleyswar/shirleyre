@@ -208,7 +208,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
       open={open}
       onClose={onClose}
       label="Deal Pipeline"
-      count={deals.length}
+      count={loadError ? undefined : deals.length}
       size="list"
     >
       {/* Search field — pinned under header, always visible */}
