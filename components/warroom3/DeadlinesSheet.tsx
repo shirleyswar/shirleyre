@@ -113,6 +113,7 @@ export default function DeadlinesSheet({
   const [rows, setRows] = useState<DeadlineRow[]>([])
   const [loading, setLoading] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     if (open && !loaded) load()
@@ -120,13 +121,14 @@ export default function DeadlinesSheet({
 
   async function load() {
     setLoading(true)
+    setLoadError(false)
     try {
       const today = todayCST()
       const cutoff = new Date()
       cutoff.setDate(cutoff.getDate() + 45)
       const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('contract_deadlines')
         .select('id, label, deadline_date, deadline_type, status, deal_id')
         .gte('deadline_date', today)
@@ -135,6 +137,12 @@ export default function DeadlinesSheet({
         .order('deadline_date', { ascending: true })
         .limit(60)
 
+      if (error) {
+        console.error('[DeadlinesSheet] load error:', error)
+        setLoadError(true)
+        setLoading(false)
+        return
+      }
       if (!data) { setLoading(false); return }
 
       // Get deal names for context (same as SchedulePanel)
@@ -162,7 +170,10 @@ export default function DeadlinesSheet({
         dealLabel: d.deal_id ? (dealMap[d.deal_id] || '') : '',
       })))
       setLoaded(true)
-    } catch {}
+    } catch (e) {
+      console.error('[DeadlinesSheet] unexpected error:', e)
+      setLoadError(true)
+    }
     setLoading(false)
   }
 
@@ -186,6 +197,10 @@ export default function DeadlinesSheet({
               animation: 'shimmer 1.6s ease-in-out infinite',
             }} />
           ))}
+        </div>
+      ) : loadError ? (
+        <div style={{ textAlign: 'center', padding: '32px 18px', color: '#FF4D4D', fontFamily: FONT_DISPLAY, fontSize: 13 }}>
+          Could not load — tap to retry
         </div>
       ) : rows.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '32px 18px', color: T.textLow, fontFamily: FONT_DISPLAY, fontSize: 13 }}>

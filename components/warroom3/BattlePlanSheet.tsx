@@ -82,17 +82,26 @@ interface BattlePlanSheetProps {
 export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     if (!open) return
     setLoading(true)
-    supabase
-      .from('tasks')
-      .select('id, title, status, due_date, deal_id, is_life, is_entity, sort_order, created_at, deals(name, address)')
-      .in('status', ['open', 'in_progress'])
-      .order('created_at', { ascending: true })
-      .limit(200)
-      .then(({ data }) => {
+    setLoadError(false)
+    const run = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('id, title, status, due_date, deal_id, is_life, is_entity, sort_order, created_at, deals(name, address)')
+          .in('status', ['open', 'in_progress'])
+          .order('created_at', { ascending: true })
+          .limit(200)
+        if (error) {
+          console.error('[BattlePlanSheet] load error:', error)
+          setLoadError(true)
+          setLoading(false)
+          return
+        }
         if (!data) { setLoading(false); return }
         const today = todayCST()
         const sorted = [...(data as Task[])].sort((a, b) => {
@@ -108,7 +117,13 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
         })
         setTasks(sorted)
         setLoading(false)
-      })
+      } catch (e: unknown) {
+        console.error('[BattlePlanSheet] unexpected error:', e)
+        setLoadError(true)
+        setLoading(false)
+      }
+    }
+    run()
   }, [open])
 
   const today = todayCST()
@@ -129,6 +144,10 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
     >
       {loading ? (
         <SkeletonList />
+      ) : loadError ? (
+        <div style={{ padding: '32px 18px', textAlign: 'center' }}>
+          <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D' }}>Could not load — tap to retry</span>
+        </div>
       ) : tasks.length === 0 ? (
         <div style={{ padding: '32px 18px', textAlign: 'center' }}>
           <span style={{ ...styleT4, fontStyle: 'italic', opacity: 0.5 }}>No open tasks.</span>

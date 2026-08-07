@@ -137,6 +137,7 @@ interface DealsSheetProps {
 export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProps) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [search, setSearch] = useState(initialSearch)
   const [filter, setFilter] = useState<FilterStatus>('all')
   const searchRef = useRef<HTMLInputElement>(null)
@@ -145,15 +146,28 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
     if (!open) return
     setSearch(initialSearch)
     setLoading(true)
-    supabase
-      .from('deals')
-      .select('id, status, name, address, updated_at')
-      .order('address', { ascending: true })
-      .limit(200)
-      .then(({ data }) => {
+    setLoadError(false)
+    ;(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('deals')
+          .select('id, status, name, address, updated_at')
+          .order('address', { ascending: true })
+          .limit(200)
+        if (error) {
+          console.error('[DealsSheet] load error:', error)
+          setLoadError(true)
+          setLoading(false)
+          return
+        }
         setDeals((data ?? []) as Deal[])
         setLoading(false)
-      })
+      } catch (e: unknown) {
+        console.error('[DealsSheet] unexpected error:', e)
+        setLoadError(true)
+        setLoading(false)
+      }
+    })()
   }, [open, initialSearch])
 
   // Filter chips: ALL · HOT · UC · ACTIVE · PIPELINE · CLOSED
@@ -271,6 +285,10 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
       {/* Deal rows — alpha grouped */}
       {loading ? (
         <SkeletonList />
+      ) : loadError ? (
+        <div style={{ padding: '24px 18px', textAlign: 'center' }}>
+          <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D' }}>Could not load — tap to retry</span>
+        </div>
       ) : visible.length === 0 ? (
         <div style={{ padding: '24px 18px', textAlign: 'center' }}>
           <span style={{ ...styleT4, fontStyle: 'italic', opacity: 0.5 }}>No deals match.</span>
@@ -398,6 +416,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     // 3 most-recently-touched deals (any status)
@@ -411,8 +430,18 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
         .from('deals')
         .select('id', { count: 'exact', head: true }),
     ]).then(([recent, count]) => {
+      if (recent.error || count.error) {
+        console.error('[DealPipelineBand] load error:', recent.error ?? count.error)
+        setLoadError(true)
+        setLoading(false)
+        return
+      }
       setDeals((recent.data ?? []) as Deal[])
       setTotalCount(count.count ?? 0)
+      setLoading(false)
+    }).catch((e: unknown) => {
+      console.error('[DealPipelineBand] unexpected error:', e)
+      setLoadError(true)
       setLoading(false)
     })
   }, [])
@@ -472,7 +501,12 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
       </div>
 
       {/* 3 most-recently-touched deal rows */}
-      {!loading && deals.length > 0 && (
+      {!loading && loadError && (
+        <div style={{ padding: '8px 16px 12px', textAlign: 'center' }}>
+          <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D' }}>Could not load — tap to retry</span>
+        </div>
+      )}
+      {!loading && !loadError && deals.length > 0 && (
         <div style={{ padding: '0 16px' }}>
           {deals.map(deal => {
             const addr = dealAddress(deal)

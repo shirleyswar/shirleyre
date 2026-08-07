@@ -114,11 +114,15 @@ async function loadARData(): Promise<ARData> {
 export default function ReceivablesCard() {
   const [data, setData] = useState<ARData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     loadARData()
       .then(setData)
-      .catch(() => setData(null))
+      .catch((e: unknown) => {
+        console.error('[ReceivablesCard] load error:', e)
+        setLoadError(true)
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -156,6 +160,10 @@ export default function ReceivablesCard() {
           animation: 'shimmer 1.6s ease-in-out infinite',
           marginBottom: 8,
         }} />
+      ) : loadError ? (
+        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D', marginBottom: 6 }}>
+          Could not load — tap to retry
+        </div>
       ) : (
         <div style={{ ...styleD1, marginBottom: 6 }}>
           {formatCurrency(collected)}
@@ -164,7 +172,7 @@ export default function ReceivablesCard() {
 
       {/* T4 caption */}
       <div style={{ ...styleT4, marginBottom: 14 }}>
-        {loading ? '—' : 'collected'}
+        {loading ? '—' : loadError ? '' : 'collected'}
       </div>
 
       {/* §5.9 split progress bar: 4px, radius 2px, money-in + brand, no track */}

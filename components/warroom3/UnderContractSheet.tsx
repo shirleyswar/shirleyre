@@ -106,6 +106,7 @@ export default function UnderContractSheet({
   const [deals, setDeals] = useState<UCDeal[]>([])
   const [loading, setLoading] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     if (open && !loaded) load()
@@ -113,13 +114,20 @@ export default function UnderContractSheet({
 
   async function load() {
     setLoading(true)
+    setLoadError(false)
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('deals')
         .select('id, name, address, updated_at')
         .eq('status', 'under_contract')
         .order('updated_at', { ascending: false })
 
+      if (error) {
+        console.error('[UnderContractSheet] load error:', error)
+        setLoadError(true)
+        setLoading(false)
+        return
+      }
       if (!data || (data as any[]).length === 0) {
         setLoaded(true)
         setLoading(false)
@@ -177,7 +185,10 @@ export default function UnderContractSheet({
         }
       }))
       setLoaded(true)
-    } catch {}
+    } catch (e) {
+      console.error('[UnderContractSheet] unexpected error:', e)
+      setLoadError(true)
+    }
     setLoading(false)
   }
 
@@ -199,6 +210,10 @@ export default function UnderContractSheet({
               animation: 'shimmer 1.6s ease-in-out infinite',
             }} />
           ))}
+        </div>
+      ) : loadError ? (
+        <div style={{ textAlign: 'center', padding: '32px 18px', color: '#FF4D4D', fontFamily: FONT_DISPLAY, fontSize: 13 }}>
+          Could not load — tap to retry
         </div>
       ) : deals.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '32px 18px', color: T.textLow, fontFamily: FONT_DISPLAY, fontSize: 13 }}>

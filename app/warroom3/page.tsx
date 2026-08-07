@@ -111,6 +111,7 @@ interface TileStat {
   urgentCount: number
   urgentToken: 'late' | 'hot' | null
   panelKey: string
+  fetchFailed?: boolean
 }
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -173,10 +174,22 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       .limit(200),
   ])
 
-  const tasks     = (tasksRes.status     === 'fulfilled' ? tasksRes.value.data     : null) ?? []
-  const deadlines = (deadlinesRes.status === 'fulfilled' ? deadlinesRes.value.data : null) ?? []
-  const mmDeals   = (mmRes.status        === 'fulfilled' ? mmRes.value.data        : null) ?? []
-  const ucDeals   = (ucRes.status        === 'fulfilled' ? ucRes.value.data        : null) ?? []
+  // Treat PostgREST errors (fulfilled but error field set) same as rejected
+  const tasksData     = tasksRes.status     === 'fulfilled' && !tasksRes.value.error     ? tasksRes.value.data     : null
+  const deadlinesData = deadlinesRes.status === 'fulfilled' && !deadlinesRes.value.error ? deadlinesRes.value.data : null
+  const mmData        = mmRes.status        === 'fulfilled' && !mmRes.value.error        ? mmRes.value.data        : null
+  const ucData        = ucRes.status        === 'fulfilled' && !ucRes.value.error        ? ucRes.value.data        : null
+
+  // null means "fetch failed" — distinct from [] which means "confirmed empty"
+  const tasks     = tasksData     ?? []
+  const deadlines = deadlinesData ?? []
+  const mmDeals   = mmData        ?? []
+  const ucDeals   = ucData        ?? []
+
+  const tasksFailed     = tasksData     === null
+  const deadlinesFailed = deadlinesData === null
+  const mmFailed        = mmData        === null
+  const ucFailed        = ucData        === null
 
   // ── Hero card: nearest hard deadline, else oldest overdue task ──
   let hero: HeroItem | null = null
@@ -236,6 +249,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       urgentCount: bpOverdue > 0 ? bpOverdue : bpHot,
       urgentToken: bpOverdue > 0 ? 'late' : bpHot > 0 ? 'hot' : null,
       panelKey: 'battleplan',
+      fetchFailed: tasksFailed,
     },
     {
       label: 'Money Movers',
@@ -243,6 +257,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       urgentCount: mmHot,
       urgentToken: mmHot > 0 ? 'hot' : null,
       panelKey: 'moneymovers',
+      fetchFailed: mmFailed,
     },
     {
       label: 'Deadlines',
@@ -250,6 +265,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       urgentCount: dlOverdue > 0 ? dlOverdue : dlHot,
       urgentToken: dlOverdue > 0 ? 'late' : dlHot > 0 ? 'hot' : null,
       panelKey: 'deadlines',
+      fetchFailed: deadlinesFailed,
     },
     {
       label: 'Under Contract',
@@ -257,6 +273,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       urgentCount: 0,
       urgentToken: null,
       panelKey: 'undercontract',
+      fetchFailed: ucFailed,
     },
   ]
 
@@ -352,7 +369,7 @@ function HeroCard({ item, onAction }: { item: HeroItem; onAction?: () => void })
 // §7 tile press: scale 0.98, 90ms
 function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
   const [pressed, setPressed] = React.useState(false)
-  const hasSpine = stat.urgentToken !== null && stat.urgentCount > 0
+  const hasSpine = !stat.fetchFailed && stat.urgentToken !== null && stat.urgentCount > 0
   const spineColor = stat.urgentToken === 'late' ? T.late : stat.urgentToken === 'hot' ? T.hot : T.brand
   // §5.2: spined row gets 5% tint of accent as bg
   const spineBg = stat.urgentToken === 'late'
@@ -411,20 +428,31 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
 
       {/* Row 1: D2 figure left, T5 status right */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4 }}>
-        {/* D2 §3.2: 32px / 700 / -0.03em / text-hi */}
-        <span style={{
-          fontFamily: FONT_DISPLAY,
-          fontSize: 32,
-          fontWeight: 700,
-          letterSpacing: '-0.03em',
-          color: T.textHi,
-          lineHeight: 1,
-          fontVariantNumeric: 'tabular-nums',
-        }}>
-          {stat.count}
-        </span>
+        {/* D2 §3.2: 32px / 700 / -0.03em / text-hi — or error indicator */}
+        {stat.fetchFailed ? (
+          <span style={{
+            fontFamily: FONT_DISPLAY,
+            fontSize: 24,
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: '#FF4D4D',
+            lineHeight: 1,
+          }}>!</span>
+        ) : (
+          <span style={{
+            fontFamily: FONT_DISPLAY,
+            fontSize: 32,
+            fontWeight: 700,
+            letterSpacing: '-0.03em',
+            color: T.textHi,
+            lineHeight: 1,
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            {stat.count}
+          </span>
+        )}
         {/* T5 §3.2: JetBrains Mono 9px / 500 / 0.11em / UPPER */}
-        {statusNote ? (
+        {!stat.fetchFailed && statusNote ? (
           <span style={{
             fontFamily: FONT_MONO,
             fontSize: 9,
@@ -437,6 +465,17 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
           }}>
             {statusNote}
           </span>
+        ) : stat.fetchFailed ? (
+          <span style={{
+            fontFamily: FONT_MONO,
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: '0.11em',
+            textTransform: 'uppercase',
+            color: '#FF4D4D',
+            lineHeight: 1,
+            marginTop: 4,
+          }}>ERR</span>
         ) : null}
       </div>
 
