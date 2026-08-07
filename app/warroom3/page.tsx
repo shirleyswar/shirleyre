@@ -17,6 +17,7 @@ import MoneyMoversSheet from '@/components/warroom3/MoneyMoversSheet'
 import DeadlinesSheet from '@/components/warroom3/DeadlinesSheet'
 import UnderContractSheet from '@/components/warroom3/UnderContractSheet'
 import { supabase } from '@/lib/supabase'
+import { formatAddress } from '@/lib/formatAddress'
 
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
 const SESSION_KEY = 'wr3_session_exp'
@@ -110,6 +111,7 @@ interface TileStat {
   count: number
   urgentCount: number
   urgentToken: 'late' | 'hot' | null
+  urgentLabel?: string // override chip text (e.g. 'URGENT' for date-proximity vs deal-status 'HOT')
   panelKey: string
   fetchFailed?: boolean
 }
@@ -197,7 +199,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
   if (deadlines.length > 0) {
     const nearest = deadlines[0] as any
     const days = daysUntil(nearest.deadline_date)
-    const dealName = nearest.deals?.address || nearest.deals?.name || 'Deal'
+    const dealName = formatAddress(nearest.deals?.address) || nearest.deals?.name || 'Deal'
     const typeLabel = (nearest.deadline_type as string).replace(/_/g, ' ')
     hero = {
       title: `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} deadline${days === 0 ? ' — TODAY' : ` in ${days} day${days === 1 ? '' : 's'}`}`,
@@ -210,7 +212,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
     const overdue = (tasks as any[]).filter(t => t.due_date && t.due_date < today)
     if (overdue.length > 0) {
       const oldest = overdue[overdue.length - 1]
-      const deal = (oldest.deals as any)?.address || (oldest.deals as any)?.name || null
+      const deal = formatAddress((oldest.deals as any)?.address) || (oldest.deals as any)?.name || null
       hero = {
         title: oldest.title || 'Overdue task',
         subtitle: deal || '',
@@ -264,6 +266,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       count: dlTotal,
       urgentCount: dlOverdue > 0 ? dlOverdue : dlHot,
       urgentToken: dlOverdue > 0 ? 'late' : dlHot > 0 ? 'hot' : null,
+      urgentLabel: dlOverdue > 0 ? 'LATE' : 'URGENT', // date urgency, not deal status
       panelKey: 'deadlines',
       fetchFailed: deadlinesFailed,
     },
@@ -284,7 +287,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
 // §5.10: bg rgba(255,255,255,0.03), border-default, radius 20px, padding 20px,
 // late spine. T2 eyebrow → 12px → D3 statement → 9px → T4 location →
 // 17px → primary + secondary button row.
-function HeroCard({ item, onAction }: { item: HeroItem; onAction?: () => void }) {
+function HeroCard({ item, onAction, onDismiss }: { item: HeroItem; onAction?: () => void; onDismiss?: () => void }) {
   const spineColor = item.accentToken === 'late' ? T.late : item.accentToken === 'hot' ? T.hot : T.brand
   const eyebrow = item.type === 'deadline' ? 'DEADLINE' : 'OVERDUE TASK'
 
@@ -337,6 +340,7 @@ function HeroCard({ item, onAction }: { item: HeroItem; onAction?: () => void })
           Open
         </button>
         <button
+          onClick={onDismiss}
           style={{
             flex: 1,
             // §5.4 Secondary: border rgba(255,255,255,0.13), color text-mid, radius 9px
@@ -385,9 +389,10 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
     ? T.hot
     : T.textLow
 
-  // Status note text: "5 LATE" | "2 HOT" | "LANDED" (money-in) | neutral count in text-low
+  // Status note text: uses urgentLabel if provided, else "LATE" / "HOT"
+  const chipLabel = stat.urgentLabel ?? (stat.urgentToken === 'late' ? 'LATE' : 'HOT')
   const statusNote = stat.urgentCount > 0
-    ? `${stat.urgentCount} ${stat.urgentToken === 'late' ? 'LATE' : 'HOT'}`
+    ? `${stat.urgentCount} ${chipLabel}`
     : ''
 
   return (
@@ -588,7 +593,10 @@ function HomeScreen({
         }} />
       ) : hero ? (
         <div style={{ marginBottom: 26 }}>
-          <HeroCard item={hero} />
+          <HeroCard
+            item={hero}
+            onDismiss={() => setHero(null)}
+          />
         </div>
       ) : null /* §5.10: if nothing qualifies, card is not rendered */}
 

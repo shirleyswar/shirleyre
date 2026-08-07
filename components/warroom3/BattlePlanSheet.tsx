@@ -154,7 +154,7 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
         </div>
       ) : tasks.length === 0 ? (
         <div style={{ padding: '32px 18px', textAlign: 'center' }}>
-          <span style={{ ...styleT4, fontStyle: 'italic', opacity: 0.5 }}>No open tasks.</span>
+          <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textLow }}>No open tasks.</span>
         </div>
       ) : (
         <div style={{ padding: '0 18px' }}>

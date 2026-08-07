@@ -249,24 +249,37 @@ export default function MoneyMoversSheet({
                   marginBottom: idx < deals.length - 1 ? 8 : 0,
                 }}
               >
-                {/* Row 1: address + commission (money-in) or value */}
+                {/* Row 1: address + commission (money-in green) / value (white) — mirrors desktop HotPanel */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                   <span style={{ ...styleT3, fontSize: 14 }}>{addr}</span>
-                  {(commLabel || priceLabel) && (
-                    <span style={{
-                      fontFamily: FONT_MONO,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: T.hot,
-                      letterSpacing: '-0.01em',
-                      flexShrink: 0,
-                      fontVariantNumeric: 'tabular-nums',
-                    }}>
-                      {commLabel ?? priceLabel}
-                    </span>
-                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                    {commLabel && (
+                      <span style={{
+                        fontFamily: FONT_MONO,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: '#34D399', // money-in green — commission only
+                        letterSpacing: '-0.01em',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {commLabel}
+                      </span>
+                    )}
+                    {priceLabel && (
+                      <span style={{
+                        fontFamily: FONT_MONO,
+                        fontSize: 10,
+                        fontWeight: 500,
+                        color: T.textMid, // value in white/muted — not green
+                        letterSpacing: '-0.01em',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {priceLabel}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {/* Row 2: deal name + time */}
+                {/* Row 2: client subline (deal.name) + time — mirrors desktop HotPanel second line */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   {name ? (
                     <span style={{ ...styleT4, fontSize: 11 }}>{name}</span>

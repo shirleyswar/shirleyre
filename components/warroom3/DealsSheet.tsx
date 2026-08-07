@@ -302,7 +302,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
         </div>
       ) : visible.length === 0 ? (
         <div style={{ padding: '24px 18px', textAlign: 'center' }}>
-          <span style={{ ...styleT4, fontStyle: 'italic', opacity: 0.5 }}>No deals match.</span>
+          <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textLow }}>No deals match.</span>
         </div>
       ) : (
         <div style={{ padding: '0 18px' }}>
