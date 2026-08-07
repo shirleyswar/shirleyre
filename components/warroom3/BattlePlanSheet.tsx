@@ -83,6 +83,7 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
     if (!open) return
@@ -124,7 +125,7 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
       }
     }
     run()
-  }, [open])
+  }, [open, retryCount]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const today = todayCST()
 
@@ -139,14 +140,17 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
       open={open}
       onClose={onClose}
       label="Battle Plan"
-      count={tasks.length}
+      count={loadError ? undefined : tasks.length}
       size="list"
     >
       {loading ? (
         <SkeletonList />
       ) : loadError ? (
         <div style={{ padding: '32px 18px', textAlign: 'center' }}>
-          <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D' }}>Could not load — tap to retry</span>
+          <span
+            onClick={() => setRetryCount(c => c + 1)}
+            style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D', cursor: 'pointer' }}
+          >Could not load — tap to retry</span>
         </div>
       ) : tasks.length === 0 ? (
         <div style={{ padding: '32px 18px', textAlign: 'center' }}>

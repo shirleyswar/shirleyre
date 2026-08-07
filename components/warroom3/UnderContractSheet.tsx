@@ -212,7 +212,10 @@ export default function UnderContractSheet({
           ))}
         </div>
       ) : loadError ? (
-        <div style={{ textAlign: 'center', padding: '32px 18px', color: '#FF4D4D', fontFamily: FONT_DISPLAY, fontSize: 13 }}>
+        <div
+          onClick={() => { setLoadError(false); setLoaded(false) }}
+          style={{ textAlign: 'center', padding: '32px 18px', color: '#FF4D4D', fontFamily: FONT_DISPLAY, fontSize: 13, cursor: 'pointer' }}
+        >
           Could not load — tap to retry
         </div>
       ) : deals.length === 0 ? (

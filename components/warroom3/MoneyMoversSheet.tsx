@@ -65,10 +65,9 @@ interface HotDeal {
   address: string | null
   notes: string | null
   updated_at: string | null
-  // actual deals table columns for price
-  value: number | null
-  commission_estimated: number | null
-  type: string | null
+  // computed from deal_economics / uc_details — mirrors HotPanel.tsx
+  computedValue: number | null
+  computedCommission: number | null
 }
 
 function formatCurrency(n: number | null | undefined): string {
@@ -106,19 +105,89 @@ export default function MoneyMoversSheet({
   async function load() {
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      // Step 1: fetch hot deals
+      const { data: dealsData, error: dealsErr } = await supabase
         .from('deals')
-        .select('id, name, address, notes, updated_at, value, commission_estimated, type')
+        .select('id, name, address, notes, updated_at')
         .eq('status', 'hot')
         .order('updated_at', { ascending: false })
         .limit(100)
-      if (error) {
-        console.error('[MoneyMoversSheet] load error:', error)
-        setLoadError(true)
-        setLoading(false)
-        return
+      if (dealsErr) {
+        console.error('[MoneyMoversSheet] deals error:', dealsErr)
+        setLoadError(true); setLoading(false); return
       }
-      setDeals((data ?? []) as HotDeal[])
+      const dealList = (dealsData ?? []) as any[]
+      if (dealList.length === 0) {
+        setDeals([]); setLoaded(true); setLoading(false); return
+      }
+      const ids = dealList.map((d: any) => d.id)
+
+      // Step 2: deal_economics (primary) — exact HotPanel.tsx predicate and columns
+      const { data: econData } = await supabase
+        .from('deal_economics')
+        .select('deal_id, asking_price, sale_commission_pct, lease_rate_psf, lease_term_years, lease_commission_pct, sqft, transaction_type')
+        .in('deal_id', ids)
+
+      // Step 3: uc_details (fallback) — exact HotPanel.tsx fallback columns
+      const { data: ucData } = await supabase
+        .from('uc_details')
+        .select('deal_id, contract_price, commission_pct, commission_amount')
+        .in('deal_id', ids)
+
+      // Build economics map
+      const econMap: Record<string, any> = {}
+      for (const e of (econData ?? []) as any[]) {
+        econMap[e.deal_id] = e
+      }
+      const ucMap: Record<string, any> = {}
+      for (const u of (ucData ?? []) as any[]) {
+        ucMap[u.deal_id] = u
+      }
+
+      // Step 4: compute value and commission — exact HotPanel.tsx formula
+      // transaction_type 'both': treat as sale branch (same logic HotPanel uses — map[e.deal_id]
+      // is set once using the sale formula; lease branch only runs when type === 'lease').
+      const computed = dealList.map((deal: any) => {
+        const e = econMap[deal.id]
+        const u = ucMap[deal.id]
+        let computedValue: number | null = null
+        let computedCommission: number | null = null
+
+        if (e) {
+          const isLease = e.transaction_type === 'lease'
+          if (isLease) {
+            const leaseGross = e.sqft && e.lease_rate_psf && e.lease_term_years
+              ? Math.round(e.sqft * e.lease_rate_psf * e.lease_term_years) : null
+            const leaseComm = leaseGross && e.lease_commission_pct
+              ? Math.round(leaseGross * (e.lease_commission_pct / 100) * 0.75) : null
+            computedValue = leaseGross
+            computedCommission = leaseComm
+          } else {
+            // sale or both — HotPanel uses sale formula for 'both'
+            const price = e.asking_price ?? null
+            const pct = e.sale_commission_pct ?? null
+            computedCommission = price && pct ? Math.round(price * (pct / 100) * 0.75) : null
+            computedValue = price
+          }
+        } else if (u) {
+          const price = u.contract_price ?? null
+          const pct = u.commission_pct ?? null
+          computedCommission = u.commission_amount ?? (price && pct ? Math.round(price * (pct / 100) * 0.75) : null)
+          computedValue = price
+        }
+
+        return {
+          id: deal.id,
+          name: deal.name,
+          address: deal.address,
+          notes: deal.notes,
+          updated_at: deal.updated_at,
+          computedValue,
+          computedCommission,
+        } as HotDeal
+      })
+
+      setDeals(computed)
       setLoaded(true)
     } catch (e) {
       console.error('[MoneyMoversSheet] unexpected error:', e)
@@ -148,7 +217,10 @@ export default function MoneyMoversSheet({
           ))}
         </div>
       ) : loadError ? (
-        <div style={{ textAlign: 'center', padding: '32px 18px', color: '#FF4D4D', fontFamily: FONT_DISPLAY, fontSize: 13 }}>
+        <div
+          onClick={() => { setLoadError(false); setLoaded(false) }}
+          style={{ textAlign: 'center', padding: '32px 18px', color: '#FF4D4D', fontFamily: FONT_DISPLAY, fontSize: 13, cursor: 'pointer' }}
+        >
           Could not load — tap to retry
         </div>
       ) : deals.length === 0 ? (
@@ -160,8 +232,9 @@ export default function MoneyMoversSheet({
           {deals.map((deal, idx) => {
             const addr = formatAddress(deal.address) || deal.name || '—'
             const name = (deal.name ?? '').replace(/^📁\s*/, '')
-            const priceLabel = deal.value ? formatCurrency(deal.value) : null
-            const commLabel = deal.commission_estimated ? formatCurrency(deal.commission_estimated) : null
+            // Commission primary, value fallback — mirrors HotPanel display logic
+            const commLabel = deal.computedCommission ? formatCurrency(deal.computedCommission) : null
+            const priceLabel = deal.computedValue ? formatCurrency(deal.computedValue) : null
 
             return (
               <div

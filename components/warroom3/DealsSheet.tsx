@@ -286,7 +286,18 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
       {loading ? (
         <SkeletonList />
       ) : loadError ? (
-        <div style={{ padding: '24px 18px', textAlign: 'center' }}>
+        <div
+          onClick={() => { setLoadError(false); setDeals([]); setLoading(true);
+            ;(async () => {
+              try {
+                const { data, error } = await supabase.from('deals').select('id, status, name, address, updated_at').order('address', { ascending: true }).limit(200)
+                if (error) { setLoadError(true); setLoading(false); return }
+                setDeals((data ?? []) as Deal[]); setLoading(false)
+              } catch { setLoadError(true); setLoading(false) }
+            })()
+          }}
+          style={{ padding: '24px 18px', textAlign: 'center', cursor: 'pointer' }}
+        >
           <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D' }}>Could not load — tap to retry</span>
         </div>
       ) : visible.length === 0 ? (
@@ -465,7 +476,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
         <span style={{
           fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500,
           color: T.textLow, fontVariantNumeric: 'tabular-nums',
-        }}>{loading ? '—' : totalCount}</span>
+        }}>{loading ? '—' : loadError ? '' : totalCount}</span>
       </div>
 
       {/* Search field — §5.5, tapping opens sheet with pre-populated query */}
@@ -502,7 +513,19 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
 
       {/* 3 most-recently-touched deal rows */}
       {!loading && loadError && (
-        <div style={{ padding: '8px 16px 12px', textAlign: 'center' }}>
+        <div
+          onClick={() => {
+            setLoadError(false); setLoading(true)
+            Promise.all([
+              supabase.from('deals').select('id, status, name, address, updated_at').order('updated_at', { ascending: false }).limit(3),
+              supabase.from('deals').select('id', { count: 'exact', head: true }),
+            ]).then(([recent, count]) => {
+              if (recent.error || count.error) { setLoadError(true); setLoading(false); return }
+              setDeals((recent.data ?? []) as Deal[]); setTotalCount(count.count ?? 0); setLoading(false)
+            }).catch(() => { setLoadError(true); setLoading(false) })
+          }}
+          style={{ padding: '8px 16px 12px', textAlign: 'center', cursor: 'pointer' }}
+        >
           <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D' }}>Could not load — tap to retry</span>
         </div>
       )}
@@ -587,7 +610,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
             WebkitTapHighlightColor: 'transparent',
           } as React.CSSProperties}
         >
-          Browse all {loading ? '…' : totalCount}
+          Browse all {loading ? '…' : loadError ? '…' : totalCount}
         </button>
       </div>
     </div>

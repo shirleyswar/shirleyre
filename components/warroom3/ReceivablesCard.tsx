@@ -85,6 +85,10 @@ async function loadARData(): Promise<ARData> {
       .limit(200),
   ])
 
+  // Treat PostgREST errors as fetch failures — throw so caller can set loadError
+  if (itemsRes.error) throw new Error(`ar_items: ${itemsRes.error.message}`)
+  if (paymentsRes.error) throw new Error(`ar_payments: ${paymentsRes.error.message}`)
+
   const items    = (itemsRes.data    ?? []) as any[]
   const payments = (paymentsRes.data ?? []) as any[]
 
@@ -116,15 +120,19 @@ export default function ReceivablesCard() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
 
-  useEffect(() => {
+  function load() {
+    setLoading(true)
+    setLoadError(false)
     loadARData()
-      .then(setData)
+      .then(d => { setData(d); setLoading(false) })
       .catch((e: unknown) => {
         console.error('[ReceivablesCard] load error:', e)
         setLoadError(true)
+        setLoading(false)
       })
-      .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const collected   = data?.collected   ?? 0
   const outstanding = data?.outstanding ?? 0
@@ -161,7 +169,10 @@ export default function ReceivablesCard() {
           marginBottom: 8,
         }} />
       ) : loadError ? (
-        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D', marginBottom: 6 }}>
+        <div
+          onClick={load}
+          style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D', marginBottom: 6, cursor: 'pointer' }}
+        >
           Could not load — tap to retry
         </div>
       ) : (
@@ -175,29 +186,29 @@ export default function ReceivablesCard() {
         {loading ? '—' : loadError ? '' : 'collected'}
       </div>
 
-      {/* §5.9 split progress bar: 4px, radius 2px, money-in + brand, no track */}
-      <div style={{
-        display: 'flex',
-        height: 4,
-        borderRadius: 2,
-        overflow: 'hidden',
-        marginBottom: 14,
-      }}>
-        {/* Collected portion — money-in */}
+      {/* §5.9 split progress bar — hidden during error state */}
+      {!loadError && (
         <div style={{
-          flex: loading ? 0.5 : pctCollected,
-          background: T.moneyIn,
-          borderRadius: '2px 0 0 2px',
-          transition: 'flex 0.6s ease',
-        }} />
-        {/* Remaining portion — brand */}
-        <div style={{
-          flex: loading ? 0.5 : 1 - pctCollected,
-          background: T.brand,
-          borderRadius: '0 2px 2px 0',
-          transition: 'flex 0.6s ease',
-        }} />
-      </div>
+          display: 'flex',
+          height: 4,
+          borderRadius: 2,
+          overflow: 'hidden',
+          marginBottom: 14,
+        }}>
+          <div style={{
+            flex: loading ? 0.5 : pctCollected,
+            background: T.moneyIn,
+            borderRadius: '2px 0 0 2px',
+            transition: 'flex 0.6s ease',
+          }} />
+          <div style={{
+            flex: loading ? 0.5 : 1 - pctCollected,
+            background: T.brand,
+            borderRadius: '0 2px 2px 0',
+            transition: 'flex 0.6s ease',
+          }} />
+        </div>
+      )}
 
       {/* Footer row: outstanding in brand-lift · deal count in mono */}
       <div style={{
