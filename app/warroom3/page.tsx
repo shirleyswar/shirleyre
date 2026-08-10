@@ -148,18 +148,19 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       .in('status', ['open', 'in_progress'])
       .order('created_at', { ascending: true })
       .limit(200),
-    // Deadlines: 45-day window, not satisfied — matches SchedulePanel liveDeadlines
+    // Deadlines: CLASS A FIX — past-due pinned, forward 45-day window, missed loaded.
+    // OLD predicate (retired): deadline_date >= today AND deadline_date <= today+45 AND status != 'satisfied'
+    // NEW: three subqueries unified below. For tile/hero we need past-due + forward counts.
+    // Tile count = pastDue + forward (missed acknowledged, not counted).
+    // Hero priority: oldest past-due beats any forward deadline (Part 3).
     supabase
       .from('contract_deadlines')
       .select('id, deadline_type, deadline_date, status, deals(name, address)')
-      .neq('status', 'satisfied')
-      .gte('deadline_date', today)
-      .lte('deadline_date', (() => {
-        const d = new Date(); d.setDate(d.getDate() + 45)
-        return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-      })())
+      .in('status', ['pending', 'extended', 'missed'])
+      .not('status', 'eq', 'satisfied')
+      // No date filter — fetch all unsatisfied so we can split by date client-side
       .order('deadline_date', { ascending: true })
-      .limit(50),
+      .limit(100),
     // Money Movers: status = 'hot' ONLY — exact HotPanel predicate
     // HotPanel.tsx: supabase.from('deals').select('*').eq('status','hot')
     // HOT chip count = same result set length (every row IS hot)
@@ -193,11 +194,42 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
   const mmFailed        = mmData        === null
   const ucFailed        = ucData        === null
 
-  // ── Hero card: nearest hard deadline, else oldest overdue task ──
+  // ── Split deadlines by group (CLASS A FIX) ──────────────────────────────────
+  const allDeadlines = deadlines as any[]
+  const cutoffStr = (() => {
+    const d = new Date(); d.setDate(d.getDate() + 45)
+    return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  })()
+
+  // past-due: status pending/extended AND deadline_date < today (not missed — those are acknowledged)
+  const dlPastDue = allDeadlines.filter((d: any) =>
+    ['pending','extended'].includes(d.status) && d.deadline_date < today
+  )
+  // forward: status pending/extended AND within 45-day window
+  const dlForward = allDeadlines.filter((d: any) =>
+    ['pending','extended'].includes(d.status) && d.deadline_date >= today && d.deadline_date <= cutoffStr
+  )
+  // missed: acknowledged blown — not counted in tile but still in data
+  // const dlMissed = allDeadlines.filter((d: any) => d.status === 'missed')
+
+  // ── Hero card: Part 3 — oldest past-due outranks any forward deadline ──────
   let hero: HeroItem | null = null
 
-  if (deadlines.length > 0) {
-    const nearest = deadlines[0] as any
+  if (dlPastDue.length > 0) {
+    // Oldest past-due wins hero (already sorted ASC from query)
+    const oldest = dlPastDue[0] as any
+    const days = daysUntil(oldest.deadline_date)   // negative
+    const dealName = formatAddress(oldest.deals?.address) || oldest.deals?.name || 'Deal'
+    const typeLabel = (oldest.deadline_type as string).replace(/_/g, ' ')
+    const absDays = Math.abs(days)
+    hero = {
+      title: `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} — PAST DUE ${absDays === 1 ? '1 day' : `${absDays} days`} ago`,
+      subtitle: dealName,
+      accentToken: 'late',
+      type: 'deadline',
+    }
+  } else if (dlForward.length > 0) {
+    const nearest = dlForward[0] as any
     const days = daysUntil(nearest.deadline_date)
     const dealName = formatAddress(nearest.deals?.address) || nearest.deals?.name || 'Deal'
     const typeLabel = (nearest.deadline_type as string).replace(/_/g, ' ')
@@ -222,24 +254,23 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
     }
   }
 
-  // ── Tile counts — each mirrors its /warroom panel source ──
+  // ── Tile counts ──────────────────────────────────────────────────────────────
   const allTasks = tasks as any[]
-  const allDeadlines = deadlines as any[]
 
-  // Battle Plan: open/in_progress tasks — same population as BattlePlanPanel
+  // Battle Plan: open/in_progress tasks
   const bpTotal = allTasks.length
   const bpOverdue = allTasks.filter(t => t.due_date && t.due_date < today).length
   const bpHot = allTasks.filter(t => t.due_date && t.due_date >= today && daysUntil(t.due_date) <= 7).length
 
   // Money Movers: exact HotPanel predicate = status='hot'. All results ARE hot.
-  // Total and HOT chip both come from the same result set — agreement by construction.
   const mmTotal = mmDeals.length
-  const mmHot = mmDeals.length  // every deal in result has status=hot
+  const mmHot = mmDeals.length
 
-  // Deadlines: 45-day window, not satisfied — same as SchedulePanel liveDeadlines
-  const dlTotal = allDeadlines.length
-  const dlOverdue = allDeadlines.filter((d: any) => daysUntil(d.deadline_date) < 0).length
-  const dlHot = allDeadlines.filter((d: any) => { const days = daysUntil(d.deadline_date); return days >= 0 && days <= 7 }).length
+  // Deadlines tile (CLASS A FIX): count = pastDue + forward (missed not counted — acknowledged)
+  // OLD: dlTotal = allDeadlines.length (forward-only, past-due invisible)
+  const dlTotal = dlPastDue.length + dlForward.length
+  const dlOverdue = dlPastDue.length   // all past-due pending rows
+  const dlHot = dlForward.filter((d: any) => { const days = daysUntil(d.deadline_date); return days >= 0 && days <= 7 }).length
 
   // Under Contract: same as UnderContractPanel
   const ucTotal = ucDeals.length

@@ -15,8 +15,10 @@ interface ScheduleEvent {
   location: string | null
   deal_id: string | null
   created_at: string
-  isDeadline?: boolean  // synthetic flag for contract deadlines
+  isDeadline?: boolean      // synthetic flag for contract deadlines
   deadlineType?: string
+  deadlineStatus?: string   // CLASS A FIX: pending / extended / missed / satisfied
+  deadlineNotes?: string | null
 }
 
 interface DealOption {
@@ -351,18 +353,24 @@ export default function SchedulePanel() {
   async function fetchContractDeadlines() {
     try {
       const today = todayCST()
-      // Show deadlines within the next 45 days
+      // CLASS A FIX (2026-08-10): fetch past-due + forward + missed.
+      // OLD predicate (retired): deadline_date >= today AND deadline_date <= today+45 AND status != 'satisfied'
+      // NEW: no lower date bound — past-due deadlines must render, not silently vanish.
       const cutoff = new Date()
       cutoff.setDate(cutoff.getDate() + 45)
       const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const { data } = await supabase
         .from('contract_deadlines')
-        .select('id, label, deadline_date, deadline_type, status, deal_id')
-        .gte('deadline_date', today)
+        .select('id, label, deadline_date, deadline_type, status, notes, deal_id')
+        .not('status', 'eq', 'satisfied')
+        // Past-due: no lower bound. Forward: cap at +45 days. Include missed.
+        // Filter: (deadline_date <= cutoff AND status IN ('pending','extended')) OR status='missed'
+        // Supabase does not support OR across columns cleanly — fetch all unsatisfied within
+        // a wide window and filter client-side. Wide window: 5 years back, 45 days forward.
+        .gte('deadline_date', (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 5); return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) })())
         .lte('deadline_date', cutoffStr)
-        .neq('status', 'satisfied')
         .order('deadline_date', { ascending: true })
-        .limit(60)
+        .limit(120)
 
       if (!data) return
 
@@ -379,17 +387,34 @@ export default function SchedulePanel() {
         }
       }
 
-      const synth: ScheduleEvent[] = data.map((d: any) => ({
-        id: `deadline-${d.id}`,
-        title: d.label,
-        time: '11:59 PM',
-        date: d.deadline_date,
-        location: dealMap[d.deal_id] || null,
-        deal_id: d.deal_id,
-        created_at: d.deadline_date,
-        isDeadline: true,
-        deadlineType: d.deadline_type,
-      }))
+      // CLASS A FIX: separate past-due and missed from forward.
+      // Past-due pending/extended → pin above forward, render red + PAST DUE label.
+      // Missed → render gray+strikethrough below forward.
+      // Gray-for-past-due is RETIRED per Part 2.
+      const today2 = todayCST()
+      const cutoffStr2 = cutoffStr
+
+      const synth: ScheduleEvent[] = data
+        // Include: past-due pending/extended, forward pending/extended (≤45d), missed
+        .filter((d: any) => {
+          if (d.status === 'missed') return true
+          if (['pending','extended'].includes(d.status) && d.deadline_date < today2) return true
+          if (['pending','extended'].includes(d.status) && d.deadline_date >= today2 && d.deadline_date <= cutoffStr2) return true
+          return false
+        })
+        .map((d: any) => ({
+          id: `deadline-${d.id}`,
+          title: d.label,
+          time: '11:59 PM',
+          date: d.deadline_date,
+          location: dealMap[d.deal_id] || null,
+          deal_id: d.deal_id,
+          created_at: d.deadline_date,
+          isDeadline: true,
+          deadlineType: d.deadline_type,
+          deadlineStatus: d.status,
+          deadlineNotes: d.notes,
+        }))
 
       setContractDeadlines(synth)
     } catch {}
@@ -483,10 +508,24 @@ export default function SchedulePanel() {
     })
     .sort((a, b) => a.date.localeCompare(b.date) || rawTo24h(a.time || '').localeCompare(rawTo24h(b.time || '')))
 
-  // Contract deadlines only — already filtered to ≤45 days out by fetch
+  // CLASS A FIX: liveDeadlines now includes past-due (no lower-date filter).
+  // Sort: past-due pending (oldest first) → forward by date → missed.
   const liveDeadlines = contractDeadlines
-    .filter(e => e.date >= nowStr.slice(0, 10))
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice() // don't mutate
+    .sort((a: any, b: any) => {
+      const today3 = todayCST()
+      const aIsMissed = (a as any).deadlineStatus === 'missed'
+      const bIsMissed = (b as any).deadlineStatus === 'missed'
+      const aPastDue = !aIsMissed && a.date < today3
+      const bPastDue = !bIsMissed && b.date < today3
+      // Past-due first
+      if (aPastDue && !bPastDue) return -1
+      if (!aPastDue && bPastDue) return 1
+      // Missed last
+      if (aIsMissed && !bIsMissed) return 1
+      if (!aIsMissed && bIsMissed) return -1
+      return a.date.localeCompare(b.date)
+    })
 
   // Group calendar events by date
   const grouped: { date: string; events: ScheduleEvent[] }[] = []
@@ -667,7 +706,7 @@ export default function SchedulePanel() {
               Contract Deadlines
             </span>
             <div style={{ flex: 1, height: 1, background: 'rgba(139,92,246,0.18)' }} />
-            <span style={{ fontSize: 9, color: 'rgba(167,139,250,0.6)', fontWeight: 600 }}>Next 45 days</span>
+            <span style={{ fontSize: 9, color: 'rgba(167,139,250,0.6)', fontWeight: 600 }}>Past due + next 45 days</span>
           </div>
 
           {/* Deadline groups by date — text-mid #8B8A9B per spec: beyond-7-day = neutral */}
@@ -764,26 +803,51 @@ function EventRow({
     )
   }
 
-  // Contract deadline — redesigned for readability
+  // Contract deadline row — CLASS A FIX (2026-08-10)
+  // Part 2: gray-for-past-due RETIRED. Past-due → red + persistent PAST DUE label.
+  // Part 4: missed → gray with strikethrough, sorted below live past-due.
   if (event.isDeadline) {
-    // Days until deadline
-    const today = new Date(); today.setHours(0,0,0,0)
+    const evAny = event as any
+    const deadlineStatus: string = evAny.deadlineStatus || 'pending'
+    const deadlineNotes: string | null = evAny.deadlineNotes || null
+    const isMissed = deadlineStatus === 'missed'
+
+    const today3 = new Date(); today3.setHours(0, 0, 0, 0)
     const due = new Date(event.date + 'T00:00:00')
-    const daysOut = Math.round((due.getTime() - today.getTime()) / 86400000)
-    const isToday = daysOut === 0
-    const isUrgent = daysOut <= 3
-    const isSoon = daysOut <= 7
+    const daysOut = Math.round((due.getTime() - today3.getTime()) / 86400000)
+    const isPastDue = daysOut < 0 && !isMissed
 
-    // Urgency color
-    // Urgency color — spec tokens only (§2.4):
-    // 0–1 days = late #FF4D4D | 2–7 days = hot #FFA23A | 8+ days = neutral text-mid #8B8A9B
-    const urgentColor = isToday ? '#FF4D4D' : isUrgent ? '#FFA23A' : isSoon ? '#FFA23A' : '#8B8A9B'
-    const urgentBg = isToday ? 'rgba(255,77,77,0.12)' : isUrgent ? 'rgba(255,162,58,0.12)' : isSoon ? 'rgba(255,162,58,0.08)' : 'rgba(255,255,255,0.03)'
-    const urgentBorder = isToday ? 'rgba(255,77,77,0.4)' : isUrgent ? 'rgba(255,162,58,0.35)' : isSoon ? 'rgba(255,162,58,0.25)' : 'rgba(255,255,255,0.08)'
+    // Part 2: color logic — gray-for-past-due RETIRED
+    // past-due pending → red | 0–1d → red | 2–7d → orange | 8+d → neutral | missed → gray
+    const urgentColor = isMissed
+      ? '#5C5B6B'
+      : isPastDue || daysOut <= 1 ? '#FF4D4D'
+      : daysOut <= 7 ? '#FFA23A'
+      : '#8B8A9B'
 
-    const daysLabel = isToday ? 'TODAY' : daysOut === 1 ? '1 day' : `${daysOut} days`
+    const urgentBg = isMissed
+      ? 'rgba(255,255,255,0.015)'
+      : isPastDue ? 'rgba(255,77,77,0.09)'
+      : daysOut <= 1 ? 'rgba(255,77,77,0.12)'
+      : daysOut <= 7 ? 'rgba(255,162,58,0.08)'
+      : 'rgba(255,255,255,0.03)'
 
-    // Type label — capitalize and clean up
+    const urgentBorder = isMissed
+      ? 'rgba(255,255,255,0.05)'
+      : isPastDue ? 'rgba(255,77,77,0.45)'
+      : daysOut <= 1 ? 'rgba(255,77,77,0.4)'
+      : daysOut <= 7 ? 'rgba(255,162,58,0.3)'
+      : 'rgba(255,255,255,0.08)'
+
+    const absDays = Math.abs(daysOut)
+    const daysLabel = isMissed
+      ? (daysOut < 0 ? `${absDays}d past` : daysOut === 0 ? 'TODAY' : `${daysOut}d`)
+      : isPastDue
+      ? (absDays === 1 ? '1 day ago' : `${absDays} days ago`)
+      : daysOut === 0 ? 'TODAY'
+      : daysOut === 1 ? '1 day'
+      : `${daysOut} days`
+
     const typeLabel = (event.deadlineType || 'deadline')
       .replace(/_/g, ' ')
       .replace(/\b\w/g, c => c.toUpperCase())
@@ -794,50 +858,88 @@ function EventRow({
         background: urgentBg,
         borderRadius: 7,
         border: `1px solid ${urgentBorder}`,
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        opacity: isMissed ? 0.6 : 1,
+        position: 'relative',
       }}>
+        {/* PAST DUE badge — Part 2: persistent label so it reads as blown, not imminent */}
+        {isPastDue && (
+          <div style={{
+            position: 'absolute', top: 7, right: 8,
+            background: 'rgba(255,77,77,0.15)',
+            border: '1px solid rgba(255,77,77,0.4)',
+            borderRadius: 4,
+            padding: '2px 6px',
+            fontSize: 8, fontWeight: 700,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: '#FF4D4D',
+          }}>PAST DUE</div>
+        )}
+
         {/* Days countdown */}
         <div style={{
-          flexShrink: 0, minWidth: 46, textAlign: 'center',
+          flexShrink: 0, minWidth: 54, textAlign: 'center',
           padding: '4px 6px',
-          background: isToday || isUrgent ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.15)',
+          background: 'rgba(0,0,0,0.2)',
           borderRadius: 5,
+          marginTop: 1,
         }}>
-          <div style={{ fontSize: isToday ? 10 : 14, fontWeight: 800, color: urgentColor, lineHeight: 1, letterSpacing: isToday ? '0.06em' : 0 }}>
+          <div style={{
+            fontSize: isPastDue || isMissed ? 9 : daysOut === 0 ? 10 : 14,
+            fontWeight: 800, color: urgentColor, lineHeight: 1,
+            letterSpacing: (isPastDue || daysOut === 0) ? '0.04em' : 0,
+            textDecoration: isMissed ? 'line-through' : 'none',
+          }}>
             {daysLabel}
           </div>
-          {!isToday && (
+          {!isPastDue && !isMissed && daysOut !== 0 && (
             <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>out</div>
           )}
         </div>
 
-        {/* Title + property — 2-line wrap, never truncate addresses */}
+        {/* Title + property */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.35, fontWeight: 600,
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
-            overflow: 'hidden', wordBreak: 'break-word' }}>
+          <div style={{
+            fontSize: 13, color: isMissed ? '#6B7280' : '#e2e8f0',
+            lineHeight: 1.35, fontWeight: 600,
+            textDecoration: isMissed ? 'line-through' : 'none',
+            display: '-webkit-box', WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+            overflow: 'hidden', wordBreak: 'break-word',
+            paddingRight: isPastDue ? 72 : 0,  // clear PAST DUE badge
+          }}>
             {event.title}
           </div>
           {event.location && (
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2,
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
-              overflow: 'hidden', wordBreak: 'break-word' }}>
+            <div style={{
+              fontSize: 11, color: isMissed ? '#4B5563' : '#94a3b8', marginTop: 2,
+              display: '-webkit-box', WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+              overflow: 'hidden', wordBreak: 'break-word',
+            }}>
               {event.location}
+            </div>
+          )}
+          {/* Missed note */}
+          {isMissed && deadlineNotes && (
+            <div style={{ fontSize: 10, color: '#4B5563', marginTop: 3, fontStyle: 'italic' }}>
+              {deadlineNotes}
             </div>
           )}
         </div>
 
         {/* Type badge */}
-        <div style={{
-          fontSize: 9, fontWeight: 700, color: urgentColor,
-          letterSpacing: '0.07em', textTransform: 'uppercase', flexShrink: 0,
-          padding: '2px 7px',
-          background: 'rgba(0,0,0,0.2)',
-          borderRadius: 4,
-          border: `1px solid ${urgentBorder}`,
-        }}>
-          {typeLabel}
-        </div>
+        {!isPastDue && (
+          <div style={{
+            fontSize: 9, fontWeight: 700, color: urgentColor,
+            letterSpacing: '0.07em', textTransform: 'uppercase', flexShrink: 0,
+            padding: '2px 7px', background: 'rgba(0,0,0,0.2)',
+            borderRadius: 4, border: `1px solid ${urgentBorder}`,
+            marginTop: 1,
+          }}>
+            {typeLabel}
+          </div>
+        )}
       </div>
     )
   }
