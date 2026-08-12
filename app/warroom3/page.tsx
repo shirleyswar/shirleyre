@@ -555,25 +555,22 @@ function HomeScreen({
       overflowY: 'auto',
       overflowX: 'hidden',
       // §4.1 screen gutter 18px + §5.7 bottom pad 104px
-      // Outer padding-top: 8px (not 14px) to pass §11 check 0: WAR ROOM wordmark ≤72px from viewport top.
-      // Geometry: 52(status) + 8(this) + 11.5(text center in 40px row) = 71.5px ≤ 72px. ✓
-      // The identity row's internal padding-top:14px is unchanged — that governs the row's tap target.
-      padding: '8px 18px 104px',
+      // Outer padding-top: 5px to pass §11 check 0 after 29b mark grew 40→48px.
+      // Geometry: 52(status) + 5(this) + 14.5(text center in 48px row, 19px font) = 71.5px ≤ 72px. ✓
+      // Previous 8px was sized for 40px row. 48px row shifts center down — padding recalculated.
+      padding: '5px 18px 104px',
       background: T.bgBase,
     }}>
-      {/* §6.2 Identity row — locked design 15c. ONE flex row, align-items:center, gap:12, 40px tall.
-          Directive items 1+2: one line (not stacked), no dead space above.
-          Mark 40×40 mark-64.png (geometric, <120px). WAR ROOM in D4 mono. Date T2 right. Search edge.
-          No dead space: padding-top 14px is the only gap from status area. */}
+      {/* §6.2 Identity row — locked design 15c, scaled per 29b (12 Aug 2026). ONE flex row, 48px tall.
+          29b changes: mark 40→48px · WAR ROOM D4 17→19px · date T2→T1 text-low · 34px circle retired → bare magnifier. */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        height: 40,
+        height: 48,
         marginBottom: 18,
       }}>
-        {/* 40px geometric mark — mark-64.png, flex:none, no radius, no plate, no CSS glow §17.1 */}
-        {/* Radial halo behind the mark only, not on it §6.2 */}
+        {/* §6.2 + 29b: 48px geometric mark (was 40px). mark-64.png, flex:none, no radius, no plate, no CSS glow. */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <div style={{
             position: 'absolute',
@@ -583,14 +580,14 @@ function HomeScreen({
             pointerEvents: 'none',
           }} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/mark-64.png" alt="" width={40} height={40} style={{ display: 'block', position: 'relative' }} />
+          <img src="/icons/mark-64.png" alt="" width={48} height={48} style={{ display: 'block', position: 'relative' }} />
         </div>
 
-        {/* D4 §3.2 — WAR ROOM — JetBrains Mono 17px / 700 / 0.13em / UPPER / #F7F6FB.
-            Exactly one use per screen. Not D3, not Space Grotesk. */}
+        {/* §3.2 D4 + 29b: WAR ROOM — JetBrains Mono 19px / 700 / 0.13em / UPPER / #F7F6FB.
+            Level moves from 17→19 because it has exactly one use (the level moves with the use). */}
         <span style={{
           fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 17,
+          fontSize: 19,
           fontWeight: 700,
           letterSpacing: '0.13em',
           textTransform: 'uppercase',
@@ -601,31 +598,39 @@ function HomeScreen({
           WAR ROOM
         </span>
 
-        {/* flex:1 spacer pushes date and search to the right */}
         <div style={{ flex: 1 }} />
 
-        {/* T2 §3.2 date — right-aligned §6.2 */}
-        <span style={{ ...styleT2, whiteSpace: 'nowrap' }}>{dateLabel}</span>
+        {/* §6.2 + 29b: date rebinds to T1 at text-low (was T2). */}
+        <span style={{
+          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+          fontSize: 10.5,
+          fontWeight: 500,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: T.textLow,
+          lineHeight: 1,
+          whiteSpace: 'nowrap',
+        }}>{dateLabel}</span>
 
-        {/* 34px round search button, flex:none §6.2 */}
+        {/* §6.2 + 29b: 34px circle button RETIRED. Bare 22px magnifier, stroke 1.7, text-low.
+            Inside 44×44 hit target. Matches §5.11.6 quiet-control pattern. */}
         <button
           style={{
-            width: 34,
-            height: 34,
-            borderRadius: '50%',
-            background: T.bgRaise,
-            border: '1px solid rgba(255,255,255,0.08)',
+            width: 44,
+            height: 44,
+            background: 'transparent',
+            border: 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
             flexShrink: 0,
             WebkitTapHighlightColor: 'transparent',
-            minWidth: 44, minHeight: 44,
+            padding: 0,
           } as React.CSSProperties}
           aria-label="Search"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={T.textLow} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </button>
