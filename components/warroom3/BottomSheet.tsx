@@ -36,6 +36,19 @@ interface BottomSheetProps {
   size?: 'list' | 'short'
   // §5.8 authorized deviation: Deals sheet replaces count with + PORTFOLIO pill
   headerAction?: React.ReactNode
+  // 31a: override header label style (T0 for Deals sheet vs T1 elsewhere)
+  labelStyle?: React.CSSProperties
+  // 31a: override grab handle dimensions
+  handleW?: number
+  handleH?: number
+  handleRadius?: number
+  handleOpacity?: string
+  // 31a: override header row height
+  headerHeight?: number
+  // 31a: count style override (M2 for Deals)
+  countStyle?: React.CSSProperties
+  // 31a check 7: suppress the × close button — FAB-× handles close for Deals sheet
+  noCloseButton?: boolean
 }
 
 export default function BottomSheet({
@@ -46,6 +59,14 @@ export default function BottomSheet({
   children,
   size = 'list',
   headerAction,
+  labelStyle,
+  handleW = 38,
+  handleH = 4,
+  handleRadius = 2,
+  handleOpacity = 'rgba(255,255,255,0.18)',
+  headerHeight,
+  countStyle,
+  noCloseButton = false,
 }: BottomSheetProps) {
   const prefersReduced = useReducedMotion()
   const sheetTop = size === 'short' ? 112 : 78
@@ -128,8 +149,9 @@ export default function BottomSheet({
               overflow: 'hidden',
             }}
           >
-            {/* Grab handle — 38×4px, rgba(255,255,255,0.18), radius 2, centred, 10px from top.
-                §18.9: wired to drag-to-dismiss. Routes through onClose (caller guards discard). */}
+            {/* Grab handle — default 38×4px r2 rgba(255,255,255,0.18); overrideable via props.
+                31a: Deals sheet uses 48×5px r3 rgba(255,255,255,.22).
+                §18.9: wired to drag-to-dismiss. */}
             <div
               onTouchStart={handleGrabTouchStart}
               onTouchEnd={handleGrabTouchEnd}
@@ -143,14 +165,15 @@ export default function BottomSheet({
               }}
             >
               <div style={{
-                width: 38,
-                height: 4,
-                borderRadius: 2,
-                background: 'rgba(255,255,255,0.18)',
+                width: handleW,
+                height: handleH,
+                borderRadius: handleRadius,
+                background: handleOpacity,
               }} />
             </div>
 
-            {/* Header row: T1 label · hairline · count · 28px close button */}
+            {/* Header row: label · hairline · count. Height overrideable (31a: 44px).
+                Check 6: exactly three children — title, hairline, count. No extra elements. */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -159,11 +182,12 @@ export default function BottomSheet({
               paddingRight: 18,
               paddingBottom: 14,
               flexShrink: 0,
+              ...(headerHeight ? { height: headerHeight, paddingBottom: 0 } : {}),
             }}>
-              <span style={styleT1}>{label}</span>
+              <span style={{ ...styleT1, ...labelStyle }}>{label}</span>
               {/* Hairline */}
               <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-              {/* Count — or headerAction replacing it (§5.8 Deals sheet deviation) */}
+              {/* Count — style overrideable (31a: M2 at text-low) */}
               {headerAction ?? (count !== undefined && (
                 <span style={{
                   fontFamily: FONT_MONO,
@@ -172,12 +196,13 @@ export default function BottomSheet({
                   color: '#5C5B6B',
                   letterSpacing: '0.04em',
                   fontVariantNumeric: 'tabular-nums',
+                  ...countStyle,
                 }}>
                   {count}
                 </span>
               ))}
-              {/* 28px round close button — min 44px tap area via padding */}
-              <button
+              {/* 28px round close button — suppressed when noCloseButton=true (check 7: FAB-× handles close) */}
+              {!noCloseButton && <button
                 onClick={onClose}
                 aria-label="Close"
                 style={{
@@ -202,7 +227,7 @@ export default function BottomSheet({
                   <line x1="18" y1="6" x2="6" y2="18"/>
                   <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
-              </button>
+              </button>}
             </div>
 
             {/* Internal scroll container — padding-bottom 104px §5.7/§5.8 */}

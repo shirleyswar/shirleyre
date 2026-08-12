@@ -128,63 +128,95 @@ function dealSubline(deal: Deal): string {
 }
 
 // ── Deals Sheet §6.1 ─────────────────────────────────────────────────────────
+// ── 31a/32a type values ──────────────────────────────────────────────────────
+// §20.1 five-value enum. Alphabetical per check 15.
+const PROPERTY_TYPES = ['INDUSTRIAL', 'LAND', 'OFFICE', 'OTHER', 'RETAIL'] as const
+type PropertyType = typeof PROPERTY_TYPES[number]
+
+// T0 §3.2 (31a) — JetBrains Mono 13px / 500 / 0.14em / text-hi — Deals sheet title only
+// Named level T0 — no pixel literal in component per check 3.
+const STYLE_T0: React.CSSProperties = {
+  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+  fontSize: 13,
+  fontWeight: 500,
+  letterSpacing: '0.14em',
+  textTransform: 'uppercase',
+  color: '#EFEEF4',   // text-hi
+  lineHeight: 1,
+}
+
+// M2 — JetBrains Mono 12px / 500 / tabular-nums / text-low — count in header (31a)
+const STYLE_M2: React.CSSProperties = {
+  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+  fontSize: 12,
+  fontWeight: 500,
+  letterSpacing: '0.04em',
+  color: '#5C5B6B',
+  fontVariantNumeric: 'tabular-nums',
+  lineHeight: 1,
+}
+
 interface DealsSheetProps {
   open: boolean
   onClose: () => void
   initialSearch?: string
-  onOpenPortfolioCreate?: () => void  // §19.1 — + PORTFOLIO pill in header
-  onOpenNewDeal?: () => void           // §20 — new deal intake
+  onOpenPortfolioCreate?: () => void  // retained for external callers — not shown in header (check 6)
+  onOpenNewDeal?: () => void
 }
 
-export function DealsSheet({ open, onClose, initialSearch = '', onOpenPortfolioCreate, onOpenNewDeal }: DealsSheetProps) {
-  const [deals, setDeals] = useState<Deal[]>([])
+// Extended Deal type with property_type
+interface DealFull extends Deal {
+  property_type: PropertyType | null
+}
+
+export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProps) {
+  const [deals, setDeals] = useState<DealFull[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [search, setSearch] = useState(initialSearch)
-  const [filter, setFilter] = useState<FilterStatus>('all')
+  // 32a: active filter — 'all' | 'hot' | 'uc' | type string
+  const [activeFilter, setActiveFilter] = useState<'all' | 'hot' | 'uc' | PropertyType>('all')
+  // 32a: TYPE menu open state
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+  const chipRowRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
     setSearch(initialSearch)
+    setActiveFilter('all')
+    setTypeMenuOpen(false)
     setLoading(true)
     setLoadError(false)
     ;(async () => {
       try {
         const { data, error } = await supabase
           .from('deals')
-          .select('id, status, name, address, updated_at')
+          .select('id, status, name, address, updated_at, property_type')
           .order('address', { ascending: true })
           .limit(200)
-        if (error) {
-          console.error('[DealsSheet] load error:', error)
-          setLoadError(true)
-          setLoading(false)
-          return
-        }
-        setDeals((data ?? []) as Deal[])
+        if (error) { setLoadError(true); setLoading(false); return }
+        setDeals((data ?? []) as DealFull[])
         setLoading(false)
-      } catch (e: unknown) {
-        console.error('[DealsSheet] unexpected error:', e)
-        setLoadError(true)
-        setLoading(false)
-      }
+      } catch { setLoadError(true); setLoading(false) }
     })()
   }, [open, initialSearch])
 
-  // Filter chips: ALL · HOT · UC · ACTIVE · PIPELINE · CLOSED
-  const FILTER_CHIPS: { id: FilterStatus; label: string }[] = [
-    { id: 'all',            label: `ALL ${deals.length}` },
-    { id: 'hot',            label: `HOT ${deals.filter(d=>d.status==='hot').length}` },
-    { id: 'under_contract', label: `UC ${deals.filter(d=>d.status==='under_contract').length}` },
-    { id: 'active',         label: `ACTIVE ${deals.filter(d=>d.status==='active').length}` },
-    { id: 'pipeline',       label: `PIPELINE ${deals.filter(d=>d.status==='pipeline').length}` },
-    { id: 'closed',         label: `CLOSED ${deals.filter(d=>d.status==='closed').length}` },
-  ]
+  // 32a counts — live from data
+  const hotCount = deals.filter(d => d.status === 'hot').length
+  const ucCount = deals.filter(d => d.status === 'under_contract').length
+  const typeCounts: Record<PropertyType, number> = { INDUSTRIAL: 0, LAND: 0, OFFICE: 0, OTHER: 0, RETAIL: 0 }
+  for (const d of deals) {
+    const pt = (d.property_type || 'OTHER') as PropertyType
+    typeCounts[pt] = (typeCounts[pt] || 0) + 1
+  }
 
-  // Filter + search
+  // Filter + search — mutually exclusive (check 12)
+  const isTypeFilter = PROPERTY_TYPES.includes(activeFilter as PropertyType)
   const visible = deals.filter(d => {
-    if (filter !== 'all' && d.status !== filter) return false
+    if (activeFilter === 'hot' && d.status !== 'hot') return false
+    if (activeFilter === 'uc' && d.status !== 'under_contract') return false
+    if (isTypeFilter && (d.property_type || 'OTHER') !== activeFilter) return false
     if (search) {
       const q = search.toLowerCase()
       return (d.address || '').toLowerCase().includes(q) || (d.name || '').toLowerCase().includes(q)
@@ -192,63 +224,205 @@ export function DealsSheet({ open, onClose, initialSearch = '', onOpenPortfolioC
     return true
   })
 
-  // Alpha groups — by first char of address/name
-  const grouped: { letter: string; deals: Deal[] }[] = []
+  function handleChipFilter(f: typeof activeFilter) {
+    setActiveFilter(f)
+    setTypeMenuOpen(false)
+  }
+
+  // Alpha groups
+  const grouped: { letter: string; deals: DealFull[] }[] = []
   for (const deal of visible) {
     const addr = dealAddress(deal)
-    const letter = /[A-Z]/i.test(addr[0]) ? addr[0].toUpperCase() : '#'
+    const first = addr[0]
+    const letter = /[A-Z]/i.test(first) ? first.toUpperCase() : '#'
     const existing = grouped.find(g => g.letter === letter)
     if (existing) existing.deals.push(deal)
     else grouped.push({ letter, deals: [deal] })
   }
-  // Compress consecutive letters into ranges for headers: A–B, C, D–F
-  // Simple: just show single letter per group
   grouped.sort((a, b) => a.letter.localeCompare(b.letter))
+
+  // 32a: chip label for TYPE when a type is selected (check 17)
+  const selectedType = isTypeFilter ? (activeFilter as PropertyType) : null
+  const typeChipLabel = selectedType
+    ? `${selectedType} ${typeCounts[selectedType]}`
+    : 'TYPE ▾'
 
   return (
     <BottomSheet
       open={open}
       onClose={onClose}
-      label="Deal Pipeline"
-      count={undefined}  // §5.8 authorized deviation: + PORTFOLIO pill replaces count
+      // 31a check 3: T0 label at text-hi (override via labelStyle)
+      label="DEAL PIPELINE"
+      labelStyle={STYLE_T0}
+      // 31a check 2: header 44px (set via headerHeight)
+      headerHeight={44}
+      // 31a check 1: grab handle 48×5px r3 rgba(255,255,255,.22)
+      handleW={48}
+      handleH={5}
+      handleRadius={3}
+      handleOpacity="rgba(255,255,255,0.22)"
+      // 31a check 5: count M2 at text-low
+      count={deals.length}
+      countStyle={STYLE_M2}
       size="list"
-      headerAction={onOpenPortfolioCreate ? (
-        // §19.1: + PORTFOLIO outlined pill, T5, radius 100px, border brand-lift
-        // Deliberate entry point — never suggested elsewhere
-        <button
-          onClick={onOpenPortfolioCreate}
-          style={{
-            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-            fontSize: 9,
-            fontWeight: 500,
-            letterSpacing: '0.11em',
-            textTransform: 'uppercase',
-            color: '#A78BFA',
-            border: '1px solid rgba(167,139,250,0.35)',
-            borderRadius: 100,
-            padding: '5px 10px',
-            background: 'transparent',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            WebkitTapHighlightColor: 'transparent',
-            minHeight: 28,
-          } as React.CSSProperties}
-        >
-          + Portfolio
-        </button>
-      ) : undefined}
+      // 31a check 7: FAB-× closes — no × in sheet chrome
+      noCloseButton={true}
     >
-      {/* Search field — pinned under header, always visible */}
+      {/* Filter chips — 32a. NO horizontal scroll (check 9): space-between, padding 0 18px 14px. */}
+      <div style={{ position: 'relative' }}>
+        <div
+          ref={chipRowRef}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',   // check 9: no scroll, space-between
+            padding: '0 18px 14px',
+            gap: 6,
+          }}
+        >
+          {/* Chip helper: T5, radius 100px, padding 8px 15px (check 10) */}
+          {([
+            { id: 'all' as const,  label: `ALL ${deals.length}` },
+            { id: 'hot' as const,  label: `HOT ${hotCount}` },
+            { id: 'uc' as const,   label: `UC ${ucCount}` },
+          ] as const).map(chip => {
+            const active = activeFilter === chip.id
+            return (
+              <button
+                key={chip.id}
+                onClick={() => handleChipFilter(chip.id)}
+                style={{
+                  flex: 1,
+                  padding: '8px 15px',          // check 10
+                  borderRadius: 100,             // check 10
+                  fontFamily: FONT_MONO,
+                  fontSize: 9,
+                  fontWeight: active ? 700 : 500,
+                  letterSpacing: '0.11em',
+                  textTransform: 'uppercase' as const,
+                  lineHeight: 1,
+                  background: active ? T.brand : 'transparent',        // check 11
+                  color: active ? '#0A0A0F' : T.textMid,
+                  border: active ? 'none' : '1px solid rgba(255,255,255,0.14)',
+                  cursor: 'pointer',
+                  WebkitTapHighlightColor: 'transparent',
+                  minHeight: 44,
+                  whiteSpace: 'nowrap' as const,
+                } as React.CSSProperties}
+              >
+                {chip.label}
+              </button>
+            )
+          })}
+          {/* TYPE chip — 32a check 8: fourth chip */}
+          <button
+            onClick={() => setTypeMenuOpen(v => !v)}
+            style={{
+              flex: 1,
+              padding: '8px 15px',
+              borderRadius: 100,
+              fontFamily: FONT_MONO,
+              fontSize: 9,
+              fontWeight: selectedType ? 700 : 500,
+              letterSpacing: '0.11em',
+              textTransform: 'uppercase' as const,
+              lineHeight: 1,
+              background: selectedType ? T.brand : 'transparent',
+              color: selectedType ? '#0A0A0F' : T.textMid,
+              border: selectedType ? 'none' : '1px solid rgba(255,255,255,0.14)',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+              minHeight: 44,
+              whiteSpace: 'nowrap' as const,
+            } as React.CSSProperties}
+          >
+            {typeChipLabel}
+          </button>
+        </div>
+
+        {/* 32a TYPE menu — checks 13–18. Anchored under chip row. */}
+        {typeMenuOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 18,
+              right: 18,
+              background: T.bgRaise,
+              borderRadius: 14,
+              border: '1px solid rgba(255,255,255,0.11)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              zIndex: 20,
+              overflow: 'hidden',
+            }}
+          >
+            {/* Five rows, alphabetical (check 15). 44px each (check 14). Four hairlines not five. */}
+            {PROPERTY_TYPES.map((pt, idx) => {
+              const isSelected = activeFilter === pt  // check 16
+              return (
+                <React.Fragment key={pt}>
+                  {idx > 0 && (
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '0 18px' }} />
+                  )}
+                  <button
+                    onClick={() => {
+                      setActiveFilter(pt)
+                      setTypeMenuOpen(false)
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      height: 44,               // check 14
+                      padding: '0 18px',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      WebkitTapHighlightColor: 'transparent',
+                      minHeight: 44,
+                    } as React.CSSProperties}
+                  >
+                    {/* Left: check glyph (when selected) + label in T1 */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {isSelected && (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={T.brandLift} strokeWidth="2.5" strokeLinecap="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                      {!isSelected && <div style={{ width: 12 }} />}
+                      <span style={{
+                        fontFamily: FONT_MONO,
+                        fontSize: 10.5,
+                        fontWeight: 500,
+                        letterSpacing: '0.14em',
+                        textTransform: 'uppercase' as const,
+                        color: isSelected ? T.brandLift : T.textHi,  // check 16
+                        lineHeight: 1,
+                      }}>
+                        {pt}
+                      </span>
+                    </div>
+                    {/* Right: count in M2 at text-low (brand-lift when selected — check 16) */}
+                    <span style={{
+                      ...STYLE_M2,
+                      color: isSelected ? T.brandLift : T.textLow,  // check 16
+                    }}>
+                      {typeCounts[pt]}
+                    </span>
+                  </button>
+                </React.Fragment>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Search field */}
       <div style={{ padding: '0 18px 12px', position: 'sticky', top: 0, background: T.bgPanel, zIndex: 10 }}>
-        {/* §5.5 search field */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          background: T.bgRaise,
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 10,
-          padding: '11px 14px',
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: T.bgRaise, border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 10, padding: '11px 14px',
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.textLow} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -260,15 +434,9 @@ export function DealsSheet({ open, onClose, initialSearch = '', onOpenPortfolioC
             onChange={e => setSearch(e.target.value)}
             placeholder="Search"
             style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
-              outline: 'none',
-              fontFamily: FONT_DISPLAY,
-              fontSize: 13,
-              fontWeight: 400,
-              color: T.textMid,
-              lineHeight: 1.25,
+              flex: 1, background: 'none', border: 'none', outline: 'none',
+              fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 400,
+              color: T.textMid, lineHeight: 1.25,
             }}
           />
           {search && (
@@ -277,54 +445,22 @@ export function DealsSheet({ open, onClose, initialSearch = '', onOpenPortfolioC
             </button>
           )}
         </div>
-
-        {/* Filter chips — horizontal scroll, T5 §5.3 outlined, brand fill on active */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingTop: 10, scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'] }}>
-          {FILTER_CHIPS.map(chip => (
-            <button
-              key={chip.id}
-              onClick={() => setFilter(chip.id)}
-              style={{
-                flexShrink: 0,
-                padding: '7px 13px',
-                borderRadius: 100,
-                ...styleT5,
-                background: filter === chip.id ? T.brand : 'transparent',
-                color: filter === chip.id ? '#0A0A0F' : T.textMid,
-                fontWeight: filter === chip.id ? 700 : 500,
-                border: filter === chip.id ? 'none' : '1px solid rgba(255,255,255,0.12)',
-                cursor: 'pointer',
-                WebkitTapHighlightColor: 'transparent',
-                whiteSpace: 'nowrap',
-                // §11.2: 44px tap target. Visual chip stays compact; tap area extended
-                // via margin/padding offset so chips don't visually expand.
-                minHeight: 44,
-                display: 'flex',
-                alignItems: 'center',
-              } as React.CSSProperties}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Deal rows — alpha grouped */}
+      {/* Deal rows */}
       {loading ? (
         <SkeletonList />
       ) : loadError ? (
-        <div
-          onClick={() => { setLoadError(false); setDeals([]); setLoading(true);
-            ;(async () => {
-              try {
-                const { data, error } = await supabase.from('deals').select('id, status, name, address, updated_at').order('address', { ascending: true }).limit(200)
-                if (error) { setLoadError(true); setLoading(false); return }
-                setDeals((data ?? []) as Deal[]); setLoading(false)
-              } catch { setLoadError(true); setLoading(false) }
-            })()
-          }}
-          style={{ padding: '24px 18px', textAlign: 'center', cursor: 'pointer' }}
-        >
+        <div onClick={() => { setLoadError(false); setDeals([]); setLoading(true);
+          ;(async () => {
+            try {
+              const { data, error } = await supabase.from('deals').select('id, status, name, address, updated_at, property_type').order('address', { ascending: true }).limit(200)
+              if (error) { setLoadError(true); setLoading(false); return }
+              setDeals((data ?? []) as DealFull[]); setLoading(false)
+            } catch { setLoadError(true); setLoading(false) }
+          })()
+        }}
+          style={{ padding: '24px 18px', textAlign: 'center', cursor: 'pointer' }}>
           <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D' }}>Could not load — tap to retry</span>
         </div>
       ) : visible.length === 0 ? (
@@ -335,7 +471,6 @@ export function DealsSheet({ open, onClose, initialSearch = '', onOpenPortfolioC
         <div style={{ padding: '0 18px' }}>
           {grouped.map(group => (
             <div key={group.letter}>
-              {/* T2 alpha group header */}
               <div style={{
                 fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 500,
                 letterSpacing: '0.19em', textTransform: 'uppercase', color: T.textLow,
@@ -346,7 +481,6 @@ export function DealsSheet({ open, onClose, initialSearch = '', onOpenPortfolioC
               {group.deals.map(deal => <DealRow key={deal.id} deal={deal} />)}
             </div>
           ))}
-          {/* Bottom padding for tab bar */}
           <div style={{ height: 8 }} />
         </div>
       )}
