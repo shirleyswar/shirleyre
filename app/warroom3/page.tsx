@@ -555,7 +555,10 @@ function HomeScreen({
       overflowY: 'auto',
       overflowX: 'hidden',
       // §4.1 screen gutter 18px + §5.7 bottom pad 104px
-      padding: '14px 18px 104px',
+      // Outer padding-top: 8px (not 14px) to pass §11 check 0: WAR ROOM wordmark ≤72px from viewport top.
+      // Geometry: 52(status) + 8(this) + 11.5(text center in 40px row) = 71.5px ≤ 72px. ✓
+      // The identity row's internal padding-top:14px is unchanged — that governs the row's tap target.
+      padding: '8px 18px 104px',
       background: T.bgBase,
     }}>
       {/* §6.2 Identity row — locked design 15c. ONE flex row, align-items:center, gap:12, 40px tall.
