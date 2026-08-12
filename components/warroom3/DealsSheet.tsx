@@ -327,94 +327,26 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
   )
 }
 
-function DealRow({ deal }: { deal: Deal }) {
-  const spine = getRowSpine(deal.status)
-  const spineBg = deal.status === 'hot'
-    ? 'rgba(255,162,58,0.05)'
-    : deal.status === 'under_contract'
-    ? 'rgba(139,92,246,0.05)'
-    : 'transparent'
+// §5.11 DealRow — uses ListRow. NO border, NO radius, NO fill. Quiet ↗ glyph §5.11.6.
+// §10 item 13: The brand-tinted 30px ↗ button is RETIRED. Bare glyph only.
+import ListRow from '@/components/warroom3/ListRow'
 
-  const addr = dealAddress(deal)
-  const sub  = dealSubline(deal)
-  const pill = STATUS_LABELS[deal.status] ?? deal.status.toUpperCase()
-  const pillStyle = statusPillStyle(deal.status)
+function DealRow({ deal }: { deal: Deal }) {
+  const addr  = dealAddress(deal)
+  const sub   = dealSubline(deal)
+  const spine = getRowSpine(deal.status)
+  const lacdbUrl = `/warroom/deal?id=${deal.id}`
 
   return (
-    <div style={{
-      position: 'relative',
-      overflow: 'hidden',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      padding: spine ? '12px 12px 12px 15px' : '12px 12px',
-      borderRadius: 10,
-      border: '1px solid rgba(255,255,255,0.05)',
-      background: spine ? spineBg : 'rgba(255,255,255,0.02)',
-      marginBottom: 6,
-      minHeight: 44,
-    }}>
-      {spine && (
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: spine }} />
-      )}
-
-      {/* Address + sub-line */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          ...styleT3, fontSize: 14,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{addr}</div>
-        {sub && (
-          <div style={{
-            ...styleT4,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            marginTop: 2,
-          }}>{sub}</div>
-        )}
-      </div>
-
-      {/* Status pill §5.3 */}
-      <span style={{
-        ...styleT5,
-        ...pillStyle,
-        padding: '5px 8px',
-        borderRadius: 4,
-        flexShrink: 0,
-        fontWeight: deal.status === 'hot' ? 700 : 500,
-      }}>
-        {pill}
-      </span>
-
-      {/* ↗ link-out — brand tinted, 30px, radius 9 per §6.1 */}
-      <a
-        href={`/warroom/deal?id=${deal.id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={e => e.stopPropagation()}
-        aria-label="Open deal"
-        style={{
-          flexShrink: 0,
-          width: 30,
-          height: 30,
-          borderRadius: 9,
-          background: 'rgba(139,92,246,0.12)',
-          border: '1px solid rgba(139,92,246,0.25)',
-          color: T.brandLift,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textDecoration: 'none',
-          fontSize: 14,
-          lineHeight: 1,
-          // Extend tap target
-          margin: -7,
-          padding: 7,
-          WebkitTapHighlightColor: 'transparent',
-        } as React.CSSProperties}
-      >
-        ↗
-      </a>
-    </div>
+    <ListRow
+      title={addr}
+      subline={sub || undefined}
+      status={deal.status}
+      showPill={true}
+      spineColor={spine}
+      lacdbUrl={lacdbUrl}
+      onLinkOut={() => window.open(lacdbUrl, '_blank', 'noopener,noreferrer')}
+    />
   )
 }
 

@@ -9,7 +9,7 @@
 // - Motion §7: y 100%→0, spring stiffness 320 damping 34; scrim 180ms linear
 // - prefers-reduced-motion: opacity-only fallback
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useReducedMotion, type Transition } from 'framer-motion'
 
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
@@ -47,6 +47,20 @@ export default function BottomSheet({
   const prefersReduced = useReducedMotion()
   const sheetTop = size === 'short' ? 112 : 78
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  // §18.9 — wire the grab handle to drag-to-dismiss.
+  // Routes through onClose (which the caller guards via discard logic before passing).
+  // × button stays regardless — drag is not keyboard-accessible.
+  const dragStartY = useRef<number | null>(null)
+  const handleGrabTouchStart = useCallback((e: React.TouchEvent) => {
+    dragStartY.current = e.touches[0].clientY
+  }, [])
+  const handleGrabTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (dragStartY.current === null) return
+    const delta = e.changedTouches[0].clientY - dragStartY.current
+    dragStartY.current = null
+    if (delta > 60) onClose()
+  }, [onClose])
 
   // Lock body scroll while sheet is open
   useEffect(() => {
@@ -111,14 +125,20 @@ export default function BottomSheet({
               overflow: 'hidden',
             }}
           >
-            {/* Grab handle — 38×4px, rgba(255,255,255,0.18), radius 2, centred, 10px from top */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              paddingTop: 10,
-              paddingBottom: 14,
-              flexShrink: 0,
-            }}>
+            {/* Grab handle — 38×4px, rgba(255,255,255,0.18), radius 2, centred, 10px from top.
+                §18.9: wired to drag-to-dismiss. Routes through onClose (caller guards discard). */}
+            <div
+              onTouchStart={handleGrabTouchStart}
+              onTouchEnd={handleGrabTouchEnd}
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                paddingTop: 10,
+                paddingBottom: 14,
+                flexShrink: 0,
+                cursor: 'grab',
+              }}
+            >
               <div style={{
                 width: 38,
                 height: 4,

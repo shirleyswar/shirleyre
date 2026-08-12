@@ -16,6 +16,8 @@ import ReceivablesCard from '@/components/warroom3/ReceivablesCard'
 import MoneyMoversSheet from '@/components/warroom3/MoneyMoversSheet'
 import DeadlinesSheet from '@/components/warroom3/DeadlinesSheet'
 import UnderContractSheet from '@/components/warroom3/UnderContractSheet'
+import QuickActionsSheet from '@/components/warroom3/QuickActionsSheet'
+import VoiceNoteSheet from '@/components/warroom3/VoiceNoteSheet'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 
@@ -522,7 +524,8 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
 }
 
 // ── Home Screen §6 ────────────────────────────────────────────────────────────
-type SheetId = 'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract'
+// §18: 'quickactions' and 'voicenote' added — FAB opens QA when idle
+type SheetId = 'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract' | 'quickactions' | 'voicenote'
 
 function HomeScreen({
   onTilePress,
@@ -715,6 +718,19 @@ function HomeScreen({
         onClose={() => setOpenSheet(null)}
       />
 
+      {/* §18 Quick Actions — FAB's sheet */}
+      <QuickActionsSheet
+        open={openSheet === 'quickactions'}
+        onClose={() => setOpenSheet(null)}
+        onOpenVoiceNote={() => setOpenSheet('voicenote')}
+      />
+
+      {/* §18 Voice Note — full-height, field focused on open */}
+      <VoiceNoteSheet
+        open={openSheet === 'voicenote'}
+        onClose={() => setOpenSheet(null)}
+      />
+
       <style>{`
         @keyframes shimmer {
           0%   { background-position: 200% 0; }
@@ -787,9 +803,15 @@ export default function WarRoom3Page() {
     // non-home-screen tiles — no action yet
   }, [])
 
-  // FAB tap: if a sheet is open, close it; otherwise no-op (future: open new-item sheet)
+  // §18.1: FAB — two states, one condition: any sheet open?
+  // No sheet open → + → opens Quick Actions
+  // Any sheet open → × → closes that sheet and nothing else
   const handleFab = useCallback(() => {
-    if (openSheet) setOpenSheet(null)
+    if (openSheet) {
+      setOpenSheet(null)
+    } else {
+      setOpenSheet('quickactions')
+    }
   }, [openSheet])
 
   if (!unlocked) {
