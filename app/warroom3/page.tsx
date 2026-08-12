@@ -18,6 +18,8 @@ import DeadlinesSheet from '@/components/warroom3/DeadlinesSheet'
 import UnderContractSheet from '@/components/warroom3/UnderContractSheet'
 import QuickActionsSheet from '@/components/warroom3/QuickActionsSheet'
 import VoiceNoteSheet from '@/components/warroom3/VoiceNoteSheet'
+import PortfolioCreateSheet from '@/components/warroom3/PortfolioCreateSheet'
+import NewDealSheet from '@/components/warroom3/NewDealSheet'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 
@@ -524,8 +526,8 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
 }
 
 // ── Home Screen §6 ────────────────────────────────────────────────────────────
-// §18: 'quickactions' and 'voicenote' added — FAB opens QA when idle
-type SheetId = 'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract' | 'quickactions' | 'voicenote'
+// §18: quickactions/voicenote; §19: portfoliocreate; §20: newdeal
+type SheetId = 'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract' | 'quickactions' | 'voicenote' | 'portfoliocreate' | 'newdeal'
 
 function HomeScreen({
   onTilePress,
@@ -697,11 +699,13 @@ function HomeScreen({
         onClose={() => setOpenSheet(null)}
       />
 
-      {/* Deals sheet — §12 step 5 */}
+      {/* Deals sheet — §12 step 5 + §19.1 + §20 */}
       <DealsSheet
         open={openSheet === 'deals'}
         onClose={() => setOpenSheet(null)}
         initialSearch={dealsSearch}
+        onOpenPortfolioCreate={() => setOpenSheet('portfoliocreate')}
+        onOpenNewDeal={() => setOpenSheet('newdeal')}
       />
 
       {/* §12 step 7: remaining panel sheets */}
@@ -729,6 +733,20 @@ function HomeScreen({
       <VoiceNoteSheet
         open={openSheet === 'voicenote'}
         onClose={() => setOpenSheet(null)}
+      />
+
+      {/* §19 Portfolio creation — deliberate, never suggested */}
+      <PortfolioCreateSheet
+        open={openSheet === 'portfoliocreate'}
+        onClose={() => setOpenSheet(null)}
+        onCreated={() => setOpenSheet(null)}
+      />
+
+      {/* §20 New deal intake — five required fields, exactly one step written */}
+      <NewDealSheet
+        open={openSheet === 'newdeal'}
+        onClose={() => setOpenSheet(null)}
+        onCreated={() => setOpenSheet(null)}
       />
 
       <style>{`

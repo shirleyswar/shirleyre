@@ -125,7 +125,7 @@ export default function MoneyMoversSheet({ open, onClose }: { open: boolean; onC
               <ListRow
                 key={deal.id}
                 title={title}
-                subline={subline}
+                metaCityClient={subline || null}
                 spineColor={T.hot}
                 showMoney={deal.computedCommission != null}
                 commission={deal.computedCommission}

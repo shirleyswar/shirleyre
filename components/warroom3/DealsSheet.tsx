@@ -132,9 +132,11 @@ interface DealsSheetProps {
   open: boolean
   onClose: () => void
   initialSearch?: string
+  onOpenPortfolioCreate?: () => void  // §19.1 — + PORTFOLIO pill in header
+  onOpenNewDeal?: () => void           // §20 — new deal intake
 }
 
-export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProps) {
+export function DealsSheet({ open, onClose, initialSearch = '', onOpenPortfolioCreate, onOpenNewDeal }: DealsSheetProps) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
@@ -208,8 +210,33 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
       open={open}
       onClose={onClose}
       label="Deal Pipeline"
-      count={loadError ? undefined : deals.length}
+      count={undefined}  // §5.8 authorized deviation: + PORTFOLIO pill replaces count
       size="list"
+      headerAction={onOpenPortfolioCreate ? (
+        // §19.1: + PORTFOLIO outlined pill, T5, radius 100px, border brand-lift
+        // Deliberate entry point — never suggested elsewhere
+        <button
+          onClick={onOpenPortfolioCreate}
+          style={{
+            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+            fontSize: 9,
+            fontWeight: 500,
+            letterSpacing: '0.11em',
+            textTransform: 'uppercase',
+            color: '#A78BFA',
+            border: '1px solid rgba(167,139,250,0.35)',
+            borderRadius: 100,
+            padding: '5px 10px',
+            background: 'transparent',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            WebkitTapHighlightColor: 'transparent',
+            minHeight: 28,
+          } as React.CSSProperties}
+        >
+          + Portfolio
+        </button>
+      ) : undefined}
     >
       {/* Search field — pinned under header, always visible */}
       <div style={{ padding: '0 18px 12px', position: 'sticky', top: 0, background: T.bgPanel, zIndex: 10 }}>
@@ -332,15 +359,15 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
 import ListRow from '@/components/warroom3/ListRow'
 
 function DealRow({ deal }: { deal: Deal }) {
-  const addr  = dealAddress(deal)
-  const sub   = dealSubline(deal)
-  const spine = getRowSpine(deal.status)
+  const addr   = dealAddress(deal)
+  const sub    = dealSubline(deal)
+  const spine  = getRowSpine(deal.status)
   const lacdbUrl = `/warroom/deal?id=${deal.id}`
 
   return (
     <ListRow
       title={addr}
-      subline={sub || undefined}
+      metaCityClient={sub || null}
       status={deal.status}
       showPill={true}
       spineColor={spine}

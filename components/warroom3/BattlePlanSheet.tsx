@@ -54,9 +54,11 @@ interface Task {
   deal_id: string | null
   is_life: boolean
   is_entity: boolean
+  entity_id: string | null  // CODE: task.entity_id FK added — nullable, beside is_life|is_entity
   sort_order: number | null
   created_at: string
   deals?: { name?: string; address?: string } | null
+  entities?: { name?: string } | null  // joined from entity_id FK
 }
 
 interface BattlePlanSheetProps {
@@ -109,7 +111,7 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
       try {
         const { data, error } = await supabase
           .from('tasks')
-          .select('id, title, status, due_date, deal_id, is_life, is_entity, sort_order, created_at, deals(name, address)')
+          .select('id, title, status, due_date, deal_id, is_life, is_entity, entity_id, sort_order, created_at, deals(name, address), entities(name)')
           .in('status', ['open', 'in_progress'])
           .order('created_at', { ascending: true })
           .limit(200)
@@ -172,14 +174,31 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
 
     const dealAddr = (task.deals as any)?.address || null
     const dealName = (task.deals as any)?.name || null
-    // Subline: deal address preferred, then name. If same as title, §5.11.5 suppresses it.
-    const subline = dealAddr || dealName || undefined
+    // entity name from FK join (CODE: task.entity_id → entities.name)
+    const entityName = (task.entities as any)?.name || null
+
+    // §5.11.5 meta line decision:
+    // - task on a deal → metaDeal (address preferred over name)
+    // - task on entity (entity_id or is_entity) → metaBadge (entity name or ENTITY tag)
+    // - task on life (is_life) → metaBadge LIFE
+    // Badge and day count never contend — entity/life tasks have no deal
+    let metaDeal: string | null = null
+    let metaBadge: string | null = null
+
+    if (task.is_life) {
+      metaBadge = 'LIFE'
+    } else if (task.entity_id || task.is_entity) {
+      metaBadge = entityName || 'ENTITY'
+    } else {
+      metaDeal = dealAddr || dealName || null
+    }
 
     return (
       <ListRow
         key={task.id}
         title={task.title}
-        subline={subline}
+        metaDeal={metaDeal}
+        metaBadge={metaBadge}
         spineColor={spineColor}
         dayCount={dayCount}
         dayCountColor={dayCountColor}

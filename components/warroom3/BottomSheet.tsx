@@ -34,6 +34,8 @@ interface BottomSheetProps {
   children: React.ReactNode
   // 'list' = top:78px (default), 'short' = top:112px
   size?: 'list' | 'short'
+  // §5.8 authorized deviation: Deals sheet replaces count with + PORTFOLIO pill
+  headerAction?: React.ReactNode
 }
 
 export default function BottomSheet({
@@ -43,6 +45,7 @@ export default function BottomSheet({
   count,
   children,
   size = 'list',
+  headerAction,
 }: BottomSheetProps) {
   const prefersReduced = useReducedMotion()
   const sheetTop = size === 'short' ? 112 : 78
@@ -160,8 +163,8 @@ export default function BottomSheet({
               <span style={styleT1}>{label}</span>
               {/* Hairline */}
               <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-              {/* Count */}
-              {count !== undefined && (
+              {/* Count — or headerAction replacing it (§5.8 Deals sheet deviation) */}
+              {headerAction ?? (count !== undefined && (
                 <span style={{
                   fontFamily: FONT_MONO,
                   fontSize: 12,
@@ -172,7 +175,7 @@ export default function BottomSheet({
                 }}>
                   {count}
                 </span>
-              )}
+              ))}
               {/* 28px round close button — min 44px tap area via padding */}
               <button
                 onClick={onClose}

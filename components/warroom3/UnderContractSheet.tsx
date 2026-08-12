@@ -156,7 +156,7 @@ export default function UnderContractSheet({ open, onClose }: { open: boolean; o
               <ListRow
                 key={deal.id}
                 title={title}
-                subline={subline}
+                metaCityClient={subline || null}
                 spineColor={spineColor}
                 dayCount={dayCount}
                 dayCountColor={T.textLow}
