@@ -119,8 +119,9 @@ const STATUS_LABELS: Record<string, string> = {
 // Report actual render in ship-gate — if it exceeds 68px it must be reported.
 function MoneyBlock({ commission, salePrice }: { commission: number; salePrice?: number | null }) {
   function fmt(n: number) { return '$' + Math.round(n).toLocaleString('en-US') }
+  // §5.11.4: 15+1+9+1+11.5 = 38.5px fits 39px content area. Gaps 1px per directive option 1.
   return (
-    <div style={{ flexShrink: 0, textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+    <div style={{ flexShrink: 0, textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
       <div style={{ fontFamily: FONT_MONO, fontSize: MONO_COMMISSION_SIZE, fontWeight: 500, color: T.moneyIn, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
         {fmt(commission)}
       </div>

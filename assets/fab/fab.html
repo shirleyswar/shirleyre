@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>War Room FAB — 14b</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="fab.css">
+<style>
+  /* page + tab bar are context only — not part of the asset */
+  body { margin: 0; background: #08080C; font-family: 'Space Grotesk', system-ui, sans-serif; }
+  .stage { height: 260px; display: flex; align-items: center; justify-content: center; gap: 64px; }
+  .zoom { transform: scale(2); transform-origin: center; }
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 94px;
+    box-sizing: border-box; padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(8, 8, 12, .94); backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, .08);
+    display: flex; align-items: flex-start; justify-content: space-between; padding-left: 6px; padding-right: 6px;
+  }
+  /* 19b — five labelled slots. The centre slot is 70px and carries NEW; it is not a gap. */
+  .slot { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0; padding-top: 33px; }
+  .slot--new { flex: none; width: 70px; padding-top: 0; }
+  .tab { font: 500 9px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .11em; color: #5C5B6B; }
+  .tab[data-active] { color: #EFEEF4; }
+  /* Lift lives in fab.css (-23px, §5.7). No override here — a demo page that corrects the asset hides the defect. */
+  .slot--new .tab { margin-top: -2px; } /* FAB bottom lands at 35px; label top must sit at 33px, baseline 42px — matching the other four */
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <!-- 2× for inspection -->
+  <div class="zoom">
+    <button class="wr-fab" aria-label="Add" aria-expanded="false">
+      <span class="wr-fab__halo"></span>
+      <span class="wr-fab__body">
+        <span class="wr-fab__rim"></span>
+        <span class="wr-fab__face">
+          <span class="wr-fab__core"></span>
+          <span class="wr-fab__bar wr-fab__bar--h"></span>
+          <span class="wr-fab__bar wr-fab__bar--v"></span>
+        </span>
+      </span>
+    </button>
+  </div>
+</div>
+
+<!-- real size, in situ -->
+<nav class="bar">
+  <span class="slot"><span class="tab" data-active>HOME</span></span>
+  <span class="slot"><span class="tab">DEALS</span></span>
+  <span class="slot slot--new">
+  <button class="wr-fab" aria-label="Add" aria-expanded="false">
+    <span class="wr-fab__halo"></span>
+    <span class="wr-fab__body">
+      <span class="wr-fab__rim"></span>
+      <span class="wr-fab__face">
+        <span class="wr-fab__core"></span>
+        <span class="wr-fab__bar wr-fab__bar--h"></span>
+        <span class="wr-fab__bar wr-fab__bar--v"></span>
+      </span>
+    </span>
+  </button>
+    <span class="tab">NEW</span>
+  </span>
+  <span class="slot"><span class="tab">MONEY</span></span>
+  <span class="slot"><span class="tab">MORE</span></span>
+</nav>
+
+<script>
+  document.querySelectorAll('.wr-fab').forEach(function (el) {
+    el.addEventListener('click', function () {
+      el.setAttribute('aria-expanded', el.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
+    });
+  });
+</script>
+</body>
+</html>

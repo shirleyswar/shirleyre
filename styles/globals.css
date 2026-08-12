@@ -1039,7 +1039,7 @@ select {
   position: relative;
   width: 58px;
   height: 58px;
-  margin-top: -20px;
+  margin-top: -23px;          /* §5.7 exact lift */
   padding: 0;
   border: 0;
   background: none;

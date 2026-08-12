@@ -410,12 +410,10 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
   const [pressed, setPressed] = React.useState(false)
   const hasSpine = !stat.fetchFailed && stat.urgentToken !== null && stat.urgentCount > 0
   const spineColor = stat.urgentToken === 'late' ? T.late : stat.urgentToken === 'hot' ? T.hot : T.brand
-  // §5.2: spined row gets 5% tint of accent as bg
-  const spineBg = stat.urgentToken === 'late'
-    ? 'rgba(255,77,77,0.05)'
-    : stat.urgentToken === 'hot'
-    ? 'rgba(255,162,58,0.05)'
-    : 'transparent'
+  // §5.2 + directive item 7: tile background is bg-raise, flat. No status tint.
+  // Tint carries no information the spine isn't already carrying.
+  // §4.3: one accent per element — the spine is it.
+  const spineBg = T.bgRaise  // always flat, regardless of accent
 
   // T5 status note color: urgent count in its accent, else text-low
   const statusColor = stat.urgentToken === 'late'
@@ -441,7 +439,7 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
       style={{
         position: 'relative',
         overflow: 'hidden',
-        background: hasSpine ? spineBg : T.bgPanel,
+        background: T.bgRaise,  // always flat — directive item 7: no status tint on tiles
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 16,
         padding: hasSpine ? '16px 15px 16px 18px' : '16px 15px',
@@ -560,36 +558,53 @@ function HomeScreen({
       padding: '14px 18px 104px',
       background: T.bgBase,
     }}>
-      {/* §6 item 2: Identity row
-          30px app mark (radius 9), stacked T2 date + T3 greeting, 34px round search button.
-          No glow on the mark — FAB is the one glow per §4.3 / §11.4. */}
+      {/* §6.2 Identity row — locked design 15c. ONE flex row, align-items:center, gap:12, 40px tall.
+          Directive items 1+2: one line (not stacked), no dead space above.
+          Mark 40×40 mark-64.png (geometric, <120px). WAR ROOM in D4 mono. Date T2 right. Search edge.
+          No dead space: padding-top 14px is the only gap from status area. */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        gap: 12,
+        height: 40,
         marginBottom: 18,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* App mark — official mark-64.png at 30px per WHERE-TO-USE-WHAT §4.
-              No CSS glow, no box-shadow — glow is in the pixels (README §notes). */}
+        {/* 40px geometric mark — mark-64.png, flex:none, no radius, no plate, no CSS glow §17.1 */}
+        {/* Radial halo behind the mark only, not on it §6.2 */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{
+            position: 'absolute',
+            inset: -7,
+            background: 'radial-gradient(circle, rgba(168,85,247,0.5), transparent 68%)',
+            filter: 'blur(6px)',
+            pointerEvents: 'none',
+          }} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/icons/mark-64.png"
-            alt=""
-            width={30}
-            height={30}
-            style={{ flexShrink: 0, display: 'block' }}
-          />
-          {/* Stacked date + greeting */}
-          <div>
-            {/* T2 date — per §6 */}
-            <div style={{ ...styleT2, marginBottom: 3 }}>{dateLabel}</div>
-            {/* T3 greeting — sentence case / Space Grotesk */}
-            <div style={{ ...styleT3, fontSize: 15 }}>War Room</div>
-          </div>
+          <img src="/icons/mark-64.png" alt="" width={40} height={40} style={{ display: 'block', position: 'relative' }} />
         </div>
 
-        {/* 34px round search button — §6 item 2 */}
+        {/* D4 §3.2 — WAR ROOM — JetBrains Mono 17px / 700 / 0.13em / UPPER / #F7F6FB.
+            Exactly one use per screen. Not D3, not Space Grotesk. */}
+        <span style={{
+          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+          fontSize: 17,
+          fontWeight: 700,
+          letterSpacing: '0.13em',
+          textTransform: 'uppercase',
+          color: '#F7F6FB',
+          lineHeight: 1,
+          whiteSpace: 'nowrap',
+        }}>
+          WAR ROOM
+        </span>
+
+        {/* flex:1 spacer pushes date and search to the right */}
+        <div style={{ flex: 1 }} />
+
+        {/* T2 §3.2 date — right-aligned §6.2 */}
+        <span style={{ ...styleT2, whiteSpace: 'nowrap' }}>{dateLabel}</span>
+
+        {/* 34px round search button, flex:none §6.2 */}
         <button
           style={{
             width: 34,
@@ -603,13 +618,12 @@ function HomeScreen({
             cursor: 'pointer',
             flexShrink: 0,
             WebkitTapHighlightColor: 'transparent',
-            minWidth: 44, minHeight: 44,  // §11.2 tap target
+            minWidth: 44, minHeight: 44,
           } as React.CSSProperties}
           aria-label="Search"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </button>
       </div>

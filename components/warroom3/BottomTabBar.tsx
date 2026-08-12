@@ -1,12 +1,12 @@
 'use client'
 
-// §5.7 Bottom tab bar — ShirleyCRE mobile spec v1
-// Fixed, 94px total height incl. safe-area-inset-bottom.
-// Five slots: HOME · DEALS · FAB · MONEY · MORE
-// Active tab: text-hi (#EFEEF4). Inactive: text-low (#5C5B6B). No purple on tabs.
-// FAB: "Deep aperture" 14b — 58×58px, radius 19, lift margin-top:-20px.
-//   Authorized spec deviation (Matthew directive): 58×58 / radius 19 supersedes §5.7 56×56/radius-16.
-//   README rules binding: no outer drop-shadow/box-shadow, face stays near-black, glyph pure white.
+// §5.7 Bottom tab bar — ShirleyCRE mobile spec v1, locked design 19b
+// Fixed. height: 94px, box-sizing: border-box.
+// Five labelled slots: HOME · DEALS · NEW · MONEY · MORE.
+// Centre slot is 70px wide and carries the label NEW — not an empty gap.
+// FAB lifted margin-top: -23px exactly (§5.7 arithmetic).
+// Halo opacity 0.34 — down from 0.54 so halo stays around FAB, not washing neighbours.
+// Active tab: text-hi. Inactive: text-low. Active tab is NOT purple — purple = money + FAB.
 // Tab change: instant (§7 — no transition).
 
 import React from 'react'
@@ -18,7 +18,7 @@ interface BottomTabBarProps {
   active: TabId
   onTab: (id: TabId) => void
   onFab?: () => void
-  /** FAB open state — any sheet open → true → plus rotates to ×, tap closes sheet */
+  /** FAB open state — any sheet open → true → plus rotates to × */
   fabOpen?: boolean
 }
 
@@ -63,6 +63,7 @@ function MoreIcon({ active }: { active: boolean }) {
   )
 }
 
+// T5 §3.2 — 9px / 500 / 0.11em / UPPER — tab labels
 const LABEL_STYLE: React.CSSProperties = {
   fontFamily: "'JetBrains Mono', ui-monospace, monospace",
   fontSize: 9,
@@ -92,11 +93,11 @@ function TabSlot({ label, icon, active, onClick }: TabSlotProps) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-end',   // align to label baseline from bottom
         background: 'none',
         border: 'none',
         cursor: 'pointer',
-        padding: '10px 0 0 0',
+        padding: '0 0 12px',           // 12px from bar bottom → label baseline at ~22px from bottom
         WebkitTapHighlightColor: 'transparent',
         minWidth: 0,
         minHeight: 44,
@@ -119,7 +120,9 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         bottom: 0,
         left: 0,
         right: 0,
-        height: 'calc(94px + env(safe-area-inset-bottom, 0px))',
+        // §5.7: 94px total, box-sizing: border-box.
+        // A tab bar that measures 106px is the box model, not the design.
+        height: 94,
         boxSizing: 'border-box',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         background: 'rgba(8,8,12,0.94)',
@@ -134,17 +137,29 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
       <TabSlot id="home"  label="HOME"  icon={<HomeIcon  active={active==='home'}  />} active={active==='home'}  onClick={() => onTab('home')}  />
       <TabSlot id="deals" label="DEALS" icon={<DealsIcon active={active==='deals'} />} active={active==='deals'} onClick={() => onTab('deals')} />
 
-      {/* FAB centre slot — "Deep aperture" 14b */}
-      {/* Slot width keeps the 58px FAB centred; margin-top:-20px lifts it above the bar */}
+      {/* FAB centre slot — §5.7, locked design 19b.
+          70px wide (not 64). Label NEW below FAB — not an empty gap.
+          FAB lifted margin-top: -23px (in .wr-fab CSS).
+          Label baseline at paddingBottom 12px = 12px from bar bottom.
+          FAB lower edge = 94 - 23 - (94-35) = 35px from bar top → 59px from bottom → clears label. */}
       <div style={{
-        width: 64,
+        width: 70,
         flexShrink: 0,
         display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        paddingBottom: 10,
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingBottom: 12,
+        position: 'relative',
       }}>
-        <Fab open={fabOpen} onClick={onFab} label="Add" />
+        {/* FAB — positioned above the label; margin-top: -23px in fab.css handles lift */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+          <Fab open={fabOpen} onClick={onFab} label="NEW" />
+        </div>
+        {/* NEW label — same baseline as other four §5.7 */}
+        <span style={{ ...LABEL_STYLE, color: '#5C5B6B' }}>
+          NEW
+        </span>
       </div>
 
       <TabSlot id="money" label="MONEY" icon={<MoneyIcon active={active==='money'} />} active={active==='money'} onClick={() => onTab('money')} />
