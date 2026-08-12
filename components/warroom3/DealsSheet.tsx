@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import BottomSheet from '@/components/warroom3/BottomSheet'
+import { formatAddress } from '@/lib/formatAddress'
 
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
@@ -70,6 +71,7 @@ interface Deal {
   name: string | null
   address: string | null
   updated_at: string
+  portfolio_id: string | null  // §5.11.7 — portfolios group separately
 }
 
 type FilterStatus = 'all' | 'hot' | 'under_contract' | 'active' | 'pipeline' | 'closed'
@@ -114,17 +116,26 @@ function getRowSpine(status: string): string | null {
   return null
 }
 
-// Primary display text for a deal row
-function dealAddress(deal: Deal): string {
-  return deal.address || deal.name || '—'
+// §5.11.9 short-form address — street name · cardinal · number only via formatAddress().
+// Raw Google address "10993 N Harrells Ferry Rd, Baton Rouge, LA 70816, USA"
+// → formatAddress() → "Harrells Ferry Rd. N. 10993"
+// City/state/zip/country appear on deal detail only, never in the list row.
+function dealTitle(deal: Deal): string {
+  const formatted = formatAddress(deal.address)
+  // formatAddress returns '—' when address is null/empty — fall back to name
+  if (formatted && formatted !== '—') return formatted
+  return deal.name || '—'
 }
 
-// Sub-line: name if address is primary, else nothing
+// Sub-line: client name if distinct from the formatted address
 function dealSubline(deal: Deal): string {
-  if (deal.address && deal.name && deal.name !== deal.address) {
-    return deal.name
-  }
+  if (deal.name && deal.name !== deal.address) return deal.name
   return ''
+}
+
+// Keep dealAddress for band rows and grouping (uses raw address for alpha sort key)
+function dealAddress(deal: Deal): string {
+  return deal.address || deal.name || '—'
 }
 
 // ── Deals Sheet §6.1 ─────────────────────────────────────────────────────────
@@ -167,6 +178,7 @@ interface DealsSheetProps {
 // Extended Deal type with property_type
 interface DealFull extends Deal {
   property_type: PropertyType | null
+  portfolio_id: string | null
 }
 
 export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProps) {
@@ -192,7 +204,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
       try {
         const { data, error } = await supabase
           .from('deals')
-          .select('id, status, name, address, updated_at, property_type')
+          .select('id, status, name, address, updated_at, property_type, portfolio_id')
           .order('address', { ascending: true })
           .limit(200)
         if (error) { setLoadError(true); setLoading(false); return }
@@ -229,17 +241,23 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
     setTypeMenuOpen(false)
   }
 
-  // Alpha groups
-  const grouped: { letter: string; deals: DealFull[] }[] = []
-  for (const deal of visible) {
+  // §5.11.7: Portfolios group first, then DEALS A–Z alpha groups.
+  // Portfolio deals (portfolio_id non-null) are grouped under PORTFOLIOS n.
+  // Remaining deals alpha-grouped as DEALS A–Z.
+  const portfolioDeals = visible.filter(d => (d as any).portfolio_id)
+  const nonPortfolioDeals = visible.filter(d => !(d as any).portfolio_id)
+
+  const alphaGrouped: { letter: string; deals: DealFull[] }[] = []
+  for (const deal of nonPortfolioDeals) {
     const addr = dealAddress(deal)
     const first = addr[0]
-    const letter = /[A-Z]/i.test(first) ? first.toUpperCase() : '#'
-    const existing = grouped.find(g => g.letter === letter)
+    // §5.11.3: numeric addresses group as '1 — 9', never '#'
+    const letter = /[A-Z]/i.test(first) ? first.toUpperCase() : '1'
+    const existing = alphaGrouped.find(g => g.letter === letter)
     if (existing) existing.deals.push(deal)
-    else grouped.push({ letter, deals: [deal] })
+    else alphaGrouped.push({ letter, deals: [deal] })
   }
-  grouped.sort((a, b) => a.letter.localeCompare(b.letter))
+  alphaGrouped.sort((a, b) => a.letter.localeCompare(b.letter))
 
   // 32a: chip label for TYPE when a type is selected (check 17)
   const selectedType = isTypeFilter ? (activeFilter as PropertyType) : null
@@ -454,7 +472,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
         <div onClick={() => { setLoadError(false); setDeals([]); setLoading(true);
           ;(async () => {
             try {
-              const { data, error } = await supabase.from('deals').select('id, status, name, address, updated_at, property_type').order('address', { ascending: true }).limit(200)
+              const { data, error } = await supabase.from('deals').select('id, status, name, address, updated_at, property_type, portfolio_id').order('address', { ascending: true }).limit(200)
               if (error) { setLoadError(true); setLoading(false); return }
               setDeals((data ?? []) as DealFull[]); setLoading(false)
             } catch { setLoadError(true); setLoading(false) }
@@ -469,14 +487,29 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
         </div>
       ) : (
         <div style={{ padding: '0 18px' }}>
-          {grouped.map(group => (
+          {/* §5.11.7: PORTFOLIOS section header — "PORTFOLIOS n", same T2 style as alpha headers */}
+          {portfolioDeals.length > 0 && (
+            <div>
+              <div style={{
+                fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 500,
+                letterSpacing: '0.19em', textTransform: 'uppercase', color: T.textLow,
+                marginTop: 20, marginBottom: 8,
+              }}>
+                PORTFOLIOS {portfolioDeals.length}
+              </div>
+              {portfolioDeals.map(deal => <DealRow key={deal.id} deal={deal} />)}
+            </div>
+          )}
+
+          {/* §5.11.3: DEALS A–Z alpha groups */}
+          {alphaGrouped.map(group => (
             <div key={group.letter}>
               <div style={{
                 fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 500,
                 letterSpacing: '0.19em', textTransform: 'uppercase', color: T.textLow,
                 marginTop: 20, marginBottom: 8,
               }}>
-                {group.letter}
+                DEALS {group.letter}
               </div>
               {group.deals.map(deal => <DealRow key={deal.id} deal={deal} />)}
             </div>
@@ -493,14 +526,15 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
 import ListRow from '@/components/warroom3/ListRow'
 
 function DealRow({ deal }: { deal: Deal }) {
-  const addr   = dealAddress(deal)
+  // §5.11.9: short-form address via formatAddress() — "Harrells Ferry Rd. N. 10993"
+  const title  = dealTitle(deal)
   const sub    = dealSubline(deal)
   const spine  = getRowSpine(deal.status)
   const lacdbUrl = `/warroom/deal?id=${deal.id}`
 
   return (
     <ListRow
-      title={addr}
+      title={title}
       metaCityClient={sub || null}
       status={deal.status}
       showPill={true}

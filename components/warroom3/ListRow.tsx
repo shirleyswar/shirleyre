@@ -18,7 +18,20 @@
 // CODE — task.entity_id nullable FK added in migration; meta line renders entity name.
 
 import React from 'react'
-import { Layers, ChevronRight, ChevronDown } from 'lucide-react'
+import { ChevronRight, ChevronDown } from 'lucide-react'
+
+// §5.11.7 stacked-layers glyph — three diamond/chevron paths from reference render 32a.
+// Not Lucide Layers (filled document icon). This is the correct mark from the spec.
+function StackedLayersIcon({ size, color }: { size: number; color: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2.8 21 7.4l-9 4.6-9-4.6z"/>
+      <path d="M3 12.2 12 16.8l9-4.6"/>
+      <path d="M3 16.8 12 21.4l9-4.6"/>
+    </svg>
+  )
+}
 
 // ── Type tokens §3.2 ─────────────────────────────────────────────────────────
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
@@ -211,7 +224,7 @@ export default function ListRow({
         >
           {/* 28px brand plate */}
           <div style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(139,92,246,0.13)', border: '1px solid rgba(139,92,246,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Layers size={PORTFOLIO_MARK_SIZE} color={T.brandLift} strokeWidth={1.5} />
+            <StackedLayersIcon size={PORTFOLIO_MARK_SIZE} color={T.brandLift} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...styleT3 }}>{title}</div>
