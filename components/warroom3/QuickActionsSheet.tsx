@@ -108,9 +108,11 @@ interface QuickActionsSheetProps {
   open: boolean
   onClose: () => void
   onOpenVoiceNote: () => void
+  onOpenTask?: () => void
+  onOpenEvent?: () => void
 }
 
-export default function QuickActionsSheet({ open, onClose, onOpenVoiceNote }: QuickActionsSheetProps) {
+export default function QuickActionsSheet({ open, onClose, onOpenVoiceNote, onOpenTask, onOpenEvent }: QuickActionsSheetProps) {
   return (
     <BottomSheet
       open={open}
@@ -131,26 +133,26 @@ export default function QuickActionsSheet({ open, onClose, onOpenVoiceNote }: Qu
           onPress={() => { onClose(); setTimeout(onOpenVoiceNote, 180) }}
         />
 
-        {/* 2. Task */}
+        {/* 2. Task — §18.3b / 36a: opens TaskSheet directly */}
         <ActionRow
           icon={<CheckSquare size={18} color={T.textMid} strokeWidth={1.8} />}
           title="Task"
-          subtitle="Goes to Battle Plan"
+          subtitle="Opens here"
           titleSize={ACTION_TITLE_SIZE}
           iconTileSize={38}
           verticalPadding={15}
-          onPress={() => { /* Phase 2 */ }}
+          onPress={() => { onClose(); setTimeout(() => onOpenTask?.(), 180) }}
         />
 
-        {/* 3. Event */}
+        {/* 3. Event — §18.3c / 36b: opens EventSheet directly */}
         <ActionRow
           icon={<Calendar size={18} color={T.textMid} strokeWidth={1.8} />}
           title="Event"
-          subtitle="Goes to Schedule"
+          subtitle="Opens here"
           titleSize={ACTION_TITLE_SIZE}
           iconTileSize={38}
           verticalPadding={15}
-          onPress={() => { /* Phase 2 */ }}
+          onPress={() => { onClose(); setTimeout(() => onOpenEvent?.(), 180) }}
         />
       </div>
     </BottomSheet>

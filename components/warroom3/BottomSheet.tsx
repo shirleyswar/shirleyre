@@ -66,7 +66,7 @@ export default function BottomSheet({
   handleOpacity = 'rgba(255,255,255,0.18)',
   headerHeight,
   countStyle,
-  noCloseButton = false,
+  noCloseButton = true,
 }: BottomSheetProps) {
   const prefersReduced = useReducedMotion()
   const sheetTop = size === 'short' ? 112 : 78
@@ -74,7 +74,6 @@ export default function BottomSheet({
 
   // §18.9 — wire the grab handle to drag-to-dismiss.
   // Routes through onClose (which the caller guards via discard logic before passing).
-  // × button stays regardless — drag is not keyboard-accessible.
   const dragStartY = useRef<number | null>(null)
   const handleGrabTouchStart = useCallback((e: React.TouchEvent) => {
     dragStartY.current = e.touches[0].clientY

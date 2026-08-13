@@ -8,6 +8,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { GitBranch } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import BottomSheet from '@/components/warroom3/BottomSheet'
+import { FAB_APERTURE_GRADIENT, FAB_APERTURE_SHADOW } from '@/lib/fabGradient'
 
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
@@ -303,9 +304,11 @@ export default function NewDealSheet({ open, onClose, onCreated }: NewDealSheetP
             disabled={!allSet || saving}
             style={{
               flex: 1,
-              background: T.brand, color: T.textInvert, border: 'none',
+              background: allSet && !saving ? FAB_APERTURE_GRADIENT : 'rgba(139,92,246,0.3)',
+              boxShadow: allSet && !saving ? FAB_APERTURE_SHADOW : 'none',
+              color: T.textInvert, border: 'none',
               borderRadius: 9, padding: '12px 0', ...styleB1,
-              opacity: !allSet || saving ? 0.4 : 1,
+              opacity: !allSet || saving ? 0.5 : 1,
               cursor: !allSet || saving ? 'default' : 'pointer',
               minHeight: 44,
             } as React.CSSProperties}

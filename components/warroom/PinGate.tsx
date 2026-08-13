@@ -24,12 +24,7 @@ interface PinGateProps {
   onSuccess: () => void
 }
 
-const KEYS: (string | null)[] = [
-  '1','2','3',
-  '4','5','6',
-  '7','8','9',
-  null,'0','⌫',
-]
+const KEYS = ['1','2','3','4','5','6','7','8','9','C','0','⌫'] as const
 
 export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
   const [digits, setDigits] = useState<string[]>([])
@@ -38,6 +33,7 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
 
   const handleKey = useCallback(async (key: string) => {
     if (error) return
+    if (key === 'C') { setDigits([]); return }
     if (key === '⌫') {
       setDigits(d => d.slice(0, -1))
       return
@@ -142,9 +138,8 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
           gap: 13,
           marginTop: 44,
         }}>
-          {KEYS.map((key, idx) => {
-            if (key === null) return <div key={idx} />
-            const isBack = key === '⌫'
+          {KEYS.map((key) => {
+            const isFn = key === '⌫' || key === 'C'
             return (
               <button
                 key={key}
@@ -155,10 +150,10 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
                   borderRadius: 16,
                   background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(255,255,255,0.07)',
-                  fontFamily: isBack ? FONT_MONO : FONT_DISPLAY,
-                  fontSize: isBack ? 24 : 26,
+                  fontFamily: key === '⌫' ? FONT_MONO : FONT_DISPLAY,
+                  fontSize: key === '⌫' ? 24 : 26,
                   fontWeight: 500,
-                  color: isBack ? '#8B8A9B' : '#EFEEF4',
+                  color: isFn ? '#8B8A9B' : '#EFEEF4',
                   cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   WebkitTapHighlightColor: 'transparent',

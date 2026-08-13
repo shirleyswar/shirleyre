@@ -13,17 +13,18 @@ const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
-  bgBase:    '#08080C',
-  bgPanel:   '#101017',
-  bgRaise:   '#16161F',
-  textHi:    '#EFEEF4',
-  textMid:   '#8B8A9B',
-  textLow:   '#5C5B6B',
-  brand:     '#8B5CF6',
-  brandLift: '#A78BFA',
-  moneyIn:   '#34D399',
-  late:      '#FF4D4D',
-  hot:       '#FFA23A',
+  bgBase:      '#08080C',
+  bgPanel:     '#101017',
+  bgRaise:     '#16161F',
+  textHi:      '#EFEEF4',
+  textMid:     '#8B8A9B',
+  textLow:     '#5C5B6B',
+  brand:       '#8B5CF6',
+  brandStrong: '#7C3AED',
+  brandLift:   '#A78BFA',
+  moneyIn:     '#34D399',
+  late:        '#FF4D4D',
+  hot:         '#FFA23A',
 } as const
 
 // T1 §3.2
@@ -191,7 +192,6 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
   // 32a: TYPE menu open state
   const [typeMenuOpen, setTypeMenuOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
-  const chipRowRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -283,77 +283,105 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
       count={deals.length}
       countStyle={STYLE_M2}
       size="list"
-      // 31a check 7: FAB-× closes — no × in sheet chrome
-      noCloseButton={true}
     >
-      {/* Filter chips — 32a. NO horizontal scroll (check 9): space-between, padding 0 18px 14px. */}
+      {/* Filter band — 34b §6.1. Bare 44px flex row. No pill, no fill, no radius. */}
       <div style={{ position: 'relative' }}>
         <div
-          ref={chipRowRef}
           style={{
             display: 'flex',
-            justifyContent: 'space-between',   // check 9: no scroll, space-between
-            padding: '0 18px 14px',
-            gap: 6,
+            height: 44,
           }}
         >
-          {/* Chip helper: T5, radius 100px, padding 8px 15px (check 10) */}
           {([
-            { id: 'all' as const,  label: `ALL ${deals.length}` },
-            { id: 'hot' as const,  label: `HOT ${hotCount}` },
-            { id: 'uc' as const,   label: `UC ${ucCount}` },
-          ] as const).map(chip => {
-            const active = activeFilter === chip.id
+            { id: 'all' as const,  labelText: 'ALL', count: deals.length },
+            { id: 'hot' as const,  labelText: 'HOT', count: hotCount },
+            { id: 'uc' as const,   labelText: 'UC',  count: ucCount },
+          ] as const).map(seg => {
+            const active = activeFilter === seg.id
             return (
               <button
-                key={chip.id}
-                onClick={() => handleChipFilter(chip.id)}
+                key={seg.id}
+                onClick={() => handleChipFilter(seg.id)}
                 style={{
                   flex: 1,
-                  padding: '8px 15px',          // check 10
-                  borderRadius: 100,             // check 10
-                  fontFamily: FONT_MONO,
-                  fontSize: 9,
-                  fontWeight: active ? 700 : 500,
-                  letterSpacing: '0.11em',
-                  textTransform: 'uppercase' as const,
-                  lineHeight: 1,
-                  background: active ? T.brand : 'transparent',        // check 11
-                  color: active ? '#0A0A0F' : T.textMid,
-                  border: active ? 'none' : '1px solid rgba(255,255,255,0.14)',
+                  height: 44,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'transparent',
+                  border: 'none',
+                  boxShadow: active ? `inset 0 -2px 0 ${T.brandStrong}` : 'none',
                   cursor: 'pointer',
                   WebkitTapHighlightColor: 'transparent',
-                  minHeight: 44,
-                  whiteSpace: 'nowrap' as const,
                 } as React.CSSProperties}
               >
-                {chip.label}
+                <span style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: 16,
+                  fontWeight: active ? 700 : 600,
+                  letterSpacing: '0.03em',
+                  textTransform: 'uppercase' as const,
+                  color: active ? T.textHi : T.textMid,
+                  lineHeight: 1,
+                }}>
+                  {seg.labelText}
+                </span>
+                <span style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: 16,
+                  fontWeight: 400,
+                  letterSpacing: '0.03em',
+                  textTransform: 'uppercase' as const,
+                  color: active ? T.textHi : T.textMid,
+                  lineHeight: 1,
+                  marginLeft: 6,
+                }}>
+                  {seg.count}
+                </span>
               </button>
             )
           })}
-          {/* TYPE chip — 32a check 8: fourth chip */}
+          {/* TYPE segment — fourth, same F1 style */}
           <button
             onClick={() => setTypeMenuOpen(v => !v)}
             style={{
               flex: 1,
-              padding: '8px 15px',
-              borderRadius: 100,
-              fontFamily: FONT_MONO,
-              fontSize: 9,
-              fontWeight: selectedType ? 700 : 500,
-              letterSpacing: '0.11em',
-              textTransform: 'uppercase' as const,
-              lineHeight: 1,
-              background: selectedType ? T.brand : 'transparent',
-              color: selectedType ? '#0A0A0F' : T.textMid,
-              border: selectedType ? 'none' : '1px solid rgba(255,255,255,0.14)',
+              height: 44,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              border: 'none',
+              boxShadow: selectedType ? `inset 0 -2px 0 ${T.brandStrong}` : 'none',
               cursor: 'pointer',
               WebkitTapHighlightColor: 'transparent',
-              minHeight: 44,
-              whiteSpace: 'nowrap' as const,
             } as React.CSSProperties}
           >
-            {typeChipLabel}
+            <span style={{
+              fontFamily: FONT_MONO,
+              fontSize: 16,
+              fontWeight: selectedType ? 700 : 600,
+              letterSpacing: '0.03em',
+              textTransform: 'uppercase' as const,
+              color: selectedType ? T.textHi : T.textMid,
+              lineHeight: 1,
+            }}>
+              {selectedType ? selectedType : 'TYPE ▾'}
+            </span>
+            {selectedType && (
+              <span style={{
+                fontFamily: FONT_MONO,
+                fontSize: 16,
+                fontWeight: 400,
+                letterSpacing: '0.03em',
+                textTransform: 'uppercase' as const,
+                color: T.textHi,
+                lineHeight: 1,
+                marginLeft: 6,
+              }}>
+                {typeCounts[selectedType]}
+              </span>
+            )}
           </button>
         </div>
 
@@ -689,7 +717,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
                   flexShrink: 0,
                 }}>{pill}</span>
 
-                {/* ↗ link-out — text-low per §6 band spec */}
+                {/* ↗ link-out — §5.11.6 44px touch target */}
                 <a
                   href={`/warroom/deal?id=${deal.id}`}
                   target="_blank"
@@ -701,12 +729,11 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
                     fontSize: 13,
                     flexShrink: 0,
                     padding: 7,
-                    margin: -7,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    minWidth: 30,
-                    minHeight: 30,
+                    minWidth: 44,
+                    minHeight: 44,
                     WebkitTapHighlightColor: 'transparent',
                   } as React.CSSProperties}
                 >

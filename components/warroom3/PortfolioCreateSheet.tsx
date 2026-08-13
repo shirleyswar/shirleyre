@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 import BottomSheet from '@/components/warroom3/BottomSheet'
+import { FAB_APERTURE_GRADIENT, FAB_APERTURE_SHADOW } from '@/lib/fabGradient'
 
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
@@ -243,9 +244,12 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
               onClick={handleCreate}
               disabled={!portfolioName.trim() || selected.size < 2 || blocked || saving}
               style={{
-                flex: 1, background: T.brand, color: T.textInvert, border: 'none',
+                flex: 1,
+                background: portfolioName.trim() && selected.size >= 2 && !blocked && !saving ? FAB_APERTURE_GRADIENT : 'rgba(139,92,246,0.3)',
+                boxShadow: portfolioName.trim() && selected.size >= 2 && !blocked && !saving ? FAB_APERTURE_SHADOW : 'none',
+                color: T.textInvert, border: 'none',
                 borderRadius: 9, padding: '12px 0', ...styleB1,
-                opacity: !portfolioName.trim() || selected.size < 2 || blocked || saving ? 0.4 : 1,
+                opacity: !portfolioName.trim() || selected.size < 2 || blocked || saving ? 0.5 : 1,
                 cursor: !portfolioName.trim() || selected.size < 2 || blocked || saving ? 'default' : 'pointer',
                 minHeight: 44,
               } as React.CSSProperties}
@@ -315,7 +319,7 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
                   {/* Check circle — §19.1: filled brand when selected, empty outline otherwise */}
                   <div style={{
                     width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                    background: isSelected ? T.brand : 'transparent',
+                    background: isSelected ? FAB_APERTURE_GRADIENT : 'transparent',
                     border: isSelected ? 'none' : '1.5px solid rgba(255,255,255,0.25)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
@@ -347,9 +351,11 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
           onClick={handleNext}
           disabled={selected.size < 2}
           style={{
-            background: T.brand, color: T.textInvert, border: 'none',
+            background: selected.size >= 2 ? FAB_APERTURE_GRADIENT : 'rgba(139,92,246,0.3)',
+            boxShadow: selected.size >= 2 ? FAB_APERTURE_SHADOW : 'none',
+            color: T.textInvert, border: 'none',
             borderRadius: 9, padding: '10px 20px', ...styleB1,
-            opacity: selected.size < 2 ? 0.4 : 1,
+            opacity: selected.size < 2 ? 0.5 : 1,
             cursor: selected.size < 2 ? 'default' : 'pointer',
             minHeight: 44,
           } as React.CSSProperties}

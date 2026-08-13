@@ -18,6 +18,8 @@ import DeadlinesSheet from '@/components/warroom3/DeadlinesSheet'
 import UnderContractSheet from '@/components/warroom3/UnderContractSheet'
 import QuickActionsSheet from '@/components/warroom3/QuickActionsSheet'
 import VoiceNoteSheet from '@/components/warroom3/VoiceNoteSheet'
+import TaskSheet from '@/components/warroom3/TaskSheet'
+import EventSheet from '@/components/warroom3/EventSheet'
 import PortfolioCreateSheet from '@/components/warroom3/PortfolioCreateSheet'
 import NewDealSheet from '@/components/warroom3/NewDealSheet'
 import { supabase } from '@/lib/supabase'
@@ -540,6 +542,8 @@ function HomeScreen({
   const [hero, setHero] = useState<HeroItem | null>(null)
   const [tiles, setTiles] = useState<TileStat[]>([])
   const [dealsSearch, setDealsSearch] = useState('')
+  const [taskSheetOpen, setTaskSheetOpen] = useState(false)
+  const [eventSheetOpen, setEventSheetOpen] = useState(false)
   const dateLabel = formatDateLabel()
 
   useEffect(() => {
@@ -749,6 +753,20 @@ function HomeScreen({
         open={openSheet === 'quickactions'}
         onClose={() => setOpenSheet(null)}
         onOpenVoiceNote={() => setOpenSheet('voicenote')}
+        onOpenTask={() => { setOpenSheet(null); setTimeout(() => setTaskSheetOpen(true), 180) }}
+        onOpenEvent={() => { setOpenSheet(null); setTimeout(() => setEventSheetOpen(true), 180) }}
+      />
+
+      {/* §18.3b Task sheet (36a) */}
+      <TaskSheet
+        open={taskSheetOpen}
+        onClose={() => setTaskSheetOpen(false)}
+      />
+
+      {/* §18.3c Event sheet (36b) */}
+      <EventSheet
+        open={eventSheetOpen}
+        onClose={() => setEventSheetOpen(false)}
       />
 
       {/* §18 Voice Note — full-height, field focused on open */}

@@ -98,8 +98,9 @@ const T = {
   late:      '#FF4D4D',
   hot:       '#FFA23A',
   moneyIn:   '#34D399',
-  brand:     '#8B5CF6',
-  brandLift: '#A78BFA',
+  brand:       '#8B5CF6',
+  brandStrong: '#7C3AED',
+  brandLift:   '#A78BFA',
 } as const
 
 // ── Status pill §5.3 ─────────────────────────────────────────────────────────
@@ -317,12 +318,12 @@ export default function ListRow({
             <MoneyBlock commission={commission} salePrice={salePrice} />
           )}
 
-          {/* Link-out §5.11.6 — bare glyph at GLYPH_LINKOUT_SIZE, text-low, 26px container */}
+          {/* Link-out §5.11.6 — bare glyph at GLYPH_LINKOUT_SIZE, text-low, 44px touch target */}
           {lacdbUrl && (
             <button
               onClick={e => { e.stopPropagation(); onLinkOut?.() }}
               aria-label="Open in LACDB"
-              style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
+              style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
             >
               <span style={{ fontFamily: FONT_DISPLAY, fontSize: GLYPH_LINKOUT_SIZE, color: T.textLow, lineHeight: 1 }}>↗</span>
             </button>
@@ -356,7 +357,7 @@ export function PortfolioChildRow({
           {status && <StatusPill status={status} />}
           {lacdbUrl && (
             <button onClick={e => { e.stopPropagation(); onLinkOut?.() }} aria-label="Open in LACDB"
-              style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>
+              style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>
               <span style={{ fontFamily: FONT_DISPLAY, fontSize: GLYPH_LINKOUT_SIZE, color: T.textLow, lineHeight: 1 }}>↗</span>
             </button>
           )}
