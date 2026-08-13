@@ -110,14 +110,19 @@ function SwipeRow({ task, children, onSwipeRight, onSwipeLeft }: {
   const [swiping, setSwiping] = useState(false)
   const THRESHOLD = 80
 
+  // Reveal visibility: only show the relevant panel based on swipe direction.
+  // Neither panel is visible at rest (offsetX === 0).
+  const showRight = offsetX > 0   // swiping right → green DONE
+  const showLeft  = offsetX < 0   // swiping left  → Tomorrow / Next week
+
   return (
     <div style={{ position: 'relative', overflow: 'hidden' }}>
-      {/* Left reveal (swipe right exposes): green DONE */}
-      <div style={{ position:'absolute', inset:0, background:'#34D399', display:'flex', alignItems:'center', paddingLeft:18 }}>
+      {/* Left reveal (swipe right exposes): green DONE — hidden unless swiping right */}
+      <div style={{ position:'absolute', inset:0, background:'#34D399', display: showRight ? 'flex' : 'none', alignItems:'center', paddingLeft:18 }}>
         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, fontWeight:700, letterSpacing:'0.19em', color:'#0A0A0F' }}>DONE</span>
       </div>
-      {/* Right reveal (swipe left exposes): Tomorrow + Next week */}
-      <div style={{ position:'absolute', inset:0, display:'flex', justifyContent:'flex-end', alignItems:'stretch' }}>
+      {/* Right reveal (swipe left exposes): Tomorrow + Next week — hidden unless swiping left */}
+      <div style={{ position:'absolute', inset:0, display: showLeft ? 'flex' : 'none', justifyContent:'flex-end', alignItems:'stretch' }}>
         <button onClick={onSwipeLeft} style={{ width:74, background:'#FFA23A', border:'none', cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, letterSpacing:'0.11em', color:'#0A0A0F', textTransform:'uppercase' }}>Tomorrow</button>
         <button
           onClick={async () => {

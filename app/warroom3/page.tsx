@@ -324,6 +324,8 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
 // §5.10: bg rgba(255,255,255,0.03), border-default, radius 20px, padding 20px,
 // late spine. T2 eyebrow → 12px → D3 statement → 9px → T4 location →
 // 17px → primary + secondary button row.
+// §13.1: Open/Dismiss buttons deleted. The task sheet (§13.2) is the action surface.
+// HeroCard is now display-only — tap the card itself to open the relevant sheet.
 function HeroCard({ item, onAction, onDismiss }: { item: HeroItem; onAction?: () => void; onDismiss?: () => void }) {
   const spineColor = item.accentToken === 'late' ? T.late : item.accentToken === 'hot' ? T.hot : T.brand
   const eyebrow = item.type === 'deadline' ? 'DEADLINE' : 'OVERDUE TASK'
@@ -354,49 +356,7 @@ function HeroCard({ item, onAction, onDismiss }: { item: HeroItem; onAction?: ()
       ) : (
         <div style={{ marginBottom: 17 }} />
       )}
-      {/* §5.10 step 4: primary + secondary button row §5.4 */}
-      <div style={{ display: 'flex', gap: 9 }}>
-        <button
-          onClick={onAction}
-          style={{
-            flex: 1,
-            // §5.4 Primary: background #EFEEF4, color #0A0A0F, radius 9px, padding 12px 0
-            background: '#EFEEF4',
-            color: '#0A0A0F',
-            border: 'none',
-            borderRadius: 9,
-            padding: '12px 0',
-            fontFamily: FONT_DISPLAY,
-            fontSize: 12,
-            fontWeight: 500,
-            cursor: 'pointer',
-            minHeight: 44,  // §11.2 tap target
-            WebkitTapHighlightColor: 'transparent',
-          } as React.CSSProperties}
-        >
-          Open
-        </button>
-        <button
-          onClick={onDismiss}
-          style={{
-            flex: 1,
-            // §5.4 Secondary: border rgba(255,255,255,0.13), color text-mid, radius 9px
-            background: 'transparent',
-            color: T.textMid,
-            border: '1px solid rgba(255,255,255,0.13)',
-            borderRadius: 9,
-            padding: '12px 0',
-            fontFamily: FONT_DISPLAY,
-            fontSize: 12,
-            fontWeight: 500,
-            cursor: 'pointer',
-            minHeight: 44,
-            WebkitTapHighlightColor: 'transparent',
-          } as React.CSSProperties}
-        >
-          Dismiss
-        </button>
-      </div>
+      {/* §13.1: Open/Dismiss buttons deleted — action dialog is replaced by §13.2 task sheet */}
     </div>
   )
 }
