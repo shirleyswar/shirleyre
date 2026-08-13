@@ -11,6 +11,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import ListRow from '@/components/warroom3/ListRow'
+import TaskDetailSheet, { Task as TaskDetailTask } from '@/components/warroom3/TaskDetailSheet'
 
 // §3.1 / §3.2 — UPPERCASE → JetBrains Mono · sentence case → Space Grotesk
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
@@ -97,11 +98,65 @@ function GroupHeader({
   )
 }
 
+// §13.1 SwipeRow — swipe right to complete, swipe left to expose Tomorrow/Next week
+function SwipeRow({ task, children, onSwipeRight, onSwipeLeft }: {
+  task: Task
+  children: React.ReactNode
+  onSwipeRight: () => void
+  onSwipeLeft: () => void
+}) {
+  const [startX, setStartX] = useState(0)
+  const [offsetX, setOffsetX] = useState(0)
+  const [swiping, setSwiping] = useState(false)
+  const THRESHOLD = 80
+
+  return (
+    <div style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Left reveal (swipe right exposes): green DONE */}
+      <div style={{ position:'absolute', inset:0, background:'#34D399', display:'flex', alignItems:'center', paddingLeft:18 }}>
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, fontWeight:700, letterSpacing:'0.19em', color:'#0A0A0F' }}>DONE</span>
+      </div>
+      {/* Right reveal (swipe left exposes): Tomorrow + Next week */}
+      <div style={{ position:'absolute', inset:0, display:'flex', justifyContent:'flex-end', alignItems:'stretch' }}>
+        <button onClick={onSwipeLeft} style={{ width:74, background:'#FFA23A', border:'none', cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, letterSpacing:'0.11em', color:'#0A0A0F', textTransform:'uppercase' }}>Tomorrow</button>
+        <button
+          onClick={async () => {
+            const d = new Date()
+            d.setDate(d.getDate() + 7)
+            const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+            await supabase.from('tasks').update({ due_date: dateStr }).eq('id', task.id)
+            setOffsetX(0)
+          }}
+          style={{ width:74, background:'rgba(255,255,255,0.12)', border:'none', cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, letterSpacing:'0.11em', color:'#EFEEF4', textTransform:'uppercase' }}>Next week</button>
+      </div>
+      {/* Row content — translates on swipe */}
+      <div
+        style={{ transform: `translateX(${offsetX}px)`, transition: swiping ? 'none' : 'transform 0.2s ease' }}
+        onTouchStart={e => { setStartX(e.touches[0].clientX); setSwiping(true) }}
+        onTouchMove={e => { setOffsetX(e.touches[0].clientX - startX) }}
+        onTouchEnd={() => {
+          setSwiping(false)
+          if (offsetX > THRESHOLD) { onSwipeRight(); setOffsetX(0) }
+          else if (offsetX < -THRESHOLD) { /* reveal stays exposed for tap */ setOffsetX(-148) }
+          else { setOffsetX(0) }
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
+  // §13.1 task detail sheet state
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [taskDetailOpen, setTaskDetailOpen] = useState(false)
+  // §13.3 confirmation bar state
+  const [completionBar, setCompletionBar] = useState<Task | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -193,20 +248,49 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
       metaDeal = dealAddr || dealName || null
     }
 
+    async function handleSwipeComplete() {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: 'complete', completed_at: new Date().toISOString() })
+        .eq('id', task.id)
+      if (!error) {
+        setCompletionBar(task)
+        setTimeout(() => setCompletionBar(null), 6000)
+        setRetryCount(c => c + 1)
+      }
+    }
+
+    async function handleSwipeTomorrow() {
+      const d = new Date()
+      d.setDate(d.getDate() + 1)
+      const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+      await supabase.from('tasks').update({ due_date: dateStr }).eq('id', task.id)
+      setRetryCount(c => c + 1)
+    }
+
     return (
-      <ListRow
+      <SwipeRow
         key={task.id}
-        title={task.title}
-        metaDeal={metaDeal}
-        metaBadge={metaBadge}
-        spineColor={spineColor}
-        dayCount={dayCount}
-        dayCountColor={dayCountColor}
-      />
+        task={task}
+        onSwipeRight={handleSwipeComplete}
+        onSwipeLeft={handleSwipeTomorrow}
+      >
+        <ListRow
+          key={task.id}
+          title={task.title}
+          metaDeal={metaDeal}
+          metaBadge={metaBadge}
+          spineColor={spineColor}
+          dayCount={dayCount}
+          dayCountColor={dayCountColor}
+          onPress={() => { setSelectedTask(task); setTaskDetailOpen(true) }}
+        />
+      </SwipeRow>
     )
   }
 
   return (
+    <>
     <BottomSheet
       open={open}
       onClose={onClose}
@@ -261,6 +345,40 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
         </div>
       )}
     </BottomSheet>
+
+    {/* §13.2 Task detail sheet */}
+    <TaskDetailSheet
+      open={taskDetailOpen}
+      task={selectedTask as TaskDetailTask | null}
+      onClose={() => { setTaskDetailOpen(false); setSelectedTask(null) }}
+      onCompleted={(t) => {
+        setCompletionBar(t as unknown as Task)
+        setTimeout(() => setCompletionBar(null), 6000)
+        setTaskDetailOpen(false)
+        setSelectedTask(null)
+        setRetryCount(c => c + 1)
+      }}
+      onSaved={() => { setTaskDetailOpen(false); setSelectedTask(null); setRetryCount(c => c + 1) }}
+      onDeleted={() => { setTaskDetailOpen(false); setSelectedTask(null); setRetryCount(c => c + 1) }}
+    />
+
+    {/* §13.3 Confirmation bar — above tab bar */}
+    {completionBar && (
+      <div style={{ position:'fixed', bottom:84, left:0, right:0, zIndex:60, background:'#16161F', borderTop:'1px solid rgba(255,255,255,0.08)', padding:'12px 18px', display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ width:20, height:20, borderRadius:'50%', background:'#34D399', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+          <span style={{ fontSize:11, color:'#0A0A0F', lineHeight:1 }}>✓</span>
+        </div>
+        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13, color:'#8B8A9B', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          {completionBar.title}{completionBar.deals ? ' · ' + ((completionBar.deals as any).address || (completionBar.deals as any).name || '') : ''}
+        </span>
+        <button onClick={async () => {
+          await supabase.from('tasks').update({ status:'open', completed_at: null }).eq('id', completionBar.id)
+          setCompletionBar(null)
+          setRetryCount(c => c+1)
+        }} style={{ background:'none', border:'none', cursor:'pointer', color:'#A78BFA', fontFamily:"'Space Grotesk',sans-serif", fontSize:13, fontWeight:500, flexShrink:0 }}>Undo</button>
+      </div>
+    )}
+    </>
   )
 }
 
