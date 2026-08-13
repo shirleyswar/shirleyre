@@ -184,6 +184,8 @@ interface DealFull extends Deal {
 
 export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProps) {
   const [deals, setDeals] = useState<DealFull[]>([])
+  const [portfolios, setPortfolios] = useState<{id: string, name: string}[]>([])
+  const [openPortfolioIds, setOpenPortfolioIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [search, setSearch] = useState(initialSearch)
@@ -193,22 +195,39 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
   const [typeMenuOpen, setTypeMenuOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
 
+  const togglePortfolio = useCallback((id: string) => {
+    setOpenPortfolioIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
   useEffect(() => {
     if (!open) return
     setSearch(initialSearch)
     setActiveFilter('all')
     setTypeMenuOpen(false)
+    setOpenPortfolioIds(new Set())
     setLoading(true)
     setLoadError(false)
     ;(async () => {
       try {
-        const { data, error } = await supabase
-          .from('deals')
-          .select('id, status, name, address, updated_at, property_type, portfolio_id')
-          .order('address', { ascending: true })
-          .limit(200)
-        if (error) { setLoadError(true); setLoading(false); return }
-        setDeals((data ?? []) as DealFull[])
+        const [dealsRes, portfoliosRes] = await Promise.all([
+          supabase
+            .from('deals')
+            .select('id, status, name, address, updated_at, property_type, portfolio_id')
+            .order('address', { ascending: true })
+            .limit(200),
+          supabase
+            .from('portfolio')
+            .select('id, name')
+            .limit(50),
+        ])
+        if (dealsRes.error) { setLoadError(true); setLoading(false); return }
+        setDeals((dealsRes.data ?? []) as DealFull[])
+        setPortfolios((portfoliosRes.data ?? []) as {id: string, name: string}[])
         setLoading(false)
       } catch { setLoadError(true); setLoading(false) }
     })()
@@ -244,8 +263,19 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
   // §5.11.7: Portfolios group first, then DEALS A–Z alpha groups.
   // Portfolio deals (portfolio_id non-null) are grouped under PORTFOLIOS n.
   // Remaining deals alpha-grouped as DEALS A–Z.
-  const portfolioDeals = visible.filter(d => (d as any).portfolio_id)
-  const nonPortfolioDeals = visible.filter(d => !(d as any).portfolio_id)
+  const portfolioDeals = visible.filter(d => d.portfolio_id)
+  const nonPortfolioDeals = visible.filter(d => !d.portfolio_id)
+
+  // Build map: portfolio_id → DealFull[]
+  const portfoliosByPortfolioId = new Map<string, DealFull[]>()
+  for (const deal of portfolioDeals) {
+    const pid = deal.portfolio_id!
+    if (!portfoliosByPortfolioId.has(pid)) portfoliosByPortfolioId.set(pid, [])
+    portfoliosByPortfolioId.get(pid)!.push(deal)
+  }
+
+  // Count portfolios with at least one visible deal
+  const visiblePortfolioCount = portfolios.filter(p => (portfoliosByPortfolioId.get(p.id)?.length ?? 0) > 0).length
 
   const alphaGrouped: { letter: string; deals: DealFull[] }[] = []
   for (const deal of nonPortfolioDeals) {
@@ -515,17 +545,43 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
         </div>
       ) : (
         <div style={{ padding: '0 18px' }}>
-          {/* §5.11.7: PORTFOLIOS section header — "PORTFOLIOS n", same T2 style as alpha headers */}
-          {portfolioDeals.length > 0 && (
+          {/* §5.11.7: PORTFOLIOS section — one ListRow isPortfolio per portfolio, collapsed by default */}
+          {visiblePortfolioCount > 0 && (
             <div>
               <div style={{
                 fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 500,
                 letterSpacing: '0.19em', textTransform: 'uppercase', color: T.textLow,
                 marginTop: 20, marginBottom: 8,
               }}>
-                PORTFOLIOS {portfolioDeals.length}
+                PORTFOLIOS {visiblePortfolioCount}
               </div>
-              {portfolioDeals.map(deal => <DealRow key={deal.id} deal={deal} />)}
+              {portfolios.map(portfolio => {
+                const children = portfoliosByPortfolioId.get(portfolio.id)
+                if (!children || children.length === 0) return null
+                const isOpen = openPortfolioIds.has(portfolio.id)
+                return (
+                  <ListRow
+                    key={portfolio.id}
+                    isPortfolio={true}
+                    title={portfolio.name}
+                    portfolioSiteCount={children.length}
+                    isPortfolioOpen={isOpen}
+                    onPress={() => togglePortfolio(portfolio.id)}
+                    onChevronPress={() => togglePortfolio(portfolio.id)}
+                  >
+                    {children.map(child => (
+                      <PortfolioChildRow
+                        key={child.id}
+                        address={dealTitle(child)}
+                        cityClient={child.name !== child.address ? child.name ?? undefined : undefined}
+                        status={child.status}
+                        lacdbUrl={`/warroom/deal?id=${child.id}`}
+                        onLinkOut={() => window.open(`/warroom/deal?id=${child.id}`, '_blank', 'noopener,noreferrer')}
+                      />
+                    ))}
+                  </ListRow>
+                )
+              })}
             </div>
           )}
 
@@ -551,7 +607,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
 
 // §5.11 DealRow — uses ListRow. NO border, NO radius, NO fill. Quiet ↗ glyph §5.11.6.
 // §10 item 13: The brand-tinted 30px ↗ button is RETIRED. Bare glyph only.
-import ListRow from '@/components/warroom3/ListRow'
+import ListRow, { PortfolioChildRow } from '@/components/warroom3/ListRow'
 
 function DealRow({ deal }: { deal: Deal }) {
   // §5.11.9: short-form address via formatAddress() — "Harrells Ferry Rd. N. 10993"

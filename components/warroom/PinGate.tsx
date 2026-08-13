@@ -12,7 +12,7 @@
 // Error: shake 6px×2 over 260ms, all four slot borders go late for 600ms. No error text.
 // Custom keypad — system keyboard never appears (no <input> elements).
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 const FONT_MONO = "'JetBrains Mono', ui-monospace, monospace"
@@ -59,6 +59,22 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
       }
     }
   }, [digits, error, pinHash, sha256, onSuccess])
+
+  // §D6 — desktop hardware keyboard listener (additive, does not hide on-screen keypad)
+  // CODE: useEffect attaches keydown on window; handleKey in dep array (it's a useCallback).
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= '0' && e.key <= '9') {
+        handleKey(e.key)
+      } else if (e.key === 'Backspace') {
+        handleKey('⌫')
+      } else if (e.key === 'Escape') {
+        handleKey('C')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleKey])
 
   return (
     <div style={{

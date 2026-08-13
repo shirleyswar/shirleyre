@@ -224,12 +224,12 @@ export default function ListRow({
           style={{ position: 'relative', overflow: 'hidden', background: 'transparent', padding: '14px 18px', minHeight: 44, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
         >
           {/* 28px brand plate */}
-          <div style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(139,92,246,0.13)', border: '1px solid rgba(139,92,246,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(139,92,246,0.13)', border: '1px solid rgba(139,92,246,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <StackedLayersIcon size={PORTFOLIO_MARK_SIZE} color={T.brandLift} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...styleT3 }}>{title}</div>
-            <div style={{ fontFamily: FONT_MONO, fontSize: PORTFOLIO_SITE_COUNT, fontWeight: 500, color: T.brandLift, letterSpacing: '0.11em', textTransform: 'uppercase', lineHeight: 1, marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>
+            <div style={{ fontFamily: FONT_MONO, fontSize: PORTFOLIO_SITE_COUNT, fontWeight: 400, color: T.brandLift, letterSpacing: '0.11em', textTransform: 'uppercase', lineHeight: 1, marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>
               {portfolioSiteCount} {portfolioSiteCount === 1 ? 'SITE' : 'SITES'}
             </div>
           </div>
