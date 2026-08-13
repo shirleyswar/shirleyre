@@ -687,7 +687,9 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
       {!loading && !loadError && deals.length > 0 && (
         <div style={{ padding: '0 16px' }}>
           {deals.map(deal => {
-            const addr = dealAddress(deal)
+            // §5.11.9: short-form address via formatAddress() — same as DealRow in the full sheet
+            const formatted = formatAddress(deal.address)
+            const addr = (formatted && formatted !== '—') ? formatted : (deal.name || '—')
             const pill = STATUS_LABELS[deal.status] ?? deal.status.toUpperCase()
             const pillStyle = statusPillStyle(deal.status)
             return (
@@ -702,7 +704,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
                   minHeight: 44,
                 }}
               >
-                {/* T3 address */}
+                {/* T3 address — §5.11.9 short-form: street · cardinal · number only */}
                 <div style={{
                   ...styleT3, fontSize: 14, flex: 1, minWidth: 0,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
