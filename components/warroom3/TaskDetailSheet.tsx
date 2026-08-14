@@ -252,25 +252,25 @@ export default function TaskDetailSheet({
 
   return (
     <>
-      {/* Overlay backdrop */}
+      {/* Overlay backdrop — z-index 599 (above BottomSheet scrim at 500, sheet at 501) */}
       <div
         style={{
           position: 'fixed',
           inset: 0,
           background: 'rgba(0,0,0,0.45)',
-          zIndex: 49,
+          zIndex: 599,
         }}
         onClick={onClose}
       />
 
-      {/* Full-height sheet: top 34px per §13.2 */}
+      {/* Full-height sheet: top 34px per §13.2 — z-index 600 */}
       <div
         style={{
           position: 'fixed',
           inset: 0,
           top: 34,
           background: '#0B0A12',
-          zIndex: 50,
+          zIndex: 600,
           overflowY: 'auto',
           paddingBottom: 120, // space for pinned footer + something happened row
         }}
@@ -502,7 +502,7 @@ export default function TaskDetailSheet({
         bottom: 0,
         left: 0,
         right: 0,
-        zIndex: 51,
+        zIndex: 601,
         background: '#0B0A12',
         padding: '12px 18px',
         paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',

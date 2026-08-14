@@ -98,6 +98,22 @@ function GroupHeader({
   )
 }
 
+// Sort helper — keeps tasks in bucket order after optimistic updates
+function sortTasks(tasks: Task[]): Task[] {
+  const today = todayCST()
+  return [...tasks].sort((a, b) => {
+    const aOverdue = !!(a.due_date && a.due_date < today)
+    const bOverdue = !!(b.due_date && b.due_date < today)
+    if (aOverdue && !bOverdue) return -1
+    if (!aOverdue && bOverdue) return 1
+    if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
+    if (a.due_date) return -1
+    if (b.due_date) return 1
+    if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order
+    return a.created_at.localeCompare(b.created_at)
+  })
+}
+
 // §13.1 SwipeRow — swipe right to complete, swipe left to expose Tomorrow/Next week
 function SwipeRow({ task, children, onSwipeRight, onSwipeLeft, onNextWeek }: {
   task: Task
@@ -264,13 +280,16 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
     }
 
     async function handleSwipeComplete() {
+      // Optimistic remove — row disappears immediately
+      setTasks(prev => prev.filter(t => t.id !== task.id))
+      setCompletionBar(task)
+      setTimeout(() => setCompletionBar(null), 6000)
       const { error } = await supabase
         .from('tasks')
         .update({ status: 'complete', completed_at: new Date().toISOString() })
         .eq('id', task.id)
-      if (!error) {
-        setCompletionBar(task)
-        setTimeout(() => setCompletionBar(null), 6000)
+      if (error) {
+        // Rollback on failure
         setRetryCount(c => c + 1)
       }
     }
@@ -279,16 +298,24 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
       const d = new Date()
       d.setDate(d.getDate() + 1)
       const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+      // Optimistic update — re-sort immediately without waiting for reload
+      setTasks(prev => {
+        const updated = prev.map(t => t.id === task.id ? { ...t, due_date: dateStr } : t)
+        return sortTasks(updated)
+      })
       await supabase.from('tasks').update({ due_date: dateStr }).eq('id', task.id)
-      setRetryCount(c => c + 1)
     }
 
     async function handleSwipeNextWeek() {
       const d = new Date()
       d.setDate(d.getDate() + 7)
       const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+      // Optimistic update — re-sort immediately without waiting for reload
+      setTasks(prev => {
+        const updated = prev.map(t => t.id === task.id ? { ...t, due_date: dateStr } : t)
+        return sortTasks(updated)
+      })
       await supabase.from('tasks').update({ due_date: dateStr }).eq('id', task.id)
-      setRetryCount(c => c + 1)
     }
 
     return (
