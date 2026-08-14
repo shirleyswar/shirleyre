@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 import Launch from '@/components/warroom3/Launch'
+import '../../../assets/fab/fab.css'
+import '../../../assets/launch/launch.css'
 
 // ── Tokens §2 ────────────────────────────────────────────────────────────────
 const T = {
