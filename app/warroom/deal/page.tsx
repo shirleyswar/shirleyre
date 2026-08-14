@@ -165,8 +165,8 @@ interface DealData {
   status: string
   property_type: string | null
   portfolio_id: string | null
-  lacdb_url?: string | null
-  photo_url?: string | null
+  dropbox_link?: string | null
+  photo_url?: string | null  // not in DB — always null
   transaction_type?: string | null
   asking_price?: number | null
   sqft?: number | null
@@ -221,7 +221,7 @@ function DealPageContent() {
       try {
         const { data: dealData, error: dealErr } = await supabase
           .from('deals')
-          .select('id,name,address,status,property_type,portfolio_id,lacdb_url,photo_url')
+          .select('id,name,address,status,property_type,portfolio_id,dropbox_link,acreage,commission_estimated,commission_collected')
           .eq('id', dealId)
           .single()
         if (dealErr || !dealData) { setError(true); setLoading(false); return }
@@ -510,19 +510,11 @@ function DealPageContent() {
           <Card>
             <CardLabel>LACDB</CardLabel>
             <div style={{ padding: '12px 18px 18px' }}>
-              {deal.lacdb_url ? (
+              {deal.dropbox_link ? (
                 <>
-                  {deal.photo_url && (
-                    <div style={{ float: 'left', width: '58%', marginRight: 16, marginBottom: 8, borderRadius: 8, overflow: 'hidden' }}>
-                      <img
-                        src={deal.photo_url}
-                        alt={street}
-                        style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: 180 }}
-                      />
-                    </div>
-                  )}
+                  {/* photo_url not in DB schema — placeholder only */}
                   <a
-                    href={deal.lacdb_url}
+                    href={deal.dropbox_link}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{

@@ -172,14 +172,16 @@ interface DealData {
   status: string
   property_type: string | null
   portfolio_id: string | null
+  dropbox_link?: string | null   // was lacdb_url — real column name
+  acreage?: number | null        // was land_size — real column name
+  commission_estimated?: number | null
+  commission_collected?: number | null
   transaction_type?: string | null
-  lacdb_url?: string | null
-  photo_url?: string | null
-  // economics
+  // economics (from deal_economics table)
   asking_price?: number | null
   sqft?: number | null
-  land_size?: number | null
-  deal_value?: number | null
+  land_size?: number | null      // mapped from land_sqft
+  deal_value?: number | null     // not in DB — null
   commission_pct?: number | null
   est_commission?: number | null
   // lease
@@ -211,7 +213,7 @@ function DealPageContent() {
         // Fetch core deal
         const { data: dealData, error: dealErr } = await supabase
           .from('deals')
-          .select('id, name, address, status, property_type, portfolio_id, lacdb_url, photo_url')
+          .select('id, name, address, status, property_type, portfolio_id, dropbox_link, acreage, commission_estimated, commission_collected')
           .eq('id', dealId)
           .single()
         if (dealErr || !dealData) { setError(true); setLoading(false); return }
@@ -338,19 +340,13 @@ function DealPageContent() {
           paddingTop: '56.25%', // 16:9
           borderRadius: 12,
           overflow: 'hidden',
-          background: deal.photo_url ? 'transparent' : 'rgba(255,255,255,0.04)',
+          background: 'rgba(255,255,255,0.04)',
         }}>
-          {deal.photo_url && (
-            <img
-              src={deal.photo_url}
-              alt={addr}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          )}
+          {/* photo_url not in DB schema — placeholder only */}
           {/* LACDB ↗ pill — photo bottom-right corner (§15.1.2) */}
-          {deal.lacdb_url && (
+          {deal.dropbox_link && (
             <a
-              href={deal.lacdb_url}
+              href={deal.dropbox_link}
               target="_blank"
               rel="noopener noreferrer"
               style={{
