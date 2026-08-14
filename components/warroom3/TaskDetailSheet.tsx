@@ -399,10 +399,18 @@ export default function TaskDetailSheet({
               <div style={{ marginTop: 12 }}>
                 <CalendarPicker
                   value={currentDue ? new Date(currentDue + 'T00:00:00') : null}
-                  onDone={(d: Date) => {
-                    setLocalDue(d.toLocaleDateString('en-CA'))
+                  onDone={async (d: Date) => {
+                    const dateStr = d.toLocaleDateString('en-CA')
+                    setLocalDue(dateStr)
                     setShowCalendar(false)
                     setSelectedChip('pick')
+                    // Write immediately — same pattern as swipe-left Tomorrow.
+                    // onSaved() closes the sheet and triggers parent re-sort.
+                    if (!task) return
+                    setSaving(true)
+                    await supabase.from('tasks').update({ due_date: dateStr }).eq('id', task.id)
+                    setSaving(false)
+                    onSaved()
                   }}
                   onCancel={() => {
                     setShowCalendar(false)
