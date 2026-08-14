@@ -5,7 +5,7 @@
 // Route: /warroom3/deal?id=<uuid>
 
 import React, { useState, useEffect, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 import Launch from '@/components/warroom3/Launch'
@@ -191,8 +191,13 @@ interface DealData {
 // ── Main page ─────────────────────────────────────────────────────────────────
 function DealPageContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const dealId = searchParams.get('id')
+  // useSearchParams() returns empty in static export (searchParams:{} baked in at build time).
+  // Read directly from window.location.search on the client instead.
+  const [dealId, setDealId] = useState<string | null>(null)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setDealId(params.get('id'))
+  }, [])
 
   const [deal, setDeal] = useState<DealData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -200,8 +205,6 @@ function DealPageContent() {
   const [launched, setLaunched] = useState(false)
 
   useEffect(() => {
-    // In static export, dealId is null on the initial pre-render. Stay in loading
-    // until client-side hydration populates searchParams with the real URL param.
     if (!dealId) { return }
     ;(async () => {
       try {

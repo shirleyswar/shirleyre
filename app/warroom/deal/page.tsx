@@ -5,7 +5,7 @@
 // Route: /warroom/deal?id=<uuid>
 
 import React, { useState, useEffect, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 import Launch from '@/components/warroom3/Launch'
@@ -193,8 +193,12 @@ interface ContactRow {
 // ── Main page content ─────────────────────────────────────────────────────────
 function DealPageContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const dealId = searchParams.get('id')
+  // Static export: useSearchParams() returns {} at build time. Read from window.location.search instead.
+  const [dealId, setDealId] = useState<string | null>(null)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setDealId(params.get('id'))
+  }, [])
 
   const [pinValid, setPinValid] = useState<boolean | null>(null)
   const [deal, setDeal] = useState<DealData | null>(null)
@@ -212,7 +216,7 @@ function DealPageContent() {
 
   // Data fetch
   useEffect(() => {
-    if (!dealId) { setError(true); setLoading(false); return }
+    if (!dealId) { return }  // wait for client-side dealId resolution
     ;(async () => {
       try {
         const { data: dealData, error: dealErr } = await supabase
