@@ -363,9 +363,11 @@ function DealPageContent() {
     <div style={{ background: T.bgBase, minHeight: '100vh' }}>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
       <div style={{
+        maxWidth: 1440,
+        margin: '0 auto',
         padding: '18px 32px',
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
         display: 'flex',
         alignItems: 'center',
         gap: 16,
@@ -445,46 +447,60 @@ function DealPageContent() {
           Edit
         </button>
       </div>
+      </div>
 
       {/* ── Six-slot glance strip ───────────────────────────────────────────── */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(6, 1fr)',
         borderTop: '1px solid rgba(255,255,255,0.07)',
         borderBottom: '1px solid rgba(255,255,255,0.07)',
-        padding: '0 32px',
       }}>
-        {glanceCells.map((cell, i) => (
-          <div
-            key={i}
-            style={{
-              padding: '14px 0',
-              borderRight: i < 5 ? '1px solid rgba(255,255,255,0.07)' : 'none',
-              paddingLeft: i === 0 ? 0 : 16,
-              paddingRight: i === 5 ? 0 : 16,
-            }}
-          >
-            <div style={{
-              fontFamily: FONT_MONO,
-              fontSize: 9.5,
-              fontWeight: 500,
-              letterSpacing: '0.19em',
-              textTransform: 'uppercase',
-              color: T.textLow,
-              lineHeight: 1,
-              marginBottom: 6,
-            }}>
-              {cell.label}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+          maxWidth: 1440,
+          margin: '0 auto',
+          padding: '0 32px',
+        }}>
+          {glanceCells.map((cell, i) => (
+            <div
+              key={i}
+              style={{
+                padding: '14px 0',
+                borderRight: i < 5 ? '1px solid rgba(255,255,255,0.07)' : 'none',
+                paddingLeft: i === 0 ? 0 : 16,
+                paddingRight: i === 5 ? 0 : 16,
+                minWidth: 0,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{
+                fontFamily: FONT_MONO,
+                fontSize: 9.5,
+                fontWeight: 500,
+                letterSpacing: '0.19em',
+                textTransform: 'uppercase',
+                color: T.textLow,
+                lineHeight: 1,
+                marginBottom: 6,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}>
+                {cell.label}
+              </div>
+              <div style={{
+                ...STYLE_M0,
+                color: cell.glow ? T.brandLift : T.textHi,
+                textShadow: cell.glow ? '0 0 22px rgba(167,139,250,0.35)' : undefined,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}>
+                {cell.value}
+              </div>
             </div>
-            <div style={{
-              ...STYLE_M0,
-              color: cell.glow ? T.brandLift : T.textHi,
-              textShadow: cell.glow ? '0 0 22px rgba(167,139,250,0.35)' : undefined,
-            }}>
-              {cell.value}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* ── Two-column grid ─────────────────────────────────────────────────── */}

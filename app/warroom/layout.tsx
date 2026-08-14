@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import '../../assets/fab/fab.css'
+import '../../assets/launch/launch.css'
 
 // War Room metadata — overrides root layout icons for /warroom segment.
 // PinGate is shared — mark swap applies here too (approved).
