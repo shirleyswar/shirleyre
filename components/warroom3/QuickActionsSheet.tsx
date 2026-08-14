@@ -22,18 +22,19 @@ const T = {
   bgRaise:   '#16161F',
 } as const
 
-// T4 §3.2 — 11.5px / 400 / sentence / text-mid
+// T4 §3.2 — 14px / 400 / sentence / text-mid (44a type scale)
 const styleT4: React.CSSProperties = {
   fontFamily: FONT_DISPLAY,
-  fontSize: 11.5,
+  fontSize: 14,
   fontWeight: 400,
   color: T.textMid,
   lineHeight: 1.5,
 }
 
-// TYPE_TUNE_INPUTS — no matching §3.2 level; held behind named constants
-const VOICE_NOTE_TITLE_SIZE = 17   // §18.2 Voice Note row title — no §3.2 level
-const ACTION_TITLE_SIZE = 15       // §18.2 Task/Event row title — no §3.2 level
+// TYPE_TUNE_INPUTS — T3 per §18.2 locked 13 Aug (was 17/15 pre-Type Tune)
+// 44a type scale: T3 = 18px
+const VOICE_NOTE_TITLE_SIZE = 18   // §18.2 Voice Note row title — T3 (44a)
+const ACTION_TITLE_SIZE = 18       // §18.2 Task/Event row title — T3 (44a)
 
 interface ActionRowProps {
   icon: React.ReactNode

@@ -15,10 +15,10 @@ import { motion, AnimatePresence, useReducedMotion, type Transition } from 'fram
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 
-// T1 §3.2
+// T1 §3.2 — 12px (44a type scale)
 const styleT1: React.CSSProperties = {
   fontFamily: FONT_MONO,
-  fontSize: 10.5,
+  fontSize: 12,
   fontWeight: 500,
   letterSpacing: '0.14em',
   textTransform: 'uppercase',
@@ -190,7 +190,7 @@ export default function BottomSheet({
               {headerAction ?? (count !== undefined && (
                 <span style={{
                   fontFamily: FONT_MONO,
-                  fontSize: 12,
+                  fontSize: 13.5,
                   fontWeight: 500,
                   color: '#5C5B6B',
                   letterSpacing: '0.04em',

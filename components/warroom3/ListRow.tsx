@@ -37,30 +37,29 @@ function StackedLayersIcon({ size, color }: { size: number; color: string }) {
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
-// T3 §3.2 — 14.5px / 500 / sentence / text-hi — row title
-// Rendered line height: 14.5 * 1.25 = 18.125 → browser renders 19px
+// T3 §3.2 — 18px / 500 / sentence / text-hi — row title (44a type scale)
+// Rendered line height: 18 * 1.25 = 22.5 → browser renders 22px
 const styleT3: React.CSSProperties = {
   fontFamily: FONT_DISPLAY,
-  fontSize: 14.5,
+  fontSize: 18,
   fontWeight: 500,
   color: '#EFEEF4',
   lineHeight: 1.25,
 }
 
-// Meta line §5.11.1 — Space Grotesk 11.5/400, text-low
-// Rendered line height: 11.5 * 1.3 ≈ 15px → spec says 15px meta line
+// Meta line §5.11.1 — Space Grotesk 14px/400, text-low (44a: T4 14px)
 const styleMetaLine: React.CSSProperties = {
   fontFamily: FONT_DISPLAY,
-  fontSize: 11.5,
+  fontSize: 14,
   fontWeight: 400,
   color: '#5C5B6B',
   lineHeight: 1.3,
 }
 
-// T5 §3.2 — 9px / 500 (700 when filled) / 0.11em / UPPER — pills, badges
+// T5 §3.2 — 10px / 500 (700 when filled) / 0.11em / UPPER — pills, badges (44a type scale)
 const styleT5: React.CSSProperties = {
   fontFamily: FONT_MONO,
-  fontSize: 9,
+  fontSize: 10,
   fontWeight: 500,
   letterSpacing: '0.11em',
   textTransform: 'uppercase',
@@ -71,7 +70,7 @@ const styleT5: React.CSSProperties = {
 // CODE: moved from third-line-below to right slot per §5.11.5 / locked design 20a
 const styleDayCount: React.CSSProperties = {
   fontFamily: FONT_MONO,
-  fontSize: 9,
+  fontSize: 10,
   fontWeight: 500,
   letterSpacing: '0.11em',
   textTransform: 'uppercase',
@@ -80,14 +79,15 @@ const styleDayCount: React.CSSProperties = {
 }
 
 // ── TYPE_TUNE_INPUTS — no matching §3.2 level ────────────────────────────────
-const MONO_COMMISSION_SIZE = 15     // §5.11.4 commission figure
-const MONO_PRICE_SIZE = 11.5        // §5.11.4 sale price — T4 size but mono family
-const GLYPH_LINKOUT_SIZE = 14       // §5.11.6 ↗ glyph
-const PORTFOLIO_MARK_SIZE = 15      // §5.11.7 stacked-layers glyph
-const PORTFOLIO_CHILD_ADDR = 13.5   // §5.11.7 child address
-const PORTFOLIO_CHILD_CITY = 11     // §5.11.7 child city
-const PORTFOLIO_CHEVRON_SIZE = 15   // §5.11.7 chevron
-const PORTFOLIO_SITE_COUNT = 11.5   // §5.11.7 SITES — T4 size, mono family
+// 44a type scale: M1=17px, M2=13.5px, T5=10px
+const MONO_COMMISSION_SIZE = 17     // §5.11.4 commission figure — M1 (44a: 15→17)
+const MONO_PRICE_SIZE = 13.5        // §5.11.4 sale price — M2 (44a: 11.5→13.5)
+const GLYPH_LINKOUT_SIZE = 14       // §5.11.6 ↗ glyph — unchanged
+const PORTFOLIO_MARK_SIZE = 15      // §5.11.7 stacked-layers glyph — unchanged
+const PORTFOLIO_CHILD_ADDR = 13.5   // §5.11.7 child address — unchanged
+const PORTFOLIO_CHILD_CITY = 11     // §5.11.7 child city — unchanged
+const PORTFOLIO_CHEVRON_SIZE = 15   // §5.11.7 chevron — unchanged
+const PORTFOLIO_SITE_COUNT = 13.5   // §5.11.7 SITES — M2 size, mono family (44a)
 
 // ── Colour tokens §2 ─────────────────────────────────────────────────────────
 const T = {
@@ -250,8 +250,8 @@ export default function ListRow({
   }
 
   // ── Standard row — one construction, two heights ──────────────────────────
-  // 68px: 14 + 19(title) + 5(gap) + 15(meta) + 14 + 1(hairline)
-  // 49px: 14 + 19(title) + 14 + 1(hairline)   [spec says 49; will measure and report]
+  // 84px: 18 + 22(title) + 6(gap) + 18(meta) + 18 + 1(hairline) — CODE P1B before: 14px padding
+  // 60px: 18 + 22(title) + 18 + 1(hairline)                      — CODE P1B before: 14px padding
   // Day count is ALWAYS in the right slot — never adds height.
   return (
     <div>
@@ -264,7 +264,7 @@ export default function ListRow({
           position: 'relative',
           overflow: 'hidden',
           background: 'transparent',
-          padding: `14px 18px 14px ${paddingLeft}px`,
+          padding: `18px 18px 18px ${paddingLeft}px`,
           // minHeight 44px — satisfied by 14+14 padding alone on a title-only row (48px > 44)
           display: 'flex',
           alignItems: showMetaLine ? 'flex-start' : 'center',
@@ -283,9 +283,9 @@ export default function ListRow({
           {/* Title — T3 */}
           <div style={{ ...styleT3 }}>{title}</div>
 
-          {/* Meta line — 5px gap above, only when present (§5.11.5) */}
+          {/* Meta line — 6px gap above, only when present (§5.11.5 / P1B) */}
           {showMetaLine && (
-            <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
               {/* Badge on meta line LEFT — entity/life tag (CODE: was its own line or right slot) */}
               {hasBadge && (
                 <span style={{ ...styleT5, color: T.textLow, border: '1px solid rgba(255,255,255,0.10)', borderRadius: 4, padding: '2px 5px', flexShrink: 0 }}>

@@ -27,12 +27,12 @@ const T = {
   brandLift: '#A78BFA',
 } as const
 
-// T2 §3.2 — 9.5px / 500 / 0.19em / UPPER / text-low — group headers
+// T2 §3.2 — 12px / 500 / 0.15em / UPPER / text-low — group headers (44a type scale)
 const styleT2: React.CSSProperties = {
   fontFamily: FONT_MONO,
-  fontSize: 9.5,
+  fontSize: 12,
   fontWeight: 500,
-  letterSpacing: '0.19em',
+  letterSpacing: '0.15em',
   textTransform: 'uppercase',
   lineHeight: 1,
 }
@@ -89,7 +89,7 @@ function GroupHeader({
       <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
       <span style={{
         fontFamily: FONT_MONO,
-        fontSize: 9.5,
+        fontSize: 12,
         fontWeight: 500,
         color: T.textLow,
         fontVariantNumeric: 'tabular-nums',
@@ -116,14 +116,17 @@ function SwipeRow({ task, children, onSwipeRight, onSwipeLeft }: {
   const showLeft  = offsetX < 0   // swiping left  → Tomorrow / Next week
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden' }}>
-      {/* Left reveal (swipe right exposes): green DONE — hidden unless swiping right */}
-      <div style={{ position:'absolute', inset:0, background:'#34D399', display: showRight ? 'flex' : 'none', alignItems:'center', paddingLeft:18 }}>
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9.5, fontWeight:700, letterSpacing:'0.19em', color:'#0A0A0F' }}>DONE</span>
+    <div style={{ position: 'relative', overflow: 'hidden', minHeight: 64 }}>
+      {/* Left reveal (swipe right exposes): green DONE — hidden unless swiping right. §13.1 gradient recolour (P1C). */}
+      <div style={{ position:'absolute', inset:0, background:'radial-gradient(circle at 50% 30%, #87DFBE 0%, #31A870 45%, #0E4B34 100%)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.25)', display: showRight ? 'flex' : 'none', alignItems:'center', paddingLeft:18 }}>
+        <span style={{ fontFamily:"'Space Grotesk',system-ui,sans-serif", fontSize:14.5, fontWeight:700, letterSpacing:'0.02em', color:'#0A2E20', textTransform:'uppercase' }}>✓ DONE</span>
       </div>
-      {/* Right reveal (swipe left exposes): Tomorrow + Next week — hidden unless swiping left */}
+      {/* Right reveal (swipe left exposes): Tomorrow + Next week — hidden unless swiping left. §13.1 gradient recolour (P1C). Width 94px (was 74). */}
       <div style={{ position:'absolute', inset:0, display: showLeft ? 'flex' : 'none', justifyContent:'flex-end', alignItems:'stretch' }}>
-        <button onClick={onSwipeLeft} style={{ width:74, background:'#FFA23A', border:'none', cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, letterSpacing:'0.11em', color:'#0A0A0F', textTransform:'uppercase' }}>Tomorrow</button>
+        <button onClick={onSwipeLeft} style={{ width:94, background:'radial-gradient(circle at 50% 30%, #FFDDA8 0%, #FFA23A 48%, #B36A12 100%)', border:'none', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2 }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, color:'#4A2A05', lineHeight:1 }}>›</span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, letterSpacing:'0.11em', color:'#4A2A05', textTransform:'uppercase', lineHeight:1 }}>TOMORROW</span>
+        </button>
         <button
           onClick={async () => {
             const d = new Date()
@@ -132,7 +135,7 @@ function SwipeRow({ task, children, onSwipeRight, onSwipeLeft }: {
             await supabase.from('tasks').update({ due_date: dateStr }).eq('id', task.id)
             setOffsetX(0)
           }}
-          style={{ width:74, background:'rgba(255,255,255,0.12)', border:'none', cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:9, fontWeight:700, letterSpacing:'0.11em', color:'#EFEEF4', textTransform:'uppercase' }}>Next week</button>
+          style={{ width:94, background:'rgba(255,255,255,0.12)', border:'none', cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, letterSpacing:'0.11em', color:'#8B8A9B', textTransform:'uppercase' }}>Next week</button>
       </div>
       {/* Row content — translates on swipe */}
       <div
@@ -142,7 +145,7 @@ function SwipeRow({ task, children, onSwipeRight, onSwipeLeft }: {
         onTouchEnd={() => {
           setSwiping(false)
           if (offsetX > THRESHOLD) { onSwipeRight(); setOffsetX(0) }
-          else if (offsetX < -THRESHOLD) { /* reveal stays exposed for tap */ setOffsetX(-148) }
+          else if (offsetX < -THRESHOLD) { /* reveal stays exposed for tap */ setOffsetX(-188) }
           else { setOffsetX(0) }
         }}
       >

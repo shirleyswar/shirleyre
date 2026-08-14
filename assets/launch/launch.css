@@ -1,0 +1,222 @@
+/* War Room LAUNCH control — "Threshold". Standalone asset.
+   Pure CSS, no images, no dependencies. Family: assets/fab/fab.css.
+
+   Why it is not the FAB stretched: the FAB's aperture is a 58px square well.
+   Scaled across a full-width pill the well washes out into a flat violet slab.
+   So the well stays at its own size — a 58px round aperture seated in a quiet
+   pill — and the label sits beside it. Same halo beat (7s), same rim sweep
+   (16s), same body/rim/face/core stack, same glow on the glyph.
+
+   The glyph is the ORBIT BREAK mark, drawn for this control: a broken ring (orbit)
+   with a bright dot on it. At rest the dot circles the ring; on tap it swings
+   through the gap, flings outward, and fades — the launch moment — then the
+   loop resets. It is deliberately NOT the eject symbol (triangle on an
+   unbroken bar), not the FAB's two-bar plus — that mark means "create" and
+   already has a job — and not the eight-point star, which is the brand mark
+   and was rejected for button use (FAB_FUNCTION_SPEC_v2 §9). Locked 13 Aug
+   (35b), superseding the earlier bars-and-triangle THRESHOLD glyph.
+
+   Markup:
+   <button class="wr-launch">
+     <span class="wr-launch__mark">
+       <span class="wr-launch__halo"></span>
+       <span class="wr-launch__body"></span>
+       <span class="wr-launch__rim"></span>
+       <span class="wr-launch__face"><span class="wr-launch__core"></span></span>
+       <span class="wr-launch__ring"></span>
+       <span class="wr-launch__orbit"><span class="wr-launch__dot"></span></span>
+     </span>
+     <span class="wr-launch__label">LAUNCH DEAL</span>
+   </button>
+*/
+
+.wr-launch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  height: 64px;
+  padding: 3px;
+  border: 1px solid rgba(167, 139, 250, .24);
+  border-color: rgba(167, 139, 250, .24);   /* explicit: on a <button>, currentColor is the UA's black buttontext */
+  color: #FFFFFF;
+  border-radius: 34px;
+  background: linear-gradient(180deg, #15111F 0%, #0A0912 100%);
+  box-shadow: 0 8px 22px rgba(70, 25, 175, .26);
+  cursor: pointer;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+/* transition lives on the interactive states only — declared on the base rule it
+   fires at first style application and animates FROM the UA initials, i.e. a
+   220ms black-rim / no-shadow flash on every load. */
+.wr-launch:hover,
+.wr-launch:focus-visible { transition: border-color .22s ease, box-shadow .22s ease; }
+.wr-launch:hover { border-color: rgba(167, 139, 250, .5); box-shadow: 0 10px 30px rgba(70, 25, 175, .42); }
+
+.wr-launch__mark {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex: none;
+  transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
+}
+.wr-launch:hover  .wr-launch__mark { transform: translateY(-2px) scale(1.03); }
+.wr-launch:active .wr-launch__mark { transform: translateY(0) scale(.96); }
+
+/* breathing halo — the 7s beat, unchanged from the FAB and the site beacon */
+.wr-launch__halo {
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(155, 105, 255, .54),
+    rgba(124, 58, 237, .12) 46%,
+    transparent 72%);
+  animation: wr-launch-breathe 7s ease-in-out infinite;
+  transition: opacity .22s ease, transform .22s ease;
+  pointer-events: none;
+}
+.wr-launch:hover .wr-launch__halo { opacity: 1; transform: scale(1.18); }
+
+.wr-launch__body {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #09080F;
+  box-shadow: 0 8px 22px rgba(70, 25, 175, .44);
+}
+
+.wr-launch__rim { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; }
+.wr-launch__rim::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 158%;
+  height: 158%;
+  margin: -79% 0 0 -79%;
+  background: conic-gradient(from 0deg,
+    transparent 0deg,
+    rgba(214, 196, 255, .90) 38deg,
+    rgba(124, 58, 237, .90) 80deg,
+    transparent 134deg,
+    transparent 272deg,
+    rgba(139, 92, 246, .72) 320deg,
+    transparent 352deg);
+  animation: wr-launch-sweep 16s linear infinite;
+}
+
+/* the well */
+.wr-launch__face {
+  position: absolute;
+  inset: 1.5px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 47%,
+    #5B3FA8 0%,
+    #2A1D52 26%,
+    #120E22 62%,
+    #07060C 100%);
+  box-shadow: inset 0 1px 0 rgba(196, 181, 253, .24),
+              inset 0 0 15px 5px rgba(0, 0, 0, .5);
+}
+.wr-launch__core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(186, 148, 255, .55),
+    rgba(139, 92, 246, .16) 52%,
+    transparent 74%);
+}
+
+/* the orbit-break glyph — a broken ring with a dot that circles, then escapes */
+.wr-launch__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .4);
+  border-top-color: transparent;
+  border-right-color: transparent;
+  animation: wr-launch-ring-pulse 4s ease-in-out infinite;
+}
+.wr-launch__orbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  animation: wr-launch-orbit-spin 4s linear infinite;
+}
+.wr-launch__dot {
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 1), 0 0 20px rgba(139, 92, 246, .8);
+  animation: wr-launch-escape 4s ease-in-out infinite;
+}
+
+@keyframes wr-launch-ring-pulse {
+  0%, 55%  { opacity: 1; }
+  75%      { opacity: .5; }
+  92%, 100% { opacity: 1; }
+}
+@keyframes wr-launch-orbit-spin { to { transform: rotate(360deg); } }
+@keyframes wr-launch-escape {
+  0%, 55%  { transform: rotate(0deg) translateX(0) scale(1); opacity: 1; }
+  75%      { transform: rotate(35deg) translateX(9px) scale(1.15); opacity: 1; }
+  92%      { transform: rotate(35deg) translateX(26px) scale(.4); opacity: 0; }
+  100%     { transform: rotate(0deg) translateX(0) scale(1); opacity: 0; }
+}
+
+.wr-launch__label {
+  flex: 1;
+  padding-right: 40px;
+  font: 700 14.5px/1 'JetBrains Mono', monospace;
+  letter-spacing: .1em;
+  white-space: nowrap;
+  color: #FFFFFF;
+  text-shadow: 0 0 18px rgba(167, 139, 250, .55);
+}
+
+.wr-launch:focus-visible { outline: none; border-color: rgba(167, 139, 250, .8); }
+
+/* launched: hold the escaped frame, well cools to money-in */
+.wr-launch[data-state="launched"] .wr-launch__face {
+  background: radial-gradient(circle at 50% 47%, #1F6B52 0%, #14402F 26%, #0C1F18 62%, #07060C 100%);
+}
+.wr-launch[data-state="launched"] .wr-launch__orbit,
+.wr-launch[data-state="launched"] .wr-launch__ring { animation-play-state: paused; }
+.wr-launch[data-state="launched"] .wr-launch__dot { transform: rotate(35deg) translateX(26px) scale(.4); opacity: 0; }
+
+@keyframes wr-launch-breathe {
+  0%, 100% { opacity: .42; transform: scale(1); }
+  50%      { opacity: .72; transform: scale(1.13); }
+}
+@keyframes wr-launch-sweep { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .wr-launch__halo,
+  .wr-launch__rim::before,
+  .wr-launch__orbit,
+  .wr-launch__ring,
+  .wr-launch__dot { animation: none; }
+  .wr-launch__halo { opacity: .6; }
+  .wr-launch__mark { transition-duration: .01ms; }
+}

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 // Item 7b fix: FAB CSS removed from globals.css (retired code), imported from delivered asset.
 import '../../assets/fab/fab.css'
+// P3: LAUNCH asset CSS — same family as FAB
+import '../../assets/launch/launch.css'
 
 // War Room app-level metadata — overrides root layout icons for this segment.
 // Next.js merges metadata: child segment overrides parent for matching keys.

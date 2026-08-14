@@ -54,10 +54,10 @@ const T = {
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
-// T1 §3.2 — 10.5px / 500 / 0.14em / UPPER / text-mid — section labels
+// T1 §3.2 — 12px / 500 / 0.14em / UPPER / text-mid — section labels (44a type scale)
 const styleT1: React.CSSProperties = {
   fontFamily: FONT_MONO,
-  fontSize: 10.5,
+  fontSize: 12,
   fontWeight: 500,
   letterSpacing: '0.14em',
   textTransform: 'uppercase',
@@ -65,30 +65,30 @@ const styleT1: React.CSSProperties = {
   lineHeight: 1,
 }
 
-// T2 §3.2 — 9.5px / 500 / 0.19em / UPPER / text-low — micro labels, eyebrows
+// T2 §3.2 — 12px / 500 / 0.15em / UPPER / text-low — micro labels, eyebrows (44a type scale)
 const styleT2: React.CSSProperties = {
   fontFamily: FONT_MONO,
-  fontSize: 9.5,
+  fontSize: 12,
   fontWeight: 500,
-  letterSpacing: '0.19em',
+  letterSpacing: '0.15em',
   textTransform: 'uppercase',
   color: T.textLow,
   lineHeight: 1,
 }
 
-// T3 §3.2 — 14.5px / 500 / 0 / sentence / text-hi — row primary
+// T3 §3.2 — 18px / 500 / 0 / sentence / text-hi — row primary (44a type scale)
 const styleT3: React.CSSProperties = {
   fontFamily: FONT_DISPLAY,
-  fontSize: 14.5,
+  fontSize: 18,
   fontWeight: 500,
   color: T.textHi,
   lineHeight: 1.25,
 }
 
-// T4 §3.2 — 11.5px / 400 / 0 / sentence / text-mid — row secondary
+// T4 §3.2 — 14px / 400 / 0 / sentence / text-mid — row secondary (44a type scale)
 const styleT4: React.CSSProperties = {
   fontFamily: FONT_DISPLAY,
-  fontSize: 11.5,
+  fontSize: 14,
   fontWeight: 400,
   color: T.textMid,
   lineHeight: 1.5,
@@ -451,11 +451,11 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
             {stat.count}
           </span>
         )}
-        {/* T5 §3.2: JetBrains Mono 9px / 500 / 0.11em / UPPER */}
+        {/* T5 §3.2: JetBrains Mono 10px / 500 / 0.11em / UPPER */}
         {!stat.fetchFailed && statusNote ? (
           <span style={{
             fontFamily: FONT_MONO,
-            fontSize: 9,
+            fontSize: 10,
             fontWeight: 700,
             letterSpacing: '0.11em',
             textTransform: 'uppercase',
@@ -468,7 +468,7 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
         ) : stat.fetchFailed ? (
           <span style={{
             fontFamily: FONT_MONO,
-            fontSize: 9,
+            fontSize: 10,
             fontWeight: 700,
             letterSpacing: '0.11em',
             textTransform: 'uppercase',
@@ -567,7 +567,7 @@ function HomeScreen({
         {/* §6.2 + 29b: date rebinds to T1 at text-low (was T2). */}
         <span style={{
           fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 10.5,
+          fontSize: 12,
           fontWeight: 500,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',

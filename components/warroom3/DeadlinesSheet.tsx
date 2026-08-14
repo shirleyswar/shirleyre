@@ -52,19 +52,20 @@ const T = {
   missed:    '#5C5B6B',   // acknowledged blown
 } as const
 
+// 44a type scale: T1=12px, T2=12px/0.15em, T3=18px, T4=14px
 const styleT1: React.CSSProperties = {
-  fontFamily: FONT_MONO, fontSize: 10.5, fontWeight: 500,
+  fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500,
   letterSpacing: '0.14em', textTransform: 'uppercase', color: T.textMid, lineHeight: 1,
 }
 const styleT2: React.CSSProperties = {
-  fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 500,
-  letterSpacing: '0.19em', textTransform: 'uppercase', lineHeight: 1,
+  fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500,
+  letterSpacing: '0.15em', textTransform: 'uppercase', lineHeight: 1,
 }
 const styleT3: React.CSSProperties = {
-  fontFamily: FONT_DISPLAY, fontSize: 14.5, fontWeight: 500, color: T.textHi, lineHeight: 1.25,
+  fontFamily: FONT_DISPLAY, fontSize: 18, fontWeight: 500, color: T.textHi, lineHeight: 1.25,
 }
 const styleT4: React.CSSProperties = {
-  fontFamily: FONT_DISPLAY, fontSize: 11.5, fontWeight: 400, color: T.textMid, lineHeight: 1.5,
+  fontFamily: FONT_DISPLAY, fontSize: 14, fontWeight: 400, color: T.textMid, lineHeight: 1.5,
 }
 
 function todayCST(): string {

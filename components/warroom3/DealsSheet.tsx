@@ -27,10 +27,10 @@ const T = {
   hot:         '#FFA23A',
 } as const
 
-// T1 §3.2
+// T1 §3.2 — 12px (44a type scale)
 const styleT1: React.CSSProperties = {
   fontFamily: FONT_MONO,
-  fontSize: 10.5,
+  fontSize: 12,
   fontWeight: 500,
   letterSpacing: '0.14em',
   textTransform: 'uppercase',
@@ -38,28 +38,28 @@ const styleT1: React.CSSProperties = {
   lineHeight: 1,
 }
 
-// T3 §3.2
+// T3 §3.2 — 18px (44a type scale)
 const styleT3: React.CSSProperties = {
   fontFamily: FONT_DISPLAY,
-  fontSize: 14.5,
+  fontSize: 18,
   fontWeight: 500,
   color: T.textHi,
   lineHeight: 1.25,
 }
 
-// T4 §3.2
+// T4 §3.2 — 14px (44a type scale)
 const styleT4: React.CSSProperties = {
   fontFamily: FONT_DISPLAY,
-  fontSize: 11.5,
+  fontSize: 14,
   fontWeight: 400,
   color: T.textMid,
   lineHeight: 1.5,
 }
 
-// T5 §3.2 — pills, chips
+// T5 §3.2 — 10px (44a type scale)
 const styleT5: React.CSSProperties = {
   fontFamily: FONT_MONO,
-  fontSize: 9,
+  fontSize: 10,
   fontWeight: 500,
   letterSpacing: '0.11em',
   textTransform: 'uppercase',
@@ -157,10 +157,10 @@ const STYLE_T0: React.CSSProperties = {
   lineHeight: 1,
 }
 
-// M2 — JetBrains Mono 12px / 500 / tabular-nums / text-low — count in header (31a)
+// M2 — JetBrains Mono 13.5px / 500 / tabular-nums / text-low — count in header (31a, 44a type scale)
 const STYLE_M2: React.CSSProperties = {
   fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-  fontSize: 12,
+  fontSize: 13.5,
   fontWeight: 500,
   letterSpacing: '0.04em',
   color: '#5C5B6B',
@@ -347,7 +347,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
               >
                 <span style={{
                   fontFamily: FONT_MONO,
-                  fontSize: 16,
+                  fontSize: 19,
                   fontWeight: active ? 700 : 600,
                   letterSpacing: '0.03em',
                   textTransform: 'uppercase' as const,
@@ -358,7 +358,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
                 </span>
                 <span style={{
                   fontFamily: FONT_MONO,
-                  fontSize: 16,
+                  fontSize: 19,
                   fontWeight: 400,
                   letterSpacing: '0.03em',
                   textTransform: 'uppercase' as const,
@@ -389,7 +389,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
           >
             <span style={{
               fontFamily: FONT_MONO,
-              fontSize: 16,
+              fontSize: 19,
               fontWeight: selectedType ? 700 : 600,
               letterSpacing: '0.03em',
               textTransform: 'uppercase' as const,
@@ -401,7 +401,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
             {selectedType && (
               <span style={{
                 fontFamily: FONT_MONO,
-                fontSize: 16,
+                fontSize: 19,
                 fontWeight: 400,
                 letterSpacing: '0.03em',
                 textTransform: 'uppercase' as const,
@@ -468,7 +468,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
                       {!isSelected && <div style={{ width: 12 }} />}
                       <span style={{
                         fontFamily: FONT_MONO,
-                        fontSize: 10.5,
+                        fontSize: 12,
                         fontWeight: 500,
                         letterSpacing: '0.14em',
                         textTransform: 'uppercase' as const,
@@ -549,7 +549,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
           {visiblePortfolioCount > 0 && (
             <div>
               <div style={{
-                fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 500,
+                fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500,
                 letterSpacing: '0.19em', textTransform: 'uppercase', color: T.textLow,
                 marginTop: 20, marginBottom: 8,
               }}>
@@ -589,7 +589,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
           {alphaGrouped.map(group => (
             <div key={group.letter}>
               <div style={{
-                fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 500,
+                fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500,
                 letterSpacing: '0.19em', textTransform: 'uppercase', color: T.textLow,
                 marginTop: 20, marginBottom: 8,
               }}>
