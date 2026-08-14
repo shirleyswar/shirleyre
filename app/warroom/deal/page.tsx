@@ -363,6 +363,8 @@ function DealPageContent() {
 
   return (
     <div style={{ background: T.bgBase, minHeight: '100vh' }}>
+      {/* Inline launch + fab CSS — guarantees asset renders regardless of CF Pages bundle splitting */}
+      <style dangerouslySetInnerHTML={{ __html: require('../../../assets/launch/launch.css') + require('../../../assets/fab/fab.css') }} />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
