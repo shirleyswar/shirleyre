@@ -200,7 +200,9 @@ function DealPageContent() {
   const [launched, setLaunched] = useState(false)
 
   useEffect(() => {
-    if (!dealId) { setError(true); setLoading(false); return }
+    // In static export, dealId is null on the initial pre-render. Stay in loading
+    // until client-side hydration populates searchParams with the real URL param.
+    if (!dealId) { return }
     ;(async () => {
       try {
         // Fetch core deal

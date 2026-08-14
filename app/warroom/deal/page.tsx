@@ -203,10 +203,11 @@ function DealPageContent() {
   const [error, setError] = useState(false)
   const [launched, setLaunched] = useState(false)
 
-  // PIN gate check
+  // PIN gate check — accept either session key (desktop uses wr_session_exp_v2, mobile uses wr3_session_exp)
   useEffect(() => {
-    const exp = parseInt(localStorage.getItem('wr3_session_exp') || '0')
-    setPinValid(Date.now() < exp)
+    const exp1 = parseInt(localStorage.getItem('wr_session_exp_v2') || '0')
+    const exp2 = parseInt(localStorage.getItem('wr3_session_exp') || '0')
+    setPinValid(Date.now() < exp1 || Date.now() < exp2)
   }, [])
 
   // Data fetch
