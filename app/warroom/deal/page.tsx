@@ -3375,7 +3375,7 @@ function DealDashboardInner() {
                       {/* Actions */}
                       <div style={{ flex: '0 0 80px', display: 'flex', gap: 6, padding: '14px 0 14px 16px', justifyContent: 'flex-end' }}>
                         {!satisfied && (
-                          <button onClick={() => satisfyDeadline(dl.id)} title="Mark clear" style={{
+                          <button onClick={() => pinGate(() => satisfyDeadline(dl.id))} title="Mark clear" style={{
                             width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
                             borderRadius: 6, color: '#22c55e', cursor: 'pointer', fontSize: 14, fontWeight: 700,

@@ -5,6 +5,7 @@
 // Band: T1 header + count, search field, 3 recent rows, "Browse all N" button.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import { formatAddress } from '@/lib/formatAddress'
@@ -575,8 +576,8 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
                         address={dealTitle(child)}
                         cityClient={child.name !== child.address ? child.name ?? undefined : undefined}
                         status={child.status}
-                        lacdbUrl={`/warroom/deal?id=${child.id}`}
-                        onLinkOut={() => window.open(`/warroom/deal?id=${child.id}`, '_blank', 'noopener,noreferrer')}
+                        lacdbUrl={`/warroom3/deal?id=${child.id}`}
+                        onLinkOut={() => window.open(`/warroom3/deal?id=${child.id}`, '_blank', 'noopener,noreferrer')}
                       />
                     ))}
                   </ListRow>
@@ -611,10 +612,12 @@ import ListRow, { PortfolioChildRow } from '@/components/warroom3/ListRow'
 
 function DealRow({ deal }: { deal: Deal }) {
   // §5.11.9: short-form address via formatAddress() — "Harrells Ferry Rd. N. 10993"
+  const router = useRouter()
   const title  = dealTitle(deal)
   const sub    = dealSubline(deal)
   const spine  = getRowSpine(deal.status)
-  const lacdbUrl = `/warroom/deal?id=${deal.id}`
+  // DEFECT FIX: deal page is /warroom3/deal — not /warroom/deal (old V1)
+  const dealUrl = `/warroom3/deal?id=${deal.id}`
 
   return (
     <ListRow
@@ -623,8 +626,9 @@ function DealRow({ deal }: { deal: Deal }) {
       status={deal.status}
       showPill={true}
       spineColor={spine}
-      lacdbUrl={lacdbUrl}
-      onLinkOut={() => window.open(lacdbUrl, '_blank', 'noopener,noreferrer')}
+      lacdbUrl={dealUrl}
+      onPress={() => router.push(dealUrl)}
+      onLinkOut={() => window.open(dealUrl, '_blank', 'noopener,noreferrer')}
     />
   )
 }
@@ -777,7 +781,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
 
                 {/* ↗ link-out — §5.11.6 44px touch target */}
                 <a
-                  href={`/warroom/deal?id=${deal.id}`}
+                  href={`/warroom3/deal?id=${deal.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={e => e.stopPropagation()}
