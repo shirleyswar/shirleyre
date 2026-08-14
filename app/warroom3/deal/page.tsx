@@ -219,7 +219,7 @@ function DealPageContent() {
         // Fetch economics
         const { data: econData } = await supabase
           .from('deal_economics')
-          .select('asking_price, sqft, land_size, deal_value, sale_commission_pct, lease_rate_psf, lease_term_years, nnn_psf, transaction_type')
+          .select('asking_price, sqft, land_sqft, sale_commission_pct, lease_rate_psf, lease_term_years, nnn_psf, transaction_type')
           .eq('deal_id', dealId)
           .maybeSingle()
 
@@ -228,8 +228,8 @@ function DealPageContent() {
           transaction_type: econData?.transaction_type ?? null,
           asking_price: econData?.asking_price ?? null,
           sqft: econData?.sqft ?? null,
-          land_size: econData?.land_size ?? null,
-          deal_value: econData?.deal_value ?? null,
+          land_size: econData?.land_sqft ?? null,
+          deal_value: null,
           commission_pct: econData?.sale_commission_pct ?? null,
           lease_rate_psf: econData?.lease_rate_psf ?? null,
           lease_term_years: econData?.lease_term_years ?? null,
