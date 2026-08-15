@@ -525,8 +525,7 @@ function HomeScreen({
       padding: '5px 18px 104px',
       background: T.bgBase,
     }}>
-      {/* Identity row — SHIRLEYCRE wordmark (CSS glow, same as desktop WordmarkGlow) + date + search.
-          Mark and WAR ROOM replaced per 8.15.26 directive. Row stays 48px tall, one line. */}
+      {/* Identity row — star · SHIRLEYCRE · date. Search removed. 48px, one line. */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -534,10 +533,21 @@ function HomeScreen({
         height: 48,
         marginBottom: 18,
       }}>
-        {/* SHIRLEYCRE wordmark — CSS glow, same construction as desktop WordmarkGlow component.
-            This is the screen's one glow per §4.3 / D2.7. */}
+        {/* Star mark — 48px geometric mark, kept left */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{
+            position: 'absolute',
+            inset: -7,
+            background: 'radial-gradient(circle, rgba(168,85,247,0.5), transparent 68%)',
+            filter: 'blur(6px)',
+            pointerEvents: 'none',
+          }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/mark-64.png" alt="" width={48} height={48} style={{ display: 'block', position: 'relative' }} />
+        </div>
+
+        {/* SHIRLEYCRE wordmark — CSS glow, same 3-layer construction as desktop WordmarkGlow. */}
         <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
-          {/* Layer 1: tight backlight */}
           <span aria-hidden="true" style={{
             position: 'absolute', inset: 0,
             fontFamily: "'JetBrains Mono', ui-monospace, monospace",
@@ -546,7 +556,6 @@ function HomeScreen({
             opacity: 0.35, filter: 'blur(9px)',
             pointerEvents: 'none', zIndex: 0, userSelect: 'none', whiteSpace: 'nowrap',
           }}>SHIRLEYCRE</span>
-          {/* Layer 2: wide atmospheric glow */}
           <span aria-hidden="true" style={{
             position: 'absolute', inset: 0,
             fontFamily: "'JetBrains Mono', ui-monospace, monospace",
@@ -555,7 +564,6 @@ function HomeScreen({
             opacity: 0.1, filter: 'blur(22px)',
             pointerEvents: 'none', zIndex: 0, userSelect: 'none', whiteSpace: 'nowrap',
           }}>SHIRLEYCRE</span>
-          {/* Crisp text — no textShadow */}
           <span style={{
             position: 'relative', zIndex: 1,
             fontFamily: "'JetBrains Mono', ui-monospace, monospace",
@@ -567,7 +575,7 @@ function HomeScreen({
 
         <div style={{ flex: 1 }} />
 
-        {/* §6.2 + 29b: date rebinds to T1 at text-low (was T2). */}
+        {/* Date — right, unchanged */}
         <span style={{
           fontFamily: "'JetBrains Mono', ui-monospace, monospace",
           fontSize: 12,
@@ -578,29 +586,6 @@ function HomeScreen({
           lineHeight: 1,
           whiteSpace: 'nowrap',
         }}>{dateLabel}</span>
-
-        {/* §6.2 + 29b: 34px circle button RETIRED. Bare 22px magnifier, stroke 1.7, text-low.
-            Inside 44×44 hit target. Matches §5.11.6 quiet-control pattern. */}
-        <button
-          style={{
-            width: 44,
-            height: 44,
-            background: 'transparent',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            flexShrink: 0,
-            WebkitTapHighlightColor: 'transparent',
-            padding: 0,
-          } as React.CSSProperties}
-          aria-label="Search"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={T.textLow} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-        </button>
       </div>
 
       {/* §6 item 3: Hero card — §5.10 */}
