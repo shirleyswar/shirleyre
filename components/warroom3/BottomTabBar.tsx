@@ -128,7 +128,7 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         background: 'rgba(8,8,12,0.94)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(255,255,255,0.08)',
+        borderTop: '1px solid rgba(255,255,255,0.14)',
         display: 'flex',
         alignItems: 'stretch',
         zIndex: 1000,

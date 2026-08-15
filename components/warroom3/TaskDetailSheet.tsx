@@ -245,7 +245,7 @@ export default function TaskDetailSheet({
     fontSize: 12,
     fontWeight: 500,
     cursor: 'pointer',
-    border: active ? 'none' : '1px solid rgba(255,255,255,0.13)',
+    border: active ? 'none' : '1px solid rgba(255,255,255,0.20)',
     background: active ? '#EFEEF4' : 'transparent',
     color: active ? '#0A0A0F' : T.textMid,
   })
@@ -315,7 +315,7 @@ export default function TaskDetailSheet({
                   resize: 'none',
                   width: '100%',
                   padding: 0,
-                  borderBottom: '1px solid rgba(255,255,255,0.09)',
+                  borderBottom: '1px solid rgba(255,255,255,0.18)',
                   paddingBottom: 8,
                 }}
                 rows={3}
@@ -331,7 +331,7 @@ export default function TaskDetailSheet({
                   fontSize: 23,
                   fontWeight: 500,
                   color: T.textHi,
-                  borderBottom: '1px solid rgba(255,255,255,0.09)',
+                  borderBottom: '1px solid rgba(255,255,255,0.18)',
                   paddingBottom: 8,
                   lineHeight: 1.3,
                 }}>
@@ -345,7 +345,7 @@ export default function TaskDetailSheet({
           {/* 4. Deal row — only if deal_id is non-null */}
           {task.deal_id && (
             <div style={{
-              background: '#16161F',
+              background: '#1E1D26',
               borderRadius: 10,
               padding: '10px 14px',
               marginBottom: 18,
@@ -462,11 +462,11 @@ export default function TaskDetailSheet({
               onChange={e => setNote(e.target.value)}
               placeholder="Add a note…"
               style={{
-                background: '#16161F',
+                background: '#1E1D26',
                 borderRadius: 10,
                 padding: '12px 14px',
                 minHeight: 56,
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.14)',
                 color: T.textHi,
                 fontSize: 13,
                 fontFamily: FONT_DISPLAY,
@@ -480,7 +480,7 @@ export default function TaskDetailSheet({
           </div>
 
           {/* 8. Delete row */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 14, marginBottom: 18 }}>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.11)', paddingTop: 14, marginBottom: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ ...styleT4, color: T.textLow }}>Delete task</span>
               <button
@@ -561,7 +561,7 @@ export default function TaskDetailSheet({
               height: 48,
               padding: '0 20px',
               borderRadius: 10,
-              border: '1px solid rgba(255,255,255,0.13)',
+              border: '1px solid rgba(255,255,255,0.20)',
               color: T.textMid,
               fontSize: 14,
               fontWeight: 500,

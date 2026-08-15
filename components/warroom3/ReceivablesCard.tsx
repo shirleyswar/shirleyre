@@ -13,7 +13,7 @@ const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
-  bgPanel:   '#101017',
+  bgPanel:   '#12111B',
   textHi:    '#EFEEF4',
   textMid:   '#8B8A9B',
   textLow:   '#5C5B6B',
@@ -143,7 +143,7 @@ export default function ReceivablesCard() {
   return (
     <div style={{
       background: T.bgPanel,
-      border: '1px solid rgba(255,255,255,0.08)',
+      border: '1px solid rgba(255,255,255,0.14)',
       borderRadius: 16,
       padding: '16px 16px 18px',
     }}>
@@ -155,7 +155,7 @@ export default function ReceivablesCard() {
         marginBottom: 16,
       }}>
         <span style={styleT1}>Receivables</span>
-        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.11)' }} />
       </div>
 
       {/* D1 figure — collected, money-in colour, carries the screen glow (§4.3) */}

@@ -14,7 +14,7 @@ const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
-  bgRaise:   '#16161F',
+  bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
   textMid:   '#8B8A9B',
   textLow:   '#5C5B6B',
@@ -264,7 +264,7 @@ export default function NewDealSheet({ open, onClose, onCreated }: NewDealSheetP
         {/* 5. Client — search field §20.1 */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ ...styleT2, color: T.textLow, marginBottom: 8 }}>CLIENT</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, padding: '11px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.14)', borderRadius: 9, padding: '11px 14px' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.textLow} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input
               value={clientQ}
@@ -276,7 +276,7 @@ export default function NewDealSheet({ open, onClose, onCreated }: NewDealSheetP
         </div>
 
         {/* Chain preview — §20.2: names template, never shows step count */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 14, marginBottom: 20 }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 14, marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <GitBranch size={15} color={T.brandLift} strokeWidth={1.8} style={{ flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
@@ -321,7 +321,7 @@ export default function NewDealSheet({ open, onClose, onCreated }: NewDealSheetP
             disabled={saving}
             style={{
               background: 'transparent', color: T.textMid,
-              border: '1px solid rgba(255,255,255,0.13)',
+              border: '1px solid rgba(255,255,255,0.20)',
               borderRadius: 9, padding: '12px 14px', ...styleB1,
               cursor: saving ? 'default' : 'pointer',
               minHeight: 44,

@@ -86,7 +86,7 @@ function GroupHeader({
       margin: '20px 18px 4px',
     }}>
       <span style={{ ...styleT2, color: labelColor }}>{label}</span>
-      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.11)' }} />
       <span style={{
         fontFamily: FONT_MONO,
         fontSize: 12,
@@ -415,7 +415,7 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
 
     {/* §13.3 Confirmation bar — above tab bar */}
     {completionBar && (
-      <div style={{ position:'fixed', bottom:84, left:0, right:0, zIndex:60, background:'#16161F', borderTop:'1px solid rgba(255,255,255,0.08)', padding:'12px 18px', display:'flex', alignItems:'center', gap:10 }}>
+      <div style={{ position:'fixed', bottom:84, left:0, right:0, zIndex:60, background:'#1E1D26', borderTop:'1px solid rgba(255,255,255,0.14)', padding:'12px 18px', display:'flex', alignItems:'center', gap:10 }}>
         <div style={{ width:20, height:20, borderRadius:'50%', background:'#34D399', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
           <span style={{ fontSize:11, color:'#0A0A0F', lineHeight:1 }}>✓</span>
         </div>

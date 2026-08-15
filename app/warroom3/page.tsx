@@ -38,8 +38,8 @@ async function sha256(text: string): Promise<string> {
 // ── Spec tokens §2 ───────────────────────────────────────────────────────────
 const T = {
   bgBase:    '#08080C',
-  bgPanel:   '#101017',
-  bgRaise:   '#16161F',
+  bgPanel:   '#12111B',
+  bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
   textMid:   '#8B8A9B',
   textLow:   '#5C5B6B',
@@ -333,7 +333,7 @@ function HeroCard({ item, onAction, onDismiss }: { item: HeroItem; onAction?: ()
   return (
     <div style={{
       background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      border: '1px solid rgba(255,255,255,0.14)',
       borderRadius: 20,
       padding: '20px 20px 20px 33px',  // 13px left spine gap per §5.2
       position: 'relative',
@@ -402,7 +402,7 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
         position: 'relative',
         overflow: 'hidden',
         background: T.bgRaise,  // always flat — directive item 7: no status tint on tiles
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.14)',
         borderRadius: 16,
         padding: hasSpine ? '16px 15px 16px 18px' : '16px 15px',
         minHeight: 90,
@@ -604,7 +604,7 @@ function HomeScreen({
       {loading ? (
         <div style={{
           background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.14)',
           borderRadius: 20,
           height: 160,
           marginBottom: 26,
@@ -635,7 +635,7 @@ function HomeScreen({
           [0,1,2,3].map(i => (
             <div key={i} style={{
               background: T.bgPanel,
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.14)',
               borderRadius: 16,
               minHeight: 90,
               opacity: 0.5,

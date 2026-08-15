@@ -19,11 +19,11 @@ module.exports = {
         'success':     '#22C55E',
         'danger':      '#EF4444',
 
-        // ─── Spec §9 tokens (warroom3 / mobile spec) ──────────────────────
-        // Surfaces
-        base:      '#08080C',
-        panel:     '#101017',
-        raise:     '#16161F',
+        // ─── Spec §2 tokens (warroom3 / mobile spec — 8.15.26 1101) ──────────────────────
+        // Surfaces — §2.3a: mobile fills raised to match desktop (bg-base unchanged)
+        base:      '#08080C',  // bg-base: unchanged — not raised to desktop's #050509
+        panel:     '#12111B',  // was #101017
+        raise:     '#1E1D26',  // was #16161F
         hi:        '#EFEEF4',
         mid:       '#8B8A9B',
         low:       '#5C5B6B',
@@ -35,6 +35,7 @@ module.exports = {
         moneyIn:   '#34D399',
         brand:     '#8B5CF6',
         brandLift: '#A78BFA',
+        brandStrong: '#7C3AED',  // §2.4: violet fill carrying white text
       },
 
       fontFamily: {
@@ -48,7 +49,12 @@ module.exports = {
       },
 
       borderColor: {
-        'subtle': 'rgba(255,255,255,0.06)',
+        'subtle':        'rgba(255,255,255,0.06)',
+        // §2.3a border tokens — both surfaces (8.15.26 1101)
+        'default':       'rgba(255,255,255,0.14)',  // was 0.08
+        'strong':        'rgba(255,255,255,0.20)',  // was 0.13
+        'panel-border':  'rgba(255,255,255,0.11)',  // new — was loose 0.07
+        'hair':          'rgba(255,255,255,0.10)',  // was 0.05
       },
       backgroundColor: {
         'subtle': 'rgba(255,255,255,0.03)',

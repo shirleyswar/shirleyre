@@ -42,7 +42,7 @@ const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
-  bgRaise:   '#16161F',
+  bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
   textMid:   '#8B8A9B',
   textLow:   '#5C5B6B',
@@ -162,7 +162,7 @@ function StatusModal({
         onClick={e => e.stopPropagation()}
         style={{
           background: T.bgRaise,
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.14)',
           borderRadius: '16px 16px 0 0',
           padding: '20px 18px 36px',
           width: '100%', maxWidth: 480,
@@ -221,7 +221,7 @@ function StatusModal({
             style={{
               padding: '10px', borderRadius: 8,
               background: newDate ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${newDate ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              border: `1px solid ${newDate ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.14)'}`,
               color: newDate ? '#A78BFA' : T.textLow,
               fontFamily: FONT_DISPLAY, fontSize: 12, fontWeight: 600,
               cursor: newDate ? 'pointer' : 'not-allowed',
@@ -275,7 +275,7 @@ function StatusModal({
           style={{
             padding: '11px', borderRadius: 10,
             background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.14)',
             color: T.textMid, fontFamily: FONT_DISPLAY, fontSize: 13,
             cursor: 'pointer',
           }}
@@ -404,7 +404,7 @@ function DeadlineRowCard({
             padding: '5px 10px',
             borderRadius: 7,
             background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.09)',
+            border: '1px solid rgba(255,255,255,0.18)',
             color: T.textMid,
             fontFamily: FONT_MONO, fontSize: 9, fontWeight: 500,
             letterSpacing: '0.08em', textTransform: 'uppercase',

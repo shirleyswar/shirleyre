@@ -189,7 +189,7 @@ export default function CalendarPicker({ value, onCancel, onDone }: CalendarPick
           style={{
             flex: 1, height: 46,
             background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.13)',
+            border: '1px solid rgba(255,255,255,0.20)',
             borderRadius: 11,
             color: T.textMid,
             fontFamily: FONT_DISPLAY,

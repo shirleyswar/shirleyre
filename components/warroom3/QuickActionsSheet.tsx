@@ -19,7 +19,7 @@ const T = {
   textLow:   '#5C5B6B',
   brand:     '#8B5CF6',
   brandLift: '#A78BFA',
-  bgRaise:   '#16161F',
+  bgRaise:   '#1E1D26',
 } as const
 
 // T4 §3.2 — 14px / 400 / sentence / text-mid (44a type scale)
@@ -80,7 +80,7 @@ function ActionRow({
         height: iconTileSize,
         borderRadius: 10,
         background: iconPlate ?? 'rgba(255,255,255,0.06)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.14)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

@@ -189,7 +189,7 @@ function TimeWheel({ hour, minute, meridiem, onHour, onMinute, onMeridiem, onCan
           style={{
             flex: 1, height: 46,
             background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.13)',
+            border: '1px solid rgba(255,255,255,0.20)',
             borderRadius: 11,
             color: T.textMid,
             fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 500,
@@ -360,7 +360,7 @@ export default function EventSheet({ open, onClose }: EventSheetProps) {
                   fontSize: 12,
                   fontWeight: 500,
                   cursor: 'pointer',
-                  border: sel ? 'none' : '1px solid rgba(255,255,255,0.13)',
+                  border: sel ? 'none' : '1px solid rgba(255,255,255,0.20)',
                   background: sel ? FAB_APERTURE_GRADIENT : 'transparent',
                   boxShadow: sel ? FAB_APERTURE_SHADOW : 'none',
                   color: sel ? T.textInvert : T.textMid,
@@ -403,7 +403,7 @@ export default function EventSheet({ open, onClose }: EventSheetProps) {
               width: '100%',
               height: 48,
               background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.14)',
               borderRadius: 10,
               cursor: 'pointer',
               WebkitTapHighlightColor: 'transparent',
@@ -436,14 +436,14 @@ export default function EventSheet({ open, onClose }: EventSheetProps) {
         {/* Deal and Location placeholder rows */}
         <div style={{
           marginTop: 20,
-          borderTop: '1px solid rgba(255,255,255,0.05)',
+          borderTop: '1px solid rgba(255,255,255,0.10)',
           paddingTop: 4,
         }}>
           {/* Add deal */}
           <div style={{
             display: 'flex', alignItems: 'center',
             minHeight: 44,
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            borderBottom: '1px solid rgba(255,255,255,0.10)',
           }}>
             <span style={{ fontFamily: FONT_DISPLAY, fontSize: 12, color: T.textLow }}>
               Add deal
@@ -495,7 +495,7 @@ export default function EventSheet({ open, onClose }: EventSheetProps) {
             style={{
               flex: 1, height: 46,
               background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.13)',
+              border: '1px solid rgba(255,255,255,0.20)',
               borderRadius: 11,
               color: T.textMid,
               fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 500,

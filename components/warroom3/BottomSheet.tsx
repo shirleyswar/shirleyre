@@ -139,9 +139,9 @@ export default function BottomSheet({
               left: 0,
               right: 0,
               bottom: 0,
-              background: '#101017',           // bg-panel
+              background: '#12111B',           // bg-panel
               borderRadius: '26px 26px 0 0',   // §5.8
-              borderTop: '1px solid rgba(255,255,255,0.08)',  // border-default
+              borderTop: '1px solid rgba(255,255,255,0.14)',  // border-default
               zIndex: 501,
               display: 'flex',
               flexDirection: 'column',
@@ -185,7 +185,7 @@ export default function BottomSheet({
             }}>
               <span style={{ ...styleT1, ...labelStyle }}>{label}</span>
               {/* Hairline */}
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.11)' }} />
               {/* Count — style overrideable (31a: M2 at text-low) */}
               {headerAction ?? (count !== undefined && (
                 <span style={{

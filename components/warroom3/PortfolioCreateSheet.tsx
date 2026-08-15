@@ -19,8 +19,8 @@ const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
   bgBase:    '#08080C',
-  bgPanel:   '#101017',
-  bgRaise:   '#16161F',
+  bgPanel:   '#12111B',
+  bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
   textMid:   '#8B8A9B',
   textLow:   '#5C5B6B',
@@ -200,13 +200,13 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
               onChange={e => setPortfolioName(e.target.value)}
               style={{
                 width: '100%', boxSizing: 'border-box',
-                background: T.bgRaise, border: '1px solid rgba(255,255,255,0.08)',
+                background: T.bgRaise, border: '1px solid rgba(255,255,255,0.14)',
                 borderRadius: 9, padding: '11px 14px',
                 fontFamily: FONT_DISPLAY, fontSize: 16, fontWeight: 500, color: T.textHi,
                 outline: 'none',
               } as React.CSSProperties}
               onFocus={e => { e.target.style.border = '1px solid rgba(139,92,246,0.5)' }}
-              onBlur={e => { e.target.style.border = '1px solid rgba(255,255,255,0.08)' }}
+              onBlur={e => { e.target.style.border = '1px solid rgba(255,255,255,0.14)' }}
             />
             <div style={{ ...styleT4, color: T.textLow, marginTop: 4, fontSize: 11 }}>
               Defaults to the client's name. Change it if the group has its own.
@@ -225,11 +225,11 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
           {/* MEMBERS list */}
           <div style={{ marginBottom: 20 }}>
             <div style={{ ...styleT2, color: T.textLow, marginBottom: 6 }}>MEMBERS {selected.size}</div>
-            <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, overflow: 'hidden' }}>
+            <div style={{ border: '1px solid rgba(255,255,255,0.14)', borderRadius: 9, overflow: 'hidden' }}>
               {selectedDeals.map((deal, idx) => {
                 const addr = formatAddress(deal.address) || deal.name || '—'
                 return (
-                  <div key={deal.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: idx < selectedDeals.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                  <div key={deal.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: idx < selectedDeals.length - 1 ? '1px solid rgba(255,255,255,0.10)' : 'none' }}>
                     <span style={{ ...styleT4, color: T.textHi, fontSize: 13 }}>{addr}</span>
                     <button onClick={() => removeMember(deal.id)} style={{ background: 'none', border: 'none', color: T.textLow, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 4px' }}>×</button>
                   </div>
@@ -258,7 +258,7 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
             </button>
             <button
               onClick={() => setStep('select')}
-              style={{ background: 'transparent', color: T.textMid, border: '1px solid rgba(255,255,255,0.13)', borderRadius: 9, padding: '12px 16px', ...styleB1, cursor: 'pointer', minHeight: 44 } as React.CSSProperties}
+              style={{ background: 'transparent', color: T.textMid, border: '1px solid rgba(255,255,255,0.20)', borderRadius: 9, padding: '12px 16px', ...styleB1, cursor: 'pointer', minHeight: 44 } as React.CSSProperties}
             >
               Back
             </button>
@@ -279,7 +279,7 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
 
         {/* Search */}
         <div style={{ padding: '0 18px 10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.14)', borderRadius: 10, padding: '10px 14px' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.textLow} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textMid }} />
           </div>
@@ -312,7 +312,7 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
                     padding: '12px 18px',
                     opacity: inPortfolio ? 0.4 : 1,
                     cursor: inPortfolio ? 'default' : 'pointer',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    borderBottom: '1px solid rgba(255,255,255,0.10)',
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
@@ -342,7 +342,7 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
       </div>
 
       {/* Bottom action bar */}
-      <div style={{ position: 'fixed', bottom: 94, left: 0, right: 0, padding: '12px 18px', background: T.bgPanel, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <div style={{ position: 'fixed', bottom: 94, left: 0, right: 0, padding: '12px 18px', background: T.bgPanel, borderTop: '1px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textMid }}>
           {selected.size > 0 ? `${selected.size} selected` : 'Select deals'}
         </span>

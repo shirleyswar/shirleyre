@@ -216,7 +216,7 @@ export default function ListRow({
   if (isPortfolio) {
     return (
       <div>
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.10)' }} />
         <div
           role="button" tabIndex={0}
           onClick={onPress}
@@ -255,7 +255,7 @@ export default function ListRow({
   // Day count is ALWAYS in the right slot — never adds height.
   return (
     <div>
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.10)' }} />
       <div
         role="button" tabIndex={0}
         onClick={onPress}
@@ -343,7 +343,7 @@ export function PortfolioChildRow({
 }) {
   return (
     <div>
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.10)' }} />
       <div
         role="button" tabIndex={0} onClick={onPress}
         onKeyDown={e => e.key === 'Enter' && onPress?.()}

@@ -23,7 +23,7 @@ const T = {
   textMid:    '#8B8A9B',
   textLow:    '#5C5B6B',
   textInvert: '#0A0A0F',
-  bgRaise:    '#16161F',
+  bgRaise:    '#1E1D26',
 } as const
 
 // T2 §3.2 — 9.5px / 500 / 0.19em / UPPER / text-low — section eyebrow
@@ -181,7 +181,7 @@ export default function TaskSheet({ open, onClose }: TaskSheetProps) {
                   fontSize: 12,
                   fontWeight: 500,
                   cursor: 'pointer',
-                  border: sel ? 'none' : '1px solid rgba(255,255,255,0.13)',
+                  border: sel ? 'none' : '1px solid rgba(255,255,255,0.20)',
                   background: sel ? FAB_APERTURE_GRADIENT : 'transparent',
                   boxShadow: sel ? FAB_APERTURE_SHADOW : 'none',
                   color: sel ? T.textInvert : T.textMid,
@@ -220,7 +220,7 @@ export default function TaskSheet({ open, onClose }: TaskSheetProps) {
           alignItems: 'center',
           gap: 10,
           minHeight: 44,
-          borderTop: '1px solid rgba(255,255,255,0.05)',
+          borderTop: '1px solid rgba(255,255,255,0.10)',
           marginTop: 18,
           paddingTop: 14,
         }}>
@@ -264,7 +264,7 @@ export default function TaskSheet({ open, onClose }: TaskSheetProps) {
             style={{
               flex: 1, height: 46,
               background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.13)',
+              border: '1px solid rgba(255,255,255,0.20)',
               borderRadius: 11,
               color: T.textMid,
               fontFamily: FONT_DISPLAY,

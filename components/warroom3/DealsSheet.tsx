@@ -15,8 +15,8 @@ const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
   bgBase:      '#08080C',
-  bgPanel:     '#101017',
-  bgRaise:     '#16161F',
+  bgPanel:     '#12111B',
+  bgRaise:     '#1E1D26',
   textHi:      '#EFEEF4',
   textMid:     '#8B8A9B',
   textLow:     '#5C5B6B',
@@ -438,7 +438,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
               return (
                 <React.Fragment key={pt}>
                   {idx > 0 && (
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '0 18px' }} />
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.11)', margin: '0 18px' }} />
                   )}
                   <button
                     onClick={() => {
@@ -498,7 +498,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
       <div style={{ padding: '0 18px 12px', position: 'sticky', top: 0, background: T.bgPanel, zIndex: 10 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          background: T.bgRaise, border: '1px solid rgba(255,255,255,0.08)',
+          background: T.bgRaise, border: '1px solid rgba(255,255,255,0.14)',
           borderRadius: 10, padding: '11px 14px',
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.textLow} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -675,7 +675,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
   return (
     <div style={{
       background: T.bgPanel,
-      border: '1px solid rgba(255,255,255,0.08)',
+      border: '1px solid rgba(255,255,255,0.14)',
       borderRadius: 16,
       overflow: 'hidden',
     }}>
@@ -687,7 +687,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
         padding: '16px 16px 12px',
       }}>
         <span style={styleT1}>Deal Pipeline</span>
-        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.11)' }} />
         <span style={{
           fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500,
           color: T.textLow, fontVariantNumeric: 'tabular-nums',
@@ -703,7 +703,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
             alignItems: 'center',
             gap: 8,
             background: T.bgRaise,
-            border: '1px solid rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.14)',
             borderRadius: 10,
             padding: '11px 14px',
             cursor: 'pointer',
@@ -760,7 +760,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
                   alignItems: 'center',
                   gap: 10,
                   padding: '10px 0',
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  borderBottom: '1px solid rgba(255,255,255,0.10)',
                   minHeight: 44,
                 }}
               >
@@ -815,7 +815,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
             width: '100%',
             background: 'transparent',
             color: T.textMid,
-            border: '1px solid rgba(255,255,255,0.13)',
+            border: '1px solid rgba(255,255,255,0.20)',
             borderRadius: 9,
             padding: '12px 0',
             fontFamily: FONT_DISPLAY,

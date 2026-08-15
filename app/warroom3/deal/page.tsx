@@ -13,8 +13,8 @@ import Launch from '@/components/warroom3/Launch'
 // ── Tokens §2 ────────────────────────────────────────────────────────────────
 const T = {
   bgBase:    '#08080C',
-  bgPanel:   '#101017',
-  bgRaise:   '#16161F',
+  bgPanel:   '#12111B',
+  bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
   textMid:   '#8B8A9B',
   textLow:   '#5C5B6B',
@@ -132,7 +132,7 @@ function SnapCell({
 function SectionRow({ label, meta, onPress }: { label: string; meta?: string; onPress?: () => void }) {
   return (
     <div>
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.10)' }} />
       <button
         onClick={onPress ?? (() => console.log(`[deal page] ${label} tapped`))}
         style={{
@@ -381,8 +381,8 @@ function DealPageContent() {
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           gap: '0 20px',
-          borderTop: '1px solid rgba(255,255,255,0.07)',
-          borderLeft: '1px solid rgba(255,255,255,0.07)',
+          borderTop: '1px solid rgba(255,255,255,0.11)',
+          borderLeft: '1px solid rgba(255,255,255,0.11)',
           borderRadius: 12,
           overflow: 'hidden',
           background: T.bgPanel,
@@ -402,8 +402,8 @@ function DealPageContent() {
           ].map((cell, i) => (
             <div key={i} style={{
               padding: '14px 14px 12px',
-              borderRight: i % 2 === 0 ? '1px solid rgba(255,255,255,0.07)' : 'none',
-              borderBottom: '1px solid rgba(255,255,255,0.07)',
+              borderRight: i % 2 === 0 ? '1px solid rgba(255,255,255,0.11)' : 'none',
+              borderBottom: '1px solid rgba(255,255,255,0.11)',
             }}>
               <div style={{ ...STYLE_T5, color: T.textLow, marginBottom: 6 }}>{cell.label}</div>
               <div style={cell.style}>{cell.value}</div>
@@ -425,8 +425,8 @@ function DealPageContent() {
           ].map((cell, i) => (
             <div key={i} style={{
               padding: '14px 14px 12px',
-              borderRight: i % 2 === 0 ? '1px solid rgba(255,255,255,0.07)' : 'none',
-              borderBottom: '1px solid rgba(255,255,255,0.07)',
+              borderRight: i % 2 === 0 ? '1px solid rgba(255,255,255,0.11)' : 'none',
+              borderBottom: '1px solid rgba(255,255,255,0.11)',
             }}>
               <div style={{ ...STYLE_T5, color: T.textLow, marginBottom: 6 }}>{cell.label}</div>
               <div style={cell.style}>{cell.value}</div>
@@ -448,7 +448,7 @@ function DealPageContent() {
           ].map((cell, i) => (
             <div key={i} style={{
               padding: '14px 14px 12px',
-              borderRight: i % 2 === 0 ? '1px solid rgba(255,255,255,0.07)' : 'none',
+              borderRight: i % 2 === 0 ? '1px solid rgba(255,255,255,0.11)' : 'none',
             }}>
               <div style={{ ...STYLE_T5, color: T.textLow, marginBottom: 6 }}>{cell.label}</div>
               <div style={cell.style}>{cell.value}</div>
@@ -498,7 +498,7 @@ function DealPageContent() {
           label="Activity"
           onPress={() => console.log('[deal page] Activity tapped')}
         />
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.10)' }} />
       </div>
     </div>
   )

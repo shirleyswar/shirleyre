@@ -21,8 +21,8 @@ const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
   bgBase:    '#08080C',
-  bgPanel:   '#101017',
-  bgRaise:   '#16161F',
+  bgPanel:   '#12111B',
+  bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
   textMid:   '#8B8A9B',
   textLow:   '#5C5B6B',
@@ -91,7 +91,7 @@ function SaveToast({ message, noteId, onDismiss }: SaveToastProps) {
         right: 14,
         borderRadius: 12,
         background: 'rgba(18,17,26,0.97)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.14)',
         // 3px money-in spine §18.6
         borderLeft: `3px solid ${T.moneyIn}`,
         display: 'flex',
@@ -179,7 +179,7 @@ function FailureBanner({ onRetry, onKeepDraft }: FailureBannerProps) {
             flex: 1,
             background: 'transparent',
             color: T.textMid,
-            border: '1px solid rgba(255,255,255,0.13)',
+            border: '1px solid rgba(255,255,255,0.20)',
             borderRadius: 9,
             padding: '10px 0',
             ...styleB1,
@@ -309,7 +309,7 @@ export default function VoiceNoteSheet({ open, onClose }: VoiceNoteSheetProps) {
               background: T.bgRaise,
               border: failed
                 ? '1px solid rgba(139,92,246,0.5)'
-                : '1px solid rgba(255,255,255,0.08)',
+                : '1px solid rgba(255,255,255,0.14)',
               // §18.3 focus ring
               outline: 'none',
               borderRadius: 9,
@@ -328,7 +328,7 @@ export default function VoiceNoteSheet({ open, onClose }: VoiceNoteSheetProps) {
             }}
             onBlur={e => {
               if (!failed) {
-                e.target.style.border = '1px solid rgba(255,255,255,0.08)'
+                e.target.style.border = '1px solid rgba(255,255,255,0.14)'
                 e.target.style.boxShadow = 'none'
               }
             }}
@@ -336,16 +336,16 @@ export default function VoiceNoteSheet({ open, onClose }: VoiceNoteSheetProps) {
 
           {/* Optional: Deal + Contact side by side, Tags below §18.3 */}
           <div style={{ display: 'flex', gap: 9, marginTop: 12 }}>
-            <div style={{ flex: 1, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, padding: '10px 12px', minHeight: 44 }}>
+            <div style={{ flex: 1, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.14)', borderRadius: 9, padding: '10px 12px', minHeight: 44 }}>
               <div style={{ ...styleT2, color: T.textLow, marginBottom: 4 }}>DEAL</div>
               <div style={{ fontFamily: FONT_DISPLAY, fontSize: 12, color: T.textLow }}>Optional</div>
             </div>
-            <div style={{ flex: 1, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, padding: '10px 12px', minHeight: 44 }}>
+            <div style={{ flex: 1, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.14)', borderRadius: 9, padding: '10px 12px', minHeight: 44 }}>
               <div style={{ ...styleT2, color: T.textLow, marginBottom: 4 }}>CONTACT</div>
               <div style={{ fontFamily: FONT_DISPLAY, fontSize: 12, color: T.textLow }}>Optional</div>
             </div>
           </div>
-          <div style={{ marginTop: 9, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, padding: '10px 12px', minHeight: 44 }}>
+          <div style={{ marginTop: 9, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.14)', borderRadius: 9, padding: '10px 12px', minHeight: 44 }}>
             <div style={{ ...styleT2, color: T.textLow, marginBottom: 4 }}>TAGS</div>
             <div style={{ fontFamily: FONT_DISPLAY, fontSize: 12, color: T.textLow }}>Optional</div>
           </div>
@@ -390,7 +390,7 @@ export default function VoiceNoteSheet({ open, onClose }: VoiceNoteSheetProps) {
               style={{
                 background: 'transparent',
                 color: T.textMid,
-                border: '1px solid rgba(255,255,255,0.13)',
+                border: '1px solid rgba(255,255,255,0.20)',
                 borderRadius: 9,
                 padding: '12px 16px',
                 ...styleB1,
