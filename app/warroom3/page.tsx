@@ -525,8 +525,8 @@ function HomeScreen({
       padding: '5px 18px 104px',
       background: T.bgBase,
     }}>
-      {/* §6.2 Identity row — locked design 15c, scaled per 29b (12 Aug 2026). ONE flex row, 48px tall.
-          29b changes: mark 40→48px · WAR ROOM D4 17→19px · date T2→T1 text-low · 34px circle retired → bare magnifier. */}
+      {/* Identity row — SHIRLEYCRE wordmark (CSS glow, same as desktop WordmarkGlow) + date + search.
+          Mark and WAR ROOM replaced per 8.15.26 directive. Row stays 48px tall, one line. */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -534,32 +534,35 @@ function HomeScreen({
         height: 48,
         marginBottom: 18,
       }}>
-        {/* §6.2 + 29b: 48px geometric mark (was 40px). mark-64.png, flex:none, no radius, no plate, no CSS glow. */}
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <div style={{
-            position: 'absolute',
-            inset: -7,
-            background: 'radial-gradient(circle, rgba(168,85,247,0.5), transparent 68%)',
-            filter: 'blur(6px)',
-            pointerEvents: 'none',
-          }} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/mark-64.png" alt="" width={48} height={48} style={{ display: 'block', position: 'relative' }} />
-        </div>
-
-        {/* §3.2 D4 + 29b: WAR ROOM — JetBrains Mono 19px / 700 / 0.13em / UPPER / #F7F6FB.
-            Level moves from 17→19 because it has exactly one use (the level moves with the use). */}
-        <span style={{
-          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 19,
-          fontWeight: 700,
-          letterSpacing: '0.13em',
-          textTransform: 'uppercase',
-          color: '#F7F6FB',
-          lineHeight: 1,
-          whiteSpace: 'nowrap',
-        }}>
-          WAR ROOM
+        {/* SHIRLEYCRE wordmark — CSS glow, same construction as desktop WordmarkGlow component.
+            This is the screen's one glow per §4.3 / D2.7. */}
+        <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+          {/* Layer 1: tight backlight */}
+          <span aria-hidden="true" style={{
+            position: 'absolute', inset: 0,
+            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+            fontSize: 22, fontWeight: 800, color: '#C084FC',
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            opacity: 0.35, filter: 'blur(9px)',
+            pointerEvents: 'none', zIndex: 0, userSelect: 'none', whiteSpace: 'nowrap',
+          }}>SHIRLEYCRE</span>
+          {/* Layer 2: wide atmospheric glow */}
+          <span aria-hidden="true" style={{
+            position: 'absolute', inset: 0,
+            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+            fontSize: 22, fontWeight: 800, color: '#C084FC',
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            opacity: 0.1, filter: 'blur(22px)',
+            pointerEvents: 'none', zIndex: 0, userSelect: 'none', whiteSpace: 'nowrap',
+          }}>SHIRLEYCRE</span>
+          {/* Crisp text — no textShadow */}
+          <span style={{
+            position: 'relative', zIndex: 1,
+            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+            fontSize: 22, fontWeight: 800, color: '#C084FC',
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            textShadow: 'none', whiteSpace: 'nowrap', lineHeight: 1,
+          }}>SHIRLEYCRE</span>
         </span>
 
         <div style={{ flex: 1 }} />
