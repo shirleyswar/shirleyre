@@ -525,53 +525,27 @@ function HomeScreen({
       padding: '5px 18px 104px',
       background: T.bgBase,
     }}>
-      {/* Identity row — star · SHIRLEYCRE · date. Search removed. 48px, one line. */}
+      {/* Identity row — star · SHIRLEYCRE · date. Search removed. 56px, one line. */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        height: 48,
+        height: 56,
         marginBottom: 18,
       }}>
         {/* Star mark — 48px geometric mark, kept left */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
-          <div style={{
-            position: 'absolute',
-            inset: -7,
-            background: 'radial-gradient(circle, rgba(168,85,247,0.5), transparent 68%)',
-            filter: 'blur(6px)',
-            pointerEvents: 'none',
-          }} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/mark-64.png" alt="" width={48} height={48} style={{ display: 'block', position: 'relative' }} />
+          <img src="/icons/mark-256.png" alt="" width={48} height={48} style={{ display: 'block', position: 'relative' }} />
         </div>
 
-        {/* SHIRLEYCRE wordmark — CSS glow, same 3-layer construction as desktop WordmarkGlow. */}
-        <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
-          <span aria-hidden="true" style={{
-            position: 'absolute', inset: 0,
-            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-            fontSize: 22, fontWeight: 800, color: '#C084FC',
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-            opacity: 0.35, filter: 'blur(9px)',
-            pointerEvents: 'none', zIndex: 0, userSelect: 'none', whiteSpace: 'nowrap',
-          }}>SHIRLEYCRE</span>
-          <span aria-hidden="true" style={{
-            position: 'absolute', inset: 0,
-            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-            fontSize: 22, fontWeight: 800, color: '#C084FC',
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-            opacity: 0.1, filter: 'blur(22px)',
-            pointerEvents: 'none', zIndex: 0, userSelect: 'none', whiteSpace: 'nowrap',
-          }}>SHIRLEYCRE</span>
-          <span style={{
-            position: 'relative', zIndex: 1,
-            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-            fontSize: 22, fontWeight: 800, color: '#C084FC',
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-            textShadow: 'none', whiteSpace: 'nowrap', lineHeight: 1,
-          }}>SHIRLEYCRE</span>
-        </span>
+        {/* SHIRLEYCRE wordmark — §6.2a 46b, h144 PNG at height 48px → 155×48 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/wordmark/shirleycre-h144.png"
+          alt="SHIRLEYCRE"
+          style={{ height: 48, width: 155, display: 'block', flexShrink: 0, marginTop: -5.5 }}
+        />
 
         <div style={{ flex: 1 }} />
 

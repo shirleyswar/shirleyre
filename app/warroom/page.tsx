@@ -902,9 +902,10 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
         <MarkGeometric size={64} />
       </div>
 
-      {/* SHIRLEYCRE wordmark — 88px box, CSS-rendered, glow applied here */}
-      <div style={{ width: 88, flexShrink: 0, marginTop: -10, marginLeft: -8 }}>
-        <WordmarkGlow />
+      {/* SHIRLEYCRE wordmark — h176 PNG at 88px, §D2.3 / §D2.3a */}
+      <div style={{ width: 'auto', flexShrink: 0, marginTop: -10, marginLeft: -3.5, display:'flex', alignItems:'center' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/wordmark/shirleycre-h176.png" alt="SHIRLEYCRE" height={88} style={{ height: 88, width: 'auto', display: 'block' }} />
       </div>
 
       {/* Divider */}
@@ -948,8 +949,27 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
       {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* CREXI plate — placeholder until assets/links/crexi.png delivered */}
-      {/* DATA: assets/links/crexi.png and lacdb.png not present in repo — omit plates until delivered */}
+      {/* LACDB plate — §D2.3b, 52×158, brightness(1.18) on hover */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/links/lacdb-h104.png"
+        alt="LACDB"
+        style={{ height: 52, width: 158, display: 'block', flexShrink: 0, cursor: 'pointer', transition: 'filter 0.15s' }}
+        onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.18)')}
+        onMouseLeave={e => (e.currentTarget.style.filter = 'none')}
+        onClick={() => window.open('https://www.lacdb.com', '_blank', 'noopener,noreferrer')}
+      />
+
+      {/* CREXI plate — §D2.3b, 52×158, brightness(1.18) on hover */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/links/crexi-h104.png"
+        alt="CREXI"
+        style={{ height: 52, width: 158, display: 'block', flexShrink: 0, cursor: 'pointer', transition: 'filter 0.15s' }}
+        onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.18)')}
+        onMouseLeave={e => (e.currentTarget.style.filter = 'none')}
+        onClick={() => window.open('https://www.crexi.com', '_blank', 'noopener,noreferrer')}
+      />
 
       {/* Date/clock */}
       <span style={{ ...DT2, color: C.textLow, flexShrink: 0 }}>{dateStr} · {timeStr}</span>
@@ -994,28 +1014,7 @@ function MarkGeometric({ size }: { size: number }) {
   )
 }
 
-// Wordmark with atmospheric glow — this is the screen's ONE glow
-function WordmarkGlow() {
-  const style: React.CSSProperties = {
-    fontSize: 22,
-    fontWeight: 800,
-    color: '#C084FC',
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    fontFamily: FONT_MONO,
-    whiteSpace: 'nowrap',
-  }
-  return (
-    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-      {/* Backlight */}
-      <span aria-hidden="true" style={{ ...style, position: 'absolute', inset: 0, opacity: 0.35, filter: 'blur(9px)', pointerEvents: 'none', zIndex: 0, userSelect: 'none' }}>SHIRLEYCRE</span>
-      {/* Atmospheric */}
-      <span aria-hidden="true" style={{ ...style, position: 'absolute', inset: 0, opacity: 0.1, filter: 'blur(22px)', pointerEvents: 'none', zIndex: 0, userSelect: 'none' }}>SHIRLEYCRE</span>
-      {/* Crisp text */}
-      <span style={{ ...style, position: 'relative', zIndex: 1, textShadow: 'none' }}>SHIRLEYCRE</span>
-    </span>
-  )
-}
+// WordmarkGlow removed — replaced by h176 PNG (§D2.3 / §D2.3a, 8.17.26)
 
 // ── LEFT RAIL ─────────────────────────────────────────────────────────────────
 type RailSlot = 'HOME' | 'PEOPLE'
