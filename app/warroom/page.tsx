@@ -84,9 +84,11 @@ interface Deal {
 interface ScheduleEvent {
   id: string
   title: string
-  event_date: string
-  start_time: string | null
-  end_time: string | null
+  event_date?: string   // legacy alias
+  date?: string         // schedule_events column name
+  start_time?: string | null  // legacy alias
+  time?: string | null        // schedule_events column name
+  end_time?: string | null
   location: string | null
 }
 
@@ -309,7 +311,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
       const { data } = await supabase
         .from('tasks')
         .select('id, title, status, due_date, completed_at, deal_id, deals(name, address)')
-        .not('status', 'in', '("done","cancelled")')
+        .eq('status', 'open')  // tasks table holds 'open' and 'complete' only — NOT IN (done,cancelled) excluded nothing
         .order('due_date', { ascending: true, nullsFirst: false })
         .limit(60)
       setTasks((data ?? []) as unknown as Task[])
@@ -565,18 +567,21 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
       const d3 = new Date(new Date(todayStr).getTime() + 86400000 * 3).toISOString().slice(0, 10)
 
       const [{ data: events }, { data: deadlines }] = await Promise.all([
-        supabase.from('events').select('id, title, event_date, start_time, location, deal_id').gte('event_date', todayStr).lte('event_date', d3).order('event_date').order('start_time'),
-        supabase.from('tasks').select('id, title, due_date, deal_id, deals(name)').not('status','in','("done","cancelled")').gte('due_date', todayStr).lte('due_date', d3).order('due_date'),
+                // 'events' table does not exist — real table is schedule_events (cols: date, time, title, location, deal_id)
+        supabase.from('schedule_events').select('id, title, date, time, location, deal_id').gte('date', todayStr).lte('date', d3).order('date').order('time'),
+        supabase.from('tasks').select('id, title, due_date, deal_id, deals(name)').eq('status', 'open').gte('due_date', todayStr).lte('due_date', d3).order('due_date'),
       ])
 
       // Merge, dedupe: if same deal+date exists as both event and deadline, keep event
       const seen = new Set<string>()
       const merged: N48Item[] = []
 
-      for (const e of (events ?? [])) {
-        const key = `${e.deal_id ?? e.id}_${e.event_date}`
+      for (const e of (events ?? []) as any[]) {
+        const eDate = e.date ?? e.event_date ?? ''
+        const eTime = e.time ?? e.start_time ?? null
+        const key = `${e.deal_id ?? e.id}_${eDate}`
         seen.add(key)
-        merged.push({ id: e.id, kind: 'event', deal_id: e.deal_id, date: e.event_date, time: e.start_time, title: e.title, context: e.location ?? '', spineColor: C.brand })
+        merged.push({ id: e.id, kind: 'event', deal_id: e.deal_id, date: eDate, time: eTime, title: e.title, context: e.location ?? '', spineColor: C.brand })
       }
       for (const t of (deadlines ?? [])) {
         const key = `${t.deal_id ?? t.id}_${t.due_date}`
@@ -675,11 +680,11 @@ function SchedulePanel({ refreshKey }: { refreshKey: number }) {
       const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const d1 = new Date(new Date(todayStr).getTime() + 86400000).toISOString().slice(0, 10)
       const { data } = await supabase
-        .from('events')
-        .select('id, title, event_date, start_time, end_time, location')
-        .gte('event_date', todayStr)
-        .lte('event_date', d1)
-        .order('event_date').order('start_time')
+        .from('schedule_events')  // 'events' table does not exist; schedule_events uses date/time columns
+        .select('id, title, date, time, location')
+        .gte('date', todayStr)
+        .lte('date', d1)
+        .order('date').order('time')
         .limit(20)
       setEvents((data ?? []) as ScheduleEvent[])
       setLoading(false)
@@ -690,8 +695,8 @@ function SchedulePanel({ refreshKey }: { refreshKey: number }) {
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
   const d1 = new Date(new Date(todayStr).getTime() + 86400000).toISOString().slice(0, 10)
 
-  const todays = events.filter(e => e.event_date === todayStr)
-  const tomorrows = events.filter(e => e.event_date === d1)
+  const todays = events.filter(e => (e.date ?? e.event_date) === todayStr)
+  const tomorrows = events.filter(e => (e.date ?? e.event_date) === d1)
 
   function fmt12(t: string | null): { time: string; ampm: string } {
     if (!t) return { time: '—', ampm: '' }
@@ -702,7 +707,7 @@ function SchedulePanel({ refreshKey }: { refreshKey: number }) {
   }
 
   function EventRow({ e, isNext }: { e: ScheduleEvent; isNext?: boolean }) {
-    const { time, ampm } = fmt12(e.start_time)
+    const { time, ampm } = fmt12(e.time ?? e.start_time ?? null)
     return (
       <div style={{
         display: 'flex',
@@ -767,7 +772,7 @@ function DeadlinesPanel({ refreshKey }: { refreshKey: number }) {
       const { data } = await supabase
         .from('tasks')
         .select('id, title, due_date, status, deals(name, address, addr_display, addr_street_name, addr_number, addr_city)')
-        .not('status', 'in', '("done","cancelled")')
+        .eq('status', 'open')  // tasks table: 'open' and 'complete' only — NOT IN (done,cancelled) excluded nothing
         .gte('due_date', todayStr)
         .lte('due_date', cutoff)
         .order('due_date', { ascending: true })

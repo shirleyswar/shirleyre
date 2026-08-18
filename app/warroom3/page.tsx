@@ -148,11 +148,11 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
 
   // Parallel fetches — queries mirror /warroom panel sources exactly.
   const [tasksRes, deadlinesRes, mmRes, ucRes] = await Promise.allSettled([
-    // Battle Plan: status = 'open' OR 'in_progress' — matches BattlePlanPanel.tsx filter
+    // Battle Plan: status = 'open' only — tasks table holds 'open' and 'complete', no 'in_progress'
     supabase
       .from('tasks')
       .select('id, title, due_date, status, deal_id, deals(name, address, addr_display, addr_street_name, addr_number, addr_city)')
-      .in('status', ['open', 'in_progress'])
+      .eq('status', 'open')
       .order('created_at', { ascending: true })
       .limit(200),
     // Deadlines: CLASS A FIX — past-due pinned, forward 45-day window, missed loaded.
@@ -168,13 +168,12 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       // No date filter — fetch all unsatisfied so we can split by date client-side
       .order('deadline_date', { ascending: true })
       .limit(100),
-    // Money Movers: status = 'hot' ONLY — exact HotPanel predicate
-    // HotPanel.tsx: supabase.from('deals').select('*').eq('status','hot')
-    // HOT chip count = same result set length (every row IS hot)
+    // Money Movers: is_money_mover = true — same predicate as desktop panel
+    // Ruling 8.18.26: mobile tile was querying status='hot' (wrong label/wrong column)
     supabase
       .from('deals')
-      .select('id, status')
-      .eq('status', 'hot')
+      .select('id, status, is_money_mover')
+      .eq('is_money_mover', true)
       .limit(200),
     // Under Contract: status = under_contract
     supabase
@@ -269,9 +268,9 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
   const bpOverdue = allTasks.filter(t => t.due_date && t.due_date < today).length
   const bpHot = allTasks.filter(t => t.due_date && t.due_date >= today && daysUntil(t.due_date) <= 7).length
 
-  // Money Movers: exact HotPanel predicate = status='hot'. All results ARE hot.
+  // Money Movers: is_money_mover = true (same as desktop). Show hot status as urgency.
   const mmTotal = mmDeals.length
-  const mmHot = mmDeals.length
+  const mmHot = mmDeals.filter((d: any) => d.status === 'hot').length
 
   // Deadlines tile (CLASS A FIX): count = pastDue + forward (missed not counted — acknowledged)
   // OLD: dlTotal = allDeadlines.length (forward-only, past-due invisible)

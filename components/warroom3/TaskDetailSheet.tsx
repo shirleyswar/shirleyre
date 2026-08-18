@@ -309,12 +309,13 @@ export default function TaskDetailSheet({
       const newListType = mode === 'edit' ? listType : (task.is_life ? 'life' : task.is_entity ? 'entity' : null)
       const newTitle = mode === 'edit' && titleEdited ? localTitle : null
 
-      // Try RPC first
+      // Try RPC first (includes p_title — amended 8.18.26 per item 12 ruling)
       const { error: rpcErr } = await (supabase as any).rpc('commit_task_sheet', {
         p_task_id:   task.id,
         p_due_date:  dueDateVal,
         p_list_type: newListType,
         p_note_body: noteBody,
+        p_title:     newTitle,  // null if not edited — RPC ignores null titles
       })
 
       if (rpcErr && (rpcErr.code === '42883' || rpcErr.code === 'PGRST202' || (rpcErr.message && rpcErr.message.includes('Could not find the function')))) {
@@ -416,17 +417,22 @@ export default function TaskDetailSheet({
 
   // ── Header action — checkmark in read mode
   const headerAction = mode === 'read' ? (
+    // §13.2 / item 11 ruling: DONE caption + checkmark. Same pattern as CONFIRM plate.
     <button
       onClick={handleComplete}
       disabled={saving}
       style={{
-        width: 44, height: 44, padding: 0,
+        display: 'flex', alignItems: 'center', gap: 6,
         border: 'none', background: 'transparent',
         cursor: saving ? 'default' : 'pointer',
         opacity: saving ? 0.5 : 1,
-        flexShrink: 0,
+        flexShrink: 0, padding: 0,
       }}
     >
+      <span style={{
+        fontFamily: FONT_MONO, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em',
+        textTransform: 'uppercase' as const, color: T.moneyIn,
+      }}>DONE</span>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/check/check-h140.png" alt="Complete" width={44} height={44} style={{ display: 'block' }} />
     </button>
@@ -596,6 +602,24 @@ export default function TaskDetailSheet({
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* 6b. ADD A NOTE composer — in read state (ruling 8.18.26: composer moves here so checkmark + CONFIRM can carry note) */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ ...styleT2, color: T.textLow, marginBottom: 10 }}>ADD A NOTE</div>
+                <textarea
+                  value={noteText}
+                  onChange={e => setNoteText(e.target.value)}
+                  placeholder="Write what this is about…"
+                  style={{
+                    background: T.bgRaise, borderRadius: 10, padding: '12px 14px',
+                    minHeight: 72, border: `1px solid ${T.borderDefault}`,
+                    color: T.textHi, fontSize: 13, fontFamily: FONT_DISPLAY,
+                    resize: 'none', outline: 'none', width: '100%',
+                    boxSizing: 'border-box' as const,
+                  }}
+                  rows={3}
+                />
               </div>
 
               {/* 7. Delete task row */}
