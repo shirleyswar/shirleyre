@@ -3,11 +3,11 @@
 // §5.8 Bottom sheet — ShirleyCRE mobile spec v1
 // - Scrim bg-scrim (rgba(0,0,0,0.60)) over full screen
 // - Sheet: top 78px (list panels); border-radius 26px 26px 0 0; bg-panel; border-top border-default
-// - 38×4px grab handle, rgba(255,255,255,0.18), radius 2, centred, 10px from top
 // - Header row: T1 label · hairline · count · 28px round close button
 // - Internal scroll container: padding-bottom 104px
 // - Motion §7: y 100%→0, spring stiffness 320 damping 34; scrim 180ms linear
 // - prefers-reduced-motion: opacity-only fallback
+// §18.9: grab handle removed — drag-to-dismiss wired to the sheet body div (threshold 60px).
 
 import React, { useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useReducedMotion, type Transition } from 'framer-motion'
@@ -32,23 +32,22 @@ interface BottomSheetProps {
   label: string           // T1 header label — UPPERCASE
   count?: number          // optional count after hairline
   children: React.ReactNode
-  // 'list' = top:78px (default), 'short' = top:112px
-  size?: 'list' | 'short'
-  // §5.8 authorized deviation: Deals sheet replaces count with + PORTFOLIO pill
+  // 'list' = top:78px (default), 'short' = top:112px, 'full' = top:34px
+  size?: 'list' | 'short' | 'full'
+  // §5.8 authorized deviation: custom right-side header content
   headerAction?: React.ReactNode
   // 31a: override header label style (T0 for Deals sheet vs T1 elsewhere)
   labelStyle?: React.CSSProperties
-  // 31a: override grab handle dimensions
-  handleW?: number
-  handleH?: number
-  handleRadius?: number
-  handleOpacity?: string
   // 31a: override header row height
   headerHeight?: number
   // 31a: count style override (M2 for Deals)
   countStyle?: React.CSSProperties
   // 31a check 7: suppress the × close button — FAB-× handles close for Deals sheet
   noCloseButton?: boolean
+  // §18.9: noHandle — handle is universally removed; prop kept for API clarity
+  noHandle?: boolean
+  // Override scroll container padding-bottom (default 104)
+  scrollPaddingBottom?: number
 }
 
 export default function BottomSheet({
@@ -60,25 +59,23 @@ export default function BottomSheet({
   size = 'list',
   headerAction,
   labelStyle,
-  handleW = 38,
-  handleH = 4,
-  handleRadius = 2,
-  handleOpacity = 'rgba(255,255,255,0.18)',
   headerHeight,
   countStyle,
   noCloseButton = true,
+  noHandle,
+  scrollPaddingBottom = 104,
 }: BottomSheetProps) {
   const prefersReduced = useReducedMotion()
-  const sheetTop = size === 'short' ? 112 : 78
+  const sheetTop = size === 'full' ? 34 : size === 'short' ? 112 : 78
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // §18.9 — wire the grab handle to drag-to-dismiss.
-  // Routes through onClose (which the caller guards via discard logic before passing).
+  // §18.9 — drag-to-dismiss wired to the sheet body div.
+  // Routes through onClose (which the caller guards via §18.4 discard logic before passing).
   const dragStartY = useRef<number | null>(null)
-  const handleGrabTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleSheetTouchStart = useCallback((e: React.TouchEvent) => {
     dragStartY.current = e.touches[0].clientY
   }, [])
-  const handleGrabTouchEnd = useCallback((e: React.TouchEvent) => {
+  const handleSheetTouchEnd = useCallback((e: React.TouchEvent) => {
     if (dragStartY.current === null) return
     const delta = e.changedTouches[0].clientY - dragStartY.current
     dragStartY.current = null
@@ -133,6 +130,8 @@ export default function BottomSheet({
             animate={sheetAnimate}
             exit={sheetExit}
             transition={sheetTransition}
+            onTouchStart={handleSheetTouchStart}
+            onTouchEnd={handleSheetTouchEnd}
             style={{
               position: 'fixed',
               top: sheetTop,
@@ -148,46 +147,24 @@ export default function BottomSheet({
               overflow: 'hidden',
             }}
           >
-            {/* Grab handle — default 38×4px r2 rgba(255,255,255,0.18); overrideable via props.
-                31a: Deals sheet uses 48×5px r3 rgba(255,255,255,.22).
-                §18.9: wired to drag-to-dismiss. */}
-            <div
-              onTouchStart={handleGrabTouchStart}
-              onTouchEnd={handleGrabTouchEnd}
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                paddingTop: 10,
-                paddingBottom: 14,
-                flexShrink: 0,
-                cursor: 'grab',
-              }}
-            >
-              <div style={{
-                width: handleW,
-                height: handleH,
-                borderRadius: handleRadius,
-                background: handleOpacity,
-              }} />
-            </div>
-
-            {/* Header row: label · hairline · count. Height overrideable (31a: 44px).
-                Check 6: exactly three children — title, hairline, count. No extra elements. */}
+            {/* Header row: label · hairline · headerAction|count.
+                Check 6: exactly three children — title, hairline, count/action. No extra elements. */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: 10,
               paddingLeft: 18,
               paddingRight: 18,
+              paddingTop: 16,
               paddingBottom: 14,
               flexShrink: 0,
-              ...(headerHeight ? { height: headerHeight, paddingBottom: 0 } : {}),
+              ...(headerHeight ? { height: headerHeight, paddingTop: 0, paddingBottom: 0 } : {}),
             }}>
               <span style={{ ...styleT1, ...labelStyle }}>{label}</span>
               {/* Hairline */}
               <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.11)' }} />
-              {/* Count — style overrideable (31a: M2 at text-low) */}
-              {headerAction ?? (count !== undefined && (
+              {/* Right side: headerAction takes priority; else count; else close button */}
+              {headerAction ?? (count !== undefined ? (
                 <span style={{
                   fontFamily: FONT_MONO,
                   fontSize: 13.5,
@@ -199,7 +176,7 @@ export default function BottomSheet({
                 }}>
                   {count}
                 </span>
-              ))}
+              ) : null)}
               {/* 28px round close button — suppressed when noCloseButton=true (check 7: FAB-× handles close) */}
               {!noCloseButton && <button
                 onClick={onClose}
@@ -215,7 +192,6 @@ export default function BottomSheet({
                   justifyContent: 'center',
                   cursor: 'pointer',
                   flexShrink: 0,
-                  // Extend tap area to meet 44px minimum
                   padding: 8,
                   margin: -8,
                   WebkitTapHighlightColor: 'transparent',
@@ -229,14 +205,14 @@ export default function BottomSheet({
               </button>}
             </div>
 
-            {/* Internal scroll container — padding-bottom 104px §5.7/§5.8 */}
+            {/* Internal scroll container — padding-bottom configurable (default 104px §5.7/§5.8) */}
             <div
               ref={scrollRef}
               style={{
                 flex: 1,
                 overflowY: 'auto',
                 overflowX: 'hidden',
-                paddingBottom: 104,
+                paddingBottom: scrollPaddingBottom,
               }}
             >
               {children}

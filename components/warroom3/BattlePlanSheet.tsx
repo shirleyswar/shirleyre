@@ -58,13 +58,14 @@ interface Task {
   entity_id: string | null  // CODE: task.entity_id FK added — nullable, beside is_life|is_entity
   sort_order: number | null
   created_at: string
-  deals?: { name?: string; address?: string } | null
+  deals?: { name?: string; address?: string; addr_display?: string | null; addr_street_name?: string | null; addr_number?: string | null; addr_city?: string | null } | null
   entities?: { name?: string } | null  // joined from entity_id FK
 }
 
 interface BattlePlanSheetProps {
   open: boolean
   onClose: () => void
+  onTaskDetailOpenChange?: (isOpen: boolean) => void
 }
 
 // §5.1 Group header: T2 label · hairline · count
@@ -178,7 +179,7 @@ function SwipeRow({ task, children, onSwipeRight, onSwipeLeft, onNextWeek }: {
   )
 }
 
-export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps) {
+export default function BattlePlanSheet({ open, onClose, onTaskDetailOpenChange }: BattlePlanSheetProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
@@ -197,7 +198,7 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
       try {
         const { data, error } = await supabase
           .from('tasks')
-          .select('id, title, status, due_date, deal_id, is_life, is_entity, entity_id, sort_order, created_at, deals(name, address), entities(name)')
+          .select('id, title, status, due_date, deal_id, is_life, is_entity, entity_id, sort_order, created_at, deals(name, address, addr_display, addr_street_name, addr_number, addr_city), entities(name)')
           .in('status', ['open', 'in_progress'])
           .order('created_at', { ascending: true })
           .limit(200)
@@ -334,7 +335,7 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
           spineColor={spineColor}
           dayCount={dayCount}
           dayCountColor={dayCountColor}
-          onPress={() => { setSelectedTask(task); setTaskDetailOpen(true) }}
+          onPress={() => { setSelectedTask(task); setTaskDetailOpen(true); onTaskDetailOpenChange?.(true) }}
         />
       </SwipeRow>
     )
@@ -401,32 +402,55 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
     <TaskDetailSheet
       open={taskDetailOpen}
       task={selectedTask as TaskDetailTask | null}
-      onClose={() => { setTaskDetailOpen(false); setSelectedTask(null) }}
+      onClose={() => { setTaskDetailOpen(false); setSelectedTask(null); onTaskDetailOpenChange?.(false) }}
       onCompleted={(t) => {
         setCompletionBar(t as unknown as Task)
         setTimeout(() => setCompletionBar(null), 6000)
         setTaskDetailOpen(false)
         setSelectedTask(null)
+        onTaskDetailOpenChange?.(false)
         setRetryCount(c => c + 1)
       }}
-      onSaved={() => { setTaskDetailOpen(false); setSelectedTask(null); setRetryCount(c => c + 1) }}
-      onDeleted={() => { setTaskDetailOpen(false); setSelectedTask(null); setRetryCount(c => c + 1) }}
+      onSaved={() => { setTaskDetailOpen(false); setSelectedTask(null); onTaskDetailOpenChange?.(false); setRetryCount(c => c + 1) }}
+      onDeleted={() => { setTaskDetailOpen(false); setSelectedTask(null); onTaskDetailOpenChange?.(false); setRetryCount(c => c + 1) }}
     />
 
-    {/* §13.3 Confirmation bar — above tab bar */}
+    {/* §13.3 Confirmation bar — above tab bar, derived offset 94+23-0+14=131 */}
     {completionBar && (
-      <div style={{ position:'fixed', bottom:84, left:0, right:0, zIndex:60, background:'#1E1D26', borderTop:'1px solid rgba(255,255,255,0.14)', padding:'12px 18px', display:'flex', alignItems:'center', gap:10 }}>
-        <div style={{ width:20, height:20, borderRadius:'50%', background:'#34D399', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-          <span style={{ fontSize:11, color:'#0A0A0F', lineHeight:1 }}>✓</span>
+      <div style={{
+        position: 'fixed',
+        bottom: 131,  // derived: TAB_BAR(94) + FAB_LIFT(23) - TAB_PAD_TOP(0) + CLEARANCE(14)
+        left: 14,
+        right: 14,
+        zIndex: 60,
+        background: 'rgba(18,17,26,0.97)',
+        border: '1px solid rgba(255,255,255,0.14)',
+        borderLeft: '3px solid #34D399',
+        borderRadius: 12,
+        padding: '12px 14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+      }}>
+        {/* check-h280.png at 88×88 — §17.5 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/check/check-h280.png" alt="" width={88} height={88} style={{ display: 'block', flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:14.5, fontWeight:400, color:'#EFEEF4', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            {completionBar.title}
+          </div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11.5, fontWeight:400, color:'#8E8CA0', marginTop:3 }}>
+            Completed · {completionBar.is_life ? 'Life' : (completionBar.deals ? ((completionBar.deals as any).addr_display || (completionBar.deals as any).addr_street_name || (completionBar.deals as any).name || '') : (completionBar.is_entity ? 'Entity' : 'Battle Plan'))}
+          </div>
         </div>
-        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13, color:'#B8B6C6', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-          {completionBar.title}{completionBar.deals ? ' · ' + ((completionBar.deals as any).address || (completionBar.deals as any).name || '') : ''}
-        </span>
-        <button onClick={async () => {
-          await supabase.from('tasks').update({ status:'open', completed_at: null }).eq('id', completionBar.id)
-          setCompletionBar(null)
-          setRetryCount(c => c+1)
-        }} style={{ background:'none', border:'none', cursor:'pointer', color:'#A78BFA', fontFamily:"'Space Grotesk',sans-serif", fontSize:13, fontWeight:500, flexShrink:0 }}>Undo</button>
+        <button
+          onClick={async () => {
+            await supabase.from('tasks').update({ status:'open', completed_at: null }).eq('id', completionBar.id)
+            setCompletionBar(null)
+            setRetryCount(c => c+1)
+          }}
+          style={{ background:'none', border:'none', cursor:'pointer', color:'#A78BFA', fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:500, letterSpacing:'0.1em', textTransform:'uppercase', flexShrink:0 }}
+        >UNDO</button>
       </div>
     )}
     </>

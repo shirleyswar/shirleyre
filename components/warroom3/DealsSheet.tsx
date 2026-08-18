@@ -309,11 +309,6 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
       labelStyle={STYLE_T0}
       // 31a check 2: header 44px (set via headerHeight)
       headerHeight={44}
-      // 31a check 1: grab handle 48×5px r3 rgba(255,255,255,.22)
-      handleW={48}
-      handleH={5}
-      handleRadius={3}
-      handleOpacity="rgba(255,255,255,0.22)"
       // 31a check 5: count M2 at text-low
       count={deals.length}
       countStyle={STYLE_M2}

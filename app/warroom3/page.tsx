@@ -493,10 +493,12 @@ function HomeScreen({
   onTilePress,
   openSheet,
   setOpenSheet,
+  onTaskDetailOpenChange,
 }: {
   onTilePress: (key: string) => void
   openSheet: SheetId | null
   setOpenSheet: (id: SheetId | null) => void
+  onTaskDetailOpenChange?: (isOpen: boolean) => void
 }) {
   const [loading, setLoading] = useState(true)
   const [hero, setHero] = useState<HeroItem | null>(null)
@@ -645,6 +647,7 @@ function HomeScreen({
       <BattlePlanSheet
         open={openSheet === 'battleplan'}
         onClose={() => setOpenSheet(null)}
+        onTaskDetailOpenChange={onTaskDetailOpenChange}
       />
 
       {/* Deals sheet — §12 step 5 + §19.1 + §20 */}
@@ -766,6 +769,7 @@ export default function WarRoom3Page() {
   const [activeTab, setActiveTab] = useState<TabId>('home')
   // Sheet state lifted to root so FAB can reflect open state across all sheets
   const [openSheet, setOpenSheet] = useState<SheetId | null>(null)
+  const [taskDetailSheetOpen, setTaskDetailSheetOpen] = useState(false)
 
   useEffect(() => {
     const expiry = localStorage.getItem(SESSION_KEY)
@@ -810,6 +814,7 @@ export default function WarRoom3Page() {
           onTilePress={handleTilePress}
           openSheet={openSheet}
           setOpenSheet={setOpenSheet}
+          onTaskDetailOpenChange={setTaskDetailSheetOpen}
         />
       )
       case 'deals': return <PlaceholderScreen label="DEALS" />
@@ -857,7 +862,7 @@ export default function WarRoom3Page() {
         active={activeTab}
         onTab={setActiveTab}
         onFab={handleFab}
-        fabOpen={openSheet !== null}
+        fabOpen={openSheet !== null || taskDetailSheetOpen}
       />
     </div>
   )
