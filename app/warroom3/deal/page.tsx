@@ -16,8 +16,8 @@ const T = {
   bgPanel:   '#12111B',
   bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
-  textMid:   '#8B8A9B',
-  textLow:   '#5C5B6B',
+  textMid:   '#B8B6C6',
+  textLow:   '#8E8CA0',
   brand:     '#8B5CF6',
   brandLift: '#A78BFA',  // Est. Commission glow — the one glow on the page
   moneyIn:   '#34D399',
@@ -169,6 +169,12 @@ interface DealData {
   id: string
   name: string | null
   address: string | null
+  addr_display?: string | null
+  addr_street_name?: string | null
+  addr_street_type?: string | null
+  addr_direction?: string | null
+  addr_number?: string | null
+  addr_city?: string | null
   status: string
   property_type: string | null
   portfolio_id: string | null
@@ -213,7 +219,7 @@ function DealPageContent() {
         // Fetch core deal
         const { data: dealData, error: dealErr } = await supabase
           .from('deals')
-          .select('id, name, address, status, property_type, portfolio_id, dropbox_link, acreage, commission_estimated, commission_collected')
+          .select('id, name, address, addr_display, addr_street_name, addr_street_type, addr_direction, addr_number, addr_city, status, property_type, portfolio_id, dropbox_link, acreage, commission_estimated, commission_collected')
           .eq('id', dealId)
           .single()
         if (dealErr || !dealData) { setError(true); setLoading(false); return }
@@ -271,7 +277,7 @@ function DealPageContent() {
   }
 
   const isLease = deal.transaction_type === 'lease'
-  const addr = formatAddress(deal.address) || deal.name || '—'
+  const addr = formatAddress(deal) || deal.name || '—'
   const clientName = deal.name && deal.name !== deal.address ? deal.name : null
   const isHot = deal.status === 'hot'
 
@@ -508,7 +514,7 @@ export default function DealPage() {
   return (
     <Suspense fallback={
       <div style={{ background: '#08080C', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#5C5B6B', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Loading…</span>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#8E8CA0', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Loading…</span>
       </div>
     }>
       <DealPageContent />

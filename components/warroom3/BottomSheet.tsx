@@ -22,7 +22,7 @@ const styleT1: React.CSSProperties = {
   fontWeight: 500,
   letterSpacing: '0.14em',
   textTransform: 'uppercase',
-  color: '#8B8A9B',
+  color: '#B8B6C6',
   lineHeight: 1,
 }
 
@@ -192,7 +192,7 @@ export default function BottomSheet({
                   fontFamily: FONT_MONO,
                   fontSize: 13.5,
                   fontWeight: 500,
-                  color: '#5C5B6B',
+                  color: '#8E8CA0',
                   letterSpacing: '0.04em',
                   fontVariantNumeric: 'tabular-nums',
                   ...countStyle,
@@ -219,7 +219,7 @@ export default function BottomSheet({
                   padding: 8,
                   margin: -8,
                   WebkitTapHighlightColor: 'transparent',
-                  color: '#8B8A9B',
+                  color: '#B8B6C6',
                 } as React.CSSProperties}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

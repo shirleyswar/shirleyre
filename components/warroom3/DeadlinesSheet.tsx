@@ -44,12 +44,12 @@ const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 const T = {
   bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
-  textMid:   '#8B8A9B',
-  textLow:   '#5C5B6B',
+  textMid:   '#B8B6C6',
+  textLow:   '#8E8CA0',
   late:      '#FF4D4D',   // past-due + 0–1 day
   hot:       '#FFA23A',   // 2–7 days
   brand:     '#8B5CF6',   // 8+ days
-  missed:    '#5C5B6B',   // acknowledged blown
+  missed:    '#8E8CA0',   // acknowledged blown
 } as const
 
 // 44a type scale: T1=12px, T2=12px/0.15em, T3=18px, T4=14px
@@ -511,11 +511,11 @@ export default function DeadlinesSheet({
       if (dealIds.length > 0) {
         const { data: dealData } = await supabase
           .from('deals')
-          .select('id, name, address')
+          .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city')
           .in('id', dealIds)
         if (dealData) {
           (dealData as any[]).forEach((d: any) => {
-            dealMap[d.id] = formatAddress(d.address) || d.name || ''
+            dealMap[d.id] = formatAddress(d) || d.name || ''
           })
         }
       }

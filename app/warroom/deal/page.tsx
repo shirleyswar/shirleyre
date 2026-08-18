@@ -8,6 +8,7 @@ import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
+import { DS2 } from '@/components/warroom/desktopTypes'
 import Launch from '@/components/warroom3/Launch'
 import '../../../assets/fab/fab.css'
 import '../../../assets/launch/launch.css'
@@ -97,7 +98,7 @@ function ReadRow({ label, value, numeric }: { label: string; value: string; nume
       <span style={
         isNumber
           ? { ...STYLE_M1, color: T.textHi }
-          : { fontFamily: FONT_DISPLAY, fontSize: 14.5, fontWeight: 400, color: T.textHi, lineHeight: 1.3 }
+          : { ...DS2, color: T.textHi, lineHeight: 1.3 }
       }>
         {value}
       </span>
@@ -164,6 +165,12 @@ interface DealData {
   id: string
   name: string | null
   address: string | null
+  addr_display?: string | null
+  addr_street_name?: string | null
+  addr_street_type?: string | null
+  addr_direction?: string | null
+  addr_number?: string | null
+  addr_city?: string | null
   status: string
   property_type: string | null
   portfolio_id: string | null
@@ -223,7 +230,7 @@ function DealPageContent() {
       try {
         const { data: dealData, error: dealErr } = await supabase
           .from('deals')
-          .select('id,name,address,status,property_type,portfolio_id,dropbox_link,acreage,commission_estimated,commission_collected')
+          .select('id,name,address,addr_display,addr_street_name,addr_street_type,addr_direction,addr_number,addr_city,status,property_type,portfolio_id,dropbox_link,acreage,commission_estimated,commission_collected')
           .eq('id', dealId)
           .single()
         if (dealErr || !dealData) { setError(true); setLoading(false); return }
@@ -334,7 +341,7 @@ function DealPageContent() {
   }
 
   const isLease = deal.transaction_type === 'lease'
-  const addr = formatAddress(deal.address) || deal.name || '—'
+  const addr = formatAddress(deal) || deal.name || '—'
   const addrParts = (deal.address || '').split(',')
   const street = addrParts[0]?.trim() || addr
   const cityState = addrParts.slice(1).join(',').trim() || ''

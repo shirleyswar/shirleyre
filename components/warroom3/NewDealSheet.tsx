@@ -16,8 +16,8 @@ const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 const T = {
   bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
-  textMid:   '#8B8A9B',
-  textLow:   '#5C5B6B',
+  textMid:   '#B8B6C6',
+  textLow:   '#8E8CA0',
   textInvert:'#0A0A0F',
   brand:     '#8B5CF6',
   brandLift: '#A78BFA',

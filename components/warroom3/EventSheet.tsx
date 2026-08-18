@@ -20,8 +20,8 @@ const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
   textHi:     '#EFEEF4',
-  textMid:    '#8B8A9B',
-  textLow:    '#5C5B6B',
+  textMid:    '#B8B6C6',
+  textLow:    '#8E8CA0',
   textInvert: '#0A0A0F',
 } as const
 

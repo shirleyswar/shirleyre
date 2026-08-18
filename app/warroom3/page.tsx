@@ -41,8 +41,8 @@ const T = {
   bgPanel:   '#12111B',
   bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
-  textMid:   '#8B8A9B',
-  textLow:   '#5C5B6B',
+  textMid:   '#B8B6C6',
+  textLow:   '#8E8CA0',
   brand:     '#8B5CF6',
   brandLift: '#A78BFA',
   moneyIn:   '#34D399',
@@ -150,7 +150,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
     // Battle Plan: status = 'open' OR 'in_progress' — matches BattlePlanPanel.tsx filter
     supabase
       .from('tasks')
-      .select('id, title, due_date, status, deal_id, deals(name, address)')
+      .select('id, title, due_date, status, deal_id, deals(name, address, addr_display, addr_street_name, addr_number, addr_city)')
       .in('status', ['open', 'in_progress'])
       .order('created_at', { ascending: true })
       .limit(200),
@@ -161,7 +161,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
     // Hero priority: oldest past-due beats any forward deadline (Part 3).
     supabase
       .from('contract_deadlines')
-      .select('id, deadline_type, deadline_date, status, deals(name, address)')
+      .select('id, deadline_type, deadline_date, status, deals(name, address, addr_display, addr_street_name, addr_number, addr_city)')
       .in('status', ['pending', 'extended', 'missed'])
       .not('status', 'eq', 'satisfied')
       // No date filter — fetch all unsatisfied so we can split by date client-side
@@ -225,7 +225,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
     // Oldest past-due wins hero (already sorted ASC from query)
     const oldest = dlPastDue[0] as any
     const days = daysUntil(oldest.deadline_date)   // negative
-    const dealName = formatAddress(oldest.deals?.address) || oldest.deals?.name || 'Deal'
+    const dealName = formatAddress(oldest.deals) || oldest.deals?.name || 'Deal'
     const typeLabel = (oldest.deadline_type as string).replace(/_/g, ' ')
     const absDays = Math.abs(days)
     hero = {
@@ -237,7 +237,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
   } else if (dlForward.length > 0) {
     const nearest = dlForward[0] as any
     const days = daysUntil(nearest.deadline_date)
-    const dealName = formatAddress(nearest.deals?.address) || nearest.deals?.name || 'Deal'
+    const dealName = formatAddress(nearest.deals) || nearest.deals?.name || 'Deal'
     const typeLabel = (nearest.deadline_type as string).replace(/_/g, ' ')
     hero = {
       title: `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} deadline${days === 0 ? ' — TODAY' : ` in ${days} day${days === 1 ? '' : 's'}`}`,
@@ -250,7 +250,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
     const overdue = (tasks as any[]).filter(t => t.due_date && t.due_date < today)
     if (overdue.length > 0) {
       const oldest = overdue[overdue.length - 1]
-      const deal = formatAddress((oldest.deals as any)?.address) || (oldest.deals as any)?.name || null
+      const deal = formatAddress((oldest.deals as any) ?? {}) || (oldest.deals as any)?.name || null
       hero = {
         title: oldest.title || 'Overdue task',
         subtitle: deal || '',
@@ -530,21 +530,21 @@ function HomeScreen({
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        height: 56,
+        height: 64,
         marginBottom: 18,
       }}>
-        {/* Star mark — 48px geometric mark, kept left */}
+        {/* Star mark — 56px geometric mark, kept left */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/mark-256.png" alt="" width={48} height={48} style={{ display: 'block', position: 'relative' }} />
+          <img src="/icons/mark-256.png" alt="" width={56} height={56} style={{ display: 'block', position: 'relative' }} />
         </div>
 
-        {/* SHIRLEYCRE wordmark — §6.2a 46b, h144 PNG at height 48px → 155×48 */}
+        {/* SHIRLEYCRE wordmark — §6.2a 46b, h144 PNG at height 52px → 168×52 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/assets/wordmark/shirleycre-h144.png"
           alt="SHIRLEYCRE"
-          style={{ height: 48, width: 155, display: 'block', flexShrink: 0, marginTop: -5.5 }}
+          style={{ height: 52, width: 168, display: 'block', flexShrink: 0, marginTop: -5.5 }}
         />
 
         <div style={{ flex: 1 }} />
@@ -556,7 +556,7 @@ function HomeScreen({
           fontWeight: 500,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: T.textLow,
+          color: T.brandLift,
           lineHeight: 1,
           whiteSpace: 'nowrap',
         }}>{dateLabel}</span>

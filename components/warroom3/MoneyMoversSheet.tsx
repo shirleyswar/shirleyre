@@ -15,7 +15,7 @@ import { formatAddress } from '@/lib/formatAddress'
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 
 const T = {
-  textLow:   '#5C5B6B',
+  textLow:   '#8E8CA0',
   late:      '#FF4D4D',
   hot:       '#FFA23A',
   brand:     '#8B5CF6',
@@ -44,7 +44,7 @@ export default function MoneyMoversSheet({ open, onClose }: { open: boolean; onC
     try {
       const { data: dealsData, error: dealsErr } = await supabase
         .from('deals')
-        .select('id, name, address')
+        .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city')
         .eq('status', 'hot')
         .order('updated_at', { ascending: false })
         .limit(100)
@@ -115,7 +115,7 @@ export default function MoneyMoversSheet({ open, onClose }: { open: boolean; onC
       ) : (
         <div>
           {deals.map(deal => {
-            const addr = formatAddress(deal.address) || null
+            const addr = formatAddress(deal) || null
             const clientName = deal.name?.replace(/^📁\s*/, '') || null
             // §5.11.5 — if addr is null, title = clientName; subline should differ from title
             const title = addr || clientName || '—'

@@ -23,7 +23,7 @@ interface BottomTabBarProps {
 }
 
 function HomeIcon({ active }: { active: boolean }) {
-  const c = active ? '#EFEEF4' : '#5C5B6B'
+  const c = active ? '#EFEEF4' : '#8E8CA0'
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
@@ -33,7 +33,7 @@ function HomeIcon({ active }: { active: boolean }) {
 }
 
 function DealsIcon({ active }: { active: boolean }) {
-  const c = active ? '#EFEEF4' : '#5C5B6B'
+  const c = active ? '#EFEEF4' : '#8E8CA0'
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="3" width="20" height="14" rx="2"/>
@@ -43,7 +43,7 @@ function DealsIcon({ active }: { active: boolean }) {
 }
 
 function MoneyIcon({ active }: { active: boolean }) {
-  const c = active ? '#EFEEF4' : '#5C5B6B'
+  const c = active ? '#EFEEF4' : '#8E8CA0'
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="1" x2="12" y2="23"/>
@@ -53,7 +53,7 @@ function MoneyIcon({ active }: { active: boolean }) {
 }
 
 function MoreIcon({ active }: { active: boolean }) {
-  const c = active ? '#EFEEF4' : '#5C5B6B'
+  const c = active ? '#EFEEF4' : '#8E8CA0'
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
       <circle cx="5" cy="12" r="1.5" fill={c}/>
@@ -104,7 +104,7 @@ function TabSlot({ label, icon, active, onClick }: TabSlotProps) {
       } as React.CSSProperties}
     >
       {icon}
-      <span style={{ ...LABEL_STYLE, color: active ? '#EFEEF4' : '#5C5B6B' }}>
+      <span style={{ ...LABEL_STYLE, color: active ? '#EFEEF4' : '#8E8CA0' }}>
         {label}
       </span>
     </button>
@@ -157,7 +157,7 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
           <Fab open={fabOpen} onClick={onFab} label="NEW" />
         </div>
         {/* NEW label — same baseline as other four §5.7 */}
-        <span style={{ ...LABEL_STYLE, color: '#5C5B6B' }}>
+        <span style={{ ...LABEL_STYLE, color: '#8E8CA0' }}>
           NEW
         </span>
       </div>

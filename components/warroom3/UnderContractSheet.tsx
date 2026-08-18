@@ -18,8 +18,8 @@ const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
   textHi:    '#EFEEF4',
-  textMid:   '#8B8A9B',
-  textLow:   '#5C5B6B',
+  textMid:   '#B8B6C6',
+  textLow:   '#8E8CA0',
   late:      '#FF4D4D',
   hot:       '#FFA23A',
   brand:     '#8B5CF6',
@@ -73,7 +73,7 @@ export default function UnderContractSheet({ open, onClose }: { open: boolean; o
     try {
       const { data, error } = await supabase
         .from('deals')
-        .select('id, name, address, updated_at')
+        .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, updated_at')
         .eq('status', 'under_contract')
         .order('updated_at', { ascending: false })
       if (error) { setLoadError(true); setLoading(false); return }
@@ -125,7 +125,7 @@ export default function UnderContractSheet({ open, onClose }: { open: boolean; o
       ) : (
         <div>
           {deals.map(deal => {
-            const addr = formatAddress(deal.address) || null
+            const addr = formatAddress(deal as any) || null
             const clientName = deal.name?.replace(/^📁\s*/, '') || null
             const title = addr || clientName || '—'
             // §5.11.5: subline ≠ title

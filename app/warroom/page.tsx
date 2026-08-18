@@ -14,9 +14,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import PinGate from '@/components/warroom/PinGate'
 import { supabase } from '@/lib/supabase'
-import { formatAddress } from '@/lib/formatAddress'
 import {
-  DS3, DS4, DS5, DS6, DS7, DS8,
+  DS1, DS2, DS3, DS4, DS5, DS6, DS7, DS8,
   DT1, DT2, DT3, DT4, DT5, DT7, DT8,
   DM0, DM1, DM2,
 } from '@/components/warroom/desktopTypes'
@@ -70,12 +69,15 @@ interface Deal {
   id: string
   name: string
   address: string | null
+  addr_display: string | null
+  addr_street_name: string | null
+  addr_number: string | null
+  addr_city: string | null
   status: string
   commission_estimated: number | null
-  value_estimated: number | null
-  client_name: string | null
-  closing_date: string | null
-  is_money_mover: boolean | null
+  value: number | null
+  is_money_mover?: boolean | null
+  deal_contacts: Array<{ contacts: { name: string } | null }>
 }
 
 interface ScheduleEvent {
@@ -98,6 +100,20 @@ interface ArItem {
 function fmt$(n: number | null | undefined): string {
   if (n == null) return '—'
   return '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
+function clientName(d: Deal): string {
+  return d.deal_contacts?.[0]?.contacts?.name ?? '—'
+}
+function shortAddr(d: Deal): string {
+  if (d.addr_display) return d.addr_display
+  if (d.addr_street_name) {
+    const parts: string[] = [d.addr_street_name]
+    if (d.addr_city && d.addr_city !== 'Baton Rouge') parts.push('·', d.addr_city)
+    if (d.addr_number) parts.push(d.addr_number)
+    return parts.join(' ')
+  }
+  return d.name
 }
 
 function fmtDate(d: string | null): string {
@@ -397,12 +413,11 @@ function MoneyMoversPanel({ refreshKey }: { refreshKey: number }) {
     async function load() {
       const { data } = await supabase
         .from('deals')
-        .select('id, name, address, status, commission_estimated, value_estimated, client_name')
+        .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, commission_estimated, value, deal_contacts(contacts(name))')
         .eq('is_money_mover', true)
         .not('status', 'in', '("closed","expired","dormant","terminated")')
-        .order('commission_estimated', { ascending: false })
         .limit(10)
-      const rows = (data ?? []) as Deal[]
+      const rows = (data ?? []) as unknown as Deal[]
       setDeals(rows)
       setTotal(rows.reduce((s, d) => s + (d.commission_estimated ?? 0), 0))
       setLoading(false)
@@ -435,14 +450,14 @@ function MoneyMoversPanel({ refreshKey }: { refreshKey: number }) {
               <div style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: 44 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {formatAddress(d.address) || d.name}
+                    {shortAddr(d)}
                   </div>
                   <div style={{ ...DS7, color: C.textLow }}>
-                    {d.client_name ?? '—'} · {d.status.replace(/_/g,' ')}
+                    {clientName(d)} · {d.status.replace(/_/g,' ')}
                   </div>
                 </div>
                 <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>
-                  {d.value_estimated ? fmt$(d.value_estimated) : '—'}
+                  {d.value ? fmt$(d.value) : '—'}
                 </div>
                 <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>
                   {fmt$(d.commission_estimated)}
@@ -467,11 +482,11 @@ function UnderContractPanel({ refreshKey }: { refreshKey: number }) {
     async function load() {
       const { data } = await supabase
         .from('deals')
-        .select('id, name, address, status, commission_estimated, client_name, closing_date')
+        .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, commission_estimated, deal_contacts(contacts(name))')
         .in('status', ['under_contract', 'pending_payment'])
-        .order('closing_date', { ascending: true })
+        .order('created_at', { ascending: true })
         .limit(15)
-      setDeals((data ?? []) as Deal[])
+      setDeals((data ?? []) as unknown as Deal[])
       setLoading(false)
     }
     load()
@@ -490,10 +505,10 @@ function UnderContractPanel({ refreshKey }: { refreshKey: number }) {
             <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 8 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {formatAddress(d.address) || d.name}
+                  {shortAddr(d)}
                 </div>
                 <div style={{ ...DS7, color: C.textLow }}>
-                  {d.client_name ?? '—'} · closes {fmtDate(d.closing_date)}
+                  {clientName(d)} · {d.status.replace(/_/g,' ')}
                 </div>
               </div>
               <div style={{ ...DM1, color: C.moneyIn, flexShrink: 0 }}>
@@ -737,7 +752,7 @@ function SchedulePanel({ refreshKey }: { refreshKey: number }) {
 function DeadlinesPanel({ refreshKey }: { refreshKey: number }) {
   const [deadlines, setDeadlines] = useState<Array<{
     id: string; title: string; due_date: string; kind: string;
-    deals?: { name: string; address: string | null } | null
+    deals?: { name: string; address: string | null; addr_display: string | null; addr_street_name: string | null; addr_number: string | null; addr_city: string | null } | null
   }>>([])
   const [loading, setLoading] = useState(true)
 
@@ -747,7 +762,7 @@ function DeadlinesPanel({ refreshKey }: { refreshKey: number }) {
       const cutoff = new Date(new Date(todayStr).getTime() + 86400000 * 45).toISOString().slice(0, 10)
       const { data } = await supabase
         .from('tasks')
-        .select('id, title, due_date, status, deals(name, address)')
+        .select('id, title, due_date, status, deals(name, address, addr_display, addr_street_name, addr_number, addr_city)')
         .not('status', 'in', '("done","cancelled")')
         .gte('due_date', todayStr)
         .lte('due_date', cutoff)
@@ -792,7 +807,7 @@ function DeadlinesPanel({ refreshKey }: { refreshKey: number }) {
                 {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</div>
-                  {d.deals && <div style={{ ...DS7, color: C.textLow }}>{formatAddress(d.deals.address) || d.deals.name}</div>}
+                  {d.deals && <div style={{ ...DS7, color: C.textLow }}>{d.deals.addr_display ?? d.deals.addr_street_name ?? d.deals.name}</div>}
                 </div>
               </div>
               {i < deadlines.length - 1 && <Hair />}
@@ -897,10 +912,9 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
       borderBottom: `1px solid ${C.border}`,
       background: C.bgBase,
     }}>
-      {/* Geometric mark — 64px */}
-      <div style={{ width: 64, height: 64, flexShrink: 0 }}>
-        <MarkGeometric size={64} />
-      </div>
+      {/* Geometric mark — 64px PNG */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/icons/mark-256.png" alt="" width={64} height={64} style={{ display: 'block', flexShrink: 0 }} />
 
       {/* SHIRLEYCRE wordmark — h176 PNG at 88px, §D2.3 / §D2.3a */}
       <div style={{ width: 'auto', flexShrink: 0, marginTop: -10, marginLeft: -3.5, display:'flex', alignItems:'center' }}>
@@ -972,7 +986,7 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
       />
 
       {/* Date/clock */}
-      <span style={{ ...DT2, color: C.textLow, flexShrink: 0 }}>{dateStr} · {timeStr}</span>
+      <span style={{ ...DT2, color: C.brandLift, flexShrink: 0 }}>{dateStr} · {timeStr}</span>
 
       {/* Live dot */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
@@ -980,37 +994,6 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
         <span style={{ ...DT3, color: C.moneyIn }}>LIVE</span>
       </div>
     </div>
-  )
-}
-
-// Geometric mark (app tier — <120px)
-function MarkGeometric({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true">
-      <path
-        d="M20 2 C20 2, 22 14, 20 20 C18 14, 20 2, 20 2Z
-           M20 38 C20 38, 22 26, 20 20 C18 26, 20 38, 20 38Z
-           M2 20 C2 20, 14 22, 20 20 C14 18, 2 20, 2 20Z
-           M38 20 C38 20, 26 22, 20 20 C26 18, 38 20, 38 20Z"
-        fill="url(#markGrad)"
-      />
-      <path
-        d="M7.5 7.5 C7.5 7.5, 16 16, 20 20 C16 16, 7.5 7.5, 7.5 7.5Z
-           M32.5 32.5 C32.5 32.5, 24 24, 20 20 C24 24, 32.5 32.5, 32.5 32.5Z
-           M32.5 7.5 C32.5 7.5, 24 16, 20 20 C24 16, 32.5 7.5, 32.5 7.5Z
-           M7.5 32.5 C7.5 32.5, 16 24, 20 20 C16 24, 7.5 32.5, 7.5 32.5Z"
-        fill="url(#markGrad)"
-        opacity="0.55"
-      />
-      <circle cx="20" cy="20" r="2.2" fill="white" opacity="0.9" />
-      <defs>
-        <radialGradient id="markGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-          <stop offset="40%" stopColor="#A78BFA" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#C084FC" stopOpacity="0.7" />
-        </radialGradient>
-      </defs>
-    </svg>
   )
 }
 

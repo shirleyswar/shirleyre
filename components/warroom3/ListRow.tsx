@@ -52,7 +52,7 @@ const styleMetaLine: React.CSSProperties = {
   fontFamily: FONT_DISPLAY,
   fontSize: 14,
   fontWeight: 400,
-  color: '#5C5B6B',
+  color: '#8E8CA0',
   lineHeight: 1.3,
 }
 
@@ -92,8 +92,8 @@ const PORTFOLIO_SITE_COUNT = 13.5   // §5.11.7 SITES — M2 size, mono family (
 // ── Colour tokens §2 ─────────────────────────────────────────────────────────
 const T = {
   textHi:    '#EFEEF4',
-  textMid:   '#8B8A9B',
-  textLow:   '#5C5B6B',
+  textMid:   '#B8B6C6',
+  textLow:   '#8E8CA0',
   textInvert:'#0A0A0F',
   late:      '#FF4D4D',
   hot:       '#FFA23A',

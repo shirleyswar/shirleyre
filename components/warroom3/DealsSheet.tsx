@@ -18,8 +18,8 @@ const T = {
   bgPanel:     '#12111B',
   bgRaise:     '#1E1D26',
   textHi:      '#EFEEF4',
-  textMid:     '#8B8A9B',
-  textLow:     '#5C5B6B',
+  textMid:     '#B8B6C6',
+  textLow:     '#8E8CA0',
   brand:       '#8B5CF6',
   brandStrong: '#7C3AED',
   brandLift:   '#A78BFA',
@@ -72,6 +72,10 @@ interface Deal {
   status: string
   name: string | null
   address: string | null
+  addr_display?: string | null
+  addr_street_name?: string | null
+  addr_number?: string | null
+  addr_city?: string | null
   updated_at: string
   portfolio_id: string | null  // §5.11.7 — portfolios group separately
 }
@@ -123,7 +127,7 @@ function getRowSpine(status: string): string | null {
 // → formatAddress() → "Harrells Ferry Rd. N. 10993"
 // City/state/zip/country appear on deal detail only, never in the list row.
 function dealTitle(deal: Deal): string {
-  const formatted = formatAddress(deal.address)
+  const formatted = formatAddress(deal)
   // formatAddress returns '—' when address is null/empty — fall back to name
   if (formatted && formatted !== '—') return formatted
   return deal.name || '—'
@@ -164,7 +168,7 @@ const STYLE_M2: React.CSSProperties = {
   fontSize: 13.5,
   fontWeight: 500,
   letterSpacing: '0.04em',
-  color: '#5C5B6B',
+  color: '#8E8CA0',
   fontVariantNumeric: 'tabular-nums',
   lineHeight: 1,
 }
@@ -218,7 +222,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
         const [dealsRes, portfoliosRes] = await Promise.all([
           supabase
             .from('deals')
-            .select('id, status, name, address, updated_at, property_type, portfolio_id')
+            .select('id, status, name, address, addr_display, addr_street_name, addr_number, addr_city, updated_at, property_type, portfolio_id')
             .order('address', { ascending: true })
             .limit(200),
           supabase
@@ -531,7 +535,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
         <div onClick={() => { setLoadError(false); setDeals([]); setLoading(true);
           ;(async () => {
             try {
-              const { data, error } = await supabase.from('deals').select('id, status, name, address, updated_at, property_type, portfolio_id').order('address', { ascending: true }).limit(200)
+              const { data, error } = await supabase.from('deals').select('id, status, name, address, addr_display, addr_street_name, addr_number, addr_city, updated_at, property_type, portfolio_id').order('address', { ascending: true }).limit(200)
               if (error) { setLoadError(true); setLoading(false); return }
               setDeals((data ?? []) as DealFull[]); setLoading(false)
             } catch { setLoadError(true); setLoading(false) }
@@ -649,7 +653,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
     Promise.all([
       supabase
         .from('deals')
-        .select('id, status, name, address, updated_at')
+        .select('id, status, name, address, addr_display, addr_street_name, addr_number, addr_city, updated_at')
         .order('updated_at', { ascending: false })
         .limit(3),
       supabase
@@ -732,7 +736,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
           onClick={() => {
             setLoadError(false); setLoading(true)
             Promise.all([
-              supabase.from('deals').select('id, status, name, address, updated_at').order('updated_at', { ascending: false }).limit(3),
+              supabase.from('deals').select('id, status, name, address, addr_display, addr_street_name, addr_number, addr_city, updated_at').order('updated_at', { ascending: false }).limit(3),
               supabase.from('deals').select('id', { count: 'exact', head: true }),
             ]).then(([recent, count]) => {
               if (recent.error || count.error) { setLoadError(true); setLoading(false); return }
@@ -748,7 +752,7 @@ export function DealPipelineBand({ onOpenSheet }: DealPipelineBandProps) {
         <div style={{ padding: '0 16px' }}>
           {deals.map(deal => {
             // §5.11.9: short-form address via formatAddress() — same as DealRow in the full sheet
-            const formatted = formatAddress(deal.address)
+            const formatted = formatAddress(deal)
             const addr = (formatted && formatted !== '—') ? formatted : (deal.name || '—')
             const pill = STATUS_LABELS[deal.status] ?? deal.status.toUpperCase()
             const pillStyle = statusPillStyle(deal.status)

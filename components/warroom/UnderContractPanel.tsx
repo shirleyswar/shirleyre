@@ -1564,7 +1564,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                       <td style={{ padding: '10px 8px', maxWidth: 220 }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                           <div className="wr-address" style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)', flex: 1, minWidth: 0 }}>
-                            {formatAddress((deal as any).addr_display || deal.address || deal.name)}
+                            {formatAddress(deal as any)}
                           </div>
                           <a
                             href={`/warroom/deal?id=${deal.id}`}
@@ -1701,7 +1701,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {formatAddress((deal as any).addr_display || deal.address || deal.name)}
+                          {formatAddress(deal as any)}
                         </div>
                         <a
                           href={`/warroom/deal?id=${deal.id}`}

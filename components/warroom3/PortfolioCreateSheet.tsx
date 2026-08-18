@@ -22,8 +22,8 @@ const T = {
   bgPanel:   '#12111B',
   bgRaise:   '#1E1D26',
   textHi:    '#EFEEF4',
-  textMid:   '#8B8A9B',
-  textLow:   '#5C5B6B',
+  textMid:   '#B8B6C6',
+  textLow:   '#8E8CA0',
   textInvert:'#0A0A0F',
   brand:     '#8B5CF6',
   brandLift: '#A78BFA',
@@ -104,7 +104,7 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
     setLoading(true)
     const { data } = await supabase
       .from('deals')
-      .select('id, name, address, status, portfolio_id, portfolio:portfolio_id(name)')
+      .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, portfolio_id, portfolio:portfolio_id(name)')
       .order('address', { ascending: true })
       .limit(200)
     setDeals((data ?? []) as unknown as Deal[])
@@ -227,7 +227,7 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
             <div style={{ ...styleT2, color: T.textLow, marginBottom: 6 }}>MEMBERS {selected.size}</div>
             <div style={{ border: '1px solid rgba(255,255,255,0.14)', borderRadius: 9, overflow: 'hidden' }}>
               {selectedDeals.map((deal, idx) => {
-                const addr = formatAddress(deal.address) || deal.name || '—'
+                const addr = formatAddress(deal as any) || deal.name || '—'
                 return (
                   <div key={deal.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: idx < selectedDeals.length - 1 ? '1px solid rgba(255,255,255,0.10)' : 'none' }}>
                     <span style={{ ...styleT4, color: T.textHi, fontSize: 13 }}>{addr}</span>
@@ -300,7 +300,7 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
             {visibleDeals.map(deal => {
               const isSelected = selected.has(deal.id)
               const inPortfolio = !!deal.portfolio_id
-              const addr = formatAddress(deal.address) || deal.name || '—'
+              const addr = formatAddress(deal as any) || deal.name || '—'
               const portfolioName2 = (deal.portfolio as any)?.name || null
 
               return (

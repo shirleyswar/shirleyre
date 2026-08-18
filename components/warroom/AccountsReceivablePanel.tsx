@@ -105,7 +105,7 @@ export default function AccountsReceivablePanel({ refreshKey }: { refreshKey?: n
     try {
       const { data, error } = await supabase
         .from('ar_items')
-        .select('id, deal_id, invoice_number, deal_type, commission_amount, sr_portion_amount, paid_to_date, deposit_retainage, reimbursable_amount, status, collected_date, created_at, deals(id, name, address)')
+        .select('id, deal_id, invoice_number, deal_type, commission_amount, sr_portion_amount, paid_to_date, deposit_retainage, reimbursable_amount, status, collected_date, created_at, deals(id, name, address, addr_display, addr_street_name, addr_number, addr_city)')
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -403,7 +403,7 @@ export default function AccountsReceivablePanel({ refreshKey }: { refreshKey?: n
                 const pctPaid = msTotal > 0 ? Math.min(100, (msPaid / msTotal) * 100) : 0
                 const itemPayments = payments[item.id] ?? []
                 const isExpanded = expandedId === item.id
-                const addressLabel = formatAddress(item.deals?.address ?? item.deals?.name)
+                const addressLabel = formatAddress((item.deals as any) ?? {})
                 const dealName = (item.deals?.name ?? '—').replace(/^📁\s*/, '')
 
                 return (

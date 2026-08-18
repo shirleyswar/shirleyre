@@ -72,7 +72,7 @@ function ActionModal({
           <div>
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.6)', fontFamily: 'monospace', marginBottom: 4 }}>Next Action</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#F0F2FF' }}>
-              {formatAddress(deal.address) || (deal.name ?? '—')}
+              {formatAddress(deal as any) || (deal.name ?? '—')}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 20 }}>×</button>
@@ -272,7 +272,7 @@ export default function HotPanel() {
                   {/* Address + Client stacked */}
                   <td style={{ padding: '13px 8px', minWidth: 180, maxWidth: 240 }}>
                     <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 14, fontWeight: 700, color: '#F0F2FF', fontFamily: 'var(--font-body)' }}>
-                      {formatAddress(deal.address) || formatAddress(deal.name)}
+                      {formatAddress(deal as any) || formatAddress({ name: deal.name })}
                     </div>
                     <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontWeight: 400, marginTop: 2 }}>
                       {deal.name ? deal.name.replace(/^📁\s*/, '') : '—'}

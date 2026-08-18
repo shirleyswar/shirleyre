@@ -19,8 +19,8 @@ const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
   textHi:    '#EFEEF4',
-  textMid:   '#8B8A9B',
-  textLow:   '#5C5B6B',
+  textMid:   '#B8B6C6',
+  textLow:   '#8E8CA0',
   late:      '#FF4D4D',
   hot:       '#FFA23A',
   brand:     '#8B5CF6',
@@ -151,7 +151,7 @@ function SwipeRow({ task, children, onSwipeRight, onSwipeLeft, onNextWeek }: {
         </button>
         <button
           onClick={() => { setOffsetX(0); onNextWeek() }}
-          style={{ width:94, background:'rgba(255,255,255,0.12)', border:'none', cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, letterSpacing:'0.11em', color:'#8B8A9B', textTransform:'uppercase' }}>Next week</button>
+          style={{ width:94, background:'rgba(255,255,255,0.12)', border:'none', cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, letterSpacing:'0.11em', color:'#B8B6C6', textTransform:'uppercase' }}>Next week</button>
       </div>
       {/* Row content — translates on swipe.
           When reveal is snapped open, pointer-events are disabled on the content div
@@ -419,7 +419,7 @@ export default function BattlePlanSheet({ open, onClose }: BattlePlanSheetProps)
         <div style={{ width:20, height:20, borderRadius:'50%', background:'#34D399', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
           <span style={{ fontSize:11, color:'#0A0A0F', lineHeight:1 }}>✓</span>
         </div>
-        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13, color:'#8B8A9B', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13, color:'#B8B6C6', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
           {completionBar.title}{completionBar.deals ? ' · ' + ((completionBar.deals as any).address || (completionBar.deals as any).name || '') : ''}
         </span>
         <button onClick={async () => {
