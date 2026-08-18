@@ -297,12 +297,12 @@ export default function TaskDetailSheet({
         p_note_body: noteBody,
       })
 
-      if (rpcErr && rpcErr.code === '42883') {
+      if (rpcErr && (rpcErr.code === '42883' || rpcErr.code === 'PGRST202' || (rpcErr.message && rpcErr.message.includes('Could not find the function')))) {
         // RPC not yet deployed — fallback
         const patch: Record<string, unknown> = {
-          due_date:  dueDateVal,
-          is_life:   newListType === 'life',
-          is_entity: newListType === 'entity',
+          due_date:   dueDateVal,
+          is_life:    newListType === 'life',
+          is_entity:  newListType === 'entity',
           updated_at: new Date().toISOString(),
         }
         if (newTitle) patch.title = newTitle
