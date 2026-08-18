@@ -19,8 +19,7 @@ BEGIN
   UPDATE tasks
   SET due_date   = p_due_date,
       is_life    = (p_list_type = 'life'),
-      is_entity  = (p_list_type = 'entity'),
-      updated_at = now()
+      is_entity  = (p_list_type = 'entity')
   WHERE id = p_task_id;
 
   IF p_note_body IS NOT NULL AND trim(p_note_body) != '' THEN

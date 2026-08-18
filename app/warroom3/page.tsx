@@ -19,6 +19,7 @@ import UnderContractSheet from '@/components/warroom3/UnderContractSheet'
 import QuickActionsSheet from '@/components/warroom3/QuickActionsSheet'
 import VoiceNoteSheet from '@/components/warroom3/VoiceNoteSheet'
 import TaskSheet from '@/components/warroom3/TaskSheet'
+import TaskDetailSheet, { Task as DetailTask } from '@/components/warroom3/TaskDetailSheet'
 import EventSheet from '@/components/warroom3/EventSheet'
 import PortfolioCreateSheet from '@/components/warroom3/PortfolioCreateSheet'
 import NewDealSheet from '@/components/warroom3/NewDealSheet'
@@ -494,11 +495,19 @@ function HomeScreen({
   openSheet,
   setOpenSheet,
   onTaskDetailOpenChange,
+selectedDetailTask,
+setSelectedDetailTask,
+taskDetailOpen,
+setTaskDetailOpen,
 }: {
   onTilePress: (key: string) => void
   openSheet: SheetId | null
   setOpenSheet: (id: SheetId | null) => void
   onTaskDetailOpenChange?: (isOpen: boolean) => void
+  selectedDetailTask: DetailTask | null
+  setSelectedDetailTask: (t: DetailTask | null) => void
+  taskDetailOpen: boolean
+  setTaskDetailOpen: (v: boolean) => void
 }) {
   const [loading, setLoading] = useState(true)
   const [hero, setHero] = useState<HeroItem | null>(null)
@@ -647,7 +656,21 @@ function HomeScreen({
       <BattlePlanSheet
         open={openSheet === 'battleplan'}
         onClose={() => setOpenSheet(null)}
-        onTaskDetailOpenChange={onTaskDetailOpenChange}
+        onOpenTaskDetail={(task) => {
+          setSelectedDetailTask(task as DetailTask)
+          setTaskDetailOpen(true)
+          onTaskDetailOpenChange?.(true)
+        }}
+      />
+
+      {/* §13.2 Task detail sheet — lifted from BattlePlanSheet so FAB × works via openSheet union */}
+      <TaskDetailSheet
+        open={taskDetailOpen}
+        task={selectedDetailTask}
+        onClose={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
+        onCompleted={(t) => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
+        onSaved={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
+        onDeleted={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
       />
 
       {/* Deals sheet — §12 step 5 + §19.1 + §20 */}
@@ -770,6 +793,9 @@ export default function WarRoom3Page() {
   // Sheet state lifted to root so FAB can reflect open state across all sheets
   const [openSheet, setOpenSheet] = useState<SheetId | null>(null)
   const [taskDetailSheetOpen, setTaskDetailSheetOpen] = useState(false)
+  // Task detail lifted from BattlePlanSheet so handleFab can close it (§18.1)
+  const [selectedDetailTask, setSelectedDetailTask] = useState<DetailTask | null>(null)
+  const [taskDetailOpen, setTaskDetailOpen] = useState(false)
 
   useEffect(() => {
     const expiry = localStorage.getItem(SESSION_KEY)
@@ -791,12 +817,17 @@ export default function WarRoom3Page() {
   // No sheet open → + → opens Quick Actions
   // Any sheet open → × → closes that sheet and nothing else
   const handleFab = useCallback(() => {
-    if (openSheet) {
+    // §18.1: close task detail first (lifted state, not in openSheet)
+    if (taskDetailOpen) {
+      setTaskDetailOpen(false)
+      setSelectedDetailTask(null)
+      setTaskDetailSheetOpen(false)
+    } else if (openSheet) {
       setOpenSheet(null)
     } else {
       setOpenSheet('quickactions')
     }
-  }, [openSheet])
+  }, [openSheet, taskDetailOpen])
 
   if (!unlocked) {
     return (
@@ -815,6 +846,10 @@ export default function WarRoom3Page() {
           openSheet={openSheet}
           setOpenSheet={setOpenSheet}
           onTaskDetailOpenChange={setTaskDetailSheetOpen}
+          selectedDetailTask={selectedDetailTask}
+          setSelectedDetailTask={setSelectedDetailTask}
+          taskDetailOpen={taskDetailOpen}
+          setTaskDetailOpen={setTaskDetailOpen}
         />
       )
       case 'deals': return <PlaceholderScreen label="DEALS" />
@@ -862,7 +897,7 @@ export default function WarRoom3Page() {
         active={activeTab}
         onTab={setActiveTab}
         onFab={handleFab}
-        fabOpen={openSheet !== null || taskDetailSheetOpen}
+        fabOpen={openSheet !== null || taskDetailOpen}
       />
     </div>
   )

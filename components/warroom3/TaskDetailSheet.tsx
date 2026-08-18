@@ -259,15 +259,35 @@ export default function TaskDetailSheet({
     if (!task) return
     setSaving(true)
     setError(null)
-    const { error: err } = await supabase
-      .from('tasks')
-      .update({ status: 'complete', completed_at: new Date().toISOString() })
-      .eq('id', task.id)
-    setSaving(false)
-    if (err) {
+
+    // §18.10 item 11 ruling: checkmark carries staged changes.
+    // If a date is staged or a note is typed, commit them along with completion.
+    const dueDateVal = stagedDate ?? task.due_date
+    const noteBody = noteText.trim() || null
+    const newListType = task.is_life ? 'life' : task.is_entity ? 'entity' : null
+    const newTitle = mode === 'edit' && titleEdited ? localTitle : null
+
+    // Try RPC path (atomic: task fields + note + completion in one call)
+    // Simpler: write completion + any staged data together
+    const patch: Record<string, unknown> = {
+      status: 'complete',
+      completed_at: new Date().toISOString(),
+      due_date: dueDateVal,
+      is_life: newListType === 'life',
+      is_entity: newListType === 'entity',
+    }
+    if (newTitle) patch.title = newTitle
+
+    const { error: taskErr } = await supabase.from('tasks').update(patch).eq('id', task.id)
+    if (taskErr) {
+      setSaving(false)
       setError('Could not complete — try again')
       return
     }
+    if (noteBody) {
+      await supabase.from('task_note').insert({ task_id: task.id, body: noteBody, created_at: new Date().toISOString() })
+    }
+    setSaving(false)
     onCompleted(task)
     resetAndClose()
   }
@@ -303,7 +323,7 @@ export default function TaskDetailSheet({
           due_date:   dueDateVal,
           is_life:    newListType === 'life',
           is_entity:  newListType === 'entity',
-          updated_at: new Date().toISOString(),
+    
         }
         if (newTitle) patch.title = newTitle
         const { error: updateErr } = await supabase.from('tasks').update(patch).eq('id', task.id)
@@ -432,7 +452,7 @@ export default function TaskDetailSheet({
         noHandle
         size="full"
         headerAction={headerAction}
-        scrollPaddingBottom={160}
+        scrollPaddingBottom={error ? 280 : 160}
       >
         {/* §18.7 Error banner */}
         {error && (
@@ -754,7 +774,7 @@ export default function TaskDetailSheet({
               </button>
             ) : (
               <div style={{
-                flex: 1,
+                width: 128.55,  // §17.5: same box as the plate, slot never resizes
                 height: 52,
                 borderRadius: 12,
                 background: T.bgRaise,

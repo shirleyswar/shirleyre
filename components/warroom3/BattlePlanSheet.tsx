@@ -11,7 +11,6 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import ListRow from '@/components/warroom3/ListRow'
-import TaskDetailSheet, { Task as TaskDetailTask } from '@/components/warroom3/TaskDetailSheet'
 
 // §3.1 / §3.2 — UPPERCASE → JetBrains Mono · sentence case → Space Grotesk
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
@@ -72,7 +71,7 @@ interface Task {
 interface BattlePlanSheetProps {
   open: boolean
   onClose: () => void
-  onTaskDetailOpenChange?: (isOpen: boolean) => void
+  onOpenTaskDetail?: (task: Task) => void  // lifted to page — FAB × works automatically
 }
 
 // §5.1 Group header: T2 label · hairline · count
@@ -186,14 +185,12 @@ function SwipeRow({ task, children, onSwipeRight, onSwipeLeft, onNextWeek }: {
   )
 }
 
-export default function BattlePlanSheet({ open, onClose, onTaskDetailOpenChange }: BattlePlanSheetProps) {
+export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail }: BattlePlanSheetProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
-  // §13.1 task detail sheet state
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [taskDetailOpen, setTaskDetailOpen] = useState(false)
+
   // §13.3 confirmation bar state
   const [completionBar, setCompletionBar] = useState<Task | null>(null)
 
@@ -342,7 +339,7 @@ export default function BattlePlanSheet({ open, onClose, onTaskDetailOpenChange 
           spineColor={spineColor}
           dayCount={dayCount}
           dayCountColor={dayCountColor}
-          onPress={() => { setSelectedTask(task); setTaskDetailOpen(true); onTaskDetailOpenChange?.(true) }}
+          onPress={() => onOpenTaskDetail?.(task)}
         />
       </SwipeRow>
     )
@@ -405,22 +402,7 @@ export default function BattlePlanSheet({ open, onClose, onTaskDetailOpenChange 
       )}
     </BottomSheet>
 
-    {/* §13.2 Task detail sheet */}
-    <TaskDetailSheet
-      open={taskDetailOpen}
-      task={selectedTask as TaskDetailTask | null}
-      onClose={() => { setTaskDetailOpen(false); setSelectedTask(null); onTaskDetailOpenChange?.(false) }}
-      onCompleted={(t) => {
-        setCompletionBar(t as unknown as Task)
-        setTimeout(() => setCompletionBar(null), 6000)
-        setTaskDetailOpen(false)
-        setSelectedTask(null)
-        onTaskDetailOpenChange?.(false)
-        setRetryCount(c => c + 1)
-      }}
-      onSaved={() => { setTaskDetailOpen(false); setSelectedTask(null); onTaskDetailOpenChange?.(false); setRetryCount(c => c + 1) }}
-      onDeleted={() => { setTaskDetailOpen(false); setSelectedTask(null); onTaskDetailOpenChange?.(false); setRetryCount(c => c + 1) }}
-    />
+    {/* TaskDetailSheet lifted to page.tsx — FAB × routing works automatically */}
 
     {/* §13.3 Confirmation bar — above tab bar, derived offset 94+23-0+14=131 */}
     {completionBar && (

@@ -13,6 +13,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import PinGate from '@/components/warroom/PinGate'
+import TaskDetailSheet, { Task as DetailTask } from '@/components/warroom3/TaskDetailSheet'
 import { supabase } from '@/lib/supabase'
 import {
   DS1, DS2, DS3, DS4, DS5, DS6, DS7, DS8,
@@ -298,7 +299,7 @@ const G = {
 }
 
 // ── BATTLE PLAN ───────────────────────────────────────────────────────────────
-function BattlePlanPanel({ refreshKey }: { refreshKey: number }) {
+function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onSelectTask?: (t: Task) => void }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -333,6 +334,7 @@ function BattlePlanPanel({ refreshKey }: { refreshKey: number }) {
     const days = t.due_date ? Math.abs(daysBetween(t.due_date)) : null
     return (
       <div
+        onClick={() => onSelectTask?.(t)}
         style={{
           padding: '12px 14px 12px 13px',
           borderRadius: 10,
@@ -624,7 +626,9 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
                 <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {loading ? null : displayItems.length === 0 ? (
                     col.date === todayStr ? (
-                      <div style={{ ...DT4, color: C.textLow, padding: '8px 0', textAlign: 'center' }}>CLEAR THROUGH SUNDAY</div>
+                      <div style={{ ...DT4, color: C.textLow, padding: '8px 0', textAlign: 'center' }}>
+                        {`CLEAR THROUGH ${new Date(new Date(getColDate(2)).getTime()).toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()}`}
+                      </div>
                     ) : null
                   ) : displayItems.map(item => (
                     <div
@@ -935,8 +939,8 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
       <div
         onClick={onSearch}
         style={{
-          width: 380,
-          flexShrink: 0,
+          flex: '0 1 380px',  // §D2.3(b): shrinks first when band overflows — date + LIVE stay flex:none
+          minWidth: 120,
           background: 'rgba(255,255,255,0.075)',
           borderRadius: 10,
           padding: '12px 14px',
@@ -1056,6 +1060,8 @@ function LeftRail({ active }: { active: RailSlot }) {
 export default function WarRoomPage() {
   const [unlocked, setUnlocked] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  // §D4.1 / Item 6: Task drawer — 460px right-side, reuses §13.2 TaskDetailSheet
+  const [drawerTask, setDrawerTask] = useState<Task | null>(null)
 
   useEffect(() => {
     const expiry = localStorage.getItem(SESSION_KEY)
@@ -1119,18 +1125,18 @@ export default function WarRoomPage() {
           }}>
 
             {/* Column A — 0.41 of content box net of gaps */}
-            <div style={{ flex: '0 0 41%', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-              <BattlePlanPanel refreshKey={refreshKey} />
+            <div style={{ flex: '0 0 41%', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <BattlePlanPanel refreshKey={refreshKey} onSelectTask={setDrawerTask} />
             </div>
 
             {/* Column B — 0.31 */}
-            <div style={{ flex: '0 0 31%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ flex: '0 0 31%', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <MoneyMoversPanel refreshKey={refreshKey} />
               <UnderContractPanel refreshKey={refreshKey} />
             </div>
 
             {/* Column C — 0.28, flex remainder */}
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <SchedulePanel refreshKey={refreshKey} />
               <DeadlinesPanel refreshKey={refreshKey} />
               <ReceivablesCard refreshKey={refreshKey} />
@@ -1140,6 +1146,26 @@ export default function WarRoomPage() {
           </div>
         </div>
       </div>
+
+      {/* §D4.1 / Item 6 — Task detail drawer: 460px right-side, §13.2 sheet.
+          Interim until design ships a desktop-native task sheet (D9 item 9). */}
+      {drawerTask && (
+        <div style={{
+          position: 'fixed', top: 0, right: 0, bottom: 0,
+          width: 460, zIndex: 600,
+          background: C.bgPanel, borderLeft: `1px solid ${C.border}`,
+          overflow: 'hidden',
+        }}>
+          <TaskDetailSheet
+            open={!!drawerTask}
+            task={drawerTask as unknown as DetailTask}
+            onClose={() => setDrawerTask(null)}
+            onCompleted={() => { setDrawerTask(null); setRefreshKey(k => k + 1) }}
+            onSaved={() => { setDrawerTask(null); setRefreshKey(k => k + 1) }}
+            onDeleted={() => { setDrawerTask(null); setRefreshKey(k => k + 1) }}
+          />
+        </div>
+      )}
     </div>
   )
 }
