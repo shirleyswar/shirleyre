@@ -17,6 +17,13 @@ import TaskDetailSheet, { Task as TaskDetailTask } from '@/components/warroom3/T
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
+// §18.10 check 11 — derive, never a literal
+const TAB_BAR      = 94   // §5.7
+const FAB_LIFT     = 23   // §5.7
+const TAB_PAD_TOP  = 0    // measured: BottomTabBar has no padding-top
+const CLEARANCE    = 14
+const FOOTER_BOTTOM = TAB_BAR + FAB_LIFT - TAB_PAD_TOP + CLEARANCE  // = 131
+
 const T = {
   textHi:    '#EFEEF4',
   textMid:   '#B8B6C6',
@@ -419,7 +426,7 @@ export default function BattlePlanSheet({ open, onClose, onTaskDetailOpenChange 
     {completionBar && (
       <div style={{
         position: 'fixed',
-        bottom: 131,  // derived: TAB_BAR(94) + FAB_LIFT(23) - TAB_PAD_TOP(0) + CLEARANCE(14)
+        bottom: FOOTER_BOTTOM,  // derived: TAB_BAR + FAB_LIFT - TAB_PAD_TOP + CLEARANCE
         left: 14,
         right: 14,
         zIndex: 60,
