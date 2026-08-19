@@ -552,6 +552,7 @@ type N48Item = {
   title: string
   context: string
   spineColor: string
+  bp_priority: number | null  // tasks only; null for events
 }
 
 function Next48Panel({ refreshKey }: { refreshKey: number }) {
@@ -569,7 +570,7 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
       const [{ data: events }, { data: deadlines }] = await Promise.all([
                 // 'events' table does not exist — real table is schedule_events (cols: date, time, title, location, deal_id)
         supabase.from('schedule_events').select('id, title, date, time, location, deal_id').gte('date', todayStr).lte('date', d3).order('date').order('time'),
-        supabase.from('tasks').select('id, title, due_date, deal_id, deals(name)').eq('status', 'open').gte('due_date', todayStr).lte('due_date', d3).order('due_date'),
+        supabase.from('tasks').select('id, title, due_date, deal_id, bp_priority, deals(name)').eq('status', 'open').gte('due_date', todayStr).lte('due_date', d3).order('due_date'),
       ])
 
       // Merge, dedupe: if same deal+date exists as both event and deadline, keep event
@@ -581,13 +582,13 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
         const eTime = e.time ?? e.start_time ?? null
         const key = `${e.deal_id ?? e.id}_${eDate}`
         seen.add(key)
-        merged.push({ id: e.id, kind: 'event', deal_id: e.deal_id, date: eDate, time: eTime, title: e.title, context: e.location ?? '', spineColor: C.brand })
+        merged.push({ id: e.id, kind: 'event', deal_id: e.deal_id, date: eDate, time: eTime, title: e.title, context: e.location ?? '', spineColor: C.brand, bp_priority: null })
       }
       for (const t of (deadlines ?? [])) {
         const key = `${t.deal_id ?? t.id}_${t.due_date}`
         if (seen.has(key)) continue
         seen.add(key)
-        merged.push({ id: t.id, kind: 'deadline', deal_id: t.deal_id, date: t.due_date!, time: null, title: t.title, context: (t as any).deals?.name ?? '', spineColor: C.hot })
+        merged.push({ id: t.id, kind: 'deadline', deal_id: t.deal_id, date: t.due_date!, time: null, title: t.title, context: (t as any).deals?.name ?? '', spineColor: C.hot, bp_priority: (t as any).bp_priority ?? null })
       }
 
       setItems(merged)
@@ -636,10 +637,21 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
                       </div>
                     ) : null
                   ) : (() => {
-                    // JUST BEYOND: show one card + "+ N more". Other columns: show all.
+                    // JUST BEYOND: sort by bp_priority DESC NULLS LAST, then due_date; show one + N more.
                     const isJustBeyond = col.label === 'JUST BEYOND'
-                    const visibleItems = isJustBeyond ? displayItems.slice(0, 1) : displayItems
-                    const moreCount = isJustBeyond ? displayItems.length - 1 : 0
+                    const sortedItems = isJustBeyond
+                      ? [...displayItems].sort((a, b) => {
+                          // bp_priority DESC NULLS LAST (higher number = higher priority? or lower?)
+                          // "bp_priority DESC NULLS LAST" means nulls at end, values high-first
+                          if (a.bp_priority === null && b.bp_priority === null) return a.date.localeCompare(b.date)
+                          if (a.bp_priority === null) return 1   // null last
+                          if (b.bp_priority === null) return -1  // null last
+                          if (b.bp_priority !== a.bp_priority) return b.bp_priority - a.bp_priority  // DESC
+                          return a.date.localeCompare(b.date)  // then due_date ASC
+                        })
+                      : displayItems
+                    const visibleItems = isJustBeyond ? sortedItems.slice(0, 1) : sortedItems
+                    const moreCount = isJustBeyond ? sortedItems.length - 1 : 0
                     return (
                       <>
                         {visibleItems.map(item => (
