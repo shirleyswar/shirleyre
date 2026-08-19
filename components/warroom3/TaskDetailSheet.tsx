@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import CalendarPicker from '@/components/warroom3/CalendarPicker'
+import { isTaskStaged } from '@/lib/taskStagingPredicate'
 
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
@@ -267,25 +268,28 @@ export default function TaskDetailSheet({
     const newListType = task.is_life ? 'life' : task.is_entity ? 'entity' : null
     const newTitle = mode === 'edit' && titleEdited ? localTitle : null
 
-    // Try RPC path (atomic: task fields + note + completion in one call)
-    // Simpler: write completion + any staged data together
-    const patch: Record<string, unknown> = {
-      status: 'complete',
-      completed_at: new Date().toISOString(),
-      due_date: dueDateVal,
-      is_life: newListType === 'life',
-      is_entity: newListType === 'entity',
-    }
-    if (newTitle) patch.title = newTitle
-
-    const { error: taskErr } = await supabase.from('tasks').update(patch).eq('id', task.id)
-    if (taskErr) {
+    // 1. Commit staged fields + note via RPC (COALESCE-safe, RAISE on zero-row)
+    const { error: rpcErr } = await (supabase as any).rpc('commit_task_sheet', {
+      p_task_id:   task.id,
+      p_due_date:  dueDateVal,
+      p_list_type: newListType,
+      p_note_body: noteBody,
+      p_title:     newTitle,
+    })
+    if (rpcErr) {
       setSaving(false)
       setError('Could not complete — try again')
       return
     }
-    if (noteBody) {
-      await supabase.from('task_note').insert({ task_id: task.id, body: noteBody, created_at: new Date().toISOString() })
+    // 2. Mark complete (separate write — RPC owns the task fields above)
+    const { error: completeErr } = await supabase
+      .from('tasks')
+      .update({ status: 'complete', completed_at: new Date().toISOString() })
+      .eq('id', task.id)
+    if (completeErr) {
+      setSaving(false)
+      setError('Staged changes saved — could not mark complete. Try again.')
+      return
     }
     setSaving(false)
     onCompleted(task)
@@ -295,9 +299,8 @@ export default function TaskDetailSheet({
   // CONFIRM tap — atomic write
   async function handleConfirm() {
     if (!task) return
-    const hasStaged = stagedDate !== null
-    const hasEdits = titleEdited || noteText.trim().length > 0
-    if (!hasStaged && !hasEdits) return
+    // Guard: only proceed if the shared predicate says something is staged
+    if (!isActive) return
 
     setSaving(true)
     setError(null)
@@ -309,44 +312,16 @@ export default function TaskDetailSheet({
       const newListType = mode === 'edit' ? listType : (task.is_life ? 'life' : task.is_entity ? 'entity' : null)
       const newTitle = mode === 'edit' && titleEdited ? localTitle : null
 
-      // Try RPC first (includes p_title — amended 8.18.26 per item 12 ruling)
+      // RPC is deployed. null p_due_date / p_list_type / p_title → COALESCE keeps existing values.
+      // RPC RAISEs on zero-row update — caught below and routed to §18.7 banner.
       const { error: rpcErr } = await (supabase as any).rpc('commit_task_sheet', {
         p_task_id:   task.id,
-        p_due_date:  dueDateVal,
-        p_list_type: newListType,
-        p_note_body: noteBody,
-        p_title:     newTitle,  // null if not edited — RPC ignores null titles
+        p_due_date:  dueDateVal,    // null if no chip staged → COALESCE keeps committed date
+        p_list_type: newListType,   // null if unchanged → COALESCE keeps existing flags
+        p_note_body: noteBody,      // null or whitespace-only → RPC skips insert
+        p_title:     newTitle,      // null if not edited → COALESCE keeps existing title
       })
-
-      if (rpcErr && (rpcErr.code === '42883' || rpcErr.code === 'PGRST202' || (rpcErr.message && rpcErr.message.includes('Could not find the function')))) {
-        // RPC not yet deployed — fallback
-        const patch: Record<string, unknown> = {
-          due_date:   dueDateVal,
-          is_life:    newListType === 'life',
-          is_entity:  newListType === 'entity',
-    
-        }
-        if (newTitle) patch.title = newTitle
-        const { error: updateErr } = await supabase.from('tasks').update(patch).eq('id', task.id)
-        if (updateErr) throw updateErr
-        if (noteBody) {
-          const { error: noteErr } = await supabase
-            .from('task_note')
-            .insert({ task_id: task.id, body: noteBody, created_at: new Date().toISOString() })
-          if (noteErr) throw noteErr
-        }
-      } else if (rpcErr) {
-        throw rpcErr
-      } else {
-        // RPC succeeded but title update is separate (RPC handles due_date + list_type + note)
-        if (newTitle) {
-          const { error: titleErr } = await supabase
-            .from('tasks')
-            .update({ title: newTitle })
-            .eq('id', task.id)
-          if (titleErr) throw titleErr
-        }
-      }
+      if (rpcErr) throw rpcErr
 
       setSaving(false)
       onSaved()
@@ -398,9 +373,18 @@ export default function TaskDetailSheet({
     }
   }
 
-  // Footer logic
-  // §item 3 ruling: CONFIRM live when date staged OR note non-empty (typing a note IS staging)
-  const isActive = stagedDate !== null || noteText.trim().length > 0 || (mode === 'edit' && titleEdited)
+  // D11.5 — shared staging predicate (lib/taskStagingPredicate.ts)
+  const committedListType: 'life' | 'entity' | null = task
+    ? (task.is_life ? 'life' : task.is_entity ? 'entity' : null)
+    : null
+  const isActive = task ? isTaskStaged({
+    stagedDate,
+    committedDate:    task.due_date,
+    noteText,
+    titleEdited,
+    listType:         mode === 'edit' ? listType : committedListType,
+    committedListType,
+  }) : false
 
   // Chip style
   const chipStyle = (active: boolean): React.CSSProperties => ({
