@@ -13,7 +13,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import PinGate from '@/components/warroom/PinGate'
-import TaskDetailSheet, { Task as DetailTask } from '@/components/warroom3/TaskDetailSheet'
+import TaskModal from '@/app/warroom/TaskModal'
 import { supabase } from '@/lib/supabase'
 import {
   DS1, DS2, DS3, DS4, DS5, DS6, DS7, DS8,
@@ -1177,24 +1177,14 @@ export default function WarRoomPage() {
         </div>
       </div>
 
-      {/* §D4.1 / Item 6 — Task detail drawer: 460px right-side, §13.2 sheet.
-          Interim until design ships a desktop-native task sheet (D9 item 9). */}
+      {/* D11 — Desktop task modal: 960px two-column centred. */}
       {drawerTask && (
-        <div style={{
-          position: 'fixed', top: 0, right: 0, bottom: 0,
-          width: 460, zIndex: 600,
-          background: C.bgPanel, borderLeft: `1px solid ${C.border}`,
-          overflow: 'hidden',
-        }}>
-          <TaskDetailSheet
-            open={!!drawerTask}
-            task={drawerTask as unknown as DetailTask}
-            onClose={() => setDrawerTask(null)}
-            onCompleted={() => { setDrawerTask(null); setRefreshKey(k => k + 1) }}
-            onSaved={() => { setDrawerTask(null); setRefreshKey(k => k + 1) }}
-            onDeleted={() => { setDrawerTask(null); setRefreshKey(k => k + 1) }}
-          />
-        </div>
+        <TaskModal
+          task={drawerTask as any}
+          onClose={() => setDrawerTask(null)}
+          onCompleted={() => { setDrawerTask(null); setRefreshKey(k => k + 1) }}
+          onSaved={() => { setDrawerTask(null); setRefreshKey(k => k + 1) }}
+        />
       )}
     </div>
   )
