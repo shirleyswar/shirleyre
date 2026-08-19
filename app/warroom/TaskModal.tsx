@@ -545,6 +545,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
             {/* 2. Title */}
             {mode === 'read' ? (
               <div
+                data-modal-title="true"
                 onClick={enterEdit}
                 style={{
                   ...DS0,
