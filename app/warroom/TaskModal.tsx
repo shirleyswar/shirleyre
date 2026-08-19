@@ -154,7 +154,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
   const [error, setError] = useState<string | null>(null)
   const [committed, setCommitted] = useState(false)
   const [showDiscard, setShowDiscard] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  // showDeleteConfirm intentionally absent on desktop — delete model not yet ruled.
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [pickerDate, setPickerDate] = useState('')
 
@@ -323,10 +323,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
     onCompleted(task)
   }
 
-  async function handleDelete() {
-    await supabase.from('tasks').update({ status: 'deleted' }).eq('id', task.id)
-    onSaved()
-  }
+  // handleDelete intentionally absent — desktop delete model not yet ruled.
+  // Constraint: open | in_progress | complete | deferred. No 'deleted' status.
+  // Row is pointerEvents:none. No write path exists until the model is decided post-D11.
 
   // ── Chip dates ────────────────────────────────────────────────────────────
   const today = todayLocal()
@@ -352,7 +351,20 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
   // ── Enter edit mode ───────────────────────────────────────────────────────
   function enterEdit() {
     setMode('edit')
-    setTimeout(() => titleRef.current?.focus(), 50)
+    setTimeout(() => {
+      titleRef.current?.focus()
+      autoSizeTitle()
+    }, 50)
+  }
+
+  // ── Auto-size title textarea — eliminates the ~90px dead band ─────────────
+  // rows={3} at DS0 (32px/1.3) = ~125px for a one-liner title. Set height to
+  // scrollHeight on every keystroke so the field is exactly as tall as its content.
+  function autoSizeTitle() {
+    const el = titleRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
   }
 
   function cancelEdit() {
@@ -563,8 +575,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
               <textarea
                 ref={titleRef}
                 value={localTitle}
-                onChange={e => setLocalTitle(e.target.value)}
-                rows={3}
+                onChange={e => { setLocalTitle(e.target.value); autoSizeTitle() }}
+                rows={1}
                 style={{
                   ...DS0,
                   color: C.textHi,
@@ -578,6 +590,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
                   outline: 'none',
                   lineHeight: 1.3,
                   fontFamily: FONT_DISP,
+                  overflow: 'hidden',  // prevents scrollbar flash during height transition
                 }}
               />
             )}

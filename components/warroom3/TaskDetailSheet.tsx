@@ -208,12 +208,23 @@ export default function TaskDetailSheet({
     }
   }, [open, task?.id])
 
-  // Auto-focus title field on edit mode
+  // Auto-focus + auto-size title field on edit mode
   useEffect(() => {
     if (mode === 'edit' && titleRef.current) {
       titleRef.current.focus()
+      autoSizeTitle()
     }
   }, [mode])
+
+  // Auto-size title textarea — eliminates the ~90px dead band.
+  // rows={3} at 23px/1.3 lineHeight ≈ 90px for a one-liner. Set height to scrollHeight
+  // on every render so the field is exactly as tall as its content.
+  function autoSizeTitle() {
+    const el = titleRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }
 
   // visualViewport listener removed — footer is now flex:none inside BottomSheet,
   // so it naturally tracks the visual bottom of the sheet without needing keyboard offset.
@@ -720,11 +731,12 @@ export default function TaskDetailSheet({
           {/* EDIT MODE */}
           {mode === 'edit' && (
             <>
-              {/* Title field — auto-focused */}
+              {/* Title field — auto-focused, auto-sized to eliminate ~90px dead band */}
               <textarea
                 ref={titleRef}
                 value={localTitle}
-                onChange={e => setLocalTitle(e.target.value)}
+                onChange={e => { setLocalTitle(e.target.value); autoSizeTitle() }}
+                rows={1}
                 style={{
                   fontFamily: FONT_DISPLAY,
                   fontSize: 23,
@@ -741,8 +753,8 @@ export default function TaskDetailSheet({
                   marginBottom: 18,
                   lineHeight: 1.3,
                   boxSizing: 'border-box',
+                  overflow: 'hidden',
                 }}
-                rows={3}
               />
 
               {/* ADD A NOTE */}
