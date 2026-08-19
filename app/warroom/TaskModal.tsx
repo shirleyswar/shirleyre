@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { isTaskStaged, TaskStagingState } from '@/lib/taskStagingPredicate'
 import {
   DS0, DS2, DS4, DS5, DS6,
-  DT0, DT3, DT5, DT7, DM2,
+  DT0, DT3, DT4, DT5, DT7, DM2,
 } from '@/components/warroom/desktopTypes'
 
 // ── Tokens — same as page.tsx C object ───────────────────────────────────────
@@ -532,26 +532,12 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
               </div>
             )}
 
-            {/* 1. Status eyebrow */}
+            {/* 1. Status eyebrow — DT4: 12px/500/0 mono UPPER (D2.5) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{
-                fontFamily: FONT_MONO,
-                fontSize: 12,
-                fontWeight: 500,
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                color: overdue ? C.late : C.brandLift,
-              }}>
+              <span style={{ ...DT4, color: overdue ? C.late : C.brandLift }}>
                 {overdue ? 'OVERDUE' : 'OPEN'}
               </span>
-              <span style={{
-                fontFamily: FONT_MONO,
-                fontSize: 12,
-                fontWeight: 500,
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                color: C.textLow,
-              }}>
+              <span style={{ ...DT4, color: C.textLow }}>
                 BATTLE PLAN
               </span>
             </div>
@@ -835,6 +821,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
                 onChange={e => setNoteText(e.target.value)}
                 placeholder="Type a note…"
                 style={{
+                  ...DS2,  // 16.5px Space Grotesk 500 — D2.5, no raw fontSize
                   width: '100%',
                   minHeight: 72,
                   resize: 'none',
@@ -842,8 +829,6 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
                   border: `1px solid ${C.border}`,
                   borderRadius: 9,
                   padding: '12px 14px',
-                  fontSize: 16.5,
-                  fontFamily: FONT_DISP,
                   color: C.textHi,
                   outline: 'none',
                   boxSizing: 'border-box',
