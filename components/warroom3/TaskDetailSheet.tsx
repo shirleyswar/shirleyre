@@ -2,6 +2,9 @@
 // §13.2 Task sheet — read/edit states on BottomSheet shell.
 // §18.9: two exits only — swipe-down anywhere (inherited from BottomSheet) + FAB ×.
 // §18.4: guard splits — staged chip discards silently; typed text keeps confirm-before-discard.
+// FOOTER: flex:none rendered inside BottomSheet as a bottom panel — no position:fixed.
+//   Fix for iOS mispositioning of position:fixed when keyboard resizes the visual viewport.
+//   BottomSheet is a flex column: header flex:none · body flex:1 overflow-y:auto · footer flex:none.
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -34,12 +37,10 @@ const T = {
 // Staged chip gradient (FAB aperture fill)
 const STAGED_GRADIENT = 'radial-gradient(circle at 50% 47%, #5B3FA8 0%, #2A1D52 26%, #120E22 62%, #07060C 100%)'
 
-// §18.10 check 11 — derive at render, never a literal
-const TAB_BAR     = 94    // §5.7
-const FAB_LIFT    = 23    // §5.7
-const TAB_PAD_TOP = 0     // measured: BottomTabBar has no padding-top
-const CLEARANCE   = 14
-const FOOTER_BOTTOM = TAB_BAR + FAB_LIFT - TAB_PAD_TOP + CLEARANCE  // = 131
+// §18.10 check 11 — footer bottom is derived, never a literal.
+// With flex layout inside BottomSheet, the footer sits at the true bottom of the sheet
+// and automatically clears the FAB (sheet top:34 + flex fill + footer height ≥ tab bar + FAB lift).
+// The position:fixed approach was wrong — iOS mispositioning when keyboard resizes visual viewport.
 
 // Type scale — §3.2 post-44a
 const styleT2: React.CSSProperties = {
@@ -174,7 +175,6 @@ export default function TaskDetailSheet({
   const [notesLoading, setNotesLoading] = useState(false)
   const [showDiscardGuard, setShowDiscardGuard] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [keyboardOffset, setKeyboardOffset] = useState(0)
 
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const origTitle = useRef('')
@@ -215,16 +215,8 @@ export default function TaskDetailSheet({
     }
   }, [mode])
 
-  // Keyboard offset via visualViewport
-  useEffect(() => {
-    function handleResize() {
-      if (!window.visualViewport) return
-      const gap = window.innerHeight - window.visualViewport.height
-      setKeyboardOffset(Math.max(0, gap))
-    }
-    window.visualViewport?.addEventListener('resize', handleResize)
-    return () => window.visualViewport?.removeEventListener('resize', handleResize)
-  }, [])
+  // visualViewport listener removed — footer is now flex:none inside BottomSheet,
+  // so it naturally tracks the visual bottom of the sheet without needing keyboard offset.
 
   if (!open || !task) return null
 
@@ -434,6 +426,101 @@ export default function TaskDetailSheet({
 
   const dealAddr = task.deals ? formatAddress(task.deals as any) : null
 
+  // Footer — rendered flex:none inside BottomSheet (no position:fixed).
+  // Sheet is a flex column: header / scroll body / footer.
+  // This eliminates the iOS visual-viewport mispositioning bug.
+  const footerEl = (
+    <div style={{
+      padding: '12px 18px',
+      paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+      display: 'flex',
+      gap: 11,
+      borderTop: `1px solid ${T.borderDefault}`,
+      background: T.bgPanel,
+    }}>
+      {/* Secondary slot — EDIT / CANCEL */}
+      <button
+        onClick={() => {
+          if (mode === 'read') {
+            setMode('edit')
+          } else {
+            const hasTyped = titleEdited || noteText.trim().length > 0
+            if (hasTyped) {
+              setShowDiscardGuard(true)
+            } else {
+              setStagedDate(null)
+              setStagedChip(null)
+              setNoteText('')
+              setLocalTitle(task?.title ?? '')
+              setMode('read')
+            }
+          }
+        }}
+        style={{
+          width: 140,
+          height: 52,
+          borderRadius: 12,
+          border: `1px solid ${T.borderStrong}`,
+          color: T.textMid,
+          fontFamily: FONT_MONO,
+          fontSize: 12,
+          fontWeight: 600,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase' as const,
+          background: 'transparent',
+          cursor: 'pointer',
+          flexShrink: 0,
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        {mode === 'read' ? 'EDIT' : 'CANCEL'}
+      </button>
+
+      {/* Primary slot — inert pill or CONFIRM plate */}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+        {isActive ? (
+          <button
+            onClick={handleConfirm}
+            disabled={saving}
+            style={{
+              height: 52, padding: 0, border: 'none', background: 'transparent',
+              cursor: saving ? 'default' : 'pointer',
+              opacity: saving ? 0.6 : 1,
+              display: 'flex', alignItems: 'center',
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/assets/confirm/confirm-h180.png"
+              alt="Confirm"
+              height={52}
+              style={{ height: 52, width: 'auto', display: 'block' }}
+            />
+          </button>
+        ) : (
+          <div style={{
+            width: 128.55,
+            height: 52,
+            borderRadius: 12,
+            background: T.bgRaise,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <span style={{
+              fontFamily: FONT_MONO,
+              fontSize: 12,
+              fontWeight: 500,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase' as const,
+              color: T.textLow,
+            }}>CONFIRM</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
   return (
     <>
       <BottomSheet
@@ -443,7 +530,8 @@ export default function TaskDetailSheet({
         noHandle
         size="full"
         headerAction={headerAction}
-        scrollPaddingBottom={error ? 300 : 190}
+        scrollPaddingBottom={24}
+        footer={footerEl}
       >
         {/* §18.7 Error banner */}
         {error && (
@@ -708,103 +796,6 @@ export default function TaskDetailSheet({
         </div>
       </BottomSheet>
 
-      {/* Pinned footer — outside BottomSheet scroll, fixed */}
-      {open && (
-        <div style={{
-          position: 'fixed',
-          bottom: FOOTER_BOTTOM + keyboardOffset,
-          left: 0,
-          right: 0,
-          zIndex: 502,
-          padding: '0 18px',
-          display: 'flex',
-          gap: 11,
-        }}>
-          {/* Secondary slot — EDIT / CANCEL */}
-          <button
-            onClick={() => {
-              if (mode === 'read') {
-                setMode('edit')
-              } else {
-                // Cancel edit — check for typed content
-                const hasTyped = titleEdited || noteText.trim().length > 0
-                if (hasTyped) {
-                  setShowDiscardGuard(true)
-                } else {
-                  // staged chip only — discard silently
-                  setStagedDate(null)
-                  setStagedChip(null)
-                  setNoteText('')
-                  setLocalTitle(task.title)
-                  setMode('read')
-                }
-              }
-            }}
-            style={{
-              width: 140,
-              height: 52,
-              borderRadius: 12,
-              border: `1px solid ${T.borderStrong}`,
-              color: T.textMid,
-              fontFamily: FONT_MONO,
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              background: 'transparent',
-              cursor: 'pointer',
-              flexShrink: 0,
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            {mode === 'read' ? 'EDIT' : 'CANCEL'}
-          </button>
-
-          {/* Primary slot — inert pill or CONFIRM plate */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-            {isActive ? (
-              <button
-                onClick={handleConfirm}
-                disabled={saving}
-                style={{
-                  height: 52, padding: 0, border: 'none', background: 'transparent',
-                  cursor: saving ? 'default' : 'pointer',
-                  opacity: saving ? 0.6 : 1,
-                  display: 'flex', alignItems: 'center',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/assets/confirm/confirm-h180.png"
-                  alt="Confirm"
-                  height={52}
-                  style={{ height: 52, width: 'auto', display: 'block' }}
-                />
-              </button>
-            ) : (
-              <div style={{
-                width: 128.55,  // §17.5: same box as the plate, slot never resizes
-                height: 52,
-                borderRadius: 12,
-                background: T.bgRaise,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <span style={{
-                  fontFamily: FONT_MONO,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: T.textLow,
-                }}>CONFIRM</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Discard guard dialog */}
       {showDiscardGuard && (
         <div style={{
@@ -849,7 +840,9 @@ export default function TaskDetailSheet({
         </div>
       )}
 
-      {/* Delete confirm dialog */}
+      {/* Delete confirm dialog — scope addition 8.19.26.
+          Mobile delete is a hard row delete. task_note cascades — one tap destroys the task
+          AND every note on it. Copy makes this explicit before the user confirms. */}
       {showDeleteConfirm && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 600,
@@ -864,7 +857,7 @@ export default function TaskDetailSheet({
               Delete this task?
             </div>
             <div style={{ fontFamily: FONT_DISPLAY, fontSize: 14, color: T.textMid, marginBottom: 20 }}>
-              This cannot be undone.
+              This removes the task and all its notes. It cannot be undone.
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button

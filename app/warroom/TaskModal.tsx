@@ -6,7 +6,7 @@
  * Commit: 8.18.26j
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { isTaskStaged, TaskStagingState } from '@/lib/taskStagingPredicate'
 import {
@@ -161,6 +161,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const noteRef = useRef<HTMLTextAreaElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
+  // Ref-copy of isActive — prevents stale closure in the Esc keydown handler.
+  // Without this, a handler registered when isActive=false never sees it become true.
+  const isActiveRef = useRef(false)
 
   const titleEdited = localTitle !== task.title
   const committeListType = committedListType(task)
@@ -175,6 +178,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
     committedListType: committeListType,
   }
   const isActive = isTaskStaged(stagingState)
+  // Keep ref in sync so the Esc handler always reads the current value without being re-registered.
+  isActiveRef.current = isActive
 
   // ── Load notes ─────────────────────────────────────────────────────────────
   const loadNotes = useCallback(async () => {
@@ -190,7 +195,12 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
     loadNotes()
   }, [loadNotes])
 
-  // ── Focus trap ────────────────────────────────────────────────────────────
+  // ── Focus trap + initial focus ────────────────────────────────────────────
+  // Set focus on the modal container itself on mount so Tab is immediately trapped.
+  useLayoutEffect(() => {
+    modalRef.current?.focus()
+  }, [])
+
   useEffect(() => {
     const handleTab = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
@@ -198,8 +208,15 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
       const focusable = modalRef.current.querySelectorAll<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       )
+      if (focusable.length === 0) return
       const first = focusable[0]
       const last = focusable[focusable.length - 1]
+      // If focus is outside the modal (e.g. on document.body), send it to first element
+      if (!modalRef.current.contains(document.activeElement)) {
+        e.preventDefault()
+        first.focus()
+        return
+      }
       if (e.shiftKey) {
         if (document.activeElement === first) { e.preventDefault(); last.focus() }
       } else {
@@ -211,28 +228,41 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
   }, [])
 
   // ── Esc key — D11.4 ruling 2 ──────────────────────────────────────────────
+  // Registered once (empty dep array). Uses isActiveRef to read current staged state
+  // without re-registering — fixes the "second press dead" bug where re-registration
+  // on isActive change left a race window where the listener didn't exist.
+  //
+  // Two-step rule:
+  //   1. A field has focus → blur it. (First Esc press out of a textarea.)
+  //   2. No field has focus → attempt close. (Second Esc press.)
+  //
+  // We check document.activeElement BEFORE calling blur() so we read the element
+  // that is currently focused, not whatever the browser has already transitioned to.
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      // Use e.target (the element that received the keydown) — more reliable than
-      // document.activeElement which may have already blurred when this fires.
-      const target = e.target as Element
-      const isField = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
+      const active = document.activeElement
+      const isField = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement
       if (isField) {
-        e.preventDefault()  // prevent any browser-native Esc handling
-        target.blur()
+        e.preventDefault()
+        ;(active as HTMLElement).blur()
         return
       }
-      // Nothing focused → attempt close
-      attemptClose()
+      // Nothing focused (or focus is on modal container / body) → attempt close
+      if (isActiveRef.current) {
+        setShowDiscard(true)
+      } else {
+        onClose()
+      }
     }
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive])
+  }, [])
 
   function attemptClose() {
-    if (isActive) {
+    // Uses isActiveRef so this is always current, even when called from stable callbacks.
+    if (isActiveRef.current) {
       setShowDiscard(true)
     } else {
       onClose()
@@ -348,9 +378,6 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
   const displayDate = stagedDate ?? task.due_date
   const overdue = isOverdue(task.due_date)
 
-  // ── Header center — first 40 chars of title ───────────────────────────────
-  const titlePreview = task.title.length > 40 ? task.title.slice(0, 40) + '…' : task.title
-
   // ── Scrim click — D11.4 ruling 3 ─────────────────────────────────────────
   function handleScrimClick() {
     if (isActive) return // inert when staged
@@ -375,7 +402,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
         ref={modalRef}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}  // makes the container focusable so Tab trap can start here
         style={{
+          outline: 'none',  // suppress focus ring on the container itself
           position: 'fixed',
           top: '50%',
           left: '50%',
@@ -408,13 +437,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
             {mode === 'edit' ? 'Edit Task' : 'Task'}
           </span>
 
-          {/* Center: title preview — read only */}
-          {mode === 'read' && (
-            <span style={{ ...DS2, color: C.textHi, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-              {titlePreview}
-            </span>
-          )}
-          {mode === 'edit' && <div style={{ flex: 1 }} />}
+          {/* Spacer — title is in the left column (D11.2 item 2), not repeated here */}
+          <div style={{ flex: 1 }} />
 
           {/* Right: DONE button — read only */}
           {mode === 'read' && (
@@ -475,6 +499,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
             width: 600,
             flexShrink: 0,
             padding: 24,
+            paddingBottom: 32,  // clearance so delete row doesn't press against the footer
             overflowY: 'auto',
             minHeight: 0,
             display: 'flex',
@@ -664,50 +689,70 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
               </div>
             </div>
 
-            {/* 5. LIST segmented */}
+            {/* 5. LIST — read-only value card in READ state (D11.2: "same field set as mobile as currently built").
+                Mobile shows a bg-raise card with label over value in READ. Segmented control only in EDIT. */}
             <div>
               <div style={{ ...DT5, color: C.textLow, marginBottom: 8 }}>LIST</div>
-              <div style={{
-                display: 'flex',
-                background: C.bgRaise,
-                borderRadius: 10,
-                padding: 4,
-                gap: 4,
-                width: 'fit-content',
-              }}>
-                {(['life', 'entity'] as const).map(lt => {
-                  const isSelected = listType === lt
-                  return (
-                    <button
-                      key={lt}
-                      onClick={() => setListType(prev => prev === lt ? committeListType : lt)}
-                      style={{
-                        padding: '8px 20px',
-                        borderRadius: 8,
-                        border: 'none',
-                        background: isSelected ? C.brand : 'transparent',
-                        ...DS5,
-                        color: isSelected ? C.textHi : C.textMid,
-                        cursor: 'pointer',
-                        textTransform: 'capitalize',
-                      }}
-                    >
-                      {lt === 'life' ? 'Life' : 'Entity'}
-                    </button>
-                  )
-                })}
-              </div>
+              {mode === 'read' ? (
+                // READ: plain value card — matches mobile §13.2 read state item 3
+                <div style={{
+                  background: C.bgRaise,
+                  borderRadius: 10,
+                  padding: '10px 14px',
+                  border: `1px solid ${C.borderPanel}`,
+                }}>
+                  <span style={{ ...DS5, color: C.textHi, textTransform: 'capitalize' }}>
+                    {listType ?? '—'}
+                  </span>
+                </div>
+              ) : (
+                // EDIT: segmented control
+                <div style={{
+                  display: 'flex',
+                  background: C.bgRaise,
+                  borderRadius: 10,
+                  padding: 4,
+                  gap: 4,
+                  width: 'fit-content',
+                }}>
+                  {(['life', 'entity'] as const).map(lt => {
+                    const isSelected = listType === lt
+                    return (
+                      <button
+                        key={lt}
+                        onClick={() => setListType(prev => prev === lt ? committeListType : lt)}
+                        style={{
+                          padding: '8px 20px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: isSelected ? C.brand : 'transparent',
+                          ...DS5,
+                          color: isSelected ? C.textHi : C.textMid,
+                          cursor: 'pointer',
+                          textTransform: 'capitalize',
+                        }}
+                      >
+                        {lt === 'life' ? 'Life' : 'Entity'}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* 6. Delete row — inert until workflow ruling on tasks.status (open|complete only, no 'deleted') */}
-            {/* Mobile uses .delete() (row removal). Desktop ruling pending. */}
+            {/* 6. Delete row — desktop ruling: constraint is open|in_progress|complete|deferred,
+                no 'deleted' status. Hard delete model decided post-D11. Row is visible but
+                fully inert — no handler, no cursor, pointer-events:none. */}
             <div style={{
               height: 44,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               paddingTop: 4,
-              opacity: 0.45,  // visually present but inert
+              marginBottom: 8,  // breathing room before end of scroll area
+              opacity: 0.35,
+              pointerEvents: 'none',
+              userSelect: 'none',
             }}>
               <span style={{ ...DS5, color: C.textMid }}>Delete task</span>
               <span style={{ color: C.late }}><TrashIcon /></span>

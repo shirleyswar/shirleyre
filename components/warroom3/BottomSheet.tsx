@@ -48,6 +48,9 @@ interface BottomSheetProps {
   noHandle?: boolean
   // Override scroll container padding-bottom (default 104)
   scrollPaddingBottom?: number
+  // Footer content rendered flex:none after the scroll body — fixes iOS position:fixed mispositioning
+  // (D11.3 ruling: header flex:none, body flex:1 overflow-y:auto, footer flex:none — no position:fixed)
+  footer?: React.ReactNode
 }
 
 export default function BottomSheet({
@@ -64,6 +67,7 @@ export default function BottomSheet({
   noCloseButton = true,
   noHandle,
   scrollPaddingBottom = 104,
+  footer,
 }: BottomSheetProps) {
   const prefersReduced = useReducedMotion()
   const sheetTop = size === 'full' ? 34 : size === 'short' ? 112 : 78
@@ -212,11 +216,20 @@ export default function BottomSheet({
                 flex: 1,
                 overflowY: 'auto',
                 overflowX: 'hidden',
-                paddingBottom: scrollPaddingBottom,
+                minHeight: 0,
+                paddingBottom: footer ? 0 : scrollPaddingBottom,
               }}
             >
               {children}
             </div>
+
+            {/* Footer — flex:none, rendered below scroll body. Fixes iOS keyboard position:fixed mispositioning.
+                When a footer is present the sheet is a full flex column: header/body/footer. */}
+            {footer && (
+              <div style={{ flexShrink: 0 }}>
+                {footer}
+              </div>
+            )}
           </motion.div>
         </>
       )}
