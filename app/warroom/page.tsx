@@ -605,8 +605,8 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
 
   const COLS = [
     { label: 'TONIGHT', date: todayStr, dim: false },
-    { label: new Date(new Date(getColDate(1)).getTime()).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Chicago' }).toUpperCase(), date: getColDate(1), dim: false },
-    { label: new Date(new Date(getColDate(2)).getTime()).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Chicago' }).toUpperCase(), date: getColDate(2), dim: false },
+    { label: (([y,m,d]) => new Date(y,m-1,d).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase())(getColDate(1).split('-').map(Number)), date: getColDate(1), dim: false },
+    { label: (([y,m,d]) => new Date(y,m-1,d).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase())(getColDate(2).split('-').map(Number)), date: getColDate(2), dim: false },
     { label: 'JUST BEYOND', date: getColDate(3), dim: true },
   ]
 
@@ -632,34 +632,47 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
                   {loading ? null : displayItems.length === 0 ? (
                     col.date === todayStr ? (
                       <div style={{ ...DT4, color: C.textLow, padding: '8px 0', textAlign: 'center' }}>
-                        {`CLEAR THROUGH ${new Date(new Date(getColDate(2)).getTime()).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/Chicago' }).toUpperCase()}`}
+                        {`CLEAR THROUGH ${(([y,m,d]) => new Date(y,m-1,d).toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase())(getColDate(2).split('-').map(Number))}`}
                       </div>
                     ) : null
-                  ) : displayItems.map(item => (
-                    <div
-                      key={item.id}
-                      style={{
-                        padding: '9px 10px 9px 9px',
-                        borderRadius: 8,
-                        background: 'rgba(255,255,255,0.025)',
-                        border: `1px solid ${C.border}`,
-                        borderLeft: `3px solid ${item.spineColor}`,
-                        display: 'flex',
-                        gap: 6,
-                        minWidth: 0,
-                      }}
-                    >
-                      {/* Time gutter */}
-                      <div style={{ flexShrink: 0, width: 34, ...DT8, color: item.time ? C.textHi : C.textLow, textAlign: 'right' }}>
-                        {item.time ? item.time.slice(0, 5) : 'DUE'}
-                      </div>
-                      {/* Content */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ ...DS5, color: C.textHi, wordBreak: 'break-word' }}>{item.title}</div>
-                        {item.context && <div style={{ ...DS8, color: C.textLow }}>{item.context}</div>}
-                      </div>
-                    </div>
-                  ))}
+                  ) : (() => {
+                    // JUST BEYOND: show one card + "+ N more". Other columns: show all.
+                    const isJustBeyond = col.label === 'JUST BEYOND'
+                    const visibleItems = isJustBeyond ? displayItems.slice(0, 1) : displayItems
+                    const moreCount = isJustBeyond ? displayItems.length - 1 : 0
+                    return (
+                      <>
+                        {visibleItems.map(item => (
+                          <div
+                            key={item.id}
+                            style={{
+                              padding: '9px 10px 9px 9px',
+                              borderRadius: 8,
+                              background: 'rgba(255,255,255,0.025)',
+                              border: `1px solid ${C.border}`,
+                              borderLeft: `3px solid ${item.spineColor}`,
+                              display: 'flex',
+                              gap: 6,
+                              minWidth: 0,
+                            }}
+                          >
+                            <div style={{ flexShrink: 0, width: 34, ...DT8, color: item.time ? C.textHi : C.textLow, textAlign: 'right' }}>
+                              {item.time ? item.time.slice(0, 5) : 'DUE'}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ ...DS5, color: C.textHi, wordBreak: 'break-word' }}>{item.title}</div>
+                              {item.context && <div style={{ ...DS8, color: C.textLow }}>{item.context}</div>}
+                            </div>
+                          </div>
+                        ))}
+                        {moreCount > 0 && (
+                          <div style={{ ...DT8, color: C.brandLift, padding: '6px 2px' }}>
+                            + {moreCount} more
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
             )

@@ -86,7 +86,7 @@ export default function TaskSheet({ open, onClose }: TaskSheetProps) {
     ? (pickedDate ? toISODate(pickedDate) : '')
     : chipDate(dueChip)
 
-  const canSave = title.trim().length > 0 && effectiveDueDate !== ''
+  const canSave = title.trim().length > 0  // §item 3 ruling: live when title non-empty; date is optional
 
   // CODE: supabase insert logic
   const handleSave = async () => {

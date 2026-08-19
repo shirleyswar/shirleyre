@@ -399,7 +399,8 @@ export default function TaskDetailSheet({
   }
 
   // Footer logic
-  const isActive = stagedDate !== null || (mode === 'edit' && (titleEdited || noteText.trim().length > 0))
+  // §item 3 ruling: CONFIRM live when date staged OR note non-empty (typing a note IS staging)
+  const isActive = stagedDate !== null || noteText.trim().length > 0 || (mode === 'edit' && titleEdited)
 
   // Chip style
   const chipStyle = (active: boolean): React.CSSProperties => ({

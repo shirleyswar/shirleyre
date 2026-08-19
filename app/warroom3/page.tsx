@@ -487,7 +487,7 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
 
 // ── Home Screen §6 ────────────────────────────────────────────────────────────
 // §18: quickactions/voicenote; §19: portfoliocreate; §20: newdeal
-type SheetId = 'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract' | 'quickactions' | 'voicenote' | 'portfoliocreate' | 'newdeal'
+type SheetId = 'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract' | 'quickactions' | 'voicenote' | 'portfoliocreate' | 'newdeal' | 'task' | 'event'
 
 function HomeScreen({
   onTilePress,
@@ -512,8 +512,6 @@ setTaskDetailOpen,
   const [hero, setHero] = useState<HeroItem | null>(null)
   const [tiles, setTiles] = useState<TileStat[]>([])
   const [dealsSearch, setDealsSearch] = useState('')
-  const [taskSheetOpen, setTaskSheetOpen] = useState(false)
-  const [eventSheetOpen, setEventSheetOpen] = useState(false)
   const dateLabel = formatDateLabel()
 
   useEffect(() => {
@@ -700,20 +698,20 @@ setTaskDetailOpen,
         open={openSheet === 'quickactions'}
         onClose={() => setOpenSheet(null)}
         onOpenVoiceNote={() => setOpenSheet('voicenote')}
-        onOpenTask={() => { setOpenSheet(null); setTimeout(() => setTaskSheetOpen(true), 180) }}
-        onOpenEvent={() => { setOpenSheet(null); setTimeout(() => setEventSheetOpen(true), 180) }}
+        onOpenTask={() => { setOpenSheet(null); setTimeout(() => setOpenSheet('task'), 180) }}
+        onOpenEvent={() => { setOpenSheet(null); setTimeout(() => setOpenSheet('event'), 180) }}
       />
 
-      {/* §18.3b Task sheet (36a) */}
+      {/* §18.3b Task sheet (36a) — now in SheetId union so FAB reads it */}
       <TaskSheet
-        open={taskSheetOpen}
-        onClose={() => setTaskSheetOpen(false)}
+        open={openSheet === 'task'}
+        onClose={() => setOpenSheet(null)}
       />
 
-      {/* §18.3c Event sheet (36b) */}
+      {/* §18.3c Event sheet (36b) — now in SheetId union */}
       <EventSheet
-        open={eventSheetOpen}
-        onClose={() => setEventSheetOpen(false)}
+        open={openSheet === 'event'}
+        onClose={() => setOpenSheet(null)}
       />
 
       {/* §18 Voice Note — full-height, field focused on open */}

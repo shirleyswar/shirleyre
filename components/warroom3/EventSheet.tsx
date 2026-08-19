@@ -267,7 +267,7 @@ export default function EventSheet({ open, onClose }: EventSheetProps) {
   // Display label for the time control
   const timeLabel = `${hour}:${String(minute).padStart(2, '0')} ${meridiem}`
 
-  const canSave = title.trim().length > 0 && effectiveDate !== ''
+  const canSave = title.trim().length > 0  // §item 3 ruling: live when title non-empty; date is optional
 
   // CODE: supabase insert into schedule_events
   const handleSave = async () => {
