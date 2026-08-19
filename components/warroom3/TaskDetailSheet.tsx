@@ -443,7 +443,7 @@ export default function TaskDetailSheet({
         noHandle
         size="full"
         headerAction={headerAction}
-        scrollPaddingBottom={error ? 280 : 160}
+        scrollPaddingBottom={error ? 300 : 190}
       >
         {/* §18.7 Error banner */}
         {error && (

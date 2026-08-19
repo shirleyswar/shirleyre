@@ -214,10 +214,13 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      const active = document.activeElement
-      const isField = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement
+      // Use e.target (the element that received the keydown) — more reliable than
+      // document.activeElement which may have already blurred when this fires.
+      const target = e.target as Element
+      const isField = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
       if (isField) {
-        ;(active as HTMLElement).blur()
+        e.preventDefault()  // prevent any browser-native Esc handling
+        target.blur()
         return
       }
       // Nothing focused → attempt close
@@ -696,62 +699,19 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
               </div>
             </div>
 
-            {/* 6. Delete row */}
-            {!showDeleteConfirm ? (
-              <div
-                onClick={() => setShowDeleteConfirm(true)}
-                style={{
-                  height: 44,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                  paddingTop: 4,
-                }}
-              >
-                <span style={{ ...DS5, color: C.textMid }}>Delete task</span>
-                <span style={{ color: C.late }}>
-                  <TrashIcon />
-                </span>
-              </div>
-            ) : (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '10px 0',
-              }}>
-                <span style={{ ...DS5, color: C.textMid }}>Delete this task?</span>
-                <button
-                  onClick={handleDelete}
-                  style={{
-                    background: 'transparent',
-                    border: `1px solid ${C.late}`,
-                    borderRadius: 8,
-                    padding: '6px 16px',
-                    ...DS5,
-                    color: C.late,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Delete
-                </button>
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  style={{
-                    background: 'transparent',
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 8,
-                    padding: '6px 16px',
-                    ...DS5,
-                    color: C.textMid,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
+            {/* 6. Delete row — inert until workflow ruling on tasks.status (open|complete only, no 'deleted') */}
+            {/* Mobile uses .delete() (row removal). Desktop ruling pending. */}
+            <div style={{
+              height: 44,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingTop: 4,
+              opacity: 0.45,  // visually present but inert
+            }}>
+              <span style={{ ...DS5, color: C.textMid }}>Delete task</span>
+              <span style={{ color: C.late }}><TrashIcon /></span>
+            </div>
           </div>
 
           {/* ── Vertical rule in gap ──────────────────────────────────────── */}
