@@ -281,7 +281,7 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
         <div style={{ padding: '0 18px 10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.bgRaise, border: '1px solid rgba(255,255,255,0.14)', borderRadius: 10, padding: '10px 14px' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.textLow} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textMid }} />
+            <input type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontFamily: FONT_DISPLAY, fontSize: 16, color: T.textMid }} />
           </div>
         </div>
 

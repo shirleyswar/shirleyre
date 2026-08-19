@@ -511,7 +511,7 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
             placeholder="Search"
             style={{
               flex: 1, background: 'none', border: 'none', outline: 'none',
-              fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 400,
+              fontFamily: FONT_DISPLAY, fontSize: 16, fontWeight: 400,  // iOS 16px floor
               color: T.textMid, lineHeight: 1.25,
             }}
           />

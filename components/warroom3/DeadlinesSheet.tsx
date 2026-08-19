@@ -208,7 +208,7 @@ function StatusModal({
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: 8, padding: '8px 10px',
-              color: T.textHi, fontFamily: FONT_DISPLAY, fontSize: 13,
+              color: T.textHi, fontFamily: FONT_DISPLAY, fontSize: 16,  // iOS 16px floor
               outline: 'none', width: '100%',
             }}
           />
@@ -250,7 +250,7 @@ function StatusModal({
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.10)',
               borderRadius: 8, padding: '8px 10px',
-              color: T.textHi, fontFamily: FONT_DISPLAY, fontSize: 12,
+              color: T.textHi, fontFamily: FONT_DISPLAY, fontSize: 16,  // iOS 16px floor
               outline: 'none', width: '100%',
             }}
           />

@@ -614,7 +614,7 @@ export default function TaskDetailSheet({
                   style={{
                     background: T.bgRaise, borderRadius: 10, padding: '12px 14px',
                     minHeight: 72, border: `1px solid ${T.borderDefault}`,
-                    color: T.textHi, fontSize: 13, fontFamily: FONT_DISPLAY,
+                    color: T.textHi, fontSize: 16, fontFamily: FONT_DISPLAY,  // 16px floor — iOS auto-zoom on focus
                     resize: 'none', outline: 'none', width: '100%',
                     boxSizing: 'border-box' as const,
                   }}
@@ -685,7 +685,7 @@ export default function TaskDetailSheet({
                   minHeight: 72,
                   border: `1px solid ${T.borderDefault}`,
                   color: T.textHi,
-                  fontSize: 13,
+                  fontSize: 16,  // 16px floor — iOS auto-zoom on focus
                   fontFamily: FONT_DISPLAY,
                   resize: 'none',
                   outline: 'none',

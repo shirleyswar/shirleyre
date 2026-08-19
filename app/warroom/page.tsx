@@ -605,8 +605,8 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
 
   const COLS = [
     { label: 'TONIGHT', date: todayStr, dim: false },
-    { label: new Date(new Date(getColDate(1)).getTime()).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(), date: getColDate(1), dim: false },
-    { label: new Date(new Date(getColDate(2)).getTime()).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(), date: getColDate(2), dim: false },
+    { label: new Date(new Date(getColDate(1)).getTime()).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Chicago' }).toUpperCase(), date: getColDate(1), dim: false },
+    { label: new Date(new Date(getColDate(2)).getTime()).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Chicago' }).toUpperCase(), date: getColDate(2), dim: false },
     { label: 'JUST BEYOND', date: getColDate(3), dim: true },
   ]
 
@@ -628,11 +628,11 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
                   <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{displayItems.length}</span>
                 </div>
                 {/* Items */}
-                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {loading ? null : displayItems.length === 0 ? (
                     col.date === todayStr ? (
                       <div style={{ ...DT4, color: C.textLow, padding: '8px 0', textAlign: 'center' }}>
-                        {`CLEAR THROUGH ${new Date(new Date(getColDate(2)).getTime()).toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()}`}
+                        {`CLEAR THROUGH ${new Date(new Date(getColDate(2)).getTime()).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/Chicago' }).toUpperCase()}`}
                       </div>
                     ) : null
                   ) : displayItems.map(item => (

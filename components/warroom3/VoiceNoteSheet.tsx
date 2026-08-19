@@ -315,7 +315,7 @@ export default function VoiceNoteSheet({ open, onClose }: VoiceNoteSheetProps) {
               borderRadius: 9,
               padding: '12px 14px',
               fontFamily: FONT_DISPLAY,
-              fontSize: 14.5, // T3
+              fontSize: 16, // 16px floor — iOS auto-zoom on focus (was T3 14.5)
               fontWeight: 400,
               color: T.textHi,
               lineHeight: 1.5,

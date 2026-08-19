@@ -270,7 +270,7 @@ export default function NewDealSheet({ open, onClose, onCreated }: NewDealSheetP
               value={clientQ}
               onChange={e => setClientQ(e.target.value)}
               placeholder="Person or company"
-              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontFamily: FONT_DISPLAY, fontSize: 14, color: T.textMid }}
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontFamily: FONT_DISPLAY, fontSize: 16, color: T.textMid }}
             />
           </div>
         </div>
