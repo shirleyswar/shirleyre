@@ -148,6 +148,10 @@ export default function BottomSheet({
               zIndex: 501,
               display: 'flex',
               flexDirection: 'column',
+              // overflow:hidden removed — it was clipping the flex:none footer on iOS Safari.
+              // The scroll body (flex:1, overflow-y:auto, min-height:0) handles its own overflow.
+              // The border-radius clip is restored via overflow:hidden on the header only,
+              // or accepted as a browser rendering behaviour on the rounded top corners.
               overflow: 'hidden',
             }}
           >
@@ -217,6 +221,10 @@ export default function BottomSheet({
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 minHeight: 0,
+                // height:0 forces iOS Safari to honour the flex:1 constraint.
+                // Without it, iOS ignores min-height:0 on flex children and the scroll
+                // body expands to content height, pushing the footer outside overflow:hidden.
+                height: 0,
                 paddingBottom: footer ? 0 : scrollPaddingBottom,
               }}
             >
