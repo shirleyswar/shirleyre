@@ -72,6 +72,7 @@ interface BattlePlanSheetProps {
   open: boolean
   onClose: () => void
   onOpenTaskDetail?: (task: Task) => void  // lifted to page — FAB × works automatically
+  refreshKey?: number  // bump to force re-fetch after a task save (title edit, etc.)
 }
 
 // §5.1 Group header: T2 label · hairline · count
@@ -185,7 +186,7 @@ function SwipeRow({ task, children, onSwipeRight, onSwipeLeft, onNextWeek }: {
   )
 }
 
-export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail }: BattlePlanSheetProps) {
+export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refreshKey = 0 }: BattlePlanSheetProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
@@ -229,7 +230,7 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail }: Bat
       }
     }
     run()
-  }, [open, retryCount])
+  }, [open, retryCount, refreshKey])
 
   const today = todayCST()
 

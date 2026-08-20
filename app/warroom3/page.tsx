@@ -512,6 +512,8 @@ setTaskDetailOpen,
   const [hero, setHero] = useState<HeroItem | null>(null)
   const [tiles, setTiles] = useState<TileStat[]>([])
   const [dealsSearch, setDealsSearch] = useState('')
+  // Bumped on task save — forces BattlePlanSheet to re-fetch so title edits are reflected on reopen
+  const [bpRefreshKey, setBpRefreshKey] = useState(0)
   const dateLabel = formatDateLabel()
 
   useEffect(() => {
@@ -653,6 +655,7 @@ setTaskDetailOpen,
       <BattlePlanSheet
         open={openSheet === 'battleplan'}
         onClose={() => setOpenSheet(null)}
+        refreshKey={bpRefreshKey}
         onOpenTaskDetail={(task) => {
           setSelectedDetailTask(task as DetailTask)
           setTaskDetailOpen(true)
@@ -666,7 +669,7 @@ setTaskDetailOpen,
         task={selectedDetailTask}
         onClose={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
         onCompleted={(t) => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
-        onSaved={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
+        onSaved={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false); setBpRefreshKey(k => k + 1) }}
         onDeleted={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
       />
 

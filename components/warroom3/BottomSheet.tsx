@@ -97,6 +97,34 @@ export default function BottomSheet({
     return () => { document.body.style.overflow = '' }
   }, [open])
 
+  // Keyboard height — visualViewport listener.
+  // iOS does NOT shrink the layout viewport when the keyboard opens.
+  // bottom: SHEET_BOTTOM_CLEARANCE anchors to a floor now behind the keyboard.
+  // visualViewport.height reports the actual visible area; the gap between
+  // window.innerHeight and visualViewport.height is the keyboard band.
+  // Clamped to zero so it is never negative. Applied as --kb-height CSS var
+  // on the sheet container. Used in calc() on `bottom`. No scrollPadding patch
+  // (that was hypothesis 1 and is noise). No viewport meta tag.
+  const sheetRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const update = () => {
+      const vv = window.visualViewport
+      if (!vv || !sheetRef.current) return
+      const kb = Math.max(0, window.innerHeight - vv.height)
+      sheetRef.current.style.setProperty('--kb-height', `${kb}px`)
+    }
+    const vv = window.visualViewport
+    if (!vv) return
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    update()
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [open])
+
   // §7 motion specs — inline props to satisfy Framer Motion strict types
   const sheetInitial = prefersReduced ? { opacity: 0 } : { y: '100%' }
   const sheetAnimate = prefersReduced ? { opacity: 1 } : { y: 0 }
@@ -137,18 +165,20 @@ export default function BottomSheet({
             transition={sheetTransition}
             onTouchStart={handleSheetTouchStart}
             onTouchEnd={handleSheetTouchEnd}
+            ref={sheetRef}
             style={{
               position: 'fixed',
               top: sheetTop,
               left: 0,
               right: 0,
-              // SHEET_BOTTOM_CLEARANCE = NAV_HEIGHT (94px) — clears the tab bar's full outer box.
-              // The nav (zIndex 1000) is position:fixed, bottom:0, height:94px (border-box, includes
-              // env(safe-area-inset-bottom)). Sheet was bottom:0 at zIndex 501 — footer landed inside
-              // the nav's 94px dead zone. Fixed: lift the sheet floor to 94px so the flex:none footer
-              // is always above the nav. Do NOT add env(safe-area-inset-bottom) — the nav's 94px
-              // already contains it. Both files read from lib/layout.ts; nav height changes propagate.
-              bottom: SHEET_BOTTOM_CLEARANCE,
+              // SHEET_BOTTOM_CLEARANCE = NAV_HEIGHT (94px) clears the tab bar.
+              // --kb-height is computed by the visualViewport listener above and reflects
+              // the keyboard band (window.innerHeight − visualViewport.height, clamped ≥ 0).
+              // iOS does not shrink the layout viewport when the keyboard opens, so without
+              // this the sheet floor sits behind the keyboard. The calc lifts the sheet by
+              // the keyboard height on top of the nav clearance. No scrollPadding patch.
+              // No viewport meta tag (interactive-widget unreliable on iOS; maximum-scale forbidden).
+              bottom: `calc(${SHEET_BOTTOM_CLEARANCE}px + var(--kb-height, 0px))` as unknown as number,
               background: '#12111B',           // bg-panel
               borderRadius: '26px 26px 0 0',   // §5.8
               borderTop: '1px solid rgba(255,255,255,0.14)',  // border-default
