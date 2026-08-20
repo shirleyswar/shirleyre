@@ -165,8 +165,13 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
   // Ref-copy of isActive — prevents stale closure in the Esc keydown handler.
   // Without this, a handler registered when isActive=false never sees it become true.
   const isActiveRef = useRef(false)
+  // committedTitleRef tracks the last successfully-saved title.
+  // task.title is the prop at open time and never updates during the modal's life.
+  // After a successful CONFIRM we advance this ref so titleEdited returns false immediately —
+  // preventing isTaskStaged() from staying true on stale prop comparison.
+  const committedTitleRef = useRef(task.title)
 
-  const titleEdited = localTitle !== task.title
+  const titleEdited = localTitle !== committedTitleRef.current
   const committeListType = committedListType(task)
 
   // ── Staging predicate (D11.5) ──────────────────────────────────────────────
@@ -298,15 +303,21 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
     if (!isActive || saving || committed) return
     const ok = await runCommit()
     if (!ok) return
+    // Advance committedTitleRef so titleEdited → false immediately.
+    // task.title prop never updates during modal life; this is the only way to clear it.
+    committedTitleRef.current = localTitle
     setCommitted(true)
     await loadNotes()
+    // Reset all staged values synchronously so isTaskStaged() returns false
+    // before the committed flash ends. On failed commit nothing is touched.
+    setStagedDate(null)
+    setNoteText('')            // empties composer — prevents duplicate note on second CONFIRM
+    setListType(committeListType)
+    // Ruling: CONFIRM closes. Hold committed state ~1.2s then close.
     setTimeout(() => {
       setCommitted(false)
-      setStagedDate(null)
-      setNoteText('')
-      setListType(committeListType)
-      // localTitle stays updated now
-    }, 1500)
+      onSaved()                // triggers parent re-fetch + closes modal
+    }, 1200)
   }
 
   async function handleDone() {
@@ -456,24 +467,31 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
           padding: '0 24px',
           borderBottom: `1px solid ${C.borderPanel}`,
           gap: 16,
+          position: 'relative',  // anchor for the absolutely-centred DELETE
         }}>
           {/* Left: mode label */}
           <span style={{ ...DT0, color: C.textMid, flexShrink: 0 }}>
             {mode === 'edit' ? 'Edit Task' : 'Task'}
           </span>
 
-          {/* EDIT state only — DELETE asset. Inserted before the spacer.
-              Desktop: pointer-driven — no reserved slot, no touch-target box.
-              Rendered box of the image is the target, same as ×.
-              Asset names itself — no caption.
-              Mount by height (24px → 102.0px art). Measure DOM width on first render; 102.0 is arithmetic. */}
+          {/* Spacer left */}
+          <div style={{ flex: 1 }} />
+
+          {/* EDIT state only — DELETE asset, centred on the modal's width.
+              position:absolute so it is immune to left label length.
+              left:50% + translateX(-50%) = true centre of the header box.
+              Desktop: pointer-driven — rendered image box is the target, same as ×.
+              Mount by height (24px art). 102.0px width is arithmetic; DOM measures it. */}
           {mode === 'edit' && (
             <button
               ref={desktopDeleteRef}
               onClick={() => setShowDeleteConfirm(true)}
               style={{
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
                 background: 'transparent', border: 'none', padding: 0,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0,
+                cursor: 'pointer', display: 'flex', alignItems: 'center',
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -486,12 +504,12 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
             </button>
           )}
 
-          {/* Spacer — title is in the left column (D11.2 item 2), not repeated here */}
+          {/* Spacer right */}
           <div style={{ flex: 1 }} />
 
           {/* Right: terminal action for current mode.
               READ  → DONE caption + checkmark.
-              EDIT  → slot is empty here; DELETE is before the spacer above.
+              EDIT  → empty (DELETE is above, centred absolutely).
               × ESC is always last and never moves. */}
           {mode === 'read' && (
             <button
