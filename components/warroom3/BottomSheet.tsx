@@ -11,6 +11,7 @@
 
 import React, { useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useReducedMotion, type Transition } from 'framer-motion'
+import { SHEET_BOTTOM_CLEARANCE } from '@/lib/layout'
 
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
@@ -141,7 +142,13 @@ export default function BottomSheet({
               top: sheetTop,
               left: 0,
               right: 0,
-              bottom: 0,
+              // SHEET_BOTTOM_CLEARANCE = NAV_HEIGHT (94px) — clears the tab bar's full outer box.
+              // The nav (zIndex 1000) is position:fixed, bottom:0, height:94px (border-box, includes
+              // env(safe-area-inset-bottom)). Sheet was bottom:0 at zIndex 501 — footer landed inside
+              // the nav's 94px dead zone. Fixed: lift the sheet floor to 94px so the flex:none footer
+              // is always above the nav. Do NOT add env(safe-area-inset-bottom) — the nav's 94px
+              // already contains it. Both files read from lib/layout.ts; nav height changes propagate.
+              bottom: SHEET_BOTTOM_CLEARANCE,
               background: '#12111B',           // bg-panel
               borderRadius: '26px 26px 0 0',   // §5.8
               borderTop: '1px solid rgba(255,255,255,0.14)',  // border-default

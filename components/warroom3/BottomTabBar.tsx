@@ -1,7 +1,7 @@
 'use client'
 
 // §5.7 Bottom tab bar — ShirleyCRE mobile spec v1, locked design 19b
-// Fixed. height: 94px, box-sizing: border-box.
+// Fixed. height: NAV_HEIGHT px (lib/layout.ts), box-sizing: border-box.
 // Five labelled slots: HOME · DEALS · NEW · MONEY · MORE.
 // Centre slot is 70px wide and carries the label NEW — not an empty gap.
 // FAB lifted margin-top: -23px exactly (§5.7 arithmetic).
@@ -11,6 +11,7 @@
 
 import React from 'react'
 import Fab from '@/components/warroom3/Fab'
+import { NAV_HEIGHT } from '@/lib/layout'
 
 export type TabId = 'home' | 'deals' | 'money' | 'more'
 
@@ -120,9 +121,9 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         bottom: 0,
         left: 0,
         right: 0,
-        // §5.7: 94px total, box-sizing: border-box.
+        // §5.7: NAV_HEIGHT total, box-sizing: border-box.
         // A tab bar that measures 106px is the box model, not the design.
-        height: 94,
+        height: NAV_HEIGHT,
         boxSizing: 'border-box',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         background: 'rgba(8,8,12,0.94)',
