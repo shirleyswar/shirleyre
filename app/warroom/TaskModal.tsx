@@ -306,18 +306,19 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
     // Advance committedTitleRef so titleEdited → false immediately.
     // task.title prop never updates during modal life; this is the only way to clear it.
     committedTitleRef.current = localTitle
-    setCommitted(true)
-    await loadNotes()
     // Reset all staged values synchronously so isTaskStaged() returns false
     // before the committed flash ends. On failed commit nothing is touched.
     setStagedDate(null)
     setNoteText('')            // empties composer — prevents duplicate note on second CONFIRM
     setListType(committeListType)
-    // Ruling: CONFIRM closes. Hold committed state ~1.2s then close.
+    setCommitted(true)
+    // Refresh notes in the background — do not await; it must not delay the flash or close.
+    loadNotes().catch(() => {})
+    // Ruling: CONFIRM closes. Hold committed state ~1.5s then close.
     setTimeout(() => {
       setCommitted(false)
       onSaved()                // triggers parent re-fetch + closes modal
-    }, 1200)
+    }, 1500)
   }
 
   async function handleDone() {
@@ -459,6 +460,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
         }}
       >
         {/* ── HEADER (72px) ──────────────────────────────────────────────── */}
+        {/* Three-column flex: left (label, flex:1) · centre (DELETE, shrink-0) · right (actions, flex:1 justify-end)
+            DELETE is immune to label length. × ESC is always the last child of the right zone. */}
         <div style={{
           height: 72,
           flexShrink: 0,
@@ -466,30 +469,24 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
           alignItems: 'center',
           padding: '0 24px',
           borderBottom: `1px solid ${C.borderPanel}`,
-          gap: 16,
-          position: 'relative',  // anchor for the absolutely-centred DELETE
         }}>
-          {/* Left: mode label */}
-          <span style={{ ...DT0, color: C.textMid, flexShrink: 0 }}>
-            {mode === 'edit' ? 'Edit Task' : 'Task'}
-          </span>
+          {/* Left zone — flex:1 so it absorbs available space */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+            <span style={{ ...DT0, color: C.textMid }}>
+              {mode === 'edit' ? 'Edit Task' : 'Task'}
+            </span>
+          </div>
 
-          {/* Spacer left */}
-          <div style={{ flex: 1 }} />
-
-          {/* EDIT state only — DELETE asset, centred on the modal's width.
-              position:absolute so it is immune to left label length.
-              left:50% + translateX(-50%) = true centre of the header box.
+          {/* Centre zone — DELETE asset, edit state only. flexShrink:0 so it doesn't compress.
+              Centred because both side zones are flex:1. Immune to label length.
               Desktop: pointer-driven — rendered image box is the target, same as ×.
-              Mount by height (24px art). 102.0px width is arithmetic; DOM measures it. */}
-          {mode === 'edit' && (
+              Mount by height (24px). 102.0px width is arithmetic; DOM measures it. */}
+          {mode === 'edit' ? (
             <button
               ref={desktopDeleteRef}
               onClick={() => setShowDeleteConfirm(true)}
               style={{
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
+                flexShrink: 0,
                 background: 'transparent', border: 'none', padding: 0,
                 cursor: 'pointer', display: 'flex', alignItems: 'center',
               }}
@@ -502,15 +499,13 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
                 style={{ height: 24, width: 'auto', display: 'block' }}
               />
             </button>
+          ) : (
+            <div style={{ flexShrink: 0, width: 0 }} />
           )}
 
-          {/* Spacer right */}
-          <div style={{ flex: 1 }} />
-
-          {/* Right: terminal action for current mode.
-              READ  → DONE caption + checkmark.
-              EDIT  → empty (DELETE is above, centred absolutely).
-              × ESC is always last and never moves. */}
+          {/* Right zone — flex:1, children pushed right. × ESC always last and never moves. */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16 }}>
+          {/* READ  → DONE caption + checkmark. EDIT → empty (DELETE is centred above). */}
           {mode === 'read' && (
             <button
               onClick={handleDone}
@@ -538,7 +533,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
             </button>
           )}
 
-          {/* Far right: × ESC — same glyph, size, colour, position in every state. Never moves. */}
+          {/* × ESC — always last in right zone, never moves. */}
           <button
             onClick={attemptClose}
             style={{
@@ -555,7 +550,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
             <span style={{ fontSize: 22, color: C.textLow, lineHeight: 1 }}>×</span>
             <span style={{ ...DT5, color: C.textLow }}>ESC</span>
           </button>
-        </div>
+          </div>{/* end right zone */}
+        </div>{/* end header */}
 
         {/* ── CONTENT ──────────────────────────────────────────────────────── */}
         <div style={{
