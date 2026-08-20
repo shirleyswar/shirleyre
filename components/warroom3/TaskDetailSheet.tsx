@@ -177,6 +177,7 @@ export default function TaskDetailSheet({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const titleRef = useRef<HTMLTextAreaElement>(null)
+  const deleteRef = useRef<HTMLButtonElement>(null)
   const origTitle = useRef('')
 
   // Reset when sheet opens on a new task
@@ -403,7 +404,10 @@ export default function TaskDetailSheet({
     WebkitTapHighlightColor: 'transparent',
   })
 
-  // ── Header action — checkmark in read mode
+  // ── Header action — terminal action for the current mode.
+  // READ  → DONE caption + checkmark (completion)
+  // EDIT  → DELETE asset slot (104×44, right-aligned at 18px gutter)
+  // One slot, one action, never both.
   const headerAction = mode === 'read' ? (
     // §13.2 / item 11 ruling: DONE caption + checkmark. Same pattern as CONFIRM plate.
     <button
@@ -413,7 +417,6 @@ export default function TaskDetailSheet({
         display: 'flex', alignItems: 'center', gap: 6,
         border: 'none', background: 'transparent',
         cursor: saving ? 'default' : 'pointer',
-        opacity: saving ? 0.5 : 1,
         flexShrink: 0, padding: 0,
       }}
     >
@@ -424,7 +427,30 @@ export default function TaskDetailSheet({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/check/check-h140.png" alt="Complete" width={44} height={44} style={{ display: 'block' }} />
     </button>
-  ) : null
+  ) : (
+    // DELETE — 104×44 slot, right-aligned at the 18px gutter.
+    // Asset names itself in its pixels — no caption.
+    // Triggers the existing confirmation dialog (unchanged).
+    <div style={{ width: 104, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+      <button
+        ref={deleteRef}
+        onClick={() => setShowDeleteConfirm(true)}
+        style={{
+          background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+          display: 'flex', alignItems: 'center',
+          WebkitTapHighlightColor: 'transparent' as const,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/delete/delete-h76.png"
+          alt="Delete"
+          height={21}
+          style={{ height: 21, width: 'auto', display: 'block' }}
+        />
+      </button>
+    </div>
+  )
 
   // List name in read mode
   const listName = task.is_life
@@ -449,43 +475,42 @@ export default function TaskDetailSheet({
       borderTop: `1px solid ${T.borderDefault}`,
       background: T.bgPanel,
     }}>
-      {/* Secondary slot — EDIT / CANCEL */}
-      <button
-        onClick={() => {
-          if (mode === 'read') {
-            setMode('edit')
-          } else {
-            const hasTyped = titleEdited || noteText.trim().length > 0
-            if (hasTyped) {
-              setShowDiscardGuard(true)
+      {/* Secondary slot — EDIT / CANCEL asset slot.
+          Fixed box 140×52. PNG centred inside. Asset names itself — no text label.
+          Mount by height (52px → 128.55px art). Width follows aspect 2.4722. */}
+      <div style={{ width: 140, height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <button
+          onClick={() => {
+            if (mode === 'read') {
+              setMode('edit')
             } else {
-              setStagedDate(null)
-              setStagedChip(null)
-              setNoteText('')
-              setLocalTitle(task?.title ?? '')
-              setMode('read')
+              const hasTyped = titleEdited || noteText.trim().length > 0
+              if (hasTyped) {
+                setShowDiscardGuard(true)
+              } else {
+                setStagedDate(null)
+                setStagedChip(null)
+                setNoteText('')
+                setLocalTitle(task?.title ?? '')
+                setMode('read')
+              }
             }
-          }
-        }}
-        style={{
-          width: 140,
-          height: 52,
-          borderRadius: 12,
-          border: `1px solid ${T.borderStrong}`,
-          color: T.textMid,
-          fontFamily: FONT_MONO,
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase' as const,
-          background: 'transparent',
-          cursor: 'pointer',
-          flexShrink: 0,
-          WebkitTapHighlightColor: 'transparent',
-        }}
-      >
-        {mode === 'read' ? 'EDIT' : 'CANCEL'}
-      </button>
+          }}
+          style={{
+            background: 'transparent', border: 'none', padding: 0,
+            cursor: 'pointer', display: 'flex', alignItems: 'center',
+            WebkitTapHighlightColor: 'transparent' as const,
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={mode === 'read' ? '/assets/edit/edit-h180.png' : '/assets/cancel/cancel-h180.png'}
+            alt={mode === 'read' ? 'Edit' : 'Cancel'}
+            height={52}
+            style={{ height: 52, width: 'auto', display: 'block' }}
+          />
+        </button>
+      </div>
 
       {/* Primary slot — inert pill or CONFIRM plate */}
       <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
@@ -706,25 +731,8 @@ export default function TaskDetailSheet({
                 />
               </div>
 
-              {/* 7. Delete task row */}
-              <div style={{ borderTop: `1px solid ${T.borderDefault}`, paddingTop: 14, marginBottom: 20 }}>
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    width: '100%', minHeight: 44, background: 'transparent', border: 'none', cursor: 'pointer',
-                    padding: 0,
-                  }}
-                >
-                  <span style={{ fontFamily: FONT_DISPLAY, fontSize: 14, color: T.textMid }}>Delete task</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={T.late} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                    <path d="M10 11v6M14 11v6"/>
-                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                  </svg>
-                </button>
-              </div>
+              {/* §13.2 item 8 delete row — REMOVED. Delete is behind the edit wall.
+                  Header slot in edit mode carries the DELETE asset. Read state has no path to destruction. */}
             </>
           )}
 
@@ -882,7 +890,7 @@ export default function TaskDetailSheet({
                 }}
               >{saving ? '…' : 'Delete'}</button>
               <button
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => { setShowDeleteConfirm(false); setTimeout(() => deleteRef.current?.focus(), 50) }}
                 style={{
                   flex: 1, height: 44, borderRadius: 10, border: `1px solid ${T.borderStrong}`,
                   color: T.textMid, fontFamily: FONT_DISPLAY, fontSize: 14, background: 'transparent', cursor: 'pointer',

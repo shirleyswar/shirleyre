@@ -154,13 +154,14 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
   const [error, setError] = useState<string | null>(null)
   const [committed, setCommitted] = useState(false)
   const [showDiscard, setShowDiscard] = useState(false)
-  // showDeleteConfirm intentionally absent on desktop — delete model not yet ruled.
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [pickerDate, setPickerDate] = useState('')
 
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const noteRef = useRef<HTMLTextAreaElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
+  const desktopDeleteRef = useRef<HTMLButtonElement>(null)
   // Ref-copy of isActive — prevents stale closure in the Esc keydown handler.
   // Without this, a handler registered when isActive=false never sees it become true.
   const isActiveRef = useRef(false)
@@ -323,9 +324,21 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
     onCompleted(task)
   }
 
-  // handleDelete intentionally absent — desktop delete model not yet ruled.
-  // Constraint: open | in_progress | complete | deferred. No 'deleted' status.
-  // Row is pointerEvents:none. No write path exists until the model is decided post-D11.
+  // ── Delete ────────────────────────────────────────────────────────────────
+  // Hard delete — same model as mobile. task_note cascades.
+  async function handleDelete() {
+    setSaving(true)
+    const { error: err } = await supabase.from('tasks').delete().eq('id', task.id)
+    setSaving(false)
+    if (err) {
+      setError('Could not delete — try again')
+      setShowDeleteConfirm(false)
+      setTimeout(() => desktopDeleteRef.current?.focus(), 50)
+      return
+    }
+    setShowDeleteConfirm(false)
+    onClose()
+  }
 
   // ── Chip dates ────────────────────────────────────────────────────────────
   const today = todayLocal()
@@ -449,10 +462,37 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
             {mode === 'edit' ? 'Edit Task' : 'Task'}
           </span>
 
+          {/* EDIT state only — DELETE asset. Inserted before the spacer.
+              Desktop: pointer-driven — no reserved slot, no touch-target box.
+              Rendered box of the image is the target, same as ×.
+              Asset names itself — no caption.
+              Mount by height (24px → 102.0px art). Measure DOM width on first render; 102.0 is arithmetic. */}
+          {mode === 'edit' && (
+            <button
+              ref={desktopDeleteRef}
+              onClick={() => setShowDeleteConfirm(true)}
+              style={{
+                background: 'transparent', border: 'none', padding: 0,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0,
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/assets/delete/delete-h76.png"
+                alt="Delete"
+                height={24}
+                style={{ height: 24, width: 'auto', display: 'block' }}
+              />
+            </button>
+          )}
+
           {/* Spacer — title is in the left column (D11.2 item 2), not repeated here */}
           <div style={{ flex: 1 }} />
 
-          {/* Right: DONE button — read only */}
+          {/* Right: terminal action for current mode.
+              READ  → DONE caption + checkmark.
+              EDIT  → slot is empty here; DELETE is before the spacer above.
+              × ESC is always last and never moves. */}
           {mode === 'read' && (
             <button
               onClick={handleDone}
@@ -480,7 +520,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
             </button>
           )}
 
-          {/* Far right: × ESC */}
+          {/* Far right: × ESC — same glyph, size, colour, position in every state. Never moves. */}
           <button
             onClick={attemptClose}
             style={{
@@ -740,23 +780,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
               )}
             </div>
 
-            {/* 6. Delete row — desktop ruling: constraint is open|in_progress|complete|deferred,
-                no 'deleted' status. Hard delete model decided post-D11. Row is visible but
-                fully inert — no handler, no cursor, pointer-events:none. */}
-            <div style={{
-              height: 44,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: 4,
-              marginBottom: 8,  // breathing room before end of scroll area
-              opacity: 0.35,
-              pointerEvents: 'none',
-              userSelect: 'none',
-            }}>
-              <span style={{ ...DS5, color: C.textMid }}>Delete task</span>
-              <span style={{ color: C.late }}><TrashIcon /></span>
-            </div>
+            {/* D11.2 item 6 — STRUCK. Delete is behind the edit wall.
+                Header slot in edit mode carries the DELETE asset. Read state has no path to destruction. */}
           </div>
 
           {/* ── Vertical rule in gap ──────────────────────────────────────── */}
@@ -849,22 +874,26 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
           gap: 12,
           borderTop: `1px solid ${C.borderPanel}`,
         }}>
-          {/* Left: EDIT / CANCEL */}
-          <button
-            onClick={mode === 'read' ? enterEdit : cancelEdit}
-            style={{
-              height: 48,
-              padding: '0 24px',
-              border: `1px solid ${C.border}`,
-              borderRadius: 10,
-              background: 'transparent',
-              ...DS4,
-              color: C.textMid,
-              cursor: 'pointer',
-            }}
-          >
-            {mode === 'read' ? 'EDIT' : 'CANCEL'}
-          </button>
+          {/* Left: EDIT / CANCEL asset slot — 161.5×60, PNG centred.
+              Mount by height (60px → 148.33px art). Width follows aspect 2.4722.
+              Asset names itself — no caption. */}
+          <div style={{ width: 161.5, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button
+              onClick={mode === 'read' ? enterEdit : cancelEdit}
+              style={{
+                background: 'transparent', border: 'none', padding: 0,
+                cursor: 'pointer', display: 'flex', alignItems: 'center',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={mode === 'read' ? '/assets/edit/edit-h180.png' : '/assets/cancel/cancel-h180.png'}
+                alt={mode === 'read' ? 'Edit' : 'Cancel'}
+                height={60}
+                style={{ height: 60, width: 'auto', display: 'block' }}
+              />
+            </button>
+          </div>
 
           {/* Spacer */}
           <div style={{ flex: 1 }} />
@@ -978,6 +1007,53 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
                 }}
               >
                 Discard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete confirm dialog ─────────────────────────────────────────── */}
+      {showDeleteConfirm && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 400,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={() => { setShowDeleteConfirm(false); setTimeout(() => desktopDeleteRef.current?.focus(), 50) }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: C.bgPanel, border: `1px solid ${C.border}`,
+              borderRadius: 14, padding: '28px 32px',
+              display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center', minWidth: 320,
+            }}
+          >
+            <span style={{ ...DS2, color: C.textHi }}>Delete this task?</span>
+            <span style={{ ...DS5, color: C.textMid, textAlign: 'center' }}>
+              This removes the task and all its notes. It cannot be undone.
+            </span>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setTimeout(() => desktopDeleteRef.current?.focus(), 50) }}
+                style={{
+                  height: 44, padding: '0 24px', border: `1px solid ${C.border}`,
+                  borderRadius: 10, background: 'transparent', ...DS5, color: C.textMid, cursor: 'pointer',
+                }}
+              >
+                Keep
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={saving}
+                style={{
+                  height: 44, padding: '0 24px', border: 'none',
+                  borderRadius: 10, background: C.late, ...DS5, color: '#0A0A0F',
+                  cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1,
+                }}
+              >
+                {saving ? '…' : 'Delete'}
               </button>
             </div>
           </div>
