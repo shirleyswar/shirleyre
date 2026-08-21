@@ -1,5 +1,5 @@
 'use client'
-import { HOUSE_SPLIT } from '@/lib/dealMath'
+import { HOUSE_SPLIT, calcSaleCommission, calcLeaseCommission, calcCommission } from '@/lib/dealMath'
 
 // §D5.1 Desktop deal page — locked design 33a (13 Aug 2026). Round 1: read state only.
 // "The phone reads the deal, the desktop works it." — desktop two-column layout.
@@ -264,11 +264,10 @@ function DealPageContent() {
 
         // Est. commission
         const isLease = d.transaction_type === 'lease'
-        if (isLease && d.sqft && d.lease_rate_psf && d.lease_term_years) {
-          const gross = d.sqft * d.lease_rate_psf * d.lease_term_years
-          d.est_commission = Math.round(gross * 0.03 * HOUSE_SPLIT)
-        } else if (!isLease && d.asking_price && d.commission_pct) {
-          d.est_commission = Math.round(d.asking_price * (d.commission_pct / 100) * HOUSE_SPLIT)
+        if (isLease) {
+          d.est_commission = calcLeaseCommission(d.sqft ?? null, d.lease_rate_psf ?? null, d.lease_term_years ?? null, d.commission_pct ?? null)
+        } else {
+          d.est_commission = calcSaleCommission(d.asking_price ?? null, d.commission_pct ?? null)
         }
 
         setDeal(d)

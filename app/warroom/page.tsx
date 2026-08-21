@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { calcCommission, fmtMoney } from '@/lib/dealMath'
 import { useRouter } from 'next/navigation'
 import PinGate from '@/components/warroom/PinGate'
 import TaskModal from '@/app/warroom/TaskModal'
@@ -56,6 +57,17 @@ const FONT_MONO = "'JetBrains Mono', ui-monospace, monospace"
 const FONT_DISP = "'Space Grotesk', system-ui, sans-serif"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+interface DealEconomics {
+  deal_id: string
+  transaction_type: string | null
+  asking_price?: number | null
+  sale_commission_pct?: number | null
+  sqft?: number | null
+  lease_rate_psf?: number | null
+  lease_term_years?: number | null
+  lease_commission_pct?: number | null
+}
+
 interface Task {
   id: string
   title: string
@@ -304,6 +316,12 @@ const G = {
 function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onSelectTask?: (t: Task) => void }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  // E: scroll container ref for custom thumb + bottom fade
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [scrollState, setScrollState] = useState({ scrollTop: 0, clientHeight: 0, scrollHeight: 0 })
+  const thumbTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [thumbVisible, setThumbVisible] = useState(false)
+  const [fadeVisible, setFadeVisible] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -321,6 +339,33 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
     load()
   }, [refreshKey])
 
+  // E: scroll to top on mount only
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0
+  }, [])
+
+  // E: scroll listener for thumb + fade
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    function onScroll() {
+      if (!el) return
+      const st = el.scrollTop
+      const ch = el.clientHeight
+      const sh = el.scrollHeight
+      setScrollState({ scrollTop: st, clientHeight: ch, scrollHeight: sh })
+      setFadeVisible(st + ch < sh - 4)
+      setThumbVisible(true)
+      if (thumbTimeoutRef.current) clearTimeout(thumbTimeoutRef.current)
+      thumbTimeoutRef.current = setTimeout(() => setThumbVisible(false), 600)
+    }
+    // Init
+    setScrollState({ scrollTop: el.scrollTop, clientHeight: el.clientHeight, scrollHeight: el.scrollHeight })
+    setFadeVisible(el.scrollTop + el.clientHeight < el.scrollHeight - 4)
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [loading])
+
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 
   const groups = {
@@ -333,6 +378,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
   const lateCount = groups.overdue.length
   const totalCount = tasks.length
 
+  // H: row title truncation (parent has minWidth:0)
   function TaskRow({ t, overdue }: { t: Task; overdue?: boolean }) {
     const days = t.due_date ? Math.abs(daysBetween(t.due_date)) : null
     return (
@@ -349,8 +395,10 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
           alignItems: 'center',
           gap: 8,
           cursor: 'pointer',
+          minWidth: 0,
         }}
       >
+        {/* H: title truncation */}
         <span style={{ ...DS3, color: C.textHi, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {t.title}
         </span>
@@ -368,10 +416,22 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
     )
   }
 
+  // E: sticky group headers
   function Group({ label, items, overdue }: { label: string; items: Task[]; overdue?: boolean }) {
     return (
       <div style={{ marginBottom: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0 4px' }}>
+        {/* E: sticky header with hairline border */}
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          background: C.bgPanel,
+          zIndex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '6px 0 4px',
+          borderBottom: '1px solid rgba(255,255,255,0.10)',
+        }}>
           <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{label}</span>
           <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>·</span>
           <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{items.length}</span>
@@ -382,26 +442,94 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
     )
   }
 
+  // E: compute custom thumb geometry
+  const { scrollTop, clientHeight, scrollHeight } = scrollState
+  const thumbH = scrollHeight > 0 ? Math.max(24, (clientHeight / scrollHeight) * clientHeight) : 0
+  const thumbTop = scrollHeight > clientHeight ? (scrollTop / (scrollHeight - clientHeight)) * (clientHeight - thumbH) : 0
+
   return (
     <Panel style={{ flex: 1 }}>
-      <PanelHeader
-        glyph={G.battlePlan}
-        label="BATTLE PLAN"
-        statusCount={lateCount > 0 ? `${lateCount} LATE` : undefined}
-        statusColor={C.late}
-        totalCount={String(totalCount)}
-        actionLabel="+ ITEM"
-      />
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '8px 14px 14px' }}>
-        {loading ? (
-          <div style={{ ...DS6, color: C.textLow, padding: '20px 0', textAlign: 'center' }}>Loading…</div>
-        ) : (
-          <>
-            <Group label="OVERDUE" items={groups.overdue} overdue />
-            <Group label="TODAY" items={groups.today} />
-            <Group label="LATER" items={groups.later} />
-            <Group label="NO DUE DATE" items={groups.noDate} />
-          </>
+      {/* F: BattlePlanPanel header ~55px — taller to accommodate G create control */}
+      <div style={{
+        flexShrink: 0,
+        padding: '13px 18px 11px',
+        borderBottom: `1px solid ${C.borderPanel}`,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        minHeight: 55,
+      }}>
+        <span style={{ color: C.brandLift, flexShrink: 0 }}>{G.battlePlan}</span>
+        <span style={{ ...DT1, color: C.textMid }}>BATTLE PLAN</span>
+        {lateCount > 0 && <span style={{ ...DT5, color: C.late }}>{lateCount} LATE</span>}
+        <div style={{ flex: 1, height: 1, background: C.borderPanel }} />
+        <span style={{ ...DT5, color: C.textLow }}>{totalCount}</span>
+        {/* G: FAB-like create button — 31×31, borderRadius 10, no rim */}
+        <button
+          aria-label="Add task"
+          onClick={() => console.log('Add task — modal destination ships later')}
+          style={{
+            width: 31,
+            height: 31,
+            borderRadius: 10,
+            border: 'none',
+            background: 'radial-gradient(circle at 50% 30%, #B7A2FF 0%, #8B5CF6 45%, #6D28D9 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            flexShrink: 0,
+            color: '#fff',
+            fontSize: 14,
+            lineHeight: 1,
+          }}
+        >
+          +
+        </button>
+      </div>
+      {/* E: scroll container wrapper for fade overlay + custom thumb */}
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+        <div
+          ref={scrollRef}
+          style={{ height: '100%', overflowY: 'auto', padding: '8px 14px 14px' }}
+        >
+          {loading ? (
+            <div style={{ ...DS6, color: C.textLow, padding: '20px 0', textAlign: 'center' }}>Loading…</div>
+          ) : (
+            <>
+              <Group label="OVERDUE" items={groups.overdue} overdue />
+              <Group label="TODAY" items={groups.today} />
+              <Group label="LATER" items={groups.later} />
+              <Group label="NO DUE DATE" items={groups.noDate} />
+            </>
+          )}
+        </div>
+        {/* E: bottom fade — visible when more content below */}
+        {fadeVisible && (
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 40,
+            background: `linear-gradient(to bottom, transparent, ${C.bgPanel})`,
+            pointerEvents: 'none',
+          }} />
+        )}
+        {/* E: custom scroll thumb */}
+        {thumbH > 0 && scrollHeight > clientHeight && (
+          <div style={{
+            position: 'absolute',
+            right: 2,
+            top: thumbTop,
+            width: 6,
+            height: thumbH,
+            background: 'rgba(255,255,255,0.25)',
+            borderRadius: 3,
+            opacity: thumbVisible ? 1 : 0,
+            transition: 'opacity 0.3s',
+            pointerEvents: 'none',
+          }} />
         )}
       </div>
     </Panel>
@@ -409,75 +537,123 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
 }
 
 // ── MONEY MOVERS ──────────────────────────────────────────────────────────────
+// B3: Repointed from deals.value/commission_estimated to deal_economics via calcCommission()
+// A-C: Removed fixed height: 435, now flex: 1 (elastic)
+const MM_DISPLAY_LIMIT = 5
+
 function MoneyMoversPanel({ refreshKey }: { refreshKey: number }) {
   const [deals, setDeals] = useState<Deal[]>([])
+  const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
   const [loading, setLoading] = useState(true)
-  const [total, setTotal] = useState<number>(0)
+  const [totalFetched, setTotalFetched] = useState(0)
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
+      setLoading(true)
+      // Step 1: fetch money-mover deals (id, name, addr fields only — no commission_estimated, no value)
+      const { data: dealData } = await supabase
         .from('deals')
-        .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, commission_estimated, value, deal_contacts(contacts(name))')
+        .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, deal_contacts(contacts(name))')
         .eq('is_money_mover', true)
         .not('status', 'in', '("closed","expired","dormant","terminated")')
-        .limit(10)
-      const rows = (data ?? []) as unknown as Deal[]
+        .limit(20)
+      const rows = (dealData ?? []) as unknown as Deal[]
+      setTotalFetched(rows.length)
       setDeals(rows)
-      setTotal(rows.reduce((s, d) => s + (d.commission_estimated ?? 0), 0))
+
+      // Step 2: fetch deal_economics for those deal_ids
+      if (rows.length > 0) {
+        const ids = rows.map(d => d.id)
+        const { data: econData } = await supabase
+          .from('deal_economics')
+          .select('deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct')
+          .in('deal_id', ids)
+        const map: Record<string, DealEconomics> = {}
+        ;(econData ?? []).forEach((e: any) => { map[e.deal_id] = e as DealEconomics })
+        setEconMap(map)
+      }
       setLoading(false)
     }
     load()
   }, [refreshKey])
 
+  // Compute commissions and values via calcCommission()
+  const enriched = deals.map(d => {
+    const econ = econMap[d.id] ?? null
+    const commission = calcCommission(econ)
+    // Deal value: asking_price for sale, sqft×rate×term for lease
+    let dealValue: number | null = null
+    if (econ) {
+      if (econ.transaction_type === 'sale' && econ.asking_price) dealValue = econ.asking_price
+      else if ((econ.transaction_type === 'lease' || econ.transaction_type === 'both') && econ.sqft && econ.lease_rate_psf && econ.lease_term_years) {
+        dealValue = econ.sqft * econ.lease_rate_psf * econ.lease_term_years
+      }
+    }
+    return { ...d, _commission: commission, _dealValue: dealValue }
+  })
+
+  // Header total: sum only non-null commissions
+  const headerTotal = enriched.reduce((s, d) => s + (d._commission ?? 0), 0)
+  const displayDeals = enriched.slice(0, MM_DISPLAY_LIMIT)
+  const moreCount = enriched.length - displayDeals.length
+
   return (
-    <div style={{ flexShrink: 0, height: 435, display: 'flex', flexDirection: 'column' }}>
-      <Panel style={{ flex: 1 }}>
-        <PanelHeader glyph={G.moneyMovers} label="MONEY MOVERS" totalCount={fmt$(total)} />
-        {/* Column header */}
-        <div style={{
-          display: 'flex',
-          padding: '7px 14px',
-          borderBottom: `1px solid ${C.borderPanel}`,
-          flexShrink: 0,
-        }}>
-          <span style={{ ...DT8, color: C.textLow, flex: 1 }}>ADDRESS</span>
-          <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
-          <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
-        </div>
-        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-          {loading ? (
-            <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
-          ) : deals.length === 0 ? (
-            <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>No money movers.</div>
-          ) : deals.map((d, i) => (
-            <React.Fragment key={d.id}>
-              <div style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: 44 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {shortAddr(d)}
+    // A-C: flex: 1 instead of fixed height: 435
+    <Panel style={{ flex: 1 }}>
+      <PanelHeader glyph={G.moneyMovers} label="MONEY MOVERS" totalCount={headerTotal > 0 ? fmtMoney(headerTotal) : `${totalFetched}`} />
+      {/* Column header */}
+      <div style={{
+        display: 'flex',
+        padding: '7px 14px',
+        borderBottom: `1px solid ${C.borderPanel}`,
+        flexShrink: 0,
+      }}>
+        <span style={{ ...DT8, color: C.textLow, flex: 1 }}>ADDRESS</span>
+        <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
+        <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        {loading ? (
+          <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
+        ) : displayDeals.length === 0 ? (
+          <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>No money movers.</div>
+        ) : (
+          <>
+            {displayDeals.map((d, i) => (
+              <React.Fragment key={d.id}>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: 44 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {shortAddr(d)}
+                    </div>
+                    <div style={{ ...DS7, color: C.textLow }}>
+                      {clientName(d)} · {d.status.replace(/_/g,' ')}
+                    </div>
                   </div>
-                  <div style={{ ...DS7, color: C.textLow }}>
-                    {clientName(d)} · {d.status.replace(/_/g,' ')}
+                  <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>
+                    {fmtMoney(d._dealValue)}
+                  </div>
+                  <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>
+                    {fmtMoney(d._commission)}
                   </div>
                 </div>
-                <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>
-                  {d.value ? fmt$(d.value) : '—'}
-                </div>
-                <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>
-                  {fmt$(d.commission_estimated)}
-                </div>
-              </div>
-              {i < deals.length - 1 && <Hair />}
-            </React.Fragment>
-          ))}
-        </div>
-      </Panel>
-    </div>
+                {i < displayDeals.length - 1 && <Hair />}
+              </React.Fragment>
+            ))}
+            {/* I: Terminal row — not focusable, no arrow */}
+            {moreCount > 0 && (
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
+            )}
+          </>
+        )}
+      </div>
+    </Panel>
   )
 }
 
 // ── UNDER CONTRACT ────────────────────────────────────────────────────────────
+const UC_DISPLAY_LIMIT = 5
+
 function UnderContractPanel({ refreshKey }: { refreshKey: number }) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
@@ -496,6 +672,9 @@ function UnderContractPanel({ refreshKey }: { refreshKey: number }) {
     load()
   }, [refreshKey])
 
+  const displayDeals = deals.slice(0, UC_DISPLAY_LIMIT)
+  const moreCount = deals.length - displayDeals.length
+
   return (
     <Panel style={{ flex: 1 }}>
       <PanelHeader glyph={G.underContract} label="UNDER CONTRACT" totalCount={String(deals.length)} />
@@ -504,39 +683,47 @@ function UnderContractPanel({ refreshKey }: { refreshKey: number }) {
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
         ) : deals.length === 0 ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>No deals under contract.</div>
-        ) : deals.map((d, i) => (
-          <React.Fragment key={d.id}>
-            <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 8 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {shortAddr(d)}
+        ) : (
+          <>
+            {displayDeals.map((d, i) => (
+              <React.Fragment key={d.id}>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {shortAddr(d)}
+                    </div>
+                    <div style={{ ...DS7, color: C.textLow }}>
+                      {clientName(d)} · {d.status.replace(/_/g,' ')}
+                    </div>
+                  </div>
+                  <div style={{ ...DM1, color: C.moneyIn, flexShrink: 0 }}>
+                    {fmt$(d.commission_estimated)}
+                  </div>
+                  <button
+                    onClick={() => router.push(`/warroom/deal?id=${d.id}`)}
+                    style={{
+                      border: `1px solid ${C.moneyIn}`,
+                      borderRadius: 6,
+                      padding: '4px 9px',
+                      background: 'transparent',
+                      ...DT5,
+                      color: C.moneyIn,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                    }}
+                  >
+                    LANDED
+                  </button>
                 </div>
-                <div style={{ ...DS7, color: C.textLow }}>
-                  {clientName(d)} · {d.status.replace(/_/g,' ')}
-                </div>
-              </div>
-              <div style={{ ...DM1, color: C.moneyIn, flexShrink: 0 }}>
-                {fmt$(d.commission_estimated)}
-              </div>
-              <button
-                onClick={() => router.push(`/warroom/deal?id=${d.id}`)}
-                style={{
-                  border: `1px solid ${C.moneyIn}`,
-                  borderRadius: 6,
-                  padding: '4px 9px',
-                  background: 'transparent',
-                  ...DT5,
-                  color: C.moneyIn,
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-              >
-                LANDED
-              </button>
-            </div>
-            {i < deals.length - 1 && <Hair />}
-          </React.Fragment>
-        ))}
+                {i < displayDeals.length - 1 && <Hair />}
+              </React.Fragment>
+            ))}
+            {/* I: Terminal row — not focusable, no arrow */}
+            {moreCount > 0 && (
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
+            )}
+          </>
+        )}
       </div>
     </Panel>
   )
@@ -611,10 +798,18 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
     { label: 'JUST BEYOND', date: getColDate(3), dim: true },
   ]
 
+  // D: Count items in TODAY + TOMORROW + DAY3 (NOT JUST BEYOND) for header
+  const windowItemCount = COLS.filter(col => col.label !== 'JUST BEYOND').reduce((sum, col) => {
+    const colItems = items.filter(i => i.date === col.date)
+    const overdue = items.filter(i => i.date < todayStr)
+    const displayItems = col.date === todayStr ? [...overdue, ...colItems.filter(i => i.date === todayStr)] : colItems
+    return sum + displayItems.length
+  }, 0)
+
   return (
     <div style={{ flexShrink: 0, height: 236 }}>
       <Panel style={{ height: '100%' }}>
-        <PanelHeader glyph={G.next48} label="NEXT 48" />
+        <PanelHeader glyph={G.next48} label={`${windowItemCount} ITEMS · WINDOW 48H`} />
         <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, padding: '0 14px 14px', overflow: 'hidden' }}>
           {COLS.map(col => {
             const colItems = items.filter(i => i.date === col.date)
@@ -631,11 +826,8 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
                 {/* Items */}
                 <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {loading ? null : displayItems.length === 0 ? (
-                    col.date === todayStr ? (
-                      <div style={{ ...DT4, color: C.textLow, padding: '8px 0', textAlign: 'center' }}>
-                        {`CLEAR THROUGH ${(([y,m,d]) => new Date(y,m-1,d).toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase())(getColDate(2).split('-').map(Number))}`}
-                      </div>
-                    ) : null
+                    // D: Show "CLEAR" for empty day columns
+                    <div style={{ ...DT4, color: C.textLow, padding: '8px 0', textAlign: 'center' }}>CLEAR</div>
                   ) : (() => {
                     // JUST BEYOND: sort by bp_priority DESC NULLS LAST, then due_date; show one + N more.
                     const isJustBeyond = col.label === 'JUST BEYOND'
@@ -925,30 +1117,7 @@ function ReceivablesCard({ refreshKey }: { refreshKey: number }) {
   )
 }
 
-// ── AGENT CARD ────────────────────────────────────────────────────────────────
-function AgentCard() {
-  return (
-    <div style={{
-      flexShrink: 0,
-      borderRadius: 14,
-      border: `1px solid ${C.border}`,
-      background: C.bgPanel,
-      padding: '10px 14px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-    }}>
-      <div style={{ width: 30, height: 30, borderRadius: 8, background: `rgba(139,92,246,0.13)`, border: `1px solid rgba(139,92,246,0.28)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.brandLift, flexShrink: 0 }}>
-        {G.agent}
-      </div>
-      <div>
-        <div style={{ ...DT5, color: C.brandLift }}>SHIRLEYCRE AGENT</div>
-        <div style={{ ...DS7, color: C.textLow }}>Phase 3 · standing by</div>
-      </div>
-      <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: C.moneyIn }} />
-    </div>
-  )
-}
+// AgentCard removed in build(48) — Column C: SchedulePanel, DeadlinesPanel, ReceivablesCard only
 
 // ── IDENTITY BAND ─────────────────────────────────────────────────────────────
 function IdentityBand({ onSearch }: { onSearch?: () => void }) {
@@ -1165,7 +1334,7 @@ export default function WarRoomPage() {
           {/* ── NEXT 48 — 236px fixed ── */}
           <Next48Panel refreshKey={refreshKey} />
 
-          {/* ── Three-column row ── */}
+          {/* ── Three-column row — A: fixed pixel widths 522/678/539 ── */}
           <div style={{
             flex: 1,
             display: 'flex',
@@ -1173,23 +1342,22 @@ export default function WarRoomPage() {
             minHeight: 0,
           }}>
 
-            {/* Column A — 0.41 of content box net of gaps */}
-            <div style={{ flex: '0 0 41%', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            {/* Column A — 522px fixed */}
+            <div style={{ width: 522, flexShrink: 0, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <BattlePlanPanel refreshKey={refreshKey} onSelectTask={setDrawerTask} />
             </div>
 
-            {/* Column B — 0.31 */}
-            <div style={{ flex: '0 0 31%', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {/* Column B — 678px fixed */}
+            <div style={{ width: 678, flexShrink: 0, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <MoneyMoversPanel refreshKey={refreshKey} />
               <UnderContractPanel refreshKey={refreshKey} />
             </div>
 
-            {/* Column C — 0.28, flex remainder */}
-            <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {/* Column C — 539px fixed; B: AgentCard removed */}
+            <div style={{ width: 539, flexShrink: 0, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <SchedulePanel refreshKey={refreshKey} />
               <DeadlinesPanel refreshKey={refreshKey} />
               <ReceivablesCard refreshKey={refreshKey} />
-              <AgentCard />
             </div>
 
           </div>
