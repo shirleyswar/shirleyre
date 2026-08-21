@@ -139,9 +139,9 @@ function dealSubline(deal: Deal): string {
   return ''
 }
 
-// Keep dealAddress for band rows and grouping (uses raw address for alpha sort key)
+// dealAddress for band rows and grouping — use addr_display for correct sort and bucketing
 function dealAddress(deal: Deal): string {
-  return deal.address || deal.name || '—'
+  return deal.addr_display || deal.addr_street_name || deal.name || '—'
 }
 
 // ── Deals Sheet §6.1 ─────────────────────────────────────────────────────────
@@ -223,7 +223,6 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
           supabase
             .from('deals')
             .select('id, status, name, address, addr_display, addr_street_name, addr_number, addr_city, updated_at, property_type, portfolio_id')
-            .order('address', { ascending: true })
             .limit(200),
           supabase
             .from('portfolio')
@@ -231,7 +230,17 @@ export function DealsSheet({ open, onClose, initialSearch = '' }: DealsSheetProp
             .limit(50),
         ])
         if (dealsRes.error) { setLoadError(true); setLoading(false); return }
-        setDeals((dealsRes.data ?? []) as DealFull[])
+        // Sort client-side by addr_display (or addr_street_name), then addr_number numerically
+        const sorted = ((dealsRes.data ?? []) as DealFull[]).sort((a, b) => {
+          const aKey = (a.addr_display || a.addr_street_name || a.name || '').toLowerCase()
+          const bKey = (b.addr_display || b.addr_street_name || b.name || '').toLowerCase()
+          if (aKey !== bKey) return aKey.localeCompare(bKey)
+          // Within same street: sort by addr_number numerically
+          const aNum = parseInt(a.addr_number || '0', 10)
+          const bNum = parseInt(b.addr_number || '0', 10)
+          return aNum - bNum
+        })
+        setDeals(sorted)
         setPortfolios((portfoliosRes.data ?? []) as {id: string, name: string}[])
         setLoading(false)
       } catch { setLoadError(true); setLoading(false) }

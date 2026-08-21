@@ -1,5 +1,5 @@
 'use client'
-import { HOUSE_SPLIT } from '@/lib/dealMath'
+import { calcCommission, HOUSE_SPLIT } from '@/lib/dealMath'
 
 // Money Movers bottom sheet — §5.11 + §12 step 7
 // §5.11.1: Rows hairline-separated. NO border, NO radius, NO background fill.
@@ -74,17 +74,15 @@ export default function MoneyMoversSheet({ open, onClose }: { open: boolean; onC
         let computedValue: number | null = null
         let computedCommission: number | null = null
         if (e) {
+          // Use calcCommission from dealMath — single source of truth
+          computedCommission = calcCommission(e)
           const isLease = e.transaction_type === 'lease'
           if (isLease) {
             const gross = e.sqft && e.lease_rate_psf && e.lease_term_years
               ? Math.round(e.sqft * e.lease_rate_psf * e.lease_term_years) : null
             computedValue = gross
-            computedCommission = gross && e.lease_commission_pct
-              ? Math.round(gross * (e.lease_commission_pct / 100) * HOUSE_SPLIT) : null
           } else {
             computedValue = e.asking_price ?? null
-            computedCommission = e.asking_price && e.sale_commission_pct
-              ? Math.round(e.asking_price * (e.sale_commission_pct / 100) * HOUSE_SPLIT) : null
           }
         } else if (u) {
           computedValue = u.contract_price ?? null

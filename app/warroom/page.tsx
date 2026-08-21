@@ -2,8 +2,8 @@
 
 /**
  * /warroom — ShirleyCRE Desktop Control Station
- * D9 items 1–6 · 8.15.26 1101
- * Builds against SHIRLEYCRE_DESKTOP_SPEC 8.15.26 1101.md
+ * D9 items 1–6 · 8.20.26 2145
+ * Builds against SHIRLEYCRE_DESKTOP_SPEC 8.20.26 2145.md
  *
  * Layout: 100vh, no scroll, rail + identity band + NEXT48 + 3 columns.
  * Type: DS1–DS8 (Space Grotesk), DT1–DT8 (Mono labels), DM0–DM2 (Mono figures).
@@ -151,6 +151,52 @@ function cstNow(): Date {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
 }
 
+// ── D4.4 Elastic allocation ───────────────────────────────────────────────────
+interface PanelSpec {
+  header: number
+  rowHeight: number
+  rowCount: number
+}
+
+interface PanelAlloc {
+  height: number
+  visibleRows: number
+}
+
+function computeAlloc(budget: number, panels: PanelSpec[]): PanelAlloc[] {
+  const GAP = 18
+  const totalBudget = budget - (panels.length - 1) * GAP
+  const demands = panels.map(p => p.header + p.rowCount * p.rowHeight)
+  const floors = panels.map(p => p.header + 2 * p.rowHeight)
+  const totalDemand = demands.reduce((a, b) => a + b, 0)
+
+  let allocs: number[]
+  if (totalDemand <= totalBudget) {
+    allocs = [...demands]
+    allocs[allocs.length - 1] += totalBudget - totalDemand
+  } else {
+    allocs = demands.map(d => Math.round((d / totalDemand) * totalBudget))
+    // Raise any below floor, take from largest
+    for (let i = 0; i < panels.length; i++) {
+      if (allocs[i] < floors[i]) {
+        const diff = floors[i] - allocs[i]
+        allocs[i] = floors[i]
+        // find largest alloc that isn't i
+        let maxIdx = -1
+        for (let j = 0; j < allocs.length; j++) {
+          if (j !== i && (maxIdx === -1 || allocs[j] > allocs[maxIdx])) maxIdx = j
+        }
+        if (maxIdx >= 0) allocs[maxIdx] = Math.max(floors[maxIdx], allocs[maxIdx] - diff)
+      }
+    }
+  }
+
+  return panels.map((p, i) => ({
+    height: allocs[i],
+    visibleRows: Math.max(0, Math.floor((allocs[i] - p.header) / p.rowHeight)),
+  }))
+}
+
 // ── Live clock ────────────────────────────────────────────────────────────────
 function useClock() {
   const [t, setT] = useState(cstNow())
@@ -180,6 +226,7 @@ function Panel({ children, style }: { children: React.ReactNode; style?: React.C
       display: 'flex',
       flexDirection: 'column',
       minHeight: 0,
+      boxSizing: 'border-box',
       ...style,
     }}>
       {children}
@@ -313,7 +360,7 @@ const G = {
 }
 
 // ── BATTLE PLAN ───────────────────────────────────────────────────────────────
-function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onSelectTask?: (t: Task) => void }) {
+function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKey: number; onSelectTask?: (t: Task) => void; onCreateTask?: () => void }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   // E: scroll container ref for custom thumb + bottom fade
@@ -329,7 +376,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
       const { data } = await supabase
         .from('tasks')
         .select('id, title, status, due_date, completed_at, deal_id, deals(name, address)')
-        .eq('status', 'open')  // tasks table holds 'open' and 'complete' only — NOT IN (done,cancelled) excluded nothing
+        .eq('status', 'open')
         .is('deleted_at', null)
         .order('due_date', { ascending: true, nullsFirst: false })
         .limit(60)
@@ -339,12 +386,10 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
     load()
   }, [refreshKey])
 
-  // E: scroll to top on mount only
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0
   }, [])
 
-  // E: scroll listener for thumb + fade
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -359,7 +404,6 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
       if (thumbTimeoutRef.current) clearTimeout(thumbTimeoutRef.current)
       thumbTimeoutRef.current = setTimeout(() => setThumbVisible(false), 600)
     }
-    // Init
     setScrollState({ scrollTop: el.scrollTop, clientHeight: el.clientHeight, scrollHeight: el.scrollHeight })
     setFadeVisible(el.scrollTop + el.clientHeight < el.scrollHeight - 4)
     el.addEventListener('scroll', onScroll, { passive: true })
@@ -378,27 +422,25 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
   const lateCount = groups.overdue.length
   const totalCount = tasks.length
 
-  // H: row title truncation (parent has minWidth:0)
+  // D4.1: hairline rows, not cards. 20px reserved spine gutter.
   function TaskRow({ t, overdue }: { t: Task; overdue?: boolean }) {
     const days = t.due_date ? Math.abs(daysBetween(t.due_date)) : null
+    const isOverdue = overdue && t.due_date && t.due_date < todayStr
+
     return (
       <div
         onClick={() => onSelectTask?.(t)}
         style={{
-          padding: '12px 14px 12px 13px',
-          borderRadius: 10,
-          marginBottom: 6,
-          background: 'rgba(255,255,255,0.025)',
-          border: `1px solid ${C.border}`,
-          borderLeft: overdue ? `3px solid ${C.late}` : `1px solid ${C.border}`,
+          padding: isOverdue ? '12px 14px 12px 17px' : '12px 14px 12px 20px',
           display: 'flex',
           alignItems: 'center',
           gap: 8,
           cursor: 'pointer',
           minWidth: 0,
+          borderLeft: isOverdue ? `3px solid ${C.late}` : '3px solid transparent',
+          marginLeft: isOverdue ? -3 : 0,
         }}
       >
-        {/* H: title truncation */}
         <span style={{ ...DS3, color: C.textHi, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {t.title}
         </span>
@@ -407,7 +449,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
             {t.deals.name}
           </span>
         )}
-        {overdue && days != null && (
+        {isOverdue && days != null && (
           <span style={{ ...DT5, color: C.late, flexShrink: 0, width: 44, textAlign: 'right' }}>
             {days}d
           </span>
@@ -416,11 +458,16 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
     )
   }
 
-  // E: sticky group headers
   function Group({ label, items, overdue }: { label: string; items: Task[]; overdue?: boolean }) {
+    if (items.length === 0) return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 14px 4px 20px', minHeight: 24 }}>
+        <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{label}</span>
+        <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>· 0</span>
+        <div style={{ flex: 1, height: 1, background: C.borderHair }} />
+      </div>
+    )
     return (
-      <div style={{ marginBottom: 4 }}>
-        {/* E: sticky header with hairline border */}
+      <div>
         <div style={{
           position: 'sticky',
           top: 0,
@@ -429,27 +476,31 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          padding: '6px 0 4px',
-          borderBottom: '1px solid rgba(255,255,255,0.10)',
+          padding: '6px 14px 4px 20px',
+          borderBottom: `1px solid ${C.borderHair}`,
         }}>
           <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{label}</span>
           <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>·</span>
           <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{items.length}</span>
           <div style={{ flex: 1, height: 1, background: C.borderHair }} />
         </div>
-        {items.map(t => <TaskRow key={t.id} t={t} overdue={overdue} />)}
+        {items.map((t, i) => (
+          <React.Fragment key={t.id}>
+            <TaskRow t={t} overdue={overdue} />
+            {i < items.length - 1 && <Hair />}
+          </React.Fragment>
+        ))}
       </div>
     )
   }
 
-  // E: compute custom thumb geometry
   const { scrollTop, clientHeight, scrollHeight } = scrollState
   const thumbH = scrollHeight > 0 ? Math.max(24, (clientHeight / scrollHeight) * clientHeight) : 0
   const thumbTop = scrollHeight > clientHeight ? (scrollTop / (scrollHeight - clientHeight)) * (clientHeight - thumbH) : 0
 
   return (
     <Panel style={{ flex: 1 }}>
-      {/* F: BattlePlanPanel header ~55px — taller to accommodate G create control */}
+      {/* BattlePlanPanel header 55px — has create control */}
       <div style={{
         flexShrink: 0,
         padding: '13px 18px 11px',
@@ -458,16 +509,17 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
         alignItems: 'center',
         gap: 8,
         minHeight: 55,
+        boxSizing: 'border-box',
       }}>
         <span style={{ color: C.brandLift, flexShrink: 0 }}>{G.battlePlan}</span>
         <span style={{ ...DT1, color: C.textMid }}>BATTLE PLAN</span>
         {lateCount > 0 && <span style={{ ...DT5, color: C.late }}>{lateCount} LATE</span>}
         <div style={{ flex: 1, height: 1, background: C.borderPanel }} />
         <span style={{ ...DT5, color: C.textLow }}>{totalCount}</span>
-        {/* G: FAB-like create button — 31×31, borderRadius 10, no rim */}
+        {/* D2.4a FAB create control — 31×31 */}
         <button
           aria-label="Add task"
-          onClick={() => console.log('Add task — modal destination ships later')}
+          onClick={() => onCreateTask?.()}
           style={{
             width: 31,
             height: 31,
@@ -487,11 +539,11 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
           +
         </button>
       </div>
-      {/* E: scroll container wrapper for fade overlay + custom thumb */}
+      {/* Scroll container with custom thumb + bottom fade */}
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <div
           ref={scrollRef}
-          style={{ height: '100%', overflowY: 'auto', padding: '8px 14px 14px' }}
+          style={{ height: '100%', overflowY: 'auto', padding: '4px 0 14px' }}
         >
           {loading ? (
             <div style={{ ...DS6, color: C.textLow, padding: '20px 0', textAlign: 'center' }}>Loading…</div>
@@ -504,19 +556,19 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
             </>
           )}
         </div>
-        {/* E: bottom fade — visible when more content below */}
+        {/* Bottom fade — visible when more content below */}
         {fadeVisible && (
           <div style={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,
-            height: 40,
+            height: 28,
             background: `linear-gradient(to bottom, transparent, ${C.bgPanel})`,
             pointerEvents: 'none',
           }} />
         )}
-        {/* E: custom scroll thumb */}
+        {/* Custom scroll thumb */}
         {thumbH > 0 && scrollHeight > clientHeight && (
           <div style={{
             position: 'absolute',
@@ -537,31 +589,29 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
 }
 
 // ── MONEY MOVERS ──────────────────────────────────────────────────────────────
-// B3: Repointed from deals.value/commission_estimated to deal_economics via calcCommission()
-// A-C: Removed fixed height: 435, now flex: 1 (elastic)
-const MM_DISPLAY_LIMIT = 5
+// D4.4: No MM_DISPLAY_LIMIT — allocation drives visible rows.
+// Header = 41px (no create control per D2.4a rule)
+// rowHeight = 44px
+const MM_HEADER = 41
+const MM_ROW_H  = 44
 
-function MoneyMoversPanel({ refreshKey }: { refreshKey: number }) {
+function MoneyMoversPanel({ refreshKey, visibleRows }: { refreshKey: number; visibleRows: number }) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
   const [loading, setLoading] = useState(true)
-  const [totalFetched, setTotalFetched] = useState(0)
 
   useEffect(() => {
     async function load() {
       setLoading(true)
-      // Step 1: fetch money-mover deals (id, name, addr fields only — no commission_estimated, no value)
       const { data: dealData } = await supabase
         .from('deals')
         .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, deal_contacts(contacts(name))')
         .eq('is_money_mover', true)
         .not('status', 'in', '("closed","expired","dormant","terminated")')
-        .limit(20)
+        .limit(30)
       const rows = (dealData ?? []) as unknown as Deal[]
-      setTotalFetched(rows.length)
       setDeals(rows)
 
-      // Step 2: fetch deal_economics for those deal_ids
       if (rows.length > 0) {
         const ids = rows.map(d => d.id)
         const { data: econData } = await supabase
@@ -577,11 +627,9 @@ function MoneyMoversPanel({ refreshKey }: { refreshKey: number }) {
     load()
   }, [refreshKey])
 
-  // Compute commissions and values via calcCommission()
   const enriched = deals.map(d => {
     const econ = econMap[d.id] ?? null
     const commission = calcCommission(econ)
-    // Deal value: asking_price for sale, sqft×rate×term for lease
     let dealValue: number | null = null
     if (econ) {
       if (econ.transaction_type === 'sale' && econ.asking_price) dealValue = econ.asking_price
@@ -592,15 +640,18 @@ function MoneyMoversPanel({ refreshKey }: { refreshKey: number }) {
     return { ...d, _commission: commission, _dealValue: dealValue }
   })
 
-  // Header total: sum only non-null commissions
   const headerTotal = enriched.reduce((s, d) => s + (d._commission ?? 0), 0)
-  const displayDeals = enriched.slice(0, MM_DISPLAY_LIMIT)
+
+  // D4.4 item 7: terminal row replaces last visible row
+  const effectiveVisible = visibleRows > 0 ? visibleRows : enriched.length
+  const displayDeals = enriched.length > effectiveVisible
+    ? enriched.slice(0, Math.max(0, effectiveVisible - 1))
+    : enriched
   const moreCount = enriched.length - displayDeals.length
 
   return (
-    // A-C: flex: 1 instead of fixed height: 435
-    <Panel style={{ flex: 1 }}>
-      <PanelHeader glyph={G.moneyMovers} label="MONEY MOVERS" totalCount={headerTotal > 0 ? fmtMoney(headerTotal) : `${totalFetched}`} />
+    <Panel style={{ flexShrink: 0 }}>
+      <PanelHeader glyph={G.moneyMovers} label="MONEY MOVERS" totalCount={headerTotal > 0 ? fmtMoney(headerTotal) : `${enriched.length}`} />
       {/* Column header */}
       <div style={{
         display: 'flex',
@@ -612,16 +663,16 @@ function MoneyMoversPanel({ refreshKey }: { refreshKey: number }) {
         <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
         <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+      <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
-        ) : displayDeals.length === 0 ? (
+        ) : displayDeals.length === 0 && moreCount === 0 ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>No money movers.</div>
         ) : (
           <>
             {displayDeals.map((d, i) => (
               <React.Fragment key={d.id}>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: 44 }}>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {shortAddr(d)}
@@ -640,9 +691,9 @@ function MoneyMoversPanel({ refreshKey }: { refreshKey: number }) {
                 {i < displayDeals.length - 1 && <Hair />}
               </React.Fragment>
             ))}
-            {/* I: Terminal row — not focusable, no arrow */}
+            {/* D4.4 item 7: terminal row replaces last visible row */}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE → DEALS</div>
             )}
           </>
         )}
@@ -652,9 +703,13 @@ function MoneyMoversPanel({ refreshKey }: { refreshKey: number }) {
 }
 
 // ── UNDER CONTRACT ────────────────────────────────────────────────────────────
-const UC_DISPLAY_LIMIT = 5
+// D4.4: No UC_DISPLAY_LIMIT — allocation drives visible rows.
+// Header = 41px (no create control)
+// rowHeight = 52px
+const UC_HEADER = 41
+const UC_ROW_H  = 52
 
-function UnderContractPanel({ refreshKey }: { refreshKey: number }) {
+function UnderContractPanel({ refreshKey, visibleRows }: { refreshKey: number; visibleRows: number }) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -666,28 +721,33 @@ function UnderContractPanel({ refreshKey }: { refreshKey: number }) {
         .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, commission_estimated, deal_contacts(contacts(name))')
         .eq('status', 'under_contract')
         .order('created_at', { ascending: true })
+        .limit(30)
       setDeals((data ?? []) as unknown as Deal[])
       setLoading(false)
     }
     load()
   }, [refreshKey])
 
-  const displayDeals = deals.slice(0, UC_DISPLAY_LIMIT)
+  // D4.4 item 7: terminal row replaces last visible row
+  const effectiveVisible = visibleRows > 0 ? visibleRows : deals.length
+  const displayDeals = deals.length > effectiveVisible
+    ? deals.slice(0, Math.max(0, effectiveVisible - 1))
+    : deals
   const moreCount = deals.length - displayDeals.length
 
   return (
-    <Panel style={{ flex: 1 }}>
+    <Panel style={{ flexShrink: 0 }}>
       <PanelHeader glyph={G.underContract} label="UNDER CONTRACT" totalCount={String(deals.length)} />
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+      <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
-        ) : deals.length === 0 ? (
+        ) : displayDeals.length === 0 && moreCount === 0 ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>No deals under contract.</div>
         ) : (
           <>
             {displayDeals.map((d, i) => (
               <React.Fragment key={d.id}>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 8, minHeight: UC_ROW_H, boxSizing: 'border-box' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {shortAddr(d)}
@@ -718,9 +778,9 @@ function UnderContractPanel({ refreshKey }: { refreshKey: number }) {
                 {i < displayDeals.length - 1 && <Hair />}
               </React.Fragment>
             ))}
-            {/* I: Terminal row — not focusable, no arrow */}
+            {/* D4.4 item 7: terminal row replaces last visible row */}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE → DEALS</div>
             )}
           </>
         )}
@@ -739,12 +799,23 @@ type N48Item = {
   title: string
   context: string
   spineColor: string
-  bp_priority: number | null  // tasks only; null for events
+  bp_priority: number | null
 }
 
 function Next48Panel({ refreshKey }: { refreshKey: number }) {
   const [items, setItems] = useState<N48Item[]>([])
   const [loading, setLoading] = useState(true)
+  const bandRef = useRef<HTMLDivElement>(null)
+  const [bandInnerWidth, setBandInnerWidth] = useState(0)
+
+  useEffect(() => {
+    if (!bandRef.current) return
+    const ro = new ResizeObserver(([entry]) => {
+      setBandInnerWidth(entry.contentRect.width)
+    })
+    ro.observe(bandRef.current)
+    return () => ro.disconnect()
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -755,12 +826,10 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
       const d3 = new Date(new Date(todayStr).getTime() + 86400000 * 3).toISOString().slice(0, 10)
 
       const [{ data: events }, { data: deadlines }] = await Promise.all([
-                // 'events' table does not exist — real table is schedule_events (cols: date, time, title, location, deal_id)
         supabase.from('schedule_events').select('id, title, date, time, location, deal_id').gte('date', todayStr).lte('date', d3).order('date').order('time'),
         supabase.from('tasks').select('id, title, due_date, deal_id, bp_priority, deals(name)').eq('status', 'open').is('deleted_at', null).gte('due_date', todayStr).lte('due_date', d3).order('due_date'),
       ])
 
-      // Merge, dedupe: if same deal+date exists as both event and deadline, keep event
       const seen = new Set<string>()
       const merged: N48Item[] = []
 
@@ -798,49 +867,77 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
     { label: 'JUST BEYOND', date: getColDate(3), dim: true },
   ]
 
-  // D: Count items in TODAY + TOMORROW + DAY3 (NOT JUST BEYOND) for header
-  const windowItemCount = COLS.filter(col => col.label !== 'JUST BEYOND').reduce((sum, col) => {
+  // D3.3a: weighted column allocation
+  const FLOOR_RATIO = 0.16
+  const colFloor = bandInnerWidth > 0 ? Math.max(120, Math.round(bandInnerWidth * FLOOR_RATIO)) : 180
+
+  // Count rows for real day columns (excluding JUST BEYOND)
+  const overdue = items.filter(i => i.date < todayStr)
+  const colRowCounts = COLS.map((col, idx) => {
+    if (col.label === 'JUST BEYOND') return 2 // floor-only
     const colItems = items.filter(i => i.date === col.date)
-    const overdue = items.filter(i => i.date < todayStr)
     const displayItems = col.date === todayStr ? [...overdue, ...colItems.filter(i => i.date === todayStr)] : colItems
-    return sum + displayItems.length
+    return displayItems.length
+  })
+
+  // Allocate widths: JUST BEYOND gets floor, real days share proportionally
+  let colWidths: number[] = []
+  if (bandInnerWidth > 0) {
+    const justBeyondW = colFloor
+    const remainingW = bandInnerWidth - justBeyondW - 3 * 16 // 3 gaps between 4 columns
+    const realRowCounts = colRowCounts.slice(0, 3)
+    const totalRealRows = realRowCounts.reduce((a, b) => a + b, 0)
+    if (totalRealRows === 0) {
+      colWidths = [remainingW / 3, remainingW / 3, remainingW / 3, justBeyondW]
+    } else {
+      colWidths = realRowCounts.map(c => {
+        const prop = (c / totalRealRows) * remainingW
+        return Math.max(colFloor, Math.round(prop))
+      })
+      colWidths.push(justBeyondW)
+    }
+  } else {
+    colWidths = [200, 200, 200, 120]
+  }
+
+  const windowItemCount = COLS.filter(col => col.label !== 'JUST BEYOND').reduce((sum, col, idx) => {
+    return sum + colRowCounts[idx]
   }, 0)
 
   return (
-    <div style={{ flexShrink: 0, height: 236 }}>
+    <div style={{ flexShrink: 0, height: 236, overflow: 'hidden' }}>
       <Panel style={{ height: '100%' }}>
         <PanelHeader glyph={G.next48} label={`${windowItemCount} ITEMS · WINDOW 48H`} />
-        <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, padding: '0 14px 14px', overflow: 'hidden' }}>
-          {COLS.map(col => {
+        <div
+          ref={bandRef}
+          style={{ flex: 1, minHeight: 0, display: 'flex', gap: 16, padding: '0 14px 14px', overflow: 'hidden' }}
+        >
+          {COLS.map((col, colIdx) => {
             const colItems = items.filter(i => i.date === col.date)
-            const overdue = items.filter(i => i.date < todayStr)
             const displayItems = col.date === todayStr ? [...overdue, ...colItems.filter(i => i.date === todayStr)] : colItems
+            const colW = colWidths[colIdx] || 180
+
             return (
-              <div key={col.label} style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: 170 }}>
+              <div key={col.label} style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: colW, flexShrink: 0 }}>
                 {/* Column header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 0 4px', flexShrink: 0 }}>
                   <span style={{ ...DT7 as React.CSSProperties, color: col.dim ? C.textLow : C.textHi }}>{col.label}</span>
                   <div style={{ flex: 1, height: 1, background: C.borderHair }} />
                   <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{displayItems.length}</span>
                 </div>
-                {/* Items */}
-                <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {/* Items — D3.3: hairline rows, no cards */}
+                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                   {loading ? null : displayItems.length === 0 ? (
-                    // D: Show "CLEAR" for empty day columns
                     <div style={{ ...DT4, color: C.textLow, padding: '8px 0', textAlign: 'center' }}>CLEAR</div>
                   ) : (() => {
-                    // JUST BEYOND: sort by bp_priority DESC NULLS LAST, then due_date; show one + N more.
                     const isJustBeyond = col.label === 'JUST BEYOND'
                     const sortedItems = isJustBeyond
                       ? [...displayItems].sort((a, b) => {
-                          // Two-class: events before tasks
                           const aIsEvent = a.kind === 'event'
                           const bIsEvent = b.kind === 'event'
                           if (aIsEvent && !bIsEvent) return -1
                           if (!aIsEvent && bIsEvent) return 1
-                          // Within events: date ASC
                           if (aIsEvent && bIsEvent) return a.date.localeCompare(b.date)
-                          // Within tasks: bp_priority DESC NULLS LAST, then due_date ASC
                           if (a.bp_priority === null && b.bp_priority === null) return a.date.localeCompare(b.date)
                           if (a.bp_priority === null) return 1
                           if (b.bp_priority === null) return -1
@@ -848,36 +945,38 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
                           return a.date.localeCompare(b.date)
                         })
                       : displayItems
-                    const visibleItems = isJustBeyond ? sortedItems.slice(0, 1) : sortedItems
+                    // D3.3a item 8: terminal row replaces last visible row
+                    const maxVisible = isJustBeyond ? 1 : sortedItems.length
+                    const visibleItems = sortedItems.slice(0, maxVisible)
                     const moreCount = isJustBeyond ? sortedItems.length - 1 : 0
                     return (
                       <>
-                        {visibleItems.map(item => (
-                          <div
-                            key={item.id}
-                            style={{
-                              padding: '9px 10px 9px 9px',
-                              borderRadius: 8,
-                              background: 'rgba(255,255,255,0.025)',
-                              border: `1px solid ${C.border}`,
-                              borderLeft: `3px solid ${item.spineColor}`,
-                              display: 'flex',
-                              gap: 6,
-                              minWidth: 0,
-                            }}
-                          >
-                            <div style={{ flexShrink: 0, width: 34, ...DT8, color: item.time ? C.textHi : C.textLow, textAlign: 'right' }}>
-                              {item.time ? item.time.slice(0, 5) : 'DUE'}
+                        {visibleItems.map((item, ii) => (
+                          <React.Fragment key={item.id}>
+                            <div
+                              style={{
+                                padding: '9px 0 9px 13px',
+                                borderLeft: `3px solid ${item.spineColor}`,
+                                display: 'flex',
+                                gap: 6,
+                                minWidth: 0,
+                              }}
+                            >
+                              {/* D3.3: 40px fixed time gutter */}
+                              <div style={{ flexShrink: 0, width: 40, ...DT8, color: item.time ? C.textHi : C.textLow }}>
+                                {item.time ? item.time.slice(0, 5) : '—'}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ ...DS5, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                                {item.context && <div style={{ ...DS8, color: C.textLow }}>{item.context}</div>}
+                              </div>
                             </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ ...DS5, color: C.textHi, wordBreak: 'break-word' }}>{item.title}</div>
-                              {item.context && <div style={{ ...DS8, color: C.textLow }}>{item.context}</div>}
-                            </div>
-                          </div>
+                            {ii < visibleItems.length - 1 && <Hair />}
+                          </React.Fragment>
                         ))}
                         {moreCount > 0 && (
-                          <div style={{ ...DT8, color: C.brandLift, padding: '6px 2px' }}>
-                            + {moreCount} more
+                          <div style={{ ...DT8, color: C.textLow, padding: '8px 0' }}>
+                            + {moreCount} MORE TONIGHT
                           </div>
                         )}
                       </>
@@ -894,7 +993,12 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
 }
 
 // ── SCHEDULE ──────────────────────────────────────────────────────────────────
-function SchedulePanel({ refreshKey }: { refreshKey: number }) {
+// D4.4: Header = 41px (no create control yet per D4.3 note)
+// rowHeight = 36px (time gutter row)
+const SCHED_HEADER = 41
+const SCHED_ROW_H  = 36
+
+function SchedulePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: number; panelHeight?: number; visibleRows: number }) {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -903,12 +1007,12 @@ function SchedulePanel({ refreshKey }: { refreshKey: number }) {
       const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const d1 = new Date(new Date(todayStr).getTime() + 86400000).toISOString().slice(0, 10)
       const { data } = await supabase
-        .from('schedule_events')  // 'events' table does not exist; schedule_events uses date/time columns
+        .from('schedule_events')
         .select('id, title, date, time, location')
         .gte('date', todayStr)
         .lte('date', d1)
         .order('date').order('time')
-        .limit(20)
+        .limit(30)
       setEvents((data ?? []) as ScheduleEvent[])
       setLoading(false)
     }
@@ -920,6 +1024,14 @@ function SchedulePanel({ refreshKey }: { refreshKey: number }) {
 
   const todays = events.filter(e => (e.date ?? e.event_date) === todayStr)
   const tomorrows = events.filter(e => (e.date ?? e.event_date) === d1)
+  const allEvents = [...todays, ...tomorrows]
+
+  // D4.4 item 7: terminal row replaces last visible row
+  const effectiveVisible = visibleRows > 0 ? visibleRows : allEvents.length
+  const displayEvents = allEvents.length > effectiveVisible
+    ? allEvents.slice(0, Math.max(0, effectiveVisible - 1))
+    : allEvents
+  const moreCount = allEvents.length - displayEvents.length
 
   function fmt12(t: string | null): { time: string; ampm: string } {
     if (!t) return { time: '—', ampm: '' }
@@ -936,12 +1048,14 @@ function SchedulePanel({ refreshKey }: { refreshKey: number }) {
         display: 'flex',
         gap: 8,
         padding: '9px 14px',
+        minHeight: SCHED_ROW_H,
+        boxSizing: 'border-box',
         borderLeft: isNext ? `3px solid ${C.brand}` : '3px solid transparent',
       }}>
         {/* Time gutter */}
-        <div style={{ flexShrink: 0, width: 52 }}>
+        <div style={{ flexShrink: 0, width: 44 }}>
           <div style={{ ...DM2, color: C.textHi }}>{time}</div>
-          <div style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{ampm}</div>
+          {ampm && <div style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{ampm}</div>}
         </div>
         {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -952,27 +1066,27 @@ function SchedulePanel({ refreshKey }: { refreshKey: number }) {
     )
   }
 
-  function GroupLabel({ label }: { label: string }) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px 2px' }}>
-        <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{label}</span>
-        <div style={{ flex: 1, height: 1, background: C.borderHair }} />
-      </div>
-    )
-  }
+  const h = panelHeight ? panelHeight : undefined
 
   return (
-    <Panel style={{ flex: 1 }}>
-      <PanelHeader glyph={G.schedule} label="SCHEDULE" actionLabel="+ EVENT" />
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+    <Panel style={{ flexShrink: 0, height: h }}>
+      <PanelHeader glyph={G.schedule} label="SCHEDULE" />
+      <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
-        ) : events.length === 0 ? (
+        ) : displayEvents.length === 0 && moreCount === 0 ? (
           <div style={{ ...DT4, color: C.textLow, padding: '20px 14px', textAlign: 'center', fontFamily: FONT_MONO }}>NOTHING SCHEDULED</div>
         ) : (
           <>
-            {todays.length > 0 && <><GroupLabel label="TODAY" />{todays.map((e, i) => <React.Fragment key={e.id}><EventRow e={e} isNext={i === 0} />{i < todays.length - 1 && <Hair />}</React.Fragment>)}</>}
-            {tomorrows.length > 0 && <><GroupLabel label="TOMORROW" />{tomorrows.map((e, i) => <React.Fragment key={e.id}><EventRow e={e} />{i < tomorrows.length - 1 && <Hair />}</React.Fragment>)}</>}
+            {displayEvents.map((e, i) => (
+              <React.Fragment key={e.id}>
+                <EventRow e={e} isNext={i === 0} />
+                {i < displayEvents.length - 1 && <Hair />}
+              </React.Fragment>
+            ))}
+            {moreCount > 0 && (
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE → SCHED</div>
+            )}
           </>
         )}
       </div>
@@ -980,8 +1094,15 @@ function SchedulePanel({ refreshKey }: { refreshKey: number }) {
   )
 }
 
-// ── DEADLINES ─────────────────────────────────────────────────────────────────
-function DeadlinesPanel({ refreshKey }: { refreshKey: number }) {
+// ── DUE (was DEADLINES) ───────────────────────────────────────────────────────
+// D4.3: Panel header label is "DUE" on screen everywhere.
+// Past-due rows: "N D LATE" with late spine.
+// Forward rows: "N D · MMM D" format.
+// D4.4: Header = 41px (no create control yet), rowHeight = 44px
+const DUE_HEADER = 41
+const DUE_ROW_H  = 44
+
+function DuePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: number; panelHeight?: number; visibleRows: number }) {
   const [deadlines, setDeadlines] = useState<Array<{
     id: string; title: string; due_date: string; kind: string;
     deals?: { name: string; address: string | null; addr_display: string | null; addr_street_name: string | null; addr_number: string | null; addr_city: string | null } | null
@@ -992,9 +1113,6 @@ function DeadlinesPanel({ refreshKey }: { refreshKey: number }) {
     async function load() {
       const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const cutoff = new Date(new Date(todayStr).getTime() + 86400000 * 45).toISOString().slice(0, 10)
-      // Two queries: past-due first (no lower bound), then forward window.
-      // Past-due sorts ascending (oldest first); forward sorts ascending (soonest first).
-      // Header count includes both.
       const [{ data: pastDue }, { data: forward }] = await Promise.all([
         supabase
           .from('contract_deadlines')
@@ -1010,7 +1128,7 @@ function DeadlinesPanel({ refreshKey }: { refreshKey: number }) {
           .gte('deadline_date', todayStr)
           .lte('deadline_date', cutoff)
           .order('deadline_date', { ascending: true })
-          .limit(20),
+          .limit(30),
       ])
       const combined = [...(pastDue ?? []), ...(forward ?? [])]
       setDeadlines(combined.map((t: any) => ({ ...t, title: t.label ?? t.deadline_type ?? 'Deadline', due_date: t.deadline_date, kind: t.deadline_type ?? 'DEADLINE' })))
@@ -1019,52 +1137,96 @@ function DeadlinesPanel({ refreshKey }: { refreshKey: number }) {
     load()
   }, [refreshKey])
 
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  const pastDue = deadlines.filter(d => d.due_date < todayStr)
+  const pastDueCount = pastDue.length
+
+  // D4.4 item 7: terminal row replaces last visible row
+  const effectiveVisible = visibleRows > 0 ? visibleRows : deadlines.length
+  const displayDeadlines = deadlines.length > effectiveVisible
+    ? deadlines.slice(0, Math.max(0, effectiveVisible - 1))
+    : deadlines
+  const moreCount = deadlines.length - displayDeadlines.length
+
+  const h = panelHeight ? panelHeight : undefined
+
   return (
-    <Panel style={{ flex: 1 }}>
-      <PanelHeader glyph={G.deadlines} label="DEADLINES" actionLabel="45 DAYS" />
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+    <Panel style={{ flexShrink: 0, height: h }}>
+      <PanelHeader
+        glyph={G.deadlines}
+        label="DUE"
+        statusCount={pastDueCount > 0 ? `${pastDueCount} PAST DUE` : undefined}
+        statusColor={C.late}
+        totalCount={String(deadlines.length)}
+      />
+      <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
-        ) : deadlines.length === 0 ? (
-          <div style={{ ...DT4, color: C.textLow, padding: '20px 14px', textAlign: 'center', fontFamily: FONT_MONO }}>NO DEADLINES IN 45 DAYS</div>
-        ) : deadlines.map((d, i) => {
-          const days = daysBetween(d.due_date)
-          const urgent = days <= 7
-          const isFirst = i === 0
-          return (
-            <React.Fragment key={d.id}>
-              <div style={{
-                display: 'flex',
-                gap: 8,
-                padding: '9px 14px',
-                background: isFirst ? `rgba(255,163,58,0.05)` : 'transparent',
-                borderLeft: isFirst ? `3px solid ${C.hot}` : '3px solid transparent',
-                alignItems: 'flex-start',
-              }}>
-                {/* Days + date */}
-                <div style={{ flexShrink: 0, width: 80 }}>
-                  <div style={{ ...DT7 as React.CSSProperties, color: urgent ? C.hot : C.textMid }}>
-                    {days === 0 ? 'TODAY' : `${days}D · ${fmtDate(d.due_date)}`}
+        ) : displayDeadlines.length === 0 && moreCount === 0 ? (
+          <div style={{ ...DT4, color: C.textLow, padding: '20px 14px', textAlign: 'center', fontFamily: FONT_MONO }}>NO DEADLINES</div>
+        ) : (
+          <>
+            {displayDeadlines.map((d, i) => {
+              const days = daysBetween(d.due_date)
+              const isPast = days < 0
+              const absDays = Math.abs(days)
+              const isUrgent = !isPast && days <= 7
+              const isFirst = i === 0
+              const isFirstFuture = !isPast && (i === 0 || deadlines.slice(0, i).every(x => daysBetween(x.due_date) < 0))
+
+              return (
+                <React.Fragment key={d.id}>
+                  <div style={{
+                    display: 'flex',
+                    gap: 8,
+                    padding: '9px 14px',
+                    minHeight: DUE_ROW_H,
+                    boxSizing: 'border-box',
+                    background: isFirstFuture && !isPast ? `rgba(255,163,58,0.05)` : 'transparent',
+                    borderLeft: isPast ? `3px solid ${C.late}` : isFirstFuture ? `3px solid ${C.hot}` : '3px solid transparent',
+                    alignItems: 'flex-start',
+                  }}>
+                    {/* Days — D4.3: "N D LATE" when past, "N D · MMM D" when forward */}
+                    <div style={{ flexShrink: 0, width: 84 }}>
+                      {isPast ? (
+                        <div style={{ ...DT7 as React.CSSProperties, color: C.late, whiteSpace: 'nowrap' }}>
+                          {absDays}D LATE
+                        </div>
+                      ) : (
+                        <div style={{ ...DT7 as React.CSSProperties, color: isUrgent ? C.hot : C.textMid, whiteSpace: 'nowrap' }}>
+                          {days === 0 ? 'TODAY' : `${days}D · ${fmtDate(d.due_date)}`}
+                        </div>
+                      )}
+                    </div>
+                    {/* Kind */}
+                    <div style={{ ...DT7 as React.CSSProperties, color: C.textLow, flexShrink: 0, textAlign: 'right' }}>{d.kind}</div>
+                    {/* Content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</div>
+                      {d.deals && <div style={{ ...DS7, color: C.textLow }}>{d.deals.addr_display ?? d.deals.addr_street_name ?? d.deals.name}</div>}
+                    </div>
                   </div>
-                </div>
-                {/* Kind */}
-                <div style={{ ...DT7 as React.CSSProperties, color: C.textLow, flexShrink: 0 }}>DEADLINE</div>
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</div>
-                  {d.deals && <div style={{ ...DS7, color: C.textLow }}>{d.deals.addr_display ?? d.deals.addr_street_name ?? d.deals.name}</div>}
-                </div>
-              </div>
-              {i < deadlines.length - 1 && <Hair />}
-            </React.Fragment>
-          )
-        })}
+                  {i < displayDeadlines.length - 1 && <Hair />}
+                </React.Fragment>
+              )
+            })}
+            {/* D4.4 item 7: terminal row replaces last visible row */}
+            {moreCount > 0 && (
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE → DUE</div>
+            )}
+          </>
+        )}
       </div>
     </Panel>
   )
 }
 
 // ── RECEIVABLES ───────────────────────────────────────────────────────────────
+// D4.3: flex:none, 130px cap.
+// Layout: two DM0 figures on one row, 6px bar, mono label row with % left and OUTSTANDING right.
+// No terminal row, not clickable.
+const RECV_HEIGHT = 130
+
 function ReceivablesCard({ refreshKey }: { refreshKey: number }) {
   const [items, setItems] = useState<ArItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -1086,38 +1248,45 @@ function ReceivablesCard({ refreshKey }: { refreshKey: number }) {
   return (
     <div style={{
       flexShrink: 0,
+      height: RECV_HEIGHT,
+      boxSizing: 'border-box',
       borderRadius: 14,
       overflow: 'hidden',
       border: `1px solid ${C.border}`,
       background: 'linear-gradient(155deg, rgba(52,211,153,0.09), rgba(139,92,246,0.05))',
-      padding: '14px 16px',
+      padding: '12px 16px',
       display: 'flex',
       flexDirection: 'column',
-      gap: 8,
+      gap: 6,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      {/* Panel header row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
         <span style={{ color: C.brandLift }}>{G.receivables}</span>
         <span style={{ ...DT1, color: C.textMid }}>RECEIVABLES</span>
       </div>
-      {/* Hero figure — NO text-shadow (D2.7: wordmark is the one glow) */}
-      <div style={{ ...DM0, color: C.moneyIn, textShadow: 'none' }}>
-        {loading ? '—' : fmt$(collected)}
+      {/* D4.3: two DM0 figures on one row — collected left (money-in), outstanding right (brand-lift) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 }}>
+        <div style={{ ...DM0, color: C.moneyIn, textShadow: 'none' }}>
+          {loading ? '—' : fmtMoney(collected)}
+        </div>
+        <div style={{ ...DM0, color: C.brandLift, textShadow: 'none' }}>
+          {loading ? '—' : fmtMoney(outstanding)}
+        </div>
       </div>
-      <div style={{ ...DS7, color: C.textLow }}>Collected of {fmt$(total)} total</div>
-      {/* Split progress bar */}
-      <div style={{ height: 4, borderRadius: 2, background: C.bgRaise, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: C.moneyIn, borderRadius: 2 }} />
+      {/* D4.3: 6px split bar */}
+      <div style={{ height: 6, borderRadius: 3, background: C.bgRaise, overflow: 'hidden', flexShrink: 0 }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: C.moneyIn, borderRadius: 3 }} />
       </div>
-      {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ ...DS7, color: C.brandLift }}>Outstanding {fmt$(outstanding)}</span>
-        <span style={{ ...DT5, color: C.textLow }}>{pct}%</span>
+      {/* D4.3: mono label row — % left, OUTSTANDING right */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{pct}% COLLECTED</span>
+        <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>OUTSTANDING</span>
       </div>
     </div>
   )
 }
 
-// AgentCard removed in build(48) — Column C: SchedulePanel, DeadlinesPanel, ReceivablesCard only
+// AgentCard removed in build(48) — Column C: SchedulePanel, DuePanel, ReceivablesCard only
 
 // ── IDENTITY BAND ─────────────────────────────────────────────────────────────
 function IdentityBand({ onSearch }: { onSearch?: () => void }) {
@@ -1134,30 +1303,22 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
       borderBottom: `1px solid ${C.border}`,
       background: C.bgBase,
     }}>
-      {/* Geometric mark — 64px PNG */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/icons/mark-256.png" alt="" width={64} height={64} style={{ display: 'block', flexShrink: 0 }} />
 
-      {/* SHIRLEYCRE wordmark — h176 PNG at 88px, §D2.3 / §D2.3a */}
       <div style={{ width: 'auto', flexShrink: 0, marginTop: -10, marginLeft: -3.5, display:'flex', alignItems:'center' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/assets/wordmark/shirleycre-h176.png" alt="SHIRLEYCRE" height={88} style={{ height: 88, width: 'auto', display: 'block' }} />
       </div>
 
-      {/* Divider */}
       <div style={{ width: 1, height: 40, background: C.border, flexShrink: 0 }} />
-
-      {/* WAR ROOM */}
       <span style={{ ...DT1, letterSpacing: '0.19em', color: C.textMid, marginTop: 4, flexShrink: 0 }}>WAR ROOM</span>
-
-      {/* Divider */}
       <div style={{ width: 1, height: 40, background: C.border, flexShrink: 0 }} />
 
-      {/* Search */}
       <div
         onClick={onSearch}
         style={{
-          flex: '0 1 380px',  // §D2.3(b): shrinks first when band overflows — date + LIVE stay flex:none
+          flex: '0 1 380px',
           minWidth: 120,
           background: 'rgba(255,255,255,0.075)',
           borderRadius: 10,
@@ -1182,10 +1343,8 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
         }}>⌘K</div>
       </div>
 
-      {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* LACDB plate — §D2.3b, 52×158, brightness(1.18) on hover */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/assets/links/lacdb-h104.png"
@@ -1196,7 +1355,6 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
         onClick={() => window.open('https://www.lacdb.com', '_blank', 'noopener,noreferrer')}
       />
 
-      {/* CREXI plate — §D2.3b, 52×158, brightness(1.18) on hover */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/assets/links/crexi-h104.png"
@@ -1207,10 +1365,8 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
         onClick={() => window.open('https://www.crexi.com', '_blank', 'noopener,noreferrer')}
       />
 
-      {/* Date/clock */}
       <span style={{ ...DT2, color: C.brandLift, flexShrink: 0 }}>{dateStr} · {timeStr}</span>
 
-      {/* Live dot */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.moneyIn }} />
         <span style={{ ...DT3, color: C.moneyIn }}>LIVE</span>
@@ -1218,8 +1374,6 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
     </div>
   )
 }
-
-// WordmarkGlow removed — replaced by h176 PNG (§D2.3 / §D2.3a, 8.17.26)
 
 // ── LEFT RAIL ─────────────────────────────────────────────────────────────────
 type RailSlot = 'HOME' | 'PEOPLE'
@@ -1278,8 +1432,26 @@ function LeftRail({ active }: { active: RailSlot }) {
 export default function WarRoomPage() {
   const [unlocked, setUnlocked] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
-  // §D4.1 / Item 6: Task drawer — 460px right-side, reuses §13.2 TaskDetailSheet
   const [drawerTask, setDrawerTask] = useState<Task | null>(null)
+  const [createMode, setCreateMode] = useState(false)
+
+  // D4.4: Column B ref for elastic allocation
+  const colBRef = useRef<HTMLDivElement>(null)
+  const [colBHeight, setColBHeight] = useState(0)
+
+  // D4.4: Column C ref for elastic allocation
+  const colCRef = useRef<HTMLDivElement>(null)
+  const [colCHeight, setColCHeight] = useState(0)
+
+  // D4.4: row counts from panels — lifted up so column-level allocation can use them
+  // These are "demand row counts" — the actual number of records fetched
+  // We use conservative defaults until panels load their data
+  // For now: use ResizeObserver on columns + fixed row heights to compute allocations
+  // Panel row counts are estimated from data — panels pass rowCount up via callback
+  const [mmRowCount, setMmRowCount] = useState(5)
+  const [ucRowCount, setUcRowCount] = useState(3)
+  const [schedRowCount, setSchedRowCount] = useState(4)
+  const [dueRowCount, setDueRowCount] = useState(6)
 
   useEffect(() => {
     const expiry = localStorage.getItem(SESSION_KEY)
@@ -1291,6 +1463,57 @@ export default function WarRoomPage() {
     localStorage.setItem(SESSION_KEY, expiry.toString())
     setUnlocked(true)
   }, [])
+
+  // D4.4: measure column B height
+  useEffect(() => {
+    if (!colBRef.current) return
+    const ro = new ResizeObserver(([entry]) => {
+      setColBHeight(entry.contentRect.height)
+    })
+    ro.observe(colBRef.current)
+    return () => ro.disconnect()
+  }, [unlocked])
+
+  // D4.4: measure column C height
+  useEffect(() => {
+    if (!colCRef.current) return
+    const ro = new ResizeObserver(([entry]) => {
+      setColCHeight(entry.contentRect.height)
+    })
+    ro.observe(colCRef.current)
+    return () => ro.disconnect()
+  }, [unlocked])
+
+  // D4.4: Compute column B allocations (MM + UC)
+  const colBPanels: PanelSpec[] = [
+    { header: MM_HEADER + 24, rowHeight: MM_ROW_H, rowCount: mmRowCount }, // +24 for column header row
+    { header: UC_HEADER, rowHeight: UC_ROW_H, rowCount: ucRowCount },
+  ]
+  const colBAllocs = colBHeight > 0 ? computeAlloc(colBHeight, colBPanels) : [
+    { height: 300, visibleRows: 5 },
+    { height: 250, visibleRows: 4 },
+  ]
+
+  // D4.4: Compute column C allocations (SCHEDULE + DUE, RECEIVABLES is flex:none)
+  const colCPanels: PanelSpec[] = [
+    { header: SCHED_HEADER, rowHeight: SCHED_ROW_H, rowCount: schedRowCount },
+    { header: DUE_HEADER, rowHeight: DUE_ROW_H, rowCount: dueRowCount },
+  ]
+  const colCBudget = colCHeight > 0 ? colCHeight - RECV_HEIGHT - 2 * 18 : 400
+  const colCAllocs = colCBudget > 0 ? computeAlloc(colCBudget, colCPanels) : [
+    { height: 200, visibleRows: 4 },
+    { height: 200, visibleRows: 4 },
+  ]
+
+  // Create mode: open TaskModal with an empty-ish task for creation
+  const createTask: Task = {
+    id: '',
+    title: '',
+    status: 'open',
+    due_date: null,
+    completed_at: null,
+    deal_id: null,
+  }
 
   if (!unlocked) {
     return (
@@ -1334,7 +1557,7 @@ export default function WarRoomPage() {
           {/* ── NEXT 48 — 236px fixed ── */}
           <Next48Panel refreshKey={refreshKey} />
 
-          {/* ── Three-column row — A: fixed pixel widths 522/678/539 ── */}
+          {/* ── Three-column row ── */}
           <div style={{
             flex: 1,
             display: 'flex',
@@ -1342,21 +1565,45 @@ export default function WarRoomPage() {
             minHeight: 0,
           }}>
 
-            {/* Column A — 522px fixed */}
-            <div style={{ width: 522, flexShrink: 0, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <BattlePlanPanel refreshKey={refreshKey} onSelectTask={setDrawerTask} />
+            {/* Column A — 0.30 of content width, floored at 441px (D4.1) */}
+            <div style={{ flex: '0 0 30%', minWidth: 441, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <BattlePlanPanel
+                refreshKey={refreshKey}
+                onSelectTask={setDrawerTask}
+                onCreateTask={() => setCreateMode(true)}
+              />
             </div>
 
-            {/* Column B — 678px fixed */}
-            <div style={{ width: 678, flexShrink: 0, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <MoneyMoversPanel refreshKey={refreshKey} />
-              <UnderContractPanel refreshKey={refreshKey} />
+            {/* Column B — 0.39 of content width (D4.2) */}
+            <div
+              ref={colBRef}
+              style={{ flex: '0 0 39%', boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}
+            >
+              <MoneyMoversPanel
+                refreshKey={refreshKey}
+                visibleRows={colBAllocs[0].visibleRows}
+              />
+              <UnderContractPanel
+                refreshKey={refreshKey}
+                visibleRows={colBAllocs[1].visibleRows}
+              />
             </div>
 
-            {/* Column C — 539px fixed; B: AgentCard removed */}
-            <div style={{ width: 539, flexShrink: 0, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <SchedulePanel refreshKey={refreshKey} />
-              <DeadlinesPanel refreshKey={refreshKey} />
+            {/* Column C — 0.31 of content width (D4.3) */}
+            <div
+              ref={colCRef}
+              style={{ flex: 1, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}
+            >
+              <SchedulePanel
+                refreshKey={refreshKey}
+                panelHeight={colCAllocs[0].height}
+                visibleRows={colCAllocs[0].visibleRows}
+              />
+              <DuePanel
+                refreshKey={refreshKey}
+                panelHeight={colCAllocs[1].height}
+                visibleRows={colCAllocs[1].visibleRows}
+              />
               <ReceivablesCard refreshKey={refreshKey} />
             </div>
 
@@ -1364,13 +1611,13 @@ export default function WarRoomPage() {
         </div>
       </div>
 
-      {/* D11 — Desktop task modal: 960px two-column centred. */}
-      {drawerTask && (
+      {/* D11 — Desktop task modal */}
+      {(drawerTask || createMode) && (
         <TaskModal
-          task={drawerTask as any}
-          onClose={() => setDrawerTask(null)}
-          onCompleted={() => { setDrawerTask(null); setRefreshKey(k => k + 1) }}
-          onSaved={() => { setDrawerTask(null); setRefreshKey(k => k + 1) }}
+          task={(drawerTask ?? createTask) as any}
+          onClose={() => { setDrawerTask(null); setCreateMode(false) }}
+          onCompleted={() => { setDrawerTask(null); setCreateMode(false); setRefreshKey(k => k + 1) }}
+          onSaved={() => { setDrawerTask(null); setCreateMode(false); setRefreshKey(k => k + 1) }}
         />
       )}
     </div>

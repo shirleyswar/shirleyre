@@ -1,5 +1,5 @@
 'use client'
-import { HOUSE_SPLIT } from '@/lib/dealMath'
+import { calcCommission, HOUSE_SPLIT } from '@/lib/dealMath'
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
@@ -133,19 +133,13 @@ export default function HotPanel() {
         .in('deal_id', ids)
       if (econData) {
         for (const e of econData as any[]) {
+          // Use calcCommission from dealMath — single source of truth
+          const commission = calcCommission(e)
           const isLease = e.transaction_type === 'lease'
-          if (isLease) {
-            const leaseGross = e.sqft && e.lease_rate_psf && e.lease_term_years
-              ? Math.round(e.sqft * e.lease_rate_psf * e.lease_term_years) : null
-            const leaseComm = leaseGross && e.lease_commission_pct
-              ? Math.round(leaseGross * (e.lease_commission_pct / 100) * HOUSE_SPLIT) : null
-            map[e.deal_id] = { value: leaseGross, commission: leaseComm }
-          } else {
-            const price = e.asking_price ?? null
-            const pct = e.sale_commission_pct ?? null
-            const commission = price && pct ? Math.round(price * (pct / 100) * HOUSE_SPLIT) : null
-            map[e.deal_id] = { value: price, commission }
-          }
+          const dealValue = isLease && e.sqft && e.lease_rate_psf && e.lease_term_years
+            ? Math.round(e.sqft * e.lease_rate_psf * e.lease_term_years)
+            : (e.asking_price ?? null)
+          map[e.deal_id] = { value: dealValue, commission }
         }
       }
 
