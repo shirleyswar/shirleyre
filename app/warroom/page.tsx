@@ -312,6 +312,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask }: { refreshKey: number; onS
         .from('tasks')
         .select('id, title, status, due_date, completed_at, deal_id, deals(name, address)')
         .eq('status', 'open')  // tasks table holds 'open' and 'complete' only — NOT IN (done,cancelled) excluded nothing
+        .is('deleted_at', null)
         .order('due_date', { ascending: true, nullsFirst: false })
         .limit(60)
       setTasks((data ?? []) as unknown as Task[])
@@ -570,7 +571,7 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
       const [{ data: events }, { data: deadlines }] = await Promise.all([
                 // 'events' table does not exist — real table is schedule_events (cols: date, time, title, location, deal_id)
         supabase.from('schedule_events').select('id, title, date, time, location, deal_id').gte('date', todayStr).lte('date', d3).order('date').order('time'),
-        supabase.from('tasks').select('id, title, due_date, deal_id, bp_priority, deals(name)').eq('status', 'open').gte('due_date', todayStr).lte('due_date', d3).order('due_date'),
+        supabase.from('tasks').select('id, title, due_date, deal_id, bp_priority, deals(name)').eq('status', 'open').is('deleted_at', null).gte('due_date', todayStr).lte('due_date', d3).order('due_date'),
       ])
 
       // Merge, dedupe: if same deal+date exists as both event and deadline, keep event
@@ -641,13 +642,19 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
                     const isJustBeyond = col.label === 'JUST BEYOND'
                     const sortedItems = isJustBeyond
                       ? [...displayItems].sort((a, b) => {
-                          // bp_priority DESC NULLS LAST (higher number = higher priority? or lower?)
-                          // "bp_priority DESC NULLS LAST" means nulls at end, values high-first
+                          // Two-class: events before tasks
+                          const aIsEvent = a.kind === 'event'
+                          const bIsEvent = b.kind === 'event'
+                          if (aIsEvent && !bIsEvent) return -1
+                          if (!aIsEvent && bIsEvent) return 1
+                          // Within events: date ASC
+                          if (aIsEvent && bIsEvent) return a.date.localeCompare(b.date)
+                          // Within tasks: bp_priority DESC NULLS LAST, then due_date ASC
                           if (a.bp_priority === null && b.bp_priority === null) return a.date.localeCompare(b.date)
-                          if (a.bp_priority === null) return 1   // null last
-                          if (b.bp_priority === null) return -1  // null last
-                          if (b.bp_priority !== a.bp_priority) return b.bp_priority - a.bp_priority  // DESC
-                          return a.date.localeCompare(b.date)  // then due_date ASC
+                          if (a.bp_priority === null) return 1
+                          if (b.bp_priority === null) return -1
+                          if (b.bp_priority !== a.bp_priority) return b.bp_priority - a.bp_priority
+                          return a.date.localeCompare(b.date)
                         })
                       : displayItems
                     const visibleItems = isJustBeyond ? sortedItems.slice(0, 1) : sortedItems
@@ -795,14 +802,14 @@ function DeadlinesPanel({ refreshKey }: { refreshKey: number }) {
       const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const cutoff = new Date(new Date(todayStr).getTime() + 86400000 * 45).toISOString().slice(0, 10)
       const { data } = await supabase
-        .from('tasks')
-        .select('id, title, due_date, status, deals(name, address, addr_display, addr_street_name, addr_number, addr_city)')
-        .eq('status', 'open')  // tasks table: 'open' and 'complete' only — NOT IN (done,cancelled) excluded nothing
-        .gte('due_date', todayStr)
-        .lte('due_date', cutoff)
-        .order('due_date', { ascending: true })
+        .from('contract_deadlines')
+        .select('id, label, deadline_date, deadline_type, status, deal_id')
+        .in('status', ['pending', 'extended'])
+        .gte('deadline_date', todayStr)
+        .lte('deadline_date', cutoff)
+        .order('deadline_date', { ascending: true })
         .limit(20)
-      setDeadlines((data ?? []).map((t: any) => ({ ...t, kind: 'DEADLINE' })))
+      setDeadlines((data ?? []).map((t: any) => ({ ...t, title: t.label ?? t.deadline_type ?? 'Deadline', due_date: t.deadline_date, kind: t.deadline_type ?? 'DEADLINE' })))
       setLoading(false)
     }
     load()

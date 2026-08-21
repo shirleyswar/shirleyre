@@ -205,6 +205,7 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
           .from('tasks')
           .select('id, title, status, due_date, deal_id, is_life, is_entity, entity_id, sort_order, created_at, deals(name, address, addr_display, addr_street_name, addr_number, addr_city), entities(name)')
           .eq('status', 'open')  // tasks table: 'open' and 'complete' only
+          .is('deleted_at', null)
           .order('created_at', { ascending: true })
           .limit(200)
         if (error) { setLoadError(true); setLoading(false); return }

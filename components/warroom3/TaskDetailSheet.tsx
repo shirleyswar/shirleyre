@@ -339,7 +339,7 @@ export default function TaskDetailSheet({
   async function handleDelete() {
     if (!task) return
     setSaving(true)
-    const { error: err } = await supabase.from('tasks').delete().eq('id', task.id)
+    const { error: err } = await supabase.from('tasks').update({ deleted_at: new Date().toISOString() }).eq('id', task.id)
     setSaving(false)
     if (err) {
       setError('Could not delete — try again')

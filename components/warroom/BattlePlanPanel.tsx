@@ -115,6 +115,7 @@ export default function BattlePlanPanel() {
       const { data } = await supabase
         .from('tasks')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: true })
         .limit(100)
 

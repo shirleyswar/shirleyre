@@ -340,7 +340,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
   // Hard delete — same model as mobile. task_note cascades.
   async function handleDelete() {
     setSaving(true)
-    const { error: err } = await supabase.from('tasks').delete().eq('id', task.id)
+    const { error: err } = await supabase.from('tasks').update({ deleted_at: new Date().toISOString() }).eq('id', task.id)
     setSaving(false)
     if (err) {
       setError('Could not delete — try again')

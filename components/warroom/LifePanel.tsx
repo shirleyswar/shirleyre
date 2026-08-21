@@ -100,6 +100,7 @@ export default function LifePanel() {
         .from('tasks')
         .select('*')
         .eq('is_life', true)
+        .is('deleted_at', null)
         .order('sort_order', { ascending: true })
         .limit(200)
 

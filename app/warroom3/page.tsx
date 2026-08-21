@@ -153,6 +153,7 @@ async function loadHomeData(): Promise<{ hero: HeroItem | null; tiles: TileStat[
       .from('tasks')
       .select('id, title, due_date, status, deal_id, deals(name, address, addr_display, addr_street_name, addr_number, addr_city)')
       .eq('status', 'open')
+      .is('deleted_at', null)
       .order('created_at', { ascending: true })
       .limit(200),
     // Deadlines: CLASS A FIX — past-due pinned, forward 45-day window, missed loaded.
