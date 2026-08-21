@@ -801,15 +801,28 @@ function DeadlinesPanel({ refreshKey }: { refreshKey: number }) {
     async function load() {
       const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const cutoff = new Date(new Date(todayStr).getTime() + 86400000 * 45).toISOString().slice(0, 10)
-      const { data } = await supabase
-        .from('contract_deadlines')
-        .select('id, label, deadline_date, deadline_type, status, deal_id')
-        .in('status', ['pending', 'extended'])
-        .gte('deadline_date', todayStr)
-        .lte('deadline_date', cutoff)
-        .order('deadline_date', { ascending: true })
-        .limit(20)
-      setDeadlines((data ?? []).map((t: any) => ({ ...t, title: t.label ?? t.deadline_type ?? 'Deadline', due_date: t.deadline_date, kind: t.deadline_type ?? 'DEADLINE' })))
+      // Two queries: past-due first (no lower bound), then forward window.
+      // Past-due sorts ascending (oldest first); forward sorts ascending (soonest first).
+      // Header count includes both.
+      const [{ data: pastDue }, { data: forward }] = await Promise.all([
+        supabase
+          .from('contract_deadlines')
+          .select('id, label, deadline_date, deadline_type, status, deal_id')
+          .in('status', ['pending', 'extended'])
+          .lt('deadline_date', todayStr)
+          .order('deadline_date', { ascending: true })
+          .limit(10),
+        supabase
+          .from('contract_deadlines')
+          .select('id, label, deadline_date, deadline_type, status, deal_id')
+          .in('status', ['pending', 'extended'])
+          .gte('deadline_date', todayStr)
+          .lte('deadline_date', cutoff)
+          .order('deadline_date', { ascending: true })
+          .limit(20),
+      ])
+      const combined = [...(pastDue ?? []), ...(forward ?? [])]
+      setDeadlines(combined.map((t: any) => ({ ...t, title: t.label ?? t.deadline_type ?? 'Deadline', due_date: t.deadline_date, kind: t.deadline_type ?? 'DEADLINE' })))
       setLoading(false)
     }
     load()
