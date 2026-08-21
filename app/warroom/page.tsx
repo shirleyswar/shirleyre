@@ -12,6 +12,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { calcCommission, fmtMoney } from '@/lib/dealMath'
+import Fab from '@/assets/fab/Fab'
+import '@/assets/fab/fab.css'
 import { useRouter } from 'next/navigation'
 import PinGate from '@/components/warroom/PinGate'
 import TaskModal from '@/app/warroom/TaskModal'
@@ -516,28 +518,10 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
         {lateCount > 0 && <span style={{ ...DT5, color: C.late }}>{lateCount} LATE</span>}
         <div style={{ flex: 1, height: 1, background: C.borderPanel }} />
         <span style={{ ...DT5, color: C.textLow }}>{totalCount}</span>
-        {/* D2.4a FAB create control — 31×31 */}
-        <button
-          aria-label="Add task"
-          onClick={() => onCreateTask?.()}
-          style={{
-            width: 31,
-            height: 31,
-            borderRadius: 10,
-            border: 'none',
-            background: 'radial-gradient(circle at 50% 30%, #B7A2FF 0%, #8B5CF6 45%, #6D28D9 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            flexShrink: 0,
-            color: '#fff',
-            fontSize: 14,
-            lineHeight: 1,
-          }}
-        >
-          +
-        </button>
+        {/* D2.4a FAB create control — delivered asset, 31×31, no rim per spec */}
+        <div className="wr-fab-desktop-wrap" style={{ flexShrink: 0 }}>
+          <Fab label="Add task" onClick={() => onCreateTask?.()} />
+        </div>
       </div>
       {/* Scroll container with custom thumb + bottom fade */}
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
@@ -693,7 +677,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows }: { refreshKey: number; vis
             ))}
             {/* D4.4 item 7: terminal row replaces last visible row */}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE → DEALS</div>
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
             )}
           </>
         )}
@@ -780,7 +764,7 @@ function UnderContractPanel({ refreshKey, visibleRows }: { refreshKey: number; v
             ))}
             {/* D4.4 item 7: terminal row replaces last visible row */}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE → DEALS</div>
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
             )}
           </>
         )}
@@ -888,12 +872,17 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
     const realRowCounts = colRowCounts.slice(0, 3)
     const totalRealRows = realRowCounts.reduce((a, b) => a + b, 0)
     if (totalRealRows === 0) {
-      colWidths = [remainingW / 3, remainingW / 3, remainingW / 3, justBeyondW]
+      colWidths = [Math.round(remainingW / 3), Math.round(remainingW / 3), Math.round(remainingW / 3), justBeyondW]
     } else {
-      colWidths = realRowCounts.map(c => {
-        const prop = (c / totalRealRows) * remainingW
-        return Math.max(colFloor, Math.round(prop))
-      })
+      const rawWidths = realRowCounts.map(c => Math.max(colFloor, Math.round((c / totalRealRows) * remainingW)))
+      // Rescale if sum exceeds remainingW (floor bumps can overflow)
+      const rawSum = rawWidths.reduce((a, b) => a + b, 0)
+      if (rawSum > remainingW) {
+        const scale = remainingW / rawSum
+        colWidths = rawWidths.map(w => Math.floor(w * scale))
+      } else {
+        colWidths = rawWidths
+      }
       colWidths.push(justBeyondW)
     }
   } else {
@@ -1085,7 +1074,7 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: n
               </React.Fragment>
             ))}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE → SCHED</div>
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
             )}
           </>
         )}
@@ -1212,7 +1201,7 @@ function DuePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: number
             })}
             {/* D4.4 item 7: terminal row replaces last visible row */}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE → DUE</div>
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
             )}
           </>
         )}
