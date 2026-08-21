@@ -76,5 +76,5 @@ export function calcCommission(econ: {
  */
 export function fmtMoney(n: number | null | undefined): string {
   if (n == null) return '—'
-  return '$' + n.toLocaleString()
+  return '$' + Math.round(n).toLocaleString()
 }
