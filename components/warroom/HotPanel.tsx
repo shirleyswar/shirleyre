@@ -1,4 +1,5 @@
 'use client'
+import { HOUSE_SPLIT } from '@/lib/dealMath'
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
@@ -137,12 +138,12 @@ export default function HotPanel() {
             const leaseGross = e.sqft && e.lease_rate_psf && e.lease_term_years
               ? Math.round(e.sqft * e.lease_rate_psf * e.lease_term_years) : null
             const leaseComm = leaseGross && e.lease_commission_pct
-              ? Math.round(leaseGross * (e.lease_commission_pct / 100) * 0.75) : null
+              ? Math.round(leaseGross * (e.lease_commission_pct / 100) * HOUSE_SPLIT) : null
             map[e.deal_id] = { value: leaseGross, commission: leaseComm }
           } else {
             const price = e.asking_price ?? null
             const pct = e.sale_commission_pct ?? null
-            const commission = price && pct ? Math.round(price * (pct / 100) * 0.75) : null
+            const commission = price && pct ? Math.round(price * (pct / 100) * HOUSE_SPLIT) : null
             map[e.deal_id] = { value: price, commission }
           }
         }
@@ -158,7 +159,7 @@ export default function HotPanel() {
           if (!map[u.deal_id]?.value) {
             const price = u.contract_price ?? null
             const pct = u.commission_pct ?? null
-            const commission = u.commission_amount ?? (price && pct ? Math.round(price * (pct / 100) * 0.75) : null)
+            const commission = u.commission_amount ?? (price && pct ? Math.round(price * (pct / 100) * HOUSE_SPLIT) : null)
             map[u.deal_id] = { value: price, commission }
           }
         }

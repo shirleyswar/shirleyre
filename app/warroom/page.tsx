@@ -488,9 +488,8 @@ function UnderContractPanel({ refreshKey }: { refreshKey: number }) {
       const { data } = await supabase
         .from('deals')
         .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, commission_estimated, deal_contacts(contacts(name))')
-        .in('status', ['under_contract', 'pending_payment'])
+        .eq('status', 'under_contract')
         .order('created_at', { ascending: true })
-        .limit(15)
       setDeals((data ?? []) as unknown as Deal[])
       setLoading(false)
     }

@@ -1,4 +1,5 @@
 'use client'
+import { HOUSE_SPLIT } from '@/lib/dealMath'
 
 import { useState, useEffect, useCallback } from 'react'
 import { formatAddress } from '@/lib/formatAddress'
@@ -504,7 +505,7 @@ function LandedFlowModal({ deal, ucDetails, onCancel, onSuccess }: LandedFlowMod
   const cobPct = parseFloat(coBrokerPct.replace(/[^0-9.]/g, '')) || 0
   const refPct = parseFloat(referralPct.replace(/[^0-9.]/g, '')) || 0
   const totalGross = cpNum * (commPct / 100)
-  const netToMatthew = totalGross * (1 - cobPct / 100) * (1 - refPct / 100) * 0.75
+  const netToMatthew = totalGross * (1 - cobPct / 100) * (1 - refPct / 100) * HOUSE_SPLIT
 
   async function handlePinChange(v: string) {
     setPin(v)
@@ -1511,7 +1512,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
                 // Never trust stored commission_amount (may have been calculated incorrectly)
                 let myCommission: number | null = null
                 if (uc?.commission_pct && contractPrice && uc.deal_category !== 'lease') {
-                  myCommission = Math.round(contractPrice * (uc.commission_pct / 100) * 0.75)
+                  myCommission = Math.round(contractPrice * (uc.commission_pct / 100) * HOUSE_SPLIT)
                 } else if (uc?.commission_pct && uc.lease_rate && uc.lease_term_months) {
                   // Lease: rate × sqft (unknown here, skip) — show stored amount if present
                   if (uc.commission_amount) myCommission = uc.commission_amount
@@ -1676,7 +1677,7 @@ export default function UnderContractPanel({ onLanded }: { onLanded?: () => void
               const contractPrice = uc?.contract_price ?? deal.value ?? null
               let myCommission: number | null = null
               if (uc?.commission_pct && contractPrice && uc.deal_category !== 'lease') {
-                myCommission = Math.round(contractPrice * (uc.commission_pct / 100) * 0.75)
+                myCommission = Math.round(contractPrice * (uc.commission_pct / 100) * HOUSE_SPLIT)
               } else if (uc?.commission_pct && uc.lease_rate && uc.lease_term_months) {
                 if (uc.commission_amount) myCommission = uc.commission_amount
               }
