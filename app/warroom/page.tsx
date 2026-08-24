@@ -94,7 +94,7 @@ interface Deal {
   addr_city: string | null
   status: string
   commission_estimated: number | null
-  value: number | null
+  commission: number | null
   is_money_mover?: boolean | null
   deal_contacts: Array<{ contacts: { name: string } | null }>
 }
@@ -619,7 +619,7 @@ interface MoneyMoverRow {
   id: string
   title: string
   deal_id: string | null
-  value: number | null
+  commission: number | null
 }
 
 function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight, onCreateFill }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number; onCreateFill?: () => void }) {
@@ -631,7 +631,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
   async function loadData() {
     const { data: mmData } = await supabase
       .from('money_movers')
-      .select('id, title, deal_id, value')
+      .select('id, title, deal_id, commission')
       .order('created_at', { ascending: false })
       .limit(30)
     const rows = (mmData ?? []) as MoneyMoverRow[]
@@ -659,7 +659,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
     const econ = mm.deal_id ? (econMap[mm.deal_id] ?? null) : null
     const commission = econ ? calcCommission(econ) : null
     // Operator-typed value wins; otherwise compute from economics
-    let dealValue: number | null = mm.value ?? null
+    let dealValue: number | null = mm.commission ?? null
     if (dealValue == null && econ) {
       if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price) {
         dealValue = econ.asking_price

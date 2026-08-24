@@ -376,7 +376,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
       setError(null)
       const insertPayload: Record<string, unknown> = { title: mmTitle.trim() }
       const parsedVal = parseFloat(mmValue.replace(/[^0-9.]/g, ''))
-      if (!isNaN(parsedVal) && parsedVal > 0) insertPayload.value = parsedVal
+      if (!isNaN(parsedVal) && parsedVal > 0) insertPayload.commission = parsedVal
       const { error: mmErr } = await supabase.from('money_movers').insert(insertPayload)
       setSaving(false)
       if (mmErr) { setError(mmErr.message || 'Could not save money mover.'); return }
