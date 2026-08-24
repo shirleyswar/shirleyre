@@ -174,8 +174,10 @@ function getStatusLabel(status: string | null): string {
     case 'active_listing': return 'ACTIVE'
     case 'in_review':
     case 'review':         return 'REVIEW'
+    case 'in_service':     return 'IN SERVICE'
+    case 'pending_payment':return 'PENDING'
     case 'closed':         return 'CLOSED'
-    default: return status.toUpperCase().slice(0, 8)
+    default: return status.replace(/_/g, ' ').toUpperCase()
   }
 }
 
