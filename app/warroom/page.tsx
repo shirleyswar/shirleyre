@@ -618,6 +618,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight 
   const [deals, setDeals] = useState<Deal[]>([])
   const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
   // Check 52: inline create form
   const [showAddForm, setShowAddForm] = useState(false)
   const [mmTitle, setMmTitle] = useState('')
@@ -786,7 +787,11 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight 
               const subline = name ? `${name} · ${statusLabel}` : statusLabel
               return (
                 <React.Fragment key={d.id}>
-                  <div style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box' }}>
+                  {/* Check 63: whole row clickable if deal_id present (MM deal is the deal itself) */}
+                  <div
+                    onClick={d.id ? () => router.push('/warroom/deal?id=' + d.id) : undefined}
+                    style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box', cursor: d.id ? 'pointer' : 'default' }}
+                  >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {shortAddr(d)}
@@ -830,6 +835,7 @@ interface DealWithClosing extends Deal {
 
 function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeight }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number }) {
   const [deals, setDeals] = useState<DealWithClosing[]>([])
+  const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -859,6 +865,15 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
           if (!closingMap[cd.deal_id]) closingMap[cd.deal_id] = cd.deadline_date
         })
         withClosing = rows.map(d => ({ ...d, _closingDate: closingMap[d.id] ?? null }))
+
+        // Check 35: fetch deal_economics for VALUE and COMMISSION columns
+        const { data: econData } = await supabase
+          .from('deal_economics')
+          .select('deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct, listing_rate, co_broker_on, co_broker_split')
+          .in('deal_id', ids)
+        const map: Record<string, DealEconomics> = {}
+        ;(econData ?? []).forEach((e: any) => { map[e.deal_id] = e as DealEconomics })
+        setEconMap(map)
       }
 
       setDeals(withClosing)
@@ -899,6 +914,12 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
         statusColor={C.textLow}
         totalCount={nextClosing ? headerRight : undefined}
       />
+      {/* Check 35: column headers */}
+      <div style={{ display: 'flex', padding: '7px 14px', borderBottom: `1px solid ${C.borderPanel}`, flexShrink: 0 }}>
+        <span style={{ ...DT8, color: C.textLow, flex: 1 }}>ADDRESS</span>
+        <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
+        <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
+      </div>
       <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
@@ -911,37 +932,38 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
               const name = d.deal_contacts?.[0]?.contacts?.name ?? ''
               // Check 35: closing date subline
               const closingStr = d._closingDate ? `closes ${fmtDate(d._closingDate)}` : null
-              const subline = [name, closingStr].filter(Boolean).join(' · ')
+              const subline = name || closingStr ? [name, closingStr].filter(Boolean).join(' · ') : ''
+              // Check 35: economics columns
+              const econ = econMap[d.id] ?? null
+              const commission = calcCommission(econ)
+              let dealValue: number | null = null
+              if (econ) {
+                if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price) {
+                  dealValue = econ.asking_price
+                } else if (econ.transaction_type === 'lease' && econ.sqft && econ.lease_rate_psf && econ.lease_term_years) {
+                  dealValue = econ.sqft * econ.lease_rate_psf * econ.lease_term_years
+                }
+              }
               return (
                 <React.Fragment key={d.id}>
-                  <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 8, minHeight: UC_ROW_H, boxSizing: 'border-box' }}>
+                  {/* Check 63: whole row clickable → deal page */}
+                  <div
+                    onClick={() => router.push('/warroom/deal?id=' + d.id)}
+                    style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: UC_ROW_H, boxSizing: 'border-box', cursor: 'pointer' }}
+                  >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {shortAddr(d)}
                       </div>
-                      <div style={{ ...DS7, color: C.textLow }}>
-                        {subline}
-                      </div>
+                      {subline && <div style={{ ...DS7, color: C.textLow }}>{subline}</div>}
                     </div>
-                    {/* Check 35: commission in moneyIn color */}
-                    <div style={{ ...DM1, color: C.moneyIn, flexShrink: 0 }}>
-                      {fmt$(d.commission_estimated)}
+                    {/* Check 35: VALUE and COMMISSION columns (Check 62: LANDED pill removed) */}
+                    <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>
+                      {fmtMoney(dealValue)}
                     </div>
-                    <button
-                      onClick={() => router.push(`/warroom/deal?id=${d.id}`)}
-                      style={{
-                        border: `1px solid ${C.moneyIn}`,
-                        borderRadius: 6,
-                        padding: '4px 9px',
-                        background: 'transparent',
-                        ...DT5,
-                        color: C.moneyIn,
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                    >
-                      LANDED
-                    </button>
+                    <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>
+                      {fmtMoney(commission)}
+                    </div>
                   </div>
                   {i < displayDeals.length - 1 && <Hair />}
                 </React.Fragment>
@@ -1171,7 +1193,7 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
                                 {item.time ? item.time.slice(0, 5) : '—'}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ ...DS5, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                                <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
                                 {item.context && <div style={{ ...DS8, color: C.textLow }}>{item.context}</div>}
                               </div>
                             </div>
@@ -1645,11 +1667,12 @@ function ReceivablesCard({ refreshKey }: { refreshKey: number }) {
         <span style={{ ...DT1, color: C.textMid }}>RECEIVABLES</span>
       </div>
       {/* D4.3: two DM0 figures on one row — collected left (money-in), outstanding right (brand-lift) */}
+      {/* Check 1 close: fontSize reduced 34.5→28px to clear 3px scrollH overflow within 130px cap */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 }}>
-        <div style={{ ...DM0, color: C.moneyIn, textShadow: 'none' }}>
+        <div style={{ ...DM0, fontSize: 28, color: C.moneyIn, textShadow: 'none' }}>
           {loading ? '—' : fmtMoney(collected)}
         </div>
-        <div style={{ ...DM0, color: C.brandLift, textShadow: 'none' }}>
+        <div style={{ ...DM0, fontSize: 28, color: C.brandLift, textShadow: 'none' }}>
           {loading ? '—' : fmtMoney(outstanding)}
         </div>
       </div>
