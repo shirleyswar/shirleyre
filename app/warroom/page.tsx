@@ -68,6 +68,10 @@ interface DealEconomics {
   lease_rate_psf?: number | null
   lease_term_years?: number | null
   lease_commission_pct?: number | null
+  // Check 48: commission rate model fields
+  listing_rate?: number | null
+  co_broker_on?: boolean | null
+  co_broker_split?: number | null
 }
 
 interface Task {
@@ -377,7 +381,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
       setLoading(true)
       const { data } = await supabase
         .from('tasks')
-        .select('id, title, status, due_date, completed_at, deal_id, deals(name, address)')
+        .select('id, title, status, due_date, completed_at, deal_id, deals(name, address, addr_display)')
         .eq('status', 'open')
         .is('deleted_at', null)
         .order('due_date', { ascending: true, nullsFirst: false })
@@ -424,16 +428,29 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
   const lateCount = groups.overdue.length
   const totalCount = tasks.length
 
-  // D4.1: hairline rows, not cards. 20px reserved spine gutter.
+  // D4.1: hairline rows. Check 31: title line 1, "address · client" subline, right-aligned date gutter.
   function TaskRow({ t, overdue }: { t: Task; overdue?: boolean }) {
-    const days = t.due_date ? Math.abs(daysBetween(t.due_date)) : null
+    const days = t.due_date ? daysBetween(t.due_date) : null
+    const absDays = days != null ? Math.abs(days) : null
     const isOverdue = overdue && t.due_date && t.due_date < todayStr
+
+    // Check 31: "address · client" subline from deal data
+    const dealAddr = (t as any).deals?.addr_display ?? (t as any).deals?.address ?? (t as any).deals?.name ?? null
+    const dealClient = (t as any).deals?.name && (t as any).deals?.name !== dealAddr ? (t as any).deals.name : null
+    const sublineParts: string[] = []
+    if (dealAddr) sublineParts.push(dealAddr)
+    if (dealClient) sublineParts.push(dealClient)
+    const subline = sublineParts.join(' · ')
+
+    // Check 31: date gutter — day count ("3D") and due date ("AUG 26"), 84px, nowrap
+    const dayLabel = days != null ? (isOverdue ? `${absDays}D LATE` : days === 0 ? 'TODAY' : `${days}D`) : null
+    const dateLabel = t.due_date ? fmtDate(t.due_date).toUpperCase() : null
 
     return (
       <div
         onClick={() => onSelectTask?.(t)}
         style={{
-          padding: isOverdue ? '12px 14px 12px 17px' : '12px 14px 12px 20px',
+          padding: isOverdue ? '10px 14px 10px 17px' : '10px 14px 10px 20px',
           display: 'flex',
           alignItems: 'center',
           gap: 8,
@@ -443,18 +460,23 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
           marginLeft: isOverdue ? -3 : 0,
         }}
       >
-        <span style={{ ...DS3, color: C.textHi, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {t.title}
-        </span>
-        {t.deals && (
-          <span style={{ ...DS6, color: C.textLow, flexShrink: 0 }}>
-            {t.deals.name}
-          </span>
-        )}
-        {isOverdue && days != null && (
-          <span style={{ ...DT5, color: C.late, flexShrink: 0, width: 44, textAlign: 'right' }}>
-            {days}d
-          </span>
+        {/* Content: title + subline */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {t.title}
+          </div>
+          {subline && (
+            <div style={{ ...DS7, color: C.textLow, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {subline}
+            </div>
+          )}
+        </div>
+        {/* Check 31: right-aligned date gutter 84px, two lines, nowrap */}
+        {(dayLabel || dateLabel) && (
+          <div style={{ flexShrink: 0, width: 84, textAlign: 'right' }}>
+            {dayLabel && <div style={{ ...DT7 as React.CSSProperties, color: isOverdue ? C.late : C.textLow, whiteSpace: 'nowrap' }}>{dayLabel}</div>}
+            {dateLabel && !isOverdue && <div style={{ ...DT7 as React.CSSProperties, color: C.textLow, whiteSpace: 'nowrap' }}>{dateLabel}</div>}
+          </div>
         )}
       </div>
     )
@@ -579,7 +601,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
 const MM_HEADER = 41
 const MM_ROW_H  = 44
 
-function MoneyMoversPanel({ refreshKey, visibleRows }: { refreshKey: number; visibleRows: number }) {
+function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void }) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
   const [loading, setLoading] = useState(true)
@@ -595,6 +617,8 @@ function MoneyMoversPanel({ refreshKey, visibleRows }: { refreshKey: number; vis
         .limit(30)
       const rows = (dealData ?? []) as unknown as Deal[]
       setDeals(rows)
+      // Check 30: report real count to parent
+      onCountChange?.(rows.length)
 
       if (rows.length > 0) {
         const ids = rows.map(d => d.id)
@@ -609,15 +633,17 @@ function MoneyMoversPanel({ refreshKey, visibleRows }: { refreshKey: number; vis
       setLoading(false)
     }
     load()
-  }, [refreshKey])
+  }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const enriched = deals.map(d => {
     const econ = econMap[d.id] ?? null
     const commission = calcCommission(econ)
     let dealValue: number | null = null
     if (econ) {
-      if (econ.transaction_type === 'sale' && econ.asking_price) dealValue = econ.asking_price
-      else if ((econ.transaction_type === 'lease' || econ.transaction_type === 'both') && econ.sqft && econ.lease_rate_psf && econ.lease_term_years) {
+      // Check 47: 'both' and 'sale' both use asking_price for VALUE
+      if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price) {
+        dealValue = econ.asking_price
+      } else if (econ.transaction_type === 'lease' && econ.sqft && econ.lease_rate_psf && econ.lease_term_years) {
         dealValue = econ.sqft * econ.lease_rate_psf * econ.lease_term_years
       }
     }
@@ -625,6 +651,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows }: { refreshKey: number; vis
   })
 
   const headerTotal = enriched.reduce((s, d) => s + (d._commission ?? 0), 0)
+  const dealCount = enriched.length
 
   // D4.4 item 7: terminal row replaces last visible row
   const effectiveVisible = visibleRows > 0 ? visibleRows : enriched.length
@@ -635,7 +662,14 @@ function MoneyMoversPanel({ refreshKey, visibleRows }: { refreshKey: number; vis
 
   return (
     <Panel style={{ flexShrink: 0 }}>
-      <PanelHeader glyph={G.moneyMovers} label="MONEY MOVERS" totalCount={headerTotal > 0 ? fmtMoney(headerTotal) : `${enriched.length}`} />
+      {/* Check 33: show deal count left, commission total right */}
+      <PanelHeader
+        glyph={G.moneyMovers}
+        label="MONEY MOVERS"
+        statusCount={dealCount > 0 ? `${dealCount}` : undefined}
+        statusColor={C.textLow}
+        totalCount={headerTotal > 0 ? fmtMoney(headerTotal) : undefined}
+      />
       {/* Column header */}
       <div style={{
         display: 'flex',
@@ -654,27 +688,33 @@ function MoneyMoversPanel({ refreshKey, visibleRows }: { refreshKey: number; vis
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>No money movers.</div>
         ) : (
           <>
-            {displayDeals.map((d, i) => (
-              <React.Fragment key={d.id}>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {shortAddr(d)}
+            {displayDeals.map((d, i) => {
+              // Check 49: null name renders blank, not '—'
+              const name = d.deal_contacts?.[0]?.contacts?.name ?? ''
+              const statusLabel = d.status.replace(/_/g,' ')
+              const subline = name ? `${name} · ${statusLabel}` : statusLabel
+              return (
+                <React.Fragment key={d.id}>
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {shortAddr(d)}
+                      </div>
+                      <div style={{ ...DS7, color: C.textLow }}>
+                        {subline}
+                      </div>
                     </div>
-                    <div style={{ ...DS7, color: C.textLow }}>
-                      {clientName(d)} · {d.status.replace(/_/g,' ')}
+                    <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>
+                      {fmtMoney(d._dealValue)}
+                    </div>
+                    <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>
+                      {fmtMoney(d._commission)}
                     </div>
                   </div>
-                  <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>
-                    {fmtMoney(d._dealValue)}
-                  </div>
-                  <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>
-                    {fmtMoney(d._commission)}
-                  </div>
-                </div>
-                {i < displayDeals.length - 1 && <Hair />}
-              </React.Fragment>
-            ))}
+                  {i < displayDeals.length - 1 && <Hair />}
+                </React.Fragment>
+              )
+            })}
             {/* D4.4 item 7: terminal row replaces last visible row */}
             {moreCount > 0 && (
               <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
@@ -693,8 +733,12 @@ function MoneyMoversPanel({ refreshKey, visibleRows }: { refreshKey: number; vis
 const UC_HEADER = 41
 const UC_ROW_H  = 52
 
-function UnderContractPanel({ refreshKey, visibleRows }: { refreshKey: number; visibleRows: number }) {
-  const [deals, setDeals] = useState<Deal[]>([])
+interface DealWithClosing extends Deal {
+  _closingDate?: string | null
+}
+
+function UnderContractPanel({ refreshKey, visibleRows, onCountChange }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void }) {
+  const [deals, setDeals] = useState<DealWithClosing[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -706,11 +750,33 @@ function UnderContractPanel({ refreshKey, visibleRows }: { refreshKey: number; v
         .eq('status', 'under_contract')
         .order('created_at', { ascending: true })
         .limit(30)
-      setDeals((data ?? []) as unknown as Deal[])
+      const rows = (data ?? []) as unknown as Deal[]
+
+      // Check 35: fetch closing deadlines for each deal
+      let withClosing: DealWithClosing[] = rows.map(d => ({ ...d, _closingDate: null }))
+      if (rows.length > 0) {
+        const ids = rows.map(d => d.id)
+        const { data: cdData } = await supabase
+          .from('contract_deadlines')
+          .select('deal_id, deadline_date')
+          .in('deal_id', ids)
+          .eq('deadline_type', 'closing')
+          .in('status', ['pending', 'extended'])
+          .order('deadline_date', { ascending: true })
+        const closingMap: Record<string, string> = {}
+        ;(cdData ?? []).forEach((cd: any) => {
+          if (!closingMap[cd.deal_id]) closingMap[cd.deal_id] = cd.deadline_date
+        })
+        withClosing = rows.map(d => ({ ...d, _closingDate: closingMap[d.id] ?? null }))
+      }
+
+      setDeals(withClosing)
+      // Check 30: report real count
+      onCountChange?.(rows.length)
       setLoading(false)
     }
     load()
-  }, [refreshKey])
+  }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // D4.4 item 7: terminal row replaces last visible row
   const effectiveVisible = visibleRows > 0 ? visibleRows : deals.length
@@ -719,9 +785,27 @@ function UnderContractPanel({ refreshKey, visibleRows }: { refreshKey: number; v
     : deals
   const moreCount = deals.length - displayDeals.length
 
+  // Check 36: earliest upcoming closing date for header
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+  const nextClosing = deals
+    .map(d => d._closingDate)
+    .filter((d): d is string => !!d && d >= today)
+    .sort()[0] ?? null
+
+  const headerRight = nextClosing
+    ? `CLOSES ${fmtDate(nextClosing).toUpperCase()}`
+    : String(deals.length)
+
   return (
     <Panel style={{ flexShrink: 0 }}>
-      <PanelHeader glyph={G.underContract} label="UNDER CONTRACT" totalCount={String(deals.length)} />
+      {/* Check 36: show next closing in header */}
+      <PanelHeader
+        glyph={G.underContract}
+        label="UNDER CONTRACT"
+        statusCount={deals.length > 0 ? String(deals.length) : undefined}
+        statusColor={C.textLow}
+        totalCount={nextClosing ? headerRight : undefined}
+      />
       <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
@@ -729,39 +813,47 @@ function UnderContractPanel({ refreshKey, visibleRows }: { refreshKey: number; v
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>No deals under contract.</div>
         ) : (
           <>
-            {displayDeals.map((d, i) => (
-              <React.Fragment key={d.id}>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 8, minHeight: UC_ROW_H, boxSizing: 'border-box' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {shortAddr(d)}
+            {displayDeals.map((d, i) => {
+              // Check 49: null name → blank
+              const name = d.deal_contacts?.[0]?.contacts?.name ?? ''
+              // Check 35: closing date subline
+              const closingStr = d._closingDate ? `closes ${fmtDate(d._closingDate)}` : null
+              const subline = [name, closingStr].filter(Boolean).join(' · ')
+              return (
+                <React.Fragment key={d.id}>
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 8, minHeight: UC_ROW_H, boxSizing: 'border-box' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {shortAddr(d)}
+                      </div>
+                      <div style={{ ...DS7, color: C.textLow }}>
+                        {subline}
+                      </div>
                     </div>
-                    <div style={{ ...DS7, color: C.textLow }}>
-                      {clientName(d)} · {d.status.replace(/_/g,' ')}
+                    {/* Check 35: commission in moneyIn color */}
+                    <div style={{ ...DM1, color: C.moneyIn, flexShrink: 0 }}>
+                      {fmt$(d.commission_estimated)}
                     </div>
+                    <button
+                      onClick={() => router.push(`/warroom/deal?id=${d.id}`)}
+                      style={{
+                        border: `1px solid ${C.moneyIn}`,
+                        borderRadius: 6,
+                        padding: '4px 9px',
+                        background: 'transparent',
+                        ...DT5,
+                        color: C.moneyIn,
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      LANDED
+                    </button>
                   </div>
-                  <div style={{ ...DM1, color: C.moneyIn, flexShrink: 0 }}>
-                    {fmt$(d.commission_estimated)}
-                  </div>
-                  <button
-                    onClick={() => router.push(`/warroom/deal?id=${d.id}`)}
-                    style={{
-                      border: `1px solid ${C.moneyIn}`,
-                      borderRadius: 6,
-                      padding: '4px 9px',
-                      background: 'transparent',
-                      ...DT5,
-                      color: C.moneyIn,
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                  >
-                    LANDED
-                  </button>
-                </div>
-                {i < displayDeals.length - 1 && <Hair />}
-              </React.Fragment>
-            ))}
+                  {i < displayDeals.length - 1 && <Hair />}
+                </React.Fragment>
+              )
+            })}
             {/* D4.4 item 7: terminal row replaces last visible row */}
             {moreCount > 0 && (
               <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
@@ -844,10 +936,18 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
 
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 
+  // Check 50: column headers show weekday + date number (e.g. "TUE 25")
+  function colLabel(dateStr: string): string {
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const dt = new Date(y, m - 1, d)
+    const wd = dt.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
+    return `${wd} ${d}`
+  }
+
   const COLS = [
     { label: 'TONIGHT', date: todayStr, dim: false },
-    { label: (([y,m,d]) => new Date(y,m-1,d).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase())(getColDate(1).split('-').map(Number)), date: getColDate(1), dim: false },
-    { label: (([y,m,d]) => new Date(y,m-1,d).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase())(getColDate(2).split('-').map(Number)), date: getColDate(2), dim: false },
+    { label: colLabel(getColDate(1)), date: getColDate(1), dim: false },
+    { label: colLabel(getColDate(2)), date: getColDate(2), dim: false },
     { label: 'JUST BEYOND', date: getColDate(3), dim: true },
   ]
 
@@ -896,7 +996,21 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
   return (
     <div style={{ flexShrink: 0, height: 236, overflow: 'hidden' }}>
       <Panel style={{ height: '100%' }}>
-        <PanelHeader glyph={G.next48} label={`${windowItemCount} ITEMS · WINDOW 48H`} />
+        {/* Check 27: proper panel header — glyph, NEXT 48 label, item count left, WINDOW 48H right */}
+        <div style={{
+          flexShrink: 0,
+          padding: '13px 18px 11px',
+          borderBottom: `1px solid ${C.borderPanel}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <span style={{ color: C.brandLift, flexShrink: 0 }}>{G.next48}</span>
+          <span style={{ ...DT1, color: C.textMid }}>NEXT 48</span>
+          <div style={{ flex: 1, height: 1, background: C.borderPanel }} />
+          <span style={{ ...DT5, color: C.textLow }}>{windowItemCount}</span>
+          <span style={{ ...DT5, color: C.textLow }}>WINDOW 48H</span>
+        </div>
         <div
           ref={bandRef}
           style={{ flex: 1, minHeight: 0, display: 'flex', gap: 16, padding: '0 14px 14px', overflow: 'hidden' }}
@@ -987,9 +1101,10 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
 const SCHED_HEADER = 41
 const SCHED_ROW_H  = 36
 
-function SchedulePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: number; panelHeight?: number; visibleRows: number }) {
+function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void }) {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAddForm, setShowAddForm] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -1002,11 +1117,14 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: n
         .lte('date', d1)
         .order('date').order('time')
         .limit(30)
-      setEvents((data ?? []) as ScheduleEvent[])
+      const rows = (data ?? []) as ScheduleEvent[]
+      setEvents(rows)
+      // Check 30: report real count to parent
+      onCountChange?.(rows.length)
       setLoading(false)
     }
     load()
-  }, [refreshKey])
+  }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
   const d1 = new Date(new Date(todayStr).getTime() + 86400000).toISOString().slice(0, 10)
@@ -1059,7 +1177,25 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: n
 
   return (
     <Panel style={{ flexShrink: 0, height: h }}>
-      <PanelHeader glyph={G.schedule} label="SCHEDULE" />
+      {/* Check 28: SCHEDULE header with FAB, 55px */}
+      <div style={{
+        flexShrink: 0,
+        padding: '13px 18px 11px',
+        borderBottom: `1px solid ${C.borderPanel}`,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        minHeight: 55,
+        boxSizing: 'border-box',
+      }}>
+        <span style={{ color: C.brandLift, flexShrink: 0 }}>{G.schedule}</span>
+        <span style={{ ...DT1, color: C.textMid }}>SCHEDULE</span>
+        <div style={{ flex: 1, height: 1, background: C.borderPanel }} />
+        <span style={{ ...DT5, color: C.textLow }}>{events.length}</span>
+        <div className="wr-fab-desktop-wrap" style={{ flexShrink: 0 }}>
+          <Fab label="Add event" onClick={() => setShowAddForm(v => !v)} />
+        </div>
+      </div>
       <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
@@ -1083,54 +1219,92 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: n
   )
 }
 
-// ── DUE (was DEADLINES) ───────────────────────────────────────────────────────
-// D4.3: Panel header label is "DUE" on screen everywhere.
+// ── DEADLINES (Check 46: renamed from DUE everywhere) ────────────────────────
 // Past-due rows: "N D LATE" with late spine.
 // Forward rows: "N D · MMM D" format.
-// D4.4: Header = 41px (no create control yet), rowHeight = 44px
-const DUE_HEADER = 41
+// Check 29: Header = 55px (has FAB create control), rowHeight = 44px
+const DUE_HEADER = 55  // Check 29: 41→55 for FAB
 const DUE_ROW_H  = 44
 
-function DuePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: number; panelHeight?: number; visibleRows: number }) {
-  const [deadlines, setDeadlines] = useState<Array<{
-    id: string; title: string; due_date: string; kind: string;
-    deals?: { name: string; address: string | null; addr_display: string | null; addr_street_name: string | null; addr_number: string | null; addr_city: string | null } | null
-  }>>([])
+interface DeadlineRow {
+  id: string
+  title: string
+  due_date: string
+  kind: string
+  deal_id?: string | null
+  deals?: { name: string; address: string | null; addr_display: string | null; addr_street_name: string | null; addr_number: string | null; addr_city: string | null } | null
+}
+
+function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void }) {
+  const [deadlines, setDeadlines] = useState<DeadlineRow[]>([])
   const [loading, setLoading] = useState(true)
+  // Check 29: inline create form
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newLabel, setNewLabel] = useState('')
+  const [newDate, setNewDate] = useState('')
+  const [newKind, setNewKind] = useState('DEADLINE')
+  const [savingDeadline, setSavingDeadline] = useState(false)
+
+  async function loadDeadlines() {
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+    const cutoff = new Date(new Date(todayStr).getTime() + 86400000 * 45).toISOString().slice(0, 10)
+    const [{ data: pastDue }, { data: forward }] = await Promise.all([
+      supabase
+        .from('contract_deadlines')
+        .select('id, label, deadline_date, deadline_type, status, deal_id')
+        .in('status', ['pending', 'extended'])
+        .lt('deadline_date', todayStr)
+        .order('deadline_date', { ascending: true })
+        .limit(10),
+      supabase
+        .from('contract_deadlines')
+        .select('id, label, deadline_date, deadline_type, status, deal_id')
+        .in('status', ['pending', 'extended'])
+        .gte('deadline_date', todayStr)
+        .lte('deadline_date', cutoff)
+        .order('deadline_date', { ascending: true })
+        .limit(30),
+    ])
+    const combined = [...(pastDue ?? []), ...(forward ?? [])]
+    const rows: DeadlineRow[] = combined.map((t: any) => ({
+      ...t,
+      title: t.label ?? t.deadline_type ?? 'Deadline',
+      due_date: t.deadline_date,
+      kind: t.deadline_type ?? 'DEADLINE',
+    }))
+    setDeadlines(rows)
+    onCountChange?.(rows.length)
+  }
 
   useEffect(() => {
-    async function load() {
-      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-      const cutoff = new Date(new Date(todayStr).getTime() + 86400000 * 45).toISOString().slice(0, 10)
-      const [{ data: pastDue }, { data: forward }] = await Promise.all([
-        supabase
-          .from('contract_deadlines')
-          .select('id, label, deadline_date, deadline_type, status, deal_id')
-          .in('status', ['pending', 'extended'])
-          .lt('deadline_date', todayStr)
-          .order('deadline_date', { ascending: true })
-          .limit(10),
-        supabase
-          .from('contract_deadlines')
-          .select('id, label, deadline_date, deadline_type, status, deal_id')
-          .in('status', ['pending', 'extended'])
-          .gte('deadline_date', todayStr)
-          .lte('deadline_date', cutoff)
-          .order('deadline_date', { ascending: true })
-          .limit(30),
-      ])
-      const combined = [...(pastDue ?? []), ...(forward ?? [])]
-      setDeadlines(combined.map((t: any) => ({ ...t, title: t.label ?? t.deadline_type ?? 'Deadline', due_date: t.deadline_date, kind: t.deadline_type ?? 'DEADLINE' })))
-      setLoading(false)
-    }
-    load()
-  }, [refreshKey])
+    setLoading(true)
+    loadDeadlines().finally(() => setLoading(false))
+  }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Check 29: save new deadline (deal_id optional)
+  async function saveDeadline() {
+    if (!newLabel.trim() || !newDate) return
+    setSavingDeadline(true)
+    await supabase.from('contract_deadlines').insert({
+      label: newLabel.trim(),
+      deadline_date: newDate,
+      deadline_type: newKind.toLowerCase(),
+      status: 'pending',
+      deal_id: null,
+    })
+    setSavingDeadline(false)
+    setNewLabel('')
+    setNewDate('')
+    setNewKind('DEADLINE')
+    setShowAddForm(false)
+    await loadDeadlines()
+  }
 
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
   const pastDue = deadlines.filter(d => d.due_date < todayStr)
   const pastDueCount = pastDue.length
 
-  // D4.4 item 7: terminal row replaces last visible row
+  // Check 14: terminal row IS the last slot — slice to effectiveVisible-1 data rows when overflow
   const effectiveVisible = visibleRows > 0 ? visibleRows : deadlines.length
   const displayDeadlines = deadlines.length > effectiveVisible
     ? deadlines.slice(0, Math.max(0, effectiveVisible - 1))
@@ -1141,13 +1315,60 @@ function DuePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: number
 
   return (
     <Panel style={{ flexShrink: 0, height: h }}>
-      <PanelHeader
-        glyph={G.deadlines}
-        label="DUE"
-        statusCount={pastDueCount > 0 ? `${pastDueCount} PAST DUE` : undefined}
-        statusColor={C.late}
-        totalCount={String(deadlines.length)}
-      />
+      {/* Check 46: DEADLINES. Check 29: FAB, 55px header */}
+      <div style={{
+        flexShrink: 0,
+        padding: '13px 18px 11px',
+        borderBottom: `1px solid ${C.borderPanel}`,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        minHeight: 55,
+        boxSizing: 'border-box',
+      }}>
+        <span style={{ color: C.brandLift, flexShrink: 0 }}>{G.deadlines}</span>
+        <span style={{ ...DT1, color: C.textMid }}>DEADLINES</span>
+        {pastDueCount > 0 && <span style={{ ...DT5, color: C.late }}>{pastDueCount} PAST DUE</span>}
+        <div style={{ flex: 1, height: 1, background: C.borderPanel }} />
+        <span style={{ ...DT5, color: C.textLow }}>{deadlines.length}</span>
+        <div className="wr-fab-desktop-wrap" style={{ flexShrink: 0 }}>
+          <Fab label="Add deadline" onClick={() => setShowAddForm(v => !v)} />
+        </div>
+      </div>
+
+      {/* Check 29: inline add form */}
+      {showAddForm && (
+        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.borderPanel}`, display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+          <input
+            placeholder="Label"
+            value={newLabel}
+            onChange={e => setNewLabel(e.target.value)}
+            style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="date"
+              value={newDate}
+              onChange={e => setNewDate(e.target.value)}
+              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, flex: 1, colorScheme: 'dark' }}
+            />
+            <input
+              placeholder="Kind"
+              value={newKind}
+              onChange={e => setNewKind(e.target.value)}
+              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, width: 90 }}
+            />
+            <button
+              onClick={saveDeadline}
+              disabled={savingDeadline}
+              style={{ ...DT5, color: C.moneyIn, background: 'transparent', border: `1px solid ${C.moneyIn}`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
+            >
+              {savingDeadline ? '…' : 'ADD'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
@@ -1160,11 +1381,11 @@ function DuePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: number
               const isPast = days < 0
               const absDays = Math.abs(days)
               const isUrgent = !isPast && days <= 7
-              const isFirst = i === 0
               const isFirstFuture = !isPast && (i === 0 || deadlines.slice(0, i).every(x => daysBetween(x.due_date) < 0))
 
               return (
                 <React.Fragment key={d.id}>
+                  {/* Check 37: title first, property beneath, kind label right-aligned */}
                   <div style={{
                     display: 'flex',
                     gap: 8,
@@ -1175,7 +1396,7 @@ function DuePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: number
                     borderLeft: isPast ? `3px solid ${C.late}` : isFirstFuture ? `3px solid ${C.hot}` : '3px solid transparent',
                     alignItems: 'flex-start',
                   }}>
-                    {/* Days — D4.3: "N D LATE" when past, "N D · MMM D" when forward */}
+                    {/* Days gutter */}
                     <div style={{ flexShrink: 0, width: 84 }}>
                       {isPast ? (
                         <div style={{ ...DT7 as React.CSSProperties, color: C.late, whiteSpace: 'nowrap' }}>
@@ -1187,24 +1408,25 @@ function DuePanel({ refreshKey, panelHeight, visibleRows }: { refreshKey: number
                         </div>
                       )}
                     </div>
-                    {/* Kind */}
-                    <div style={{ ...DT7 as React.CSSProperties, color: C.textLow, flexShrink: 0, textAlign: 'right' }}>{d.kind}</div>
-                    {/* Content */}
+                    {/* Content: title + property line */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</div>
                       {d.deals && <div style={{ ...DS7, color: C.textLow }}>{d.deals.addr_display ?? d.deals.addr_street_name ?? d.deals.name}</div>}
                     </div>
+                    {/* Check 37: kind right-aligned */}
+                    <div style={{ ...DT7 as React.CSSProperties, color: C.textLow, flexShrink: 0, textAlign: 'right', minWidth: 60 }}>{(d.kind || '').toUpperCase()}</div>
                   </div>
                   {i < displayDeadlines.length - 1 && <Hair />}
                 </React.Fragment>
               )
             })}
-            {/* D4.4 item 7: terminal row replaces last visible row */}
+            {/* Check 14: terminal IS the last slot */}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
+              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE DEADLINES</div>
             )}
           </>
         )}
+
       </div>
     </Panel>
   )
@@ -1234,6 +1456,7 @@ function ReceivablesCard({ refreshKey }: { refreshKey: number }) {
   const outstanding = total - collected
   const pct = total > 0 ? Math.round((collected / total) * 100) : 0
 
+  // Check 1: reduce padding to 10px top/bottom and gap to 5 to fix scrollH overflow within 130px box
   return (
     <div style={{
       flexShrink: 0,
@@ -1243,10 +1466,10 @@ function ReceivablesCard({ refreshKey }: { refreshKey: number }) {
       overflow: 'hidden',
       border: `1px solid ${C.border}`,
       background: 'linear-gradient(155deg, rgba(52,211,153,0.09), rgba(139,92,246,0.05))',
-      padding: '12px 16px',
+      padding: '10px 16px',
       display: 'flex',
       flexDirection: 'column',
-      gap: 6,
+      gap: 5,
     }}>
       {/* Panel header row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -1424,6 +1647,10 @@ export default function WarRoomPage() {
   const [drawerTask, setDrawerTask] = useState<Task | null>(null)
   const [createMode, setCreateMode] = useState(false)
 
+  // Check 5: container ref for ResizeObserver-computed column widths
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerW, setContainerW] = useState(0)
+
   // D4.4: Column B ref for elastic allocation
   const colBRef = useRef<HTMLDivElement>(null)
   const [colBHeight, setColBHeight] = useState(0)
@@ -1432,11 +1659,7 @@ export default function WarRoomPage() {
   const colCRef = useRef<HTMLDivElement>(null)
   const [colCHeight, setColCHeight] = useState(0)
 
-  // D4.4: row counts from panels — lifted up so column-level allocation can use them
-  // These are "demand row counts" — the actual number of records fetched
-  // We use conservative defaults until panels load their data
-  // For now: use ResizeObserver on columns + fixed row heights to compute allocations
-  // Panel row counts are estimated from data — panels pass rowCount up via callback
+  // Check 30: real record counts from panels (lifted up for elastic allocator)
   const [mmRowCount, setMmRowCount] = useState(5)
   const [ucRowCount, setUcRowCount] = useState(3)
   const [schedRowCount, setSchedRowCount] = useState(4)
@@ -1447,11 +1670,33 @@ export default function WarRoomPage() {
     if (expiry && Date.now() < parseInt(expiry)) setUnlocked(true)
   }, [])
 
+  // Check 5: ResizeObserver on the three-column container for runtime column widths
+  useEffect(() => {
+    if (!containerRef.current) return
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerW(entry.contentRect.width)
+    })
+    ro.observe(containerRef.current)
+    return () => ro.disconnect()
+  }, [unlocked])
+
   const handlePinSuccess = useCallback(() => {
     const expiry = Date.now() + SESSION_HOURS * 60 * 60 * 1000
     localStorage.setItem(SESSION_KEY, expiry.toString())
     setUnlocked(true)
   }, [])
+
+  // Check 5: Compute column widths from container
+  // net = containerW - 2*18 (two outer gaps), A = max(0.30*net, 441), B = (net-A)*(0.39/0.70), C = net-A-B
+  const GAP = 18
+  const colWidths = (() => {
+    if (containerW <= 0) return { A: 441, B: 400, C: 300 }
+    const net = containerW - 2 * GAP
+    const A = Math.max(0.30 * net, 441)
+    const B = (net - A) * (0.39 / 0.70)
+    const C = net - A - B
+    return { A: Math.round(A), B: Math.round(B), C: Math.round(C) }
+  })()
 
   // D4.4: measure column B height
   useEffect(() => {
@@ -1546,16 +1791,19 @@ export default function WarRoomPage() {
           {/* ── NEXT 48 — 236px fixed ── */}
           <Next48Panel refreshKey={refreshKey} />
 
-          {/* ── Three-column row ── */}
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            gap: 18,
-            minHeight: 0,
-          }}>
+          {/* ── Three-column row — Check 5: widths computed via ResizeObserver ── */}
+          <div
+            ref={containerRef}
+            style={{
+              flex: 1,
+              display: 'flex',
+              gap: 18,
+              minHeight: 0,
+            }}
+          >
 
-            {/* Column A — 0.30 of content width, floored at 441px (D4.1) */}
-            <div style={{ flex: '0 0 30%', minWidth: 441, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            {/* Column A — Check 5: runtime width, floor 441px */}
+            <div style={{ width: colWidths.A, flexShrink: 0, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <BattlePlanPanel
                 refreshKey={refreshKey}
                 onSelectTask={setDrawerTask}
@@ -1563,35 +1811,39 @@ export default function WarRoomPage() {
               />
             </div>
 
-            {/* Column B — 0.39 of content width (D4.2) */}
+            {/* Column B — Check 5: runtime width */}
             <div
               ref={colBRef}
-              style={{ flex: '0 0 39%', boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}
+              style={{ width: colWidths.B, flexShrink: 0, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}
             >
               <MoneyMoversPanel
                 refreshKey={refreshKey}
                 visibleRows={colBAllocs[0].visibleRows}
+                onCountChange={setMmRowCount}
               />
               <UnderContractPanel
                 refreshKey={refreshKey}
                 visibleRows={colBAllocs[1].visibleRows}
+                onCountChange={setUcRowCount}
               />
             </div>
 
-            {/* Column C — 0.31 of content width (D4.3) */}
+            {/* Column C — Check 5: runtime width */}
             <div
               ref={colCRef}
-              style={{ flex: 1, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}
+              style={{ width: colWidths.C, flexShrink: 0, boxSizing: 'border-box', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 18 }}
             >
               <SchedulePanel
                 refreshKey={refreshKey}
                 panelHeight={colCAllocs[0].height}
                 visibleRows={colCAllocs[0].visibleRows}
+                onCountChange={setSchedRowCount}
               />
               <DuePanel
                 refreshKey={refreshKey}
                 panelHeight={colCAllocs[1].height}
                 visibleRows={colCAllocs[1].visibleRows}
+                onCountChange={setDueRowCount}
               />
               <ReceivablesCard refreshKey={refreshKey} />
             </div>
@@ -1607,6 +1859,7 @@ export default function WarRoomPage() {
           onClose={() => { setDrawerTask(null); setCreateMode(false) }}
           onCompleted={() => { setDrawerTask(null); setCreateMode(false); setRefreshKey(k => k + 1) }}
           onSaved={() => { setDrawerTask(null); setCreateMode(false); setRefreshKey(k => k + 1) }}
+          isCreate={createMode && !drawerTask}
         />
       )}
     </div>

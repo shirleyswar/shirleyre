@@ -1,12 +1,36 @@
 /**
  * Deal commission calculator — single source of truth.
  * HOUSE_SPLIT: broker keeps 75%, house takes 25%.
- * co_brokers splits gross before this — separate axis, not modelled here.
+ *
+ * Check 48: Commission rate model with two fields:
+ *   listing_rate: full listing commission % (e.g. 6.00)
+ *   co_broker_on: whether co-broker split is active (default 50% split)
+ *   co_broker_split: co-broker share fraction (default 0.50)
+ *
+ * New records: effective_rate = listing_rate × (co_broker_on ? co_broker_split : 1)
+ * Existing records: stored rate already baked in — use as-is (co_broker_on=false).
  *
  * Both functions return null if any required input is null.
  * A missing figure is not zero.
  */
 export const HOUSE_SPLIT = 0.75
+
+/** Check 48: default co-broker split fraction */
+export const DEFAULT_CO_BROKER_SPLIT = 0.50
+
+/**
+ * Check 48: Compute effective commission rate from listing rate + co-broker fields.
+ * co_broker_on: if true, multiply by co_broker_split (defaults to 0.50).
+ * Existing records (co_broker_on=false) pass their stored rate through unchanged.
+ */
+export function effectiveRate(
+  listing_rate: number,
+  co_broker_on: boolean,
+  co_broker_split: number = DEFAULT_CO_BROKER_SPLIT,
+): number {
+  if (co_broker_on) return listing_rate * co_broker_split
+  return listing_rate
+}
 
 /**
  * Sale commission estimate.
@@ -73,8 +97,13 @@ export function calcCommission(econ: {
 
 /**
  * Format a commission or value for display. Null → em-dash.
+ * Check 34: values ≥1M → "$1.2M", ≥1K → "$43K", else full.
  */
 export function fmtMoney(n: number | null | undefined): string {
   if (n == null) return '—'
-  return '$' + Math.round(n).toLocaleString()
+  const abs = Math.abs(n)
+  const sign = n < 0 ? '-' : ''
+  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`
+  if (abs >= 1_000) return `${sign}$${Math.round(abs / 1_000)}K`
+  return `${sign}$${Math.round(abs).toLocaleString()}`
 }

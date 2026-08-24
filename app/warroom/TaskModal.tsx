@@ -75,6 +75,8 @@ export interface TaskModalProps {
   onClose: () => void
   onCompleted: (task: Task) => void
   onSaved: () => void
+  /** Check 40: when true, modal opens in edit mode with no DELETE, no EDIT button */
+  isCreate?: boolean
 }
 
 // ── Date helpers — D11.6, local calendar parse only ──────────────────────────
@@ -142,9 +144,10 @@ function ExternalIcon() {
 }
 
 // ── TaskModal ─────────────────────────────────────────────────────────────────
-export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskModalProps) {
+export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreate = false }: TaskModalProps) {
   // ── State machine ──────────────────────────────────────────────────────────
-  const [mode, setMode] = useState<'read' | 'edit'>('read')
+  // Check 40: create mode always starts in edit state
+  const [mode, setMode] = useState<'read' | 'edit'>(isCreate ? 'edit' : 'read')
   const [stagedDate, setStagedDate] = useState<string | null>(null)
   const [noteText, setNoteText] = useState('')
   const [localTitle, setLocalTitle] = useState(task.title)
@@ -183,7 +186,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
     listType,
     committedListType: committeListType,
   }
-  const isActive = isTaskStaged(stagingState)
+  // Check 39/40: in create mode, CONFIRM is active when title is non-empty
+  const isActive = isCreate ? localTitle.trim().length > 0 : isTaskStaged(stagingState)
   // Keep ref in sync so the Esc handler always reads the current value without being re-registered.
   isActiveRef.current = isActive
 
@@ -301,6 +305,33 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
 
   async function handleConfirm() {
     if (!isActive || saving || committed) return
+
+    // Check 39: create mode — INSERT first, then close (do NOT call commit_task_sheet)
+    if (isCreate) {
+      setSaving(true)
+      setError(null)
+      const { error: insertErr } = await supabase
+        .from('tasks')
+        .insert({
+          title: localTitle,
+          status: 'open',
+          due_date: stagedDate ?? null,
+          is_life: listType === 'life',
+          is_entity: listType === 'entity',
+        })
+      setSaving(false)
+      if (insertErr) {
+        setError(insertErr.message || 'Could not create task. Try again.')
+        return
+      }
+      setCommitted(true)
+      setTimeout(() => {
+        setCommitted(false)
+        onSaved()
+      }, 1500)
+      return
+    }
+
     const ok = await runCommit()
     if (!ok) return
     // Advance committedTitleRef so titleEdited → false immediately.
@@ -471,17 +502,18 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
           borderBottom: `1px solid ${C.borderPanel}`,
         }}>
           {/* Left zone — flex:1 so it absorbs available space */}
+          {/* Check 42: READ → blank header, EDIT → "EDIT" */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
             <span style={{ ...DT0, color: C.textMid }}>
-              {mode === 'edit' ? 'Edit Task' : 'Task'}
+              {mode === 'edit' ? 'EDIT' : ''}
             </span>
           </div>
 
-          {/* Centre zone — DELETE asset, edit state only. flexShrink:0 so it doesn't compress.
+          {/* Centre zone — DELETE asset, edit state only, and NOT in create mode (Check 41).
               Centred because both side zones are flex:1. Immune to label length.
               Desktop: pointer-driven — rendered image box is the target, same as ×.
               Mount by height (24px). 102.0px width is arithmetic; DOM measures it. */}
-          {mode === 'edit' ? (
+          {mode === 'edit' && !isCreate ? (
             <button
               ref={desktopDeleteRef}
               onClick={() => setShowDeleteConfirm(true)}
@@ -505,8 +537,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
 
           {/* Right zone — flex:1, children pushed right. × ESC always last and never moves. */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16 }}>
-          {/* READ  → DONE caption + checkmark. EDIT → empty (DELETE is centred above). */}
-          {mode === 'read' && (
+          {/* READ mode (non-create) → DONE caption + checkmark. EDIT/create → empty. */}
+          {/* Check 40/41: no DONE in create mode (task not saved yet) */}
+          {mode === 'read' && !isCreate && (
             <button
               onClick={handleDone}
               disabled={saving}
@@ -889,24 +922,25 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved }: TaskM
           borderTop: `1px solid ${C.borderPanel}`,
         }}>
           {/* Left: EDIT / CANCEL asset slot — 161.5×60, PNG centred.
-              Mount by height (60px → 148.33px art). Width follows aspect 2.4722.
-              Asset names itself — no caption. */}
+              Check 40: hide this slot entirely in create mode (no EDIT toggle needed). */}
           <div style={{ width: 161.5, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button
-              onClick={mode === 'read' ? enterEdit : cancelEdit}
-              style={{
-                background: 'transparent', border: 'none', padding: 0,
-                cursor: 'pointer', display: 'flex', alignItems: 'center',
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={mode === 'read' ? '/assets/edit/edit-h180.png' : '/assets/cancel/cancel-h180.png'}
-                alt={mode === 'read' ? 'Edit' : 'Cancel'}
-                height={60}
-                style={{ height: 60, width: 'auto', display: 'block' }}
-              />
-            </button>
+            {!isCreate && (
+              <button
+                onClick={mode === 'read' ? enterEdit : cancelEdit}
+                style={{
+                  background: 'transparent', border: 'none', padding: 0,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center',
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={mode === 'read' ? '/assets/edit/edit-h180.png' : '/assets/cancel/cancel-h180.png'}
+                  alt={mode === 'read' ? 'Edit' : 'Cancel'}
+                  height={60}
+                  style={{ height: 60, width: 'auto', display: 'block' }}
+                />
+              </button>
+            )}
           </div>
 
           {/* Spacer */}
