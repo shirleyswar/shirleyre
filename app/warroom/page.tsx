@@ -890,9 +890,17 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
                 </React.Fragment>
               )
             })}
-            {/* D4.4 item 7: terminal row replaces last visible row */}
+            {/* D4.4 item 7: terminal row — arrow navigates to /warroom/deals?filter=uc */}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
+              <div
+                onClick={() => router.push('/warroom/deals?filter=uc')}
+                style={{ ...DS7, color: C.textLow, padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                + {moreCount} MORE
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </div>
             )}
           </>
         )}
@@ -1580,18 +1588,17 @@ type RailSlot = 'HOME' | 'PEOPLE' | 'DEALS'
 function LeftRail({ active }: { active: RailSlot }) {
   const router = useRouter()
 
+  // HOME=1 · DEALS=2 · PEOPLE=3 (per D5.2 spec update)
   const slots: { id: RailSlot; label: string; glyph: React.ReactNode; href: string }[] = [
     { id: 'HOME',   label: 'HOME',   glyph: G.home,   href: '/warroom' },
-    { id: 'PEOPLE', label: 'PEOPLE', glyph: G.people, href: '/warroom/contacts' },
     { id: 'DEALS',  label: 'DEALS',  glyph: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/>
-        <line x1="16" y1="17" x2="8" y2="17"/>
-        <polyline points="10 9 9 9 8 9"/>
+      // Document/pipeline glyph per 49a frame
+      <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3.5" y="4" width="17" height="10" rx="1.5"/>
+        <path d="M12 14v7M7 7.8h6M7 10.8h9"/>
       </svg>
     ), href: '/warroom/deals' },
+    { id: 'PEOPLE', label: 'PEOPLE', glyph: G.people, href: '/warroom/contacts' },
   ]
 
   return (
