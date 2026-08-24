@@ -174,14 +174,16 @@ function computeAlloc(budget: number, panels: PanelSpec[]): PanelAlloc[] {
   const totalBudget = budget - (panels.length - 1) * GAP
   const demands = panels.map(p => p.header + p.rowCount * p.rowHeight)
   const floors = panels.map(p => p.header + 2 * p.rowHeight)
-  const totalDemand = demands.reduce((a, b) => a + b, 0)
+  // Check 30: effective demand must be at least the floor for each panel
+  const effectiveDemands = demands.map((d, i) => Math.max(d, floors[i]))
+  const totalDemand = effectiveDemands.reduce((a, b) => a + b, 0)
 
   let allocs: number[]
   if (totalDemand <= totalBudget) {
-    allocs = [...demands]
+    allocs = [...effectiveDemands]
     allocs[allocs.length - 1] += totalBudget - totalDemand
   } else {
-    allocs = demands.map(d => Math.round((d / totalDemand) * totalBudget))
+    allocs = effectiveDemands.map(d => Math.round((d / totalDemand) * totalBudget))
     // Raise any below floor, take from largest
     for (let i = 0; i < panels.length; i++) {
       if (allocs[i] < floors[i]) {
@@ -240,7 +242,7 @@ function Panel({ children, style }: { children: React.ReactNode; style?: React.C
   )
 }
 
-// Panel header — glyph + label + optional counts + optional action button
+// Panel header — glyph + label + optional counts + optional action button + optional FAB
 function PanelHeader({
   glyph,
   label,
@@ -249,6 +251,8 @@ function PanelHeader({
   totalCount,
   actionLabel,
   onAction,
+  fab,
+  minHeight,
 }: {
   glyph: React.ReactNode
   label: string
@@ -257,6 +261,8 @@ function PanelHeader({
   totalCount?: string
   actionLabel?: string
   onAction?: () => void
+  fab?: React.ReactNode
+  minHeight?: number
 }) {
   return (
     <div style={{
@@ -266,6 +272,8 @@ function PanelHeader({
       display: 'flex',
       alignItems: 'center',
       gap: 8,
+      minHeight: minHeight,
+      boxSizing: 'border-box',
     }}>
       <span style={{ color: C.brandLift, flexShrink: 0 }}>{glyph}</span>
       <span style={{ ...DT1, color: C.textMid }}>{label}</span>
@@ -288,6 +296,11 @@ function PanelHeader({
         >
           {actionLabel}
         </button>
+      )}
+      {fab && (
+        <div className="wr-fab-desktop-wrap" style={{ flexShrink: 0 }}>
+          {fab}
+        </div>
       )}
     </div>
   )
@@ -596,44 +609,82 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
 
 // ── MONEY MOVERS ──────────────────────────────────────────────────────────────
 // D4.4: No MM_DISPLAY_LIMIT — allocation drives visible rows.
-// Header = 41px (no create control per D2.4a rule)
+// Check 52: Header = 55px (has FAB create control)
 // rowHeight = 44px
-const MM_HEADER = 41
+const MM_HEADER = 55
 const MM_ROW_H  = 44
 
-function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void }) {
+function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number }) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
   const [loading, setLoading] = useState(true)
+  // Check 52: inline create form
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [mmTitle, setMmTitle] = useState('')
+  const [mmValue, setMmValue] = useState('')
+  const [savingMm, setSavingMm] = useState(false)
+  const [allDeals, setAllDeals] = useState<{ id: string; name: string }[]>([])
+  const [mmDealId, setMmDealId] = useState('')
+
+  async function loadData() {
+    const { data: dealData } = await supabase
+      .from('deals')
+      .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, deal_contacts(contacts(name))')
+      .eq('is_money_mover', true)
+      .not('status', 'in', '("closed","expired","dormant","terminated")')
+      .limit(30)
+    const rows = (dealData ?? []) as unknown as Deal[]
+    setDeals(rows)
+    onCountChange?.(rows.length)
+
+    if (rows.length > 0) {
+      const ids = rows.map(d => d.id)
+      const { data: econData } = await supabase
+        .from('deal_economics')
+        .select('deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct')
+        .in('deal_id', ids)
+      const map: Record<string, DealEconomics> = {}
+      ;(econData ?? []).forEach((e: any) => { map[e.deal_id] = e as DealEconomics })
+      setEconMap(map)
+    }
+  }
 
   useEffect(() => {
-    async function load() {
-      setLoading(true)
-      const { data: dealData } = await supabase
-        .from('deals')
-        .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, deal_contacts(contacts(name))')
-        .eq('is_money_mover', true)
-        .not('status', 'in', '("closed","expired","dormant","terminated")')
-        .limit(30)
-      const rows = (dealData ?? []) as unknown as Deal[]
-      setDeals(rows)
-      // Check 30: report real count to parent
-      onCountChange?.(rows.length)
-
-      if (rows.length > 0) {
-        const ids = rows.map(d => d.id)
-        const { data: econData } = await supabase
-          .from('deal_economics')
-          .select('deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct')
-          .in('deal_id', ids)
-        const map: Record<string, DealEconomics> = {}
-        ;(econData ?? []).forEach((e: any) => { map[e.deal_id] = e as DealEconomics })
-        setEconMap(map)
-      }
-      setLoading(false)
-    }
-    load()
+    setLoading(true)
+    loadData().finally(() => setLoading(false))
   }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load deal picker options once
+  useEffect(() => {
+    supabase.from('deals').select('id, name').not('status', 'in', '("closed","expired","dormant","terminated")').limit(50)
+      .then(({ data }) => setAllDeals((data ?? []) as { id: string; name: string }[]))
+  }, [])
+
+  // Check 52: save new money mover (deal with is_money_mover=true)
+  async function saveMm() {
+    if (!mmTitle.trim()) return
+    setSavingMm(true)
+    const insertData: Record<string, unknown> = {
+      name: mmTitle.trim(),
+      is_money_mover: true,
+      status: 'active',
+    }
+    if (mmValue.trim()) insertData.value = parseFloat(mmValue.replace(/[^0-9.]/g, ''))
+    if (mmDealId) {
+      // Link by updating the parent deal's is_money_mover flag if using an existing deal
+      await supabase.from('deals').update({ is_money_mover: true }).eq('id', mmDealId)
+    } else {
+      await supabase.from('deals').insert(insertData)
+    }
+    setSavingMm(false)
+    setMmTitle('')
+    setMmValue('')
+    setMmDealId('')
+    setShowAddForm(false)
+    setLoading(true)
+    await loadData()
+    setLoading(false)
+  }
 
   const enriched = deals.map(d => {
     const econ = econMap[d.id] ?? null
@@ -660,16 +711,56 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange }: { refreshK
     : enriched
   const moreCount = enriched.length - displayDeals.length
 
+  const h = panelHeight ? panelHeight : undefined
+
   return (
-    <Panel style={{ flexShrink: 0 }}>
-      {/* Check 33: show deal count left, commission total right */}
+    <Panel style={{ flexShrink: 0, height: h }}>
+      {/* Check 52: FAB in header, 55px */}
       <PanelHeader
         glyph={G.moneyMovers}
         label="MONEY MOVERS"
         statusCount={dealCount > 0 ? `${dealCount}` : undefined}
         statusColor={C.textLow}
         totalCount={headerTotal > 0 ? fmtMoney(headerTotal) : undefined}
+        minHeight={55}
+        fab={<Fab label="Add money mover" aria-label="Add money mover" onClick={() => setShowAddForm(v => !v)} />}
       />
+
+      {/* Check 52: inline add form */}
+      {showAddForm && (
+        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.borderPanel}`, display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+          <input
+            placeholder="Title (required)"
+            value={mmTitle}
+            onChange={e => setMmTitle(e.target.value)}
+            style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              placeholder="Value (optional)"
+              value={mmValue}
+              onChange={e => setMmValue(e.target.value)}
+              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, flex: 1 }}
+            />
+            <select
+              value={mmDealId}
+              onChange={e => setMmDealId(e.target.value)}
+              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, flex: 1 }}
+            >
+              <option value="">No deal link</option>
+              {allDeals.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            <button
+              onClick={saveMm}
+              disabled={savingMm || !mmTitle.trim()}
+              style={{ ...DT5, color: C.moneyIn, background: 'transparent', border: `1px solid ${C.moneyIn}`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
+            >
+              {savingMm ? '…' : 'ADD'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Column header */}
       <div style={{
         display: 'flex',
@@ -737,7 +828,7 @@ interface DealWithClosing extends Deal {
   _closingDate?: string | null
 }
 
-function UnderContractPanel({ refreshKey, visibleRows, onCountChange }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void }) {
+function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeight }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number }) {
   const [deals, setDeals] = useState<DealWithClosing[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -796,8 +887,10 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange }: { refres
     ? `CLOSES ${fmtDate(nextClosing).toUpperCase()}`
     : String(deals.length)
 
+  const ucH = panelHeight ? panelHeight : undefined
+
   return (
-    <Panel style={{ flexShrink: 0 }}>
+    <Panel style={{ flexShrink: 0, height: ucH }}>
       {/* Check 36: show next closing in header */}
       <PanelHeader
         glyph={G.underContract}
@@ -952,8 +1045,9 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
   ]
 
   // D3.3a: weighted column allocation
-  const FLOOR_RATIO = 0.16
-  const colFloor = bandInnerWidth > 0 ? Math.max(120, Math.round(bandInnerWidth * FLOOR_RATIO)) : 180
+  // Check 24: empty days collapse to label-width floor; loaded days get the surplus
+  const EMPTY_DAY_W = 70  // narrow label floor for empty columns ("TUE 25")
+  const JUST_BEYOND_W = 120
 
   // Count rows for real day columns (excluding JUST BEYOND)
   const overdue = items.filter(i => i.date < todayStr)
@@ -964,27 +1058,35 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
     return displayItems.length
   })
 
-  // Allocate widths: JUST BEYOND gets floor, real days share proportionally
+  // Allocate widths: JUST BEYOND gets fixed width, empty real days get label floor,
+  // loaded real days share remaining proportionally (Check 24)
   let colWidths: number[] = []
   if (bandInnerWidth > 0) {
-    const justBeyondW = colFloor
-    const remainingW = bandInnerWidth - justBeyondW - 3 * 16 // 3 gaps between 4 columns
+    const GAP_COUNT = 3  // 3 gaps between 4 columns
+    const totalGaps = GAP_COUNT * 16
+    const availableW = bandInnerWidth - JUST_BEYOND_W - totalGaps
     const realRowCounts = colRowCounts.slice(0, 3)
-    const totalRealRows = realRowCounts.reduce((a, b) => a + b, 0)
-    if (totalRealRows === 0) {
-      colWidths = [Math.round(remainingW / 3), Math.round(remainingW / 3), Math.round(remainingW / 3), justBeyondW]
+    const loadedDayIndices = realRowCounts.map((c, i) => c > 0 ? i : -1).filter(i => i >= 0)
+    const totalLoadedRows = loadedDayIndices.reduce((s, i) => s + realRowCounts[i], 0)
+    const emptyDayCount = realRowCounts.filter(c => c === 0).length
+    const emptyReserved = emptyDayCount * EMPTY_DAY_W
+    const loadedBudget = availableW - emptyReserved
+
+    const rawWidths = realRowCounts.map((c, i) => {
+      if (c === 0) return EMPTY_DAY_W
+      if (totalLoadedRows === 0) return Math.round(availableW / 3)
+      return Math.max(EMPTY_DAY_W, Math.round((c / totalLoadedRows) * loadedBudget))
+    })
+
+    // Rescale if sum exceeds available (floor bumps can overflow)
+    const rawSum = rawWidths.reduce((a, b) => a + b, 0)
+    if (rawSum > availableW) {
+      const scale = availableW / rawSum
+      colWidths = rawWidths.map(w => Math.floor(w * scale))
     } else {
-      const rawWidths = realRowCounts.map(c => Math.max(colFloor, Math.round((c / totalRealRows) * remainingW)))
-      // Rescale if sum exceeds remainingW (floor bumps can overflow)
-      const rawSum = rawWidths.reduce((a, b) => a + b, 0)
-      if (rawSum > remainingW) {
-        const scale = remainingW / rawSum
-        colWidths = rawWidths.map(w => Math.floor(w * scale))
-      } else {
-        colWidths = rawWidths
-      }
-      colWidths.push(justBeyondW)
+      colWidths = rawWidths
     }
+    colWidths.push(JUST_BEYOND_W)
   } else {
     colWidths = [200, 200, 200, 120]
   }
@@ -1008,8 +1110,7 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
           <span style={{ color: C.brandLift, flexShrink: 0 }}>{G.next48}</span>
           <span style={{ ...DT1, color: C.textMid }}>NEXT 48</span>
           <div style={{ flex: 1, height: 1, background: C.borderPanel }} />
-          <span style={{ ...DT5, color: C.textLow }}>{windowItemCount}</span>
-          <span style={{ ...DT5, color: C.textLow }}>WINDOW 48H</span>
+          <span style={{ ...DT5, color: C.textLow }}>{windowItemCount} ITEMS · WINDOW 48H</span>
         </div>
         <div
           ref={bandRef}
@@ -1098,33 +1199,60 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
 // ── SCHEDULE ──────────────────────────────────────────────────────────────────
 // D4.4: Header = 41px (no create control yet per D4.3 note)
 // rowHeight = 36px (time gutter row)
-const SCHED_HEADER = 41
+const SCHED_HEADER = 55  // Check 28: 41→55 for FAB
 const SCHED_ROW_H  = 36
 
 function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void }) {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
   const [loading, setLoading] = useState(true)
+  // Check 28: inline create form
   const [showAddForm, setShowAddForm] = useState(false)
+  const [schedTitle, setSchedTitle] = useState('')
+  const [schedDate, setSchedDate] = useState('')
+  const [schedTime, setSchedTime] = useState('')
+  const [schedLocation, setSchedLocation] = useState('')
+  const [savingSched, setSavingSched] = useState(false)
+
+  async function loadEvents() {
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+    const d1 = new Date(new Date(todayStr).getTime() + 86400000).toISOString().slice(0, 10)
+    const { data } = await supabase
+      .from('schedule_events')
+      .select('id, title, date, time, location')
+      .gte('date', todayStr)
+      .lte('date', d1)
+      .order('date').order('time')
+      .limit(30)
+    const rows = (data ?? []) as ScheduleEvent[]
+    setEvents(rows)
+    onCountChange?.(rows.length)
+  }
 
   useEffect(() => {
-    async function load() {
-      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-      const d1 = new Date(new Date(todayStr).getTime() + 86400000).toISOString().slice(0, 10)
-      const { data } = await supabase
-        .from('schedule_events')
-        .select('id, title, date, time, location')
-        .gte('date', todayStr)
-        .lte('date', d1)
-        .order('date').order('time')
-        .limit(30)
-      const rows = (data ?? []) as ScheduleEvent[]
-      setEvents(rows)
-      // Check 30: report real count to parent
-      onCountChange?.(rows.length)
-      setLoading(false)
-    }
-    load()
+    setLoading(true)
+    loadEvents().finally(() => setLoading(false))
   }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Check 28: save new schedule event
+  async function saveSched() {
+    if (!schedTitle.trim() || !schedDate) return
+    setSavingSched(true)
+    await supabase.from('schedule_events').insert({
+      title: schedTitle.trim(),
+      date: schedDate,
+      time: schedTime || null,
+      location: schedLocation || null,
+    })
+    setSavingSched(false)
+    setSchedTitle('')
+    setSchedDate('')
+    setSchedTime('')
+    setSchedLocation('')
+    setShowAddForm(false)
+    setLoading(true)
+    await loadEvents()
+    setLoading(false)
+  }
 
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
   const d1 = new Date(new Date(todayStr).getTime() + 86400000).toISOString().slice(0, 10)
@@ -1196,6 +1324,46 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange }: 
           <Fab label="Add event" onClick={() => setShowAddForm(v => !v)} />
         </div>
       </div>
+
+      {/* Check 28: inline add form — renders when FAB clicked */}
+      {showAddForm && (
+        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.borderPanel}`, display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+          <input
+            placeholder="Event title (required)"
+            value={schedTitle}
+            onChange={e => setSchedTitle(e.target.value)}
+            style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="date"
+              value={schedDate}
+              onChange={e => setSchedDate(e.target.value)}
+              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, flex: 1, colorScheme: 'dark' }}
+            />
+            <input
+              type="time"
+              value={schedTime}
+              onChange={e => setSchedTime(e.target.value)}
+              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, width: 100, colorScheme: 'dark' }}
+            />
+            <input
+              placeholder="Location"
+              value={schedLocation}
+              onChange={e => setSchedLocation(e.target.value)}
+              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, flex: 1 }}
+            />
+            <button
+              onClick={saveSched}
+              disabled={savingSched || !schedTitle.trim() || !schedDate}
+              style={{ ...DT5, color: C.moneyIn, background: 'transparent', border: `1px solid ${C.moneyIn}`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
+            >
+              {savingSched ? '…' : 'ADD'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
@@ -1719,8 +1887,9 @@ export default function WarRoomPage() {
   }, [unlocked])
 
   // D4.4: Compute column B allocations (MM + UC)
+  // Check 52: MM_HEADER is now 55 (has FAB). +24 for the ADDRESS/VALUE/COMM column header row.
   const colBPanels: PanelSpec[] = [
-    { header: MM_HEADER + 24, rowHeight: MM_ROW_H, rowCount: mmRowCount }, // +24 for column header row
+    { header: MM_HEADER + 24, rowHeight: MM_ROW_H, rowCount: mmRowCount },
     { header: UC_HEADER, rowHeight: UC_ROW_H, rowCount: ucRowCount },
   ]
   const colBAllocs = colBHeight > 0 ? computeAlloc(colBHeight, colBPanels) : [
@@ -1820,11 +1989,13 @@ export default function WarRoomPage() {
                 refreshKey={refreshKey}
                 visibleRows={colBAllocs[0].visibleRows}
                 onCountChange={setMmRowCount}
+                panelHeight={colBAllocs[0].height}
               />
               <UnderContractPanel
                 refreshKey={refreshKey}
                 visibleRows={colBAllocs[1].visibleRows}
                 onCountChange={setUcRowCount}
+                panelHeight={colBAllocs[1].height}
               />
             </div>
 
