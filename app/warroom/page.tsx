@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { calcCommission, fmtMoney } from '@/lib/dealMath'
+import { calcCommission, calcLeaseValue, fmtMoney } from '@/lib/dealMath'
 import Fab from '@/assets/fab/Fab'
 import '@/assets/fab/fab.css'
 import { useRouter } from 'next/navigation'
@@ -173,7 +173,7 @@ function computeAlloc(budget: number, panels: PanelSpec[]): PanelAlloc[] {
   const GAP = 18
   const totalBudget = budget - (panels.length - 1) * GAP
   const demands = panels.map(p => p.header + p.rowCount * p.rowHeight)
-  const floors = panels.map(p => p.header + 2 * p.rowHeight)
+  const floors = panels.map(p => p.header + (p.rowCount === 0 ? 1 : 2) * p.rowHeight)
   // Check 30: effective demand must be at least the floor for each panel
   const effectiveDemands = demands.map((d, i) => Math.max(d, floors[i]))
   const totalDemand = effectiveDemands.reduce((a, b) => a + b, 0)
@@ -614,36 +614,36 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
 const MM_HEADER = 55
 const MM_ROW_H  = 44
 
+// Item 4: MoneyMovers now reads from money_movers table (not deals.is_money_mover).
+interface MoneyMoverRow {
+  id: string
+  title: string
+  deal_id: string | null
+  value: number | null
+}
+
 function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight, onCreateFill }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number; onCreateFill?: () => void }) {
-  const [deals, setDeals] = useState<Deal[]>([])
+  const [mmRows, setMmRows] = useState<MoneyMoverRow[]>([])
   const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  // Check 52: inline create form
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [mmTitle, setMmTitle] = useState('')
-  const [mmValue, setMmValue] = useState('')
-  const [savingMm, setSavingMm] = useState(false)
-  const [allDeals, setAllDeals] = useState<{ id: string; name: string }[]>([])
-  const [mmDealId, setMmDealId] = useState('')
 
   async function loadData() {
-    const { data: dealData } = await supabase
-      .from('deals')
-      .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, deal_contacts(contacts(name))')
-      .eq('is_money_mover', true)
-      .not('status', 'in', '("closed","expired","dormant","terminated")')
+    const { data: mmData } = await supabase
+      .from('money_movers')
+      .select('id, title, deal_id, value')
+      .order('created_at', { ascending: false })
       .limit(30)
-    const rows = (dealData ?? []) as unknown as Deal[]
-    setDeals(rows)
+    const rows = (mmData ?? []) as MoneyMoverRow[]
+    setMmRows(rows)
     onCountChange?.(rows.length)
 
-    if (rows.length > 0) {
-      const ids = rows.map(d => d.id)
+    const dealIds = rows.map(r => r.deal_id).filter((id): id is string => id != null)
+    if (dealIds.length > 0) {
       const { data: econData } = await supabase
         .from('deal_economics')
         .select('deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct')
-        .in('deal_id', ids)
+        .in('deal_id', dealIds)
       const map: Record<string, DealEconomics> = {}
       ;(econData ?? []).forEach((e: any) => { map[e.deal_id] = e as DealEconomics })
       setEconMap(map)
@@ -655,112 +655,44 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
     loadData().finally(() => setLoading(false))
   }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load deal picker options once
-  useEffect(() => {
-    supabase.from('deals').select('id, name').not('status', 'in', '("closed","expired","dormant","terminated")').limit(50)
-      .then(({ data }) => setAllDeals((data ?? []) as { id: string; name: string }[]))
-  }, [])
-
-  // Check 52: save new money mover (deal with is_money_mover=true)
-  async function saveMm() {
-    if (!mmTitle.trim()) return
-    setSavingMm(true)
-    const insertData: Record<string, unknown> = {
-      name: mmTitle.trim(),
-      is_money_mover: true,
-      status: 'active',
-    }
-    if (mmValue.trim()) insertData.value = parseFloat(mmValue.replace(/[^0-9.]/g, ''))
-    if (mmDealId) {
-      // Link by updating the parent deal's is_money_mover flag if using an existing deal
-      await supabase.from('deals').update({ is_money_mover: true }).eq('id', mmDealId)
-    } else {
-      await supabase.from('deals').insert(insertData)
-    }
-    setSavingMm(false)
-    setMmTitle('')
-    setMmValue('')
-    setMmDealId('')
-    setShowAddForm(false)
-    setLoading(true)
-    await loadData()
-    setLoading(false)
-  }
-
-  const enriched = deals.map(d => {
-    const econ = econMap[d.id] ?? null
-    const commission = calcCommission(econ)
-    let dealValue: number | null = null
-    if (econ) {
-      // Check 47: 'both' and 'sale' both use asking_price for VALUE
+  const enriched = mmRows.map(mm => {
+    const econ = mm.deal_id ? (econMap[mm.deal_id] ?? null) : null
+    const commission = econ ? calcCommission(econ) : null
+    // Operator-typed value wins; otherwise compute from economics
+    let dealValue: number | null = mm.value ?? null
+    if (dealValue == null && econ) {
       if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price) {
         dealValue = econ.asking_price
-      } else if (econ.transaction_type === 'lease' && econ.sqft && econ.lease_rate_psf && econ.lease_term_years) {
-        dealValue = econ.sqft * econ.lease_rate_psf * econ.lease_term_years
+      } else if (econ.transaction_type === 'lease') {
+        dealValue = calcLeaseValue(econ.sqft ?? null, econ.lease_rate_psf ?? null, econ.lease_term_years ?? null)
       }
     }
-    return { ...d, _commission: commission, _dealValue: dealValue }
+    return { ...mm, _commission: commission, _dealValue: dealValue }
   })
 
   const headerTotal = enriched.reduce((s, d) => s + (d._commission ?? 0), 0)
-  const dealCount = enriched.length
+  const mmCount = enriched.length
 
   // D4.4 item 7: terminal row replaces last visible row
   const effectiveVisible = visibleRows > 0 ? visibleRows : enriched.length
-  const displayDeals = enriched.length > effectiveVisible
+  const displayRows = enriched.length > effectiveVisible
     ? enriched.slice(0, Math.max(0, effectiveVisible - 1))
     : enriched
-  const moreCount = enriched.length - displayDeals.length
+  const moreCount = enriched.length - displayRows.length
 
   const h = panelHeight ? panelHeight : undefined
 
   return (
     <Panel style={{ flexShrink: 0, height: h }}>
-      {/* Check 52: FAB in header, 55px */}
       <PanelHeader
         glyph={G.moneyMovers}
         label="MONEY MOVERS"
-        statusCount={dealCount > 0 ? `${dealCount}` : undefined}
+        statusCount={mmCount > 0 ? `${mmCount}` : undefined}
         statusColor={C.textLow}
         totalCount={headerTotal > 0 ? fmtMoney(headerTotal) : undefined}
         minHeight={55}
-        fab={<Fab label="Add money mover" aria-label="Add money mover" onClick={() => setShowAddForm(v => !v)} />}
+        fab={<Fab label="Add money mover" aria-label="Add money mover" onClick={() => onCreateFill?.()} />}
       />
-
-      {/* Check 52: inline add form */}
-      {showAddForm && (
-        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.borderPanel}`, display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-          <input
-            placeholder="Title (required)"
-            value={mmTitle}
-            onChange={e => setMmTitle(e.target.value)}
-            style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP }}
-          />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              placeholder="Value (optional)"
-              value={mmValue}
-              onChange={e => setMmValue(e.target.value)}
-              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, flex: 1 }}
-            />
-            <select
-              value={mmDealId}
-              onChange={e => setMmDealId(e.target.value)}
-              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, flex: 1 }}
-            >
-              <option value="">No deal link</option>
-              {allDeals.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-            <button
-              onClick={saveMm}
-              disabled={savingMm || !mmTitle.trim()}
-              style={{ ...DT5, color: C.moneyIn, background: 'transparent', border: `1px solid ${C.moneyIn}`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
-            >
-              {savingMm ? '…' : 'ADD'}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Column header */}
       <div style={{
@@ -769,49 +701,38 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
         borderBottom: `1px solid ${C.borderPanel}`,
         flexShrink: 0,
       }}>
-        <span style={{ ...DT8, color: C.textLow, flex: 1 }}>ADDRESS</span>
+        <span style={{ ...DT8, color: C.textLow, flex: 1 }}>TITLE</span>
         <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
         <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
       </div>
       <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
-        ) : displayDeals.length === 0 && moreCount === 0 ? (
+        ) : displayRows.length === 0 && moreCount === 0 ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>No money movers.</div>
         ) : (
           <>
-            {displayDeals.map((d, i) => {
-              // Check 49: null name renders blank, not '—'
-              const name = d.deal_contacts?.[0]?.contacts?.name ?? ''
-              const statusLabel = d.status.replace(/_/g,' ')
-              const subline = name ? `${name} · ${statusLabel}` : statusLabel
-              return (
-                <React.Fragment key={d.id}>
-                  {/* Check 63: whole row clickable if deal_id present (MM deal is the deal itself) */}
-                  <div
-                    onClick={d.id ? () => router.push('/warroom/deal?id=' + d.id) : undefined}
-                    style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box', cursor: d.id ? 'pointer' : 'default' }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {shortAddr(d)}
-                      </div>
-                      <div style={{ ...DS7, color: C.textLow }}>
-                        {subline}
-                      </div>
-                    </div>
-                    <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>
-                      {fmtMoney(d._dealValue)}
-                    </div>
-                    <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>
-                      {fmtMoney(d._commission)}
+            {displayRows.map((mm, i) => (
+              <React.Fragment key={mm.id}>
+                <div
+                  onClick={mm.deal_id ? () => router.push('/warroom/deal?id=' + mm.deal_id) : undefined}
+                  style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box', cursor: mm.deal_id ? 'pointer' : 'default' }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {mm.title}
                     </div>
                   </div>
-                  {i < displayDeals.length - 1 && <Hair />}
-                </React.Fragment>
-              )
-            })}
-            {/* D4.4 item 7: terminal row replaces last visible row */}
+                  <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>
+                    {fmtMoney(mm._dealValue)}
+                  </div>
+                  <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>
+                    {fmtMoney(mm._commission)}
+                  </div>
+                </div>
+                {i < displayRows.length - 1 && <Hair />}
+              </React.Fragment>
+            ))}
             {moreCount > 0 && (
               <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
             )}
@@ -940,8 +861,8 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
               if (econ) {
                 if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price) {
                   dealValue = econ.asking_price
-                } else if (econ.transaction_type === 'lease' && econ.sqft && econ.lease_rate_psf && econ.lease_term_years) {
-                  dealValue = econ.sqft * econ.lease_rate_psf * econ.lease_term_years
+                } else if (econ.transaction_type === 'lease') {
+                  dealValue = calcLeaseValue(econ.sqft ?? null, econ.lease_rate_psf ?? null, econ.lease_term_years ?? null)
                 }
               }
               return (
@@ -1018,7 +939,7 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
 
       const [{ data: events }, { data: deadlines }] = await Promise.all([
         supabase.from('schedule_events').select('id, title, date, time, location, deal_id').gte('date', todayStr).lte('date', d3).order('date').order('time'),
-        supabase.from('tasks').select('id, title, due_date, deal_id, bp_priority, deals(name)').eq('status', 'open').is('deleted_at', null).gte('due_date', todayStr).lte('due_date', d3).order('due_date'),
+        supabase.from('contract_deadlines').select('id, label, deadline_date, deadline_type, deal_id, deals(addr_display, name)').in('status', ['pending', 'extended']).gte('deadline_date', todayStr).lte('deadline_date', d3).order('deadline_date'),
       ])
 
       const seen = new Set<string>()
@@ -1031,11 +952,11 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
         seen.add(key)
         merged.push({ id: e.id, kind: 'event', deal_id: e.deal_id, date: eDate, time: eTime, title: e.title, context: e.location ?? '', spineColor: C.brand, bp_priority: null })
       }
-      for (const t of (deadlines ?? [])) {
-        const key = `${t.deal_id ?? t.id}_${t.due_date}`
+      for (const t of (deadlines ?? []) as any[]) {
+        const key = `${t.deal_id ?? t.id}_${t.deadline_date}`
         if (seen.has(key)) continue
         seen.add(key)
-        merged.push({ id: t.id, kind: 'deadline', deal_id: t.deal_id, date: t.due_date!, time: null, title: t.title, context: (t as any).deals?.name ?? '', spineColor: C.hot, bp_priority: (t as any).bp_priority ?? null })
+        merged.push({ id: t.id, kind: 'deadline', deal_id: t.deal_id, date: t.deadline_date, time: null, title: t.label ?? t.deadline_type ?? 'Deadline', context: t.deals?.addr_display ?? t.deals?.name ?? '', spineColor: C.hot, bp_priority: null })
       }
 
       setItems(merged)
@@ -1368,14 +1289,14 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
     const [{ data: pastDue }, { data: forward }] = await Promise.all([
       supabase
         .from('contract_deadlines')
-        .select('id, label, deadline_date, deadline_type, status, deal_id')
+        .select('id, label, deadline_date, deadline_type, status, deal_id, deals(addr_display, name)')
         .in('status', ['pending', 'extended'])
         .lt('deadline_date', todayStr)
         .order('deadline_date', { ascending: true })
         .limit(10),
       supabase
         .from('contract_deadlines')
-        .select('id, label, deadline_date, deadline_type, status, deal_id')
+        .select('id, label, deadline_date, deadline_type, status, deal_id, deals(addr_display, name)')
         .in('status', ['pending', 'extended'])
         .gte('deadline_date', todayStr)
         .lte('deadline_date', cutoff)
@@ -1654,7 +1575,7 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
 }
 
 // ── LEFT RAIL ─────────────────────────────────────────────────────────────────
-type RailSlot = 'HOME' | 'PEOPLE'
+type RailSlot = 'HOME' | 'PEOPLE' | 'DEALS'
 
 function LeftRail({ active }: { active: RailSlot }) {
   const router = useRouter()
@@ -1662,6 +1583,15 @@ function LeftRail({ active }: { active: RailSlot }) {
   const slots: { id: RailSlot; label: string; glyph: React.ReactNode; href: string }[] = [
     { id: 'HOME',   label: 'HOME',   glyph: G.home,   href: '/warroom' },
     { id: 'PEOPLE', label: 'PEOPLE', glyph: G.people, href: '/warroom/contacts' },
+    { id: 'DEALS',  label: 'DEALS',  glyph: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+    ), href: '/warroom/deals' },
   ]
 
   return (

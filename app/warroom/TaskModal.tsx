@@ -179,6 +179,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
   const [dlLabel, setDlLabel]       = useState('')
   const [dlDate, setDlDate]         = useState(todayLocal())
   const [dlType, setDlType]         = useState('deadline')
+  // money_mover fill
+  const [mmTitle, setMmTitle]       = useState('')
+  const [mmValue, setMmValue]       = useState('')
 
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const noteRef = useRef<HTMLTextAreaElement>(null)
@@ -207,8 +210,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
   }
   // Check 39/40: in create mode, CONFIRM is active when title is non-empty
   // Check 59: for non-task fills, staged when label/title is non-empty
-  const isActive = fill === 'event'    ? evTitle.trim().length > 0
-                 : fill === 'deadline' ? dlLabel.trim().length > 0
+  const isActive = fill === 'event'       ? evTitle.trim().length > 0
+                 : fill === 'deadline'    ? dlLabel.trim().length > 0
+                 : fill === 'money_mover' ? mmTitle.trim().length > 0
                  : isCreate ? localTitle.trim().length > 0
                  : isTaskStaged(stagingState)
   // Keep ref in sync so the Esc handler always reads the current value without being re-registered.
@@ -362,6 +366,20 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
         })
       setSaving(false)
       if (dlErr) { setError(dlErr.message || 'Could not save deadline.'); return }
+      setCommitted(true)
+      setTimeout(() => { setCommitted(false); onSaved() }, 1500)
+      return
+    }
+
+    if (fill === 'money_mover') {
+      setSaving(true)
+      setError(null)
+      const insertPayload: Record<string, unknown> = { title: mmTitle.trim() }
+      const parsedVal = parseFloat(mmValue.replace(/[^0-9.]/g, ''))
+      if (!isNaN(parsedVal) && parsedVal > 0) insertPayload.value = parsedVal
+      const { error: mmErr } = await supabase.from('money_movers').insert(insertPayload)
+      setSaving(false)
+      if (mmErr) { setError(mmErr.message || 'Could not save money mover.'); return }
       setCommitted(true)
       setTimeout(() => { setCommitted(false); onSaved() }, 1500)
       return
@@ -568,6 +586,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
             <span style={{ ...DT0, color: C.textMid }}>
               {fill === 'event' ? 'ADD EVENT'
                : fill === 'deadline' ? 'ADD DEADLINE'
+               : fill === 'money_mover' ? 'ADD MONEY MOVER'
                : mode === 'edit' ? 'EDIT'
                : ''}
             </span>
@@ -762,8 +781,33 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               </div>
             )}
 
+            {fill === 'money_mover' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <span style={{ ...DT4, color: C.brandLift }}>NEW MONEY MOVER</span>
+                <div>
+                  <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>TITLE</div>
+                  <input
+                    autoFocus
+                    value={mmTitle}
+                    onChange={e => setMmTitle(e.target.value)}
+                    placeholder="Money mover title"
+                    style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                  />
+                </div>
+                <div>
+                  <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>VALUE (OPTIONAL)</div>
+                  <input
+                    value={mmValue}
+                    onChange={e => setMmValue(e.target.value)}
+                    placeholder="e.g. 850000"
+                    style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Normal task body — shown for fill='task' (or default) */}
-            {(fill === 'task' || fill === 'money_mover') && <>
+            {fill === 'task' && <>
             {/* 1. Status eyebrow — DT4: 12px/500/0 mono UPPER (D2.5) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ ...DT4, color: overdue ? C.late : C.brandLift }}>

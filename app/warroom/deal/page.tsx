@@ -1,5 +1,5 @@
 'use client'
-import { HOUSE_SPLIT, calcSaleCommission, calcLeaseCommission, calcCommission } from '@/lib/dealMath'
+import { HOUSE_SPLIT, calcSaleCommission, calcLeaseCommission, calcCommission, calcLeaseValue } from '@/lib/dealMath'
 
 // §D5.1 Desktop deal page — locked design 33a (13 Aug 2026). Round 1: read state only.
 // "The phone reads the deal, the desktop works it." — desktop two-column layout.
@@ -238,7 +238,7 @@ function DealPageContent() {
 
         const { data: econData } = await supabase
           .from('deal_economics')
-          .select('asking_price,sqft,land_sqft,sale_commission_pct,lease_rate_psf,lease_term_years,nnn_psf,transaction_type')
+          .select('asking_price,sqft,land_sqft,sale_commission_pct,lease_commission_pct,lease_rate_psf,lease_term_years,nnn_psf,transaction_type')
           .eq('deal_id', dealId)
           .maybeSingle()
 
@@ -255,10 +255,10 @@ function DealPageContent() {
           asking_price:     econData?.asking_price ?? null,
           sqft:             econData?.sqft ?? null,
           land_size:        econData?.land_sqft ?? null,
-          deal_value:       (econData?.sqft && econData?.lease_rate_psf && econData?.lease_term_years)
-            ? Math.round(econData.sqft * econData.lease_rate_psf * econData.lease_term_years)
-            : null,
-          commission_pct:   econData?.sale_commission_pct ?? null,
+          deal_value:       calcLeaseValue(econData?.sqft ?? null, econData?.lease_rate_psf ?? null, econData?.lease_term_years ?? null),
+          commission_pct:   econData?.transaction_type === 'lease'
+            ? (econData?.lease_commission_pct ?? null)
+            : (econData?.sale_commission_pct ?? null),
           lease_rate_psf:   econData?.lease_rate_psf ?? null,
           lease_term_years: econData?.lease_term_years ?? null,
           nnn_psf:          econData?.nnn_psf ?? null,

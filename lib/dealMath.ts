@@ -96,6 +96,20 @@ export function calcCommission(econ: {
 }
 
 /**
+ * Lease total value (base rent across the full term).
+ * value = sqft × lease_rate_psf × lease_term_years
+ * Returns null if any input is null.
+ */
+export function calcLeaseValue(
+  sqft: number | null,
+  lease_rate_psf: number | null,
+  lease_term_years: number | null,
+): number | null {
+  if (sqft == null || lease_rate_psf == null || lease_term_years == null) return null
+  return Math.round(sqft * lease_rate_psf * lease_term_years)
+}
+
+/**
  * Format a commission or value for display. Null → em-dash.
  * Check 34: values ≥1M → "$1.2M", ≥1K → "$43K", else full.
  */
