@@ -77,6 +77,14 @@ export interface TaskModalProps {
   onSaved: () => void
   /** Check 40: when true, modal opens in edit mode with no DELETE, no EDIT button */
   isCreate?: boolean
+  /**
+   * Check 59: unified create shell — fill type determines which form is shown.
+   * 'task' (default) = existing task create flow.
+   * 'event' = schedule_events insert.
+   * 'deadline' = contract_deadlines insert.
+   * 'money_mover' = falls back to old inline form (table not yet created).
+   */
+  fill?: 'task' | 'event' | 'deadline' | 'money_mover'
 }
 
 // ── Date helpers — D11.6, local calendar parse only ──────────────────────────
@@ -144,7 +152,7 @@ function ExternalIcon() {
 }
 
 // ── TaskModal ─────────────────────────────────────────────────────────────────
-export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreate = false }: TaskModalProps) {
+export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreate = false, fill = 'task' }: TaskModalProps) {
   // ── State machine ──────────────────────────────────────────────────────────
   // Check 40: create mode always starts in edit state
   const [mode, setMode] = useState<'read' | 'edit'>(isCreate ? 'edit' : 'read')
@@ -160,6 +168,17 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [pickerDate, setPickerDate] = useState('')
+
+  // ── Check 59: fill-specific state ─────────────────────────────────────────
+  // event fill
+  const [evTitle, setEvTitle]       = useState('')
+  const [evDate, setEvDate]         = useState(todayLocal())
+  const [evTime, setEvTime]         = useState('')
+  const [evLocation, setEvLocation] = useState('')
+  // deadline fill
+  const [dlLabel, setDlLabel]       = useState('')
+  const [dlDate, setDlDate]         = useState(todayLocal())
+  const [dlType, setDlType]         = useState('deadline')
 
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const noteRef = useRef<HTMLTextAreaElement>(null)
@@ -187,7 +206,11 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
     committedListType: committeListType,
   }
   // Check 39/40: in create mode, CONFIRM is active when title is non-empty
-  const isActive = isCreate ? localTitle.trim().length > 0 : isTaskStaged(stagingState)
+  // Check 59: for non-task fills, staged when label/title is non-empty
+  const isActive = fill === 'event'    ? evTitle.trim().length > 0
+                 : fill === 'deadline' ? dlLabel.trim().length > 0
+                 : isCreate ? localTitle.trim().length > 0
+                 : isTaskStaged(stagingState)
   // Keep ref in sync so the Esc handler always reads the current value without being re-registered.
   isActiveRef.current = isActive
 
@@ -305,6 +328,44 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
   async function handleConfirm() {
     if (!isActive || saving || committed) return
+
+    // Check 59: fill-specific confirm paths
+    if (fill === 'event') {
+      setSaving(true)
+      setError(null)
+      const { error: evErr } = await supabase
+        .from('schedule_events')
+        .insert({
+          title: evTitle.trim(),
+          date: evDate,
+          time: evTime || null,
+          location: evLocation.trim() || null,
+        })
+      setSaving(false)
+      if (evErr) { setError(evErr.message || 'Could not save event.'); return }
+      setCommitted(true)
+      setTimeout(() => { setCommitted(false); onSaved() }, 1500)
+      return
+    }
+
+    if (fill === 'deadline') {
+      setSaving(true)
+      setError(null)
+      const { error: dlErr } = await supabase
+        .from('contract_deadlines')
+        .insert({
+          label: dlLabel.trim(),
+          deadline_date: dlDate,
+          deadline_type: dlType.trim().toLowerCase() || 'deadline',
+          status: 'pending',
+          deal_id: null,
+        })
+      setSaving(false)
+      if (dlErr) { setError(dlErr.message || 'Could not save deadline.'); return }
+      setCommitted(true)
+      setTimeout(() => { setCommitted(false); onSaved() }, 1500)
+      return
+    }
 
     // Check 39: create mode — INSERT first, then close (do NOT call commit_task_sheet)
     if (isCreate) {
@@ -502,18 +563,18 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
           borderBottom: `1px solid ${C.borderPanel}`,
         }}>
           {/* Left zone — flex:1 so it absorbs available space */}
-          {/* Check 42: READ → blank header, EDIT → "EDIT" */}
+          {/* Check 42: READ → blank header, EDIT → "EDIT". Check 59: fill label */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
             <span style={{ ...DT0, color: C.textMid }}>
-              {mode === 'edit' ? 'EDIT' : ''}
+              {fill === 'event' ? 'ADD EVENT'
+               : fill === 'deadline' ? 'ADD DEADLINE'
+               : mode === 'edit' ? 'EDIT'
+               : ''}
             </span>
           </div>
 
-          {/* Centre zone — DELETE asset, edit state only, and NOT in create mode (Check 41).
-              Centred because both side zones are flex:1. Immune to label length.
-              Desktop: pointer-driven — rendered image box is the target, same as ×.
-              Mount by height (24px). 102.0px width is arithmetic; DOM measures it. */}
-          {mode === 'edit' && !isCreate ? (
+          {/* Centre zone — DELETE asset, edit state only, and NOT in create mode (Check 41) or fill mode. */}
+          {mode === 'edit' && !isCreate && fill === 'task' ? (
             <button
               ref={desktopDeleteRef}
               onClick={() => setShowDeleteConfirm(true)}
@@ -537,9 +598,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
           {/* Right zone — flex:1, children pushed right. × ESC always last and never moves. */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16 }}>
-          {/* READ mode (non-create) → DONE caption + checkmark. EDIT/create → empty. */}
+          {/* READ mode (non-create, non-fill) → DONE caption + checkmark. EDIT/create/fill → empty. */}
           {/* Check 40/41: no DONE in create mode (task not saved yet) */}
-          {mode === 'read' && !isCreate && (
+          {mode === 'read' && !isCreate && fill === 'task' && (
             <button
               onClick={handleDone}
               disabled={saving}
@@ -619,6 +680,90 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               </div>
             )}
 
+            {/* ── Check 59: fill-specific bodies ──────────────────────────── */}
+            {fill === 'event' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <span style={{ ...DT4, color: C.brandLift }}>NEW EVENT</span>
+                <div>
+                  <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>TITLE</div>
+                  <input
+                    autoFocus
+                    value={evTitle}
+                    onChange={e => setEvTitle(e.target.value)}
+                    placeholder="Event title"
+                    style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>DATE</div>
+                    <input
+                      type="date"
+                      value={evDate}
+                      onChange={e => setEvDate(e.target.value)}
+                      style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box', colorScheme: 'dark' } as React.CSSProperties}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>TIME</div>
+                    <input
+                      type="time"
+                      value={evTime}
+                      onChange={e => setEvTime(e.target.value)}
+                      style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box', colorScheme: 'dark' } as React.CSSProperties}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>LOCATION (OPTIONAL)</div>
+                  <input
+                    value={evLocation}
+                    onChange={e => setEvLocation(e.target.value)}
+                    placeholder="Location"
+                    style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                  />
+                </div>
+              </div>
+            )}
+
+            {fill === 'deadline' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <span style={{ ...DT4, color: C.brandLift }}>NEW DEADLINE</span>
+                <div>
+                  <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>LABEL</div>
+                  <input
+                    autoFocus
+                    value={dlLabel}
+                    onChange={e => setDlLabel(e.target.value)}
+                    placeholder="Deadline label"
+                    style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>DATE</div>
+                    <input
+                      type="date"
+                      value={dlDate}
+                      onChange={e => setDlDate(e.target.value)}
+                      style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box', colorScheme: 'dark' } as React.CSSProperties}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>TYPE</div>
+                    <input
+                      value={dlType}
+                      onChange={e => setDlType(e.target.value)}
+                      placeholder="e.g. inspection"
+                      style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Normal task body — shown for fill='task' (or default) */}
+            {(fill === 'task' || fill === 'money_mover') && <>
             {/* 1. Status eyebrow — DT4: 12px/500/0 mono UPPER (D2.5) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ ...DT4, color: overdue ? C.late : C.brandLift }}>
@@ -829,6 +974,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
             {/* D11.2 item 6 — STRUCK. Delete is behind the edit wall.
                 Header slot in edit mode carries the DELETE asset. Read state has no path to destruction. */}
+            </>}
           </div>
 
           {/* ── Vertical rule in gap ──────────────────────────────────────── */}
@@ -922,9 +1068,10 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
           borderTop: `1px solid ${C.borderPanel}`,
         }}>
           {/* Left: EDIT / CANCEL asset slot — 161.5×60, PNG centred.
-              Check 40: hide this slot entirely in create mode (no EDIT toggle needed). */}
+              Check 40: hide this slot entirely in create mode (no EDIT toggle needed).
+              Check 59: hide for fill modes too. */}
           <div style={{ width: 161.5, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {!isCreate && (
+            {!isCreate && fill === 'task' && (
               <button
                 onClick={mode === 'read' ? enterEdit : cancelEdit}
                 style={{

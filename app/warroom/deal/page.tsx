@@ -255,7 +255,9 @@ function DealPageContent() {
           asking_price:     econData?.asking_price ?? null,
           sqft:             econData?.sqft ?? null,
           land_size:        econData?.land_sqft ?? null,
-          deal_value:       null,
+          deal_value:       (econData?.sqft && econData?.lease_rate_psf && econData?.lease_term_years)
+            ? Math.round(econData.sqft * econData.lease_rate_psf * econData.lease_term_years)
+            : null,
           commission_pct:   econData?.sale_commission_pct ?? null,
           lease_rate_psf:   econData?.lease_rate_psf ?? null,
           lease_term_years: econData?.lease_term_years ?? null,

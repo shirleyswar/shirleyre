@@ -614,7 +614,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
 const MM_HEADER = 55
 const MM_ROW_H  = 44
 
-function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number }) {
+function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight, onCreateFill }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number; onCreateFill?: () => void }) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
   const [loading, setLoading] = useState(true)
@@ -1224,16 +1224,9 @@ function Next48Panel({ refreshKey }: { refreshKey: number }) {
 const SCHED_HEADER = 55  // Check 28: 41→55 for FAB
 const SCHED_ROW_H  = 36
 
-function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void }) {
+function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreateFill }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void }) {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
   const [loading, setLoading] = useState(true)
-  // Check 28: inline create form
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [schedTitle, setSchedTitle] = useState('')
-  const [schedDate, setSchedDate] = useState('')
-  const [schedTime, setSchedTime] = useState('')
-  const [schedLocation, setSchedLocation] = useState('')
-  const [savingSched, setSavingSched] = useState(false)
 
   async function loadEvents() {
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
@@ -1254,27 +1247,6 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange }: 
     setLoading(true)
     loadEvents().finally(() => setLoading(false))
   }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Check 28: save new schedule event
-  async function saveSched() {
-    if (!schedTitle.trim() || !schedDate) return
-    setSavingSched(true)
-    await supabase.from('schedule_events').insert({
-      title: schedTitle.trim(),
-      date: schedDate,
-      time: schedTime || null,
-      location: schedLocation || null,
-    })
-    setSavingSched(false)
-    setSchedTitle('')
-    setSchedDate('')
-    setSchedTime('')
-    setSchedLocation('')
-    setShowAddForm(false)
-    setLoading(true)
-    await loadEvents()
-    setLoading(false)
-  }
 
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
   const d1 = new Date(new Date(todayStr).getTime() + 86400000).toISOString().slice(0, 10)
@@ -1343,48 +1315,9 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange }: 
         <div style={{ flex: 1, height: 1, background: C.borderPanel }} />
         <span style={{ ...DT5, color: C.textLow }}>{events.length}</span>
         <div className="wr-fab-desktop-wrap" style={{ flexShrink: 0 }}>
-          <Fab label="Add event" onClick={() => setShowAddForm(v => !v)} />
+          <Fab label="Add event" onClick={() => onCreateFill?.()} />
         </div>
       </div>
-
-      {/* Check 28: inline add form — renders when FAB clicked */}
-      {showAddForm && (
-        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.borderPanel}`, display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-          <input
-            placeholder="Event title (required)"
-            value={schedTitle}
-            onChange={e => setSchedTitle(e.target.value)}
-            style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP }}
-          />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              type="date"
-              value={schedDate}
-              onChange={e => setSchedDate(e.target.value)}
-              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, flex: 1, colorScheme: 'dark' }}
-            />
-            <input
-              type="time"
-              value={schedTime}
-              onChange={e => setSchedTime(e.target.value)}
-              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, width: 100, colorScheme: 'dark' }}
-            />
-            <input
-              placeholder="Location"
-              value={schedLocation}
-              onChange={e => setSchedLocation(e.target.value)}
-              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, flex: 1 }}
-            />
-            <button
-              onClick={saveSched}
-              disabled={savingSched || !schedTitle.trim() || !schedDate}
-              style={{ ...DT5, color: C.moneyIn, background: 'transparent', border: `1px solid ${C.moneyIn}`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
-            >
-              {savingSched ? '…' : 'ADD'}
-            </button>
-          </div>
-        </div>
-      )}
 
       <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
@@ -1425,15 +1358,9 @@ interface DeadlineRow {
   deals?: { name: string; address: string | null; addr_display: string | null; addr_street_name: string | null; addr_number: string | null; addr_city: string | null } | null
 }
 
-function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void }) {
+function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreateFill }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void }) {
   const [deadlines, setDeadlines] = useState<DeadlineRow[]>([])
   const [loading, setLoading] = useState(true)
-  // Check 29: inline create form
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [newLabel, setNewLabel] = useState('')
-  const [newDate, setNewDate] = useState('')
-  const [newKind, setNewKind] = useState('DEADLINE')
-  const [savingDeadline, setSavingDeadline] = useState(false)
 
   async function loadDeadlines() {
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
@@ -1471,25 +1398,6 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange }: { ref
     loadDeadlines().finally(() => setLoading(false))
   }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Check 29: save new deadline (deal_id optional)
-  async function saveDeadline() {
-    if (!newLabel.trim() || !newDate) return
-    setSavingDeadline(true)
-    await supabase.from('contract_deadlines').insert({
-      label: newLabel.trim(),
-      deadline_date: newDate,
-      deadline_type: newKind.toLowerCase(),
-      status: 'pending',
-      deal_id: null,
-    })
-    setSavingDeadline(false)
-    setNewLabel('')
-    setNewDate('')
-    setNewKind('DEADLINE')
-    setShowAddForm(false)
-    await loadDeadlines()
-  }
-
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
   const pastDue = deadlines.filter(d => d.due_date < todayStr)
   const pastDueCount = pastDue.length
@@ -1522,42 +1430,9 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange }: { ref
         <div style={{ flex: 1, height: 1, background: C.borderPanel }} />
         <span style={{ ...DT5, color: C.textLow }}>{deadlines.length}</span>
         <div className="wr-fab-desktop-wrap" style={{ flexShrink: 0 }}>
-          <Fab label="Add deadline" onClick={() => setShowAddForm(v => !v)} />
+          <Fab label="Add deadline" onClick={() => onCreateFill?.()} />
         </div>
       </div>
-
-      {/* Check 29: inline add form */}
-      {showAddForm && (
-        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.borderPanel}`, display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-          <input
-            placeholder="Label"
-            value={newLabel}
-            onChange={e => setNewLabel(e.target.value)}
-            style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP }}
-          />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              type="date"
-              value={newDate}
-              onChange={e => setNewDate(e.target.value)}
-              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, flex: 1, colorScheme: 'dark' }}
-            />
-            <input
-              placeholder="Kind"
-              value={newKind}
-              onChange={e => setNewKind(e.target.value)}
-              style={{ ...DS5, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', outline: 'none', fontFamily: FONT_DISP, width: 90 }}
-            />
-            <button
-              onClick={saveDeadline}
-              disabled={savingDeadline}
-              style={{ ...DT5, color: C.moneyIn, background: 'transparent', border: `1px solid ${C.moneyIn}`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
-            >
-              {savingDeadline ? '…' : 'ADD'}
-            </button>
-          </div>
-        </div>
-      )}
 
       <div style={{ overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
@@ -1837,6 +1712,8 @@ export default function WarRoomPage() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [drawerTask, setDrawerTask] = useState<Task | null>(null)
   const [createMode, setCreateMode] = useState(false)
+  // Check 59: unified create shell fill mode
+  const [fillMode, setFillMode] = useState<'task' | 'event' | 'deadline' | 'money_mover' | null>(null)
 
   // Check 5: container ref for ResizeObserver-computed column widths
   const containerRef = useRef<HTMLDivElement>(null)
@@ -2013,6 +1890,7 @@ export default function WarRoomPage() {
                 visibleRows={colBAllocs[0].visibleRows}
                 onCountChange={setMmRowCount}
                 panelHeight={colBAllocs[0].height}
+                onCreateFill={() => setFillMode('money_mover')}
               />
               <UnderContractPanel
                 refreshKey={refreshKey}
@@ -2032,12 +1910,14 @@ export default function WarRoomPage() {
                 panelHeight={colCAllocs[0].height}
                 visibleRows={colCAllocs[0].visibleRows}
                 onCountChange={setSchedRowCount}
+                onCreateFill={() => setFillMode('event')}
               />
               <DuePanel
                 refreshKey={refreshKey}
                 panelHeight={colCAllocs[1].height}
                 visibleRows={colCAllocs[1].visibleRows}
                 onCountChange={setDueRowCount}
+                onCreateFill={() => setFillMode('deadline')}
               />
               <ReceivablesCard refreshKey={refreshKey} />
             </div>
@@ -2047,13 +1927,14 @@ export default function WarRoomPage() {
       </div>
 
       {/* D11 — Desktop task modal */}
-      {(drawerTask || createMode) && (
+      {(drawerTask || createMode || fillMode) && (
         <TaskModal
           task={(drawerTask ?? createTask) as any}
-          onClose={() => { setDrawerTask(null); setCreateMode(false) }}
-          onCompleted={() => { setDrawerTask(null); setCreateMode(false); setRefreshKey(k => k + 1) }}
-          onSaved={() => { setDrawerTask(null); setCreateMode(false); setRefreshKey(k => k + 1) }}
+          onClose={() => { setDrawerTask(null); setCreateMode(false); setFillMode(null) }}
+          onCompleted={() => { setDrawerTask(null); setCreateMode(false); setFillMode(null); setRefreshKey(k => k + 1) }}
+          onSaved={() => { setDrawerTask(null); setCreateMode(false); setFillMode(null); setRefreshKey(k => k + 1) }}
           isCreate={createMode && !drawerTask}
+          fill={fillMode ?? 'task'}
         />
       )}
     </div>
