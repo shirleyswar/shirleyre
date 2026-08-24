@@ -27,6 +27,7 @@ function useCountUp(target: number, duration = 600): number {
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabase'
 import SectionHeader from '@/components/warroom/SectionHeader'
+import { DS1, DS3, DS4, DS5, DS7, DS8, DT6, DT7, DT8 } from '@/components/warroom/desktopTypes'
 
 interface BattlePlanTask {
   id: string
@@ -371,7 +372,7 @@ export default function BattlePlanPanel() {
             <button
               onClick={() => setShowAddForm(true)}
               className="wr-btn-orbit"
-              style={{ height: 34, padding: '0 16px', fontSize: 13, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 5 }}
+              style={{ height: 34, padding: '0 16px', ...DS5, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 5 }}
             >
               + Add Item
             </button>
@@ -384,8 +385,7 @@ export default function BattlePlanPanel() {
                 background: 'rgba(255,255,255,0.03)',
                 border: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: 7,
-                fontSize: 12,
-                fontWeight: 500,
+                ...DS7,
                 color: 'rgba(255,255,255,0.6)',
                 fontFamily: 'var(--font-body)',
                 cursor: 'pointer',
@@ -414,7 +414,7 @@ export default function BattlePlanPanel() {
           onClick={e => { if (e.target === e.currentTarget) closeAddForm() }}
         >
           <div style={{ background: '#13112A', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 14, padding: 24, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', fontFamily: 'monospace' }}>
+            <div style={{ ...DT6, color: 'rgba(139,92,246,0.5)' }}>
               Add Action Item
             </div>
             <input
@@ -424,18 +424,18 @@ export default function BattlePlanPanel() {
               onChange={e => setNewTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && newTitle.trim()) addTask(); if (e.key === 'Escape') closeAddForm() }}
               placeholder="Action item..."
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', ...DS5, color: '#F2EDE4', outline: 'none' }}
             />
             {/* ID / Contact — autofill from existing deal names */}
             <div>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>ID / Contact</div>
+              <div style={{ ...DT8, color: 'rgba(139,92,246,0.5)', marginBottom: 5 }}>ID / Contact</div>
               <input
                 type="text"
                 value={newContactName}
                 onChange={e => setNewContactName(e.target.value)}
                 list="bp-contact-list"
                 placeholder="Type name or pick from list..."
-                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', ...DS5, color: '#F2EDE4', outline: 'none', boxSizing: 'border-box' }}
               />
               <datalist id="bp-contact-list">
                 {Array.from(new Set([...deals.map(d => d.name), ...entityNames].filter(Boolean))).map(n => (
@@ -445,36 +445,36 @@ export default function BattlePlanPanel() {
             </div>
             {/* Deadline */}
             <div>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Deadline</div>
+              <div style={{ ...DT8, color: 'rgba(139,92,246,0.5)', marginBottom: 5 }}>Deadline</div>
               <input
                 type="date"
                 value={newDueDate}
                 onChange={e => setNewDueDate(e.target.value)}
-                style={{ fontSize: 12, padding: '6px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+                style={{ ...DS7, padding: '6px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 7, color: '#F2EDE4', outline: 'none' }}
               />
             </div>
             <div style={{ display: 'flex', gap: 20 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: addToLife ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: addToLife ? 700 : 400 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, ...DS5, color: addToLife ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: addToLife ? 700 : 400 }}>
                 <input type="checkbox" checked={addToLife} onChange={e => {
                   setAddToLife(e.target.checked)
                   if (e.target.checked) setNewContactName('LIFE')
                   else if (newContactName === 'LIFE') setNewContactName('')
                 }} style={{ width: 16, height: 16, accentColor: '#f87171', cursor: 'pointer' }} />
-                <span style={{ fontSize: 15 }}>♥</span> Life
+                <span style={{ ...DS4 }}>♥</span> Life
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: newIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: newIsEntity ? 700 : 400 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, ...DS5, color: newIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: newIsEntity ? 700 : 400 }}>
                 <input type="checkbox" checked={newIsEntity} onChange={e => setNewIsEntity(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#22c55e', cursor: 'pointer' }} />
-                <span style={{ fontSize: 14 }}>🏢</span> Entity
+                <span style={{ ...DS5 }}>🏢</span> Entity
               </label>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={closeAddForm} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+              <button onClick={closeAddForm} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', ...DS5, cursor: 'pointer' }}>
                 Cancel
               </button>
               <button
                 onClick={addTask}
                 disabled={adding || !newTitle.trim()}
-                style={{ flex: 2, padding: '11px', background: adding || !newTitle.trim() ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.5) 100%)', border: '1px solid rgba(167,139,250,0.5)', borderRadius: 8, color: '#c4b5fd', fontSize: 14, fontWeight: 700, cursor: adding || !newTitle.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: adding || !newTitle.trim() ? 0.5 : 1 }}
+                style={{ flex: 2, padding: '11px', background: adding || !newTitle.trim() ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.5) 100%)', border: '1px solid rgba(167,139,250,0.5)', borderRadius: 8, color: '#c4b5fd', ...DS5, fontWeight: 700, cursor: adding || !newTitle.trim() ? 'not-allowed' : 'pointer', opacity: adding || !newTitle.trim() ? 0.5 : 1 }}
               >
                 {adding ? 'Saving...' : 'Save Item'}
               </button>
@@ -575,17 +575,16 @@ export default function BattlePlanPanel() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
                         <span style={{
-                          fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
+                          ...DS8, fontWeight: 700, letterSpacing: '0.12em',
                           textTransform: 'uppercase', color: bucket.color,
-                          fontFamily: 'var(--font-body)',
                         }}>{bucket.label}</span>
                         <span style={{
-                          fontSize: 11, fontWeight: 500, color: bucket.color, opacity: 0.5,
+                          ...DS8, fontWeight: 500, color: bucket.color, opacity: 0.5,
                           fontVariantNumeric: 'tabular-nums',
                         }}>{bucket.tasks.length}</span>
                         <div style={{ flex: 1, height: 1, background: `${bucket.color}22`, marginLeft: 4 }} />
                         <span style={{
-                          fontSize: 12, color: 'rgba(255,255,255,0.2)',
+                          ...DS7, color: 'rgba(255,255,255,0.2)',
                           transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
                           transition: 'transform 0.18s ease',
                           display: 'inline-block',
@@ -641,8 +640,7 @@ export default function BattlePlanPanel() {
           background: 'linear-gradient(135deg, rgba(139,92,246,0.85), rgba(109,40,217,0.95))',
           border: '1px solid rgba(167,139,250,0.5)',
           color: '#fff',
-          fontSize: 26,
-          fontWeight: 300,
+          ...DS1, fontWeight: 300,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -667,16 +665,16 @@ export default function BattlePlanPanel() {
             onClick={e => e.stopPropagation()}
             style={{ background: '#13112A', border: '1px solid rgba(139,92,246,0.35)', borderRadius: 14, padding: 28, minWidth: 300, maxWidth: 420, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.7)' }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', marginBottom: 8, fontFamily: 'monospace' }}>
+            <div style={{ ...DT6, color: 'rgba(139,92,246,0.5)', marginBottom: 8 }}>
               Battle Plan
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#F0F2FF', marginBottom: 4, lineHeight: 1.4 }}>
+            <div style={{ ...DS4, fontWeight: 700, color: '#F0F2FF', marginBottom: 4, lineHeight: 1.4 }}>
               {pendingComplete.title}
             </div>
             {pendingComplete.deal_id && (() => {
               const d = deals.find(x => x.id === pendingComplete.deal_id)
               return d ? (
-                <div style={{ fontSize: 11, color: 'var(--accent-violet-lt)', marginBottom: 16, fontFamily: 'monospace' }}>
+                <div style={{ ...DS8, color: 'var(--accent-violet-lt)', marginBottom: 16 }}>
                   {d.address || d.name}
                 </div>
               ) : <div style={{ marginBottom: 16 }} />
@@ -686,7 +684,7 @@ export default function BattlePlanPanel() {
             {/* ── "Create Next Flow" input mode ── */}
             {nextFlowMode ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ fontSize: 12, color: '#6b7280', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
+                <div style={{ ...DT7, color: '#6b7280', fontWeight: 600 }}>
                   Next Action
                 </div>
                 <input
@@ -699,21 +697,21 @@ export default function BattlePlanPanel() {
                     if (e.key === 'Escape') setNextFlowMode(false)
                   }}
                   placeholder="What's the next action?"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)' }}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 8, padding: '10px 12px', ...DS5, color: '#F2EDE4', outline: 'none' }}
                 />
                 <div>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.5)', marginBottom: 5, fontFamily: 'monospace' }}>Due Date</div>
+                  <div style={{ ...DT8, color: 'rgba(139,92,246,0.5)', marginBottom: 5 }}>Due Date</div>
                   <input
                     type="date"
                     value={nextFlowDueDate}
                     onChange={e => setNextFlowDueDate(e.target.value)}
-                    style={{ fontSize: 13, padding: '7px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(20,184,166,0.3)', borderRadius: 7, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' }}
+                    style={{ ...DS5, padding: '7px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(20,184,166,0.3)', borderRadius: 7, color: '#F2EDE4', outline: 'none', colorScheme: 'dark' }}
                   />
                 </div>
                 {pendingComplete.deal_id && (() => {
                   const d = deals.find(x => x.id === pendingComplete.deal_id)
                   return d ? (
-                    <div style={{ fontSize: 11, color: '#6b7280' }}>
+                    <div style={{ ...DS8, color: '#6b7280' }}>
                       Deal: <span style={{ color: 'var(--accent-gold)' }}>{d.address || d.name}</span> — will stay linked
                     </div>
                   ) : null
@@ -721,14 +719,14 @@ export default function BattlePlanPanel() {
                 <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                   <button
                     onClick={() => setNextFlowMode(false)}
-                    style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                    style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', ...DS5, cursor: 'pointer' }}
                   >
                     ← Back
                   </button>
                   <button
                     onClick={() => confirmNextFlow(pendingComplete)}
                     disabled={!nextFlowTitle.trim()}
-                    style={{ flex: 2, padding: '10px', background: nextFlowTitle.trim() ? 'rgba(52,211,153,0.2)' : 'rgba(20,184,166,0.06)', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 8, color: '#14b8a6', fontSize: 14, fontWeight: 700, cursor: nextFlowTitle.trim() ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-body)', opacity: nextFlowTitle.trim() ? 1 : 0.5 }}
+                    style={{ flex: 2, padding: '10px', background: nextFlowTitle.trim() ? 'rgba(52,211,153,0.2)' : 'rgba(20,184,166,0.06)', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 8, color: '#14b8a6', ...DS5, fontWeight: 700, cursor: nextFlowTitle.trim() ? 'pointer' : 'not-allowed', opacity: nextFlowTitle.trim() ? 1 : 0.5 }}
                   >
                     Complete + Create
                   </button>
@@ -739,19 +737,19 @@ export default function BattlePlanPanel() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <button
                   onClick={() => confirmComplete(pendingComplete)}
-                  style={{ padding: '12px 16px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 8, color: '#22C55E', fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)' }}
+                  style={{ padding: '12px 16px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 8, color: '#22C55E', ...DS5, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}
                 >
                   ✓ Log as Complete
                 </button>
                 <button
                   onClick={() => enterNextFlowMode(pendingComplete)}
-                  style={{ padding: '12px 16px', background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(20,184,166,0.35)', borderRadius: 8, color: '#14b8a6', fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)' }}
+                  style={{ padding: '12px 16px', background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(20,184,166,0.35)', borderRadius: 8, color: '#14b8a6', ...DS5, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}
                 >
                   → Create Next Flow
                 </button>
                 <button
                   onClick={closeCompletionModal}
-                  style={{ padding: '10px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)' }}
+                  style={{ padding: '10px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#6B7280', ...DS5, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
                 >
                   Cancel — Keep Open
                 </button>
@@ -779,13 +777,13 @@ function SectionDivider({ label, count, color, subtitle }: { label: string; coun
       marginTop: 4,
     }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(139,92,246,0.4)', fontFamily: 'monospace', lineHeight: 1 }}>
+        <div style={{ ...DT8, color: 'rgba(139,92,246,0.4)', lineHeight: 1 }}>
           {subtitle || label}
         </div>
       </div>
       {/* Dimmer, smaller pill — subordinate to panel-level count */}
       <div style={{
-        fontSize: 9, fontWeight: 600, color: 'rgba(139,92,246,0.4)',
+        ...DT8, fontWeight: 600, color: 'rgba(139,92,246,0.4)',
         background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.12)',
         borderRadius: 999, padding: '0px 7px', fontFamily: 'monospace',
       }}>
@@ -912,14 +910,14 @@ function TaskRow({
             value={editTitle}
             onChange={e => setEditTitle(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false) }}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 7, padding: '8px 11px', fontSize: 15, color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box', fontWeight: 600 }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 7, padding: '8px 11px', ...DS4, color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box', fontWeight: 600 }}
           />
           <input
             value={editContactName}
             onChange={e => setEditContactName(e.target.value)}
             list="bp-contact-list-edit"
             placeholder="Assignee / contact..."
-            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '7px 11px', fontSize: 13, color: 'var(--text-muted)', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '7px 11px', ...DS5, color: 'var(--text-muted)', outline: 'none', boxSizing: 'border-box' }}
           />
           <datalist id="bp-contact-list-edit">
             {Array.from(new Set([...deals.map(d => d.name), ...entityNames].filter(Boolean))).map(n => (
@@ -928,26 +926,26 @@ function TaskRow({
           </datalist>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 3, fontFamily: 'monospace' }}>Deadline</div>
+              <div style={{ ...DT8, color: 'rgba(255,255,255,0.3)', marginBottom: 3 }}>Deadline</div>
               <input
                 type="date"
                 value={editDueDate}
                 onChange={e => setEditDueDate(e.target.value)}
-                style={{ fontSize: 12, padding: '5px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: '#F2EDE4', outline: 'none', fontFamily: 'var(--font-body)', colorScheme: 'dark' }}
+                style={{ ...DS7, padding: '5px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: '#F2EDE4', outline: 'none', colorScheme: 'dark' }}
               />
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: editIsLife ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsLife ? 700 : 400, marginTop: 14 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, ...DS7, color: editIsLife ? '#f87171' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsLife ? 700 : 400, marginTop: 14 }}>
               <input type="checkbox" checked={editIsLife} onChange={e => setEditIsLife(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#f87171', cursor: 'pointer' }} />
-              <span style={{ fontSize: 13 }}>♥</span> Life
+              <span style={{ ...DS5 }}>♥</span> Life
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: editIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsEntity ? 700 : 400, marginTop: 14 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, ...DS7, color: editIsEntity ? '#4ade80' : 'var(--text-muted)', cursor: 'pointer', fontWeight: editIsEntity ? 700 : 400, marginTop: 14 }}>
               <input type="checkbox" checked={editIsEntity} onChange={e => setEditIsEntity(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#22c55e', cursor: 'pointer' }} />
-              <span style={{ fontSize: 12 }}>🏢</span> Entity
+              <span style={{ ...DS7 }}>🏢</span> Entity
             </label>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={saveEdit} style={{ padding: '6px 14px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Save</button>
-            <button onClick={() => setEditing(false)} style={{ padding: '6px 14px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+            <button onClick={saveEdit} style={{ padding: '6px 14px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, ...DS7, fontWeight: 600, cursor: 'pointer' }}>Save</button>
+            <button onClick={() => setEditing(false)} style={{ padding: '6px 14px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, ...DS7, cursor: 'pointer' }}>Cancel</button>
           </div>
         </div>
       ) : (
@@ -980,7 +978,7 @@ function TaskRow({
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
             {/* Title — HERO */}
             <div style={{
-              fontSize: 16, fontWeight: 600,
+              ...DS3, fontWeight: 600,
               color: completing ? 'var(--text-muted)' : 'var(--text-primary)',
               lineHeight: 1.3, letterSpacing: '-0.01em',
               textDecoration: completing ? 'line-through' : 'none',
@@ -992,7 +990,7 @@ function TaskRow({
             {task.contact_name && (
               <span style={{
                 background: 'rgba(255,255,255,0.08)', borderRadius: 4,
-                padding: '1px 7px', fontSize: 11,
+                padding: '1px 7px', ...DS8,
                 color: 'rgba(255,255,255,0.5)',
                 display: 'inline-block', marginTop: 4,
               }}>
@@ -1018,7 +1016,7 @@ function TaskRow({
                 onPointerMove={onPointerDragMove}
                 onPointerUp={onPointerDragEnd}
                 onPointerCancel={onPointerDragEnd}
-                style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', cursor: 'grab', userSelect: 'none', touchAction: 'none', padding: '2px 2px', letterSpacing: '0.05em' }}>
+                style={{ ...DS5, color: 'rgba(255,255,255,0.3)', cursor: 'grab', userSelect: 'none', touchAction: 'none', padding: '2px 2px', letterSpacing: '0.05em' }}>
                 ⠿
               </span>
             </div>
@@ -1070,7 +1068,7 @@ function ContactBadge({ contactName, deal, isLife, isEntity }: { contactName: st
         display: 'inline-flex', alignItems: 'center', gap: 3,
         padding: '2px 8px',
         background: 'rgba(239,68,68,0.15)',
-        borderRadius: 4, fontSize: 12, fontWeight: 700,
+        borderRadius: 4, ...DS7, fontWeight: 700,
         color: '#f87171', whiteSpace: 'nowrap',
       }}>
         <svg width="9" height="9" viewBox="0 0 24 24" fill="#f87171" stroke="#f87171" strokeWidth="1">
@@ -1086,14 +1084,14 @@ function ContactBadge({ contactName, deal, isLife, isEntity }: { contactName: st
       <span style={{
         display: 'inline-block', padding: '2px 8px',
         background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)',
-        borderRadius: 4, fontSize: 10, fontWeight: 600, color: '#a78bfa',
+        borderRadius: 4, ...DT8, fontWeight: 600, color: '#a78bfa',
         whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'],
       }} title={contactName ?? undefined}>
         {contactName || 'Entity'}
       </span>
     )
   }
-  if (!contactName) return <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.1)' }}>—</span>
+  if (!contactName) return <span style={{ ...DS5, color: 'rgba(255,255,255,0.1)' }}>—</span>
   // PERSON badge — gold (with deal-status tint if linked to a deal)
   const style = (deal as any)?.status ? (BP_STATUS_BADGE_COLORS[(deal as any).status] ?? BP_NEUTRAL_BADGE) : BP_NEUTRAL_BADGE
   return (
@@ -1102,7 +1100,7 @@ function ContactBadge({ contactName, deal, isLife, isEntity }: { contactName: st
       padding: '2px 8px',
       background: style.bg,
       border: `1px solid ${style.border}`,
-      borderRadius: 4, fontSize: 12, fontWeight: 600, color: style.color,
+      borderRadius: 4, ...DS7, fontWeight: 600, color: style.color,
       whiteSpace: 'nowrap', letterSpacing: '0.02em', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'],
     }} title={contactName}>
       {contactName}
@@ -1135,7 +1133,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
       <input
         type="date"
         onChange={e => onChange(e.target.value || null)}
-        style={{ width: 80, fontSize: 10, padding: '2px 4px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, color: 'rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
+        style={{ width: 80, ...DT8, padding: '2px 4px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, color: 'rgba(255,255,255,0.2)', outline: 'none', cursor: 'pointer' }}
       />
     )
   }
@@ -1145,7 +1143,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
     // Show the date in red so user knows exactly which day it was due.
     return (
       <span style={{
-        fontSize: 11, fontWeight: 700, color: '#ef4444',
+        ...DS8, fontWeight: 700, color: '#ef4444',
         fontFamily: 'monospace', whiteSpace: 'nowrap',
         letterSpacing: '0.01em',
       }}>
@@ -1158,7 +1156,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
     return (
       <span style={{
         display: 'inline-flex', alignItems: 'center',
-        fontSize: 13, fontWeight: 700,
+        ...DS5, fontWeight: 700,
         color: '#A78BFA', whiteSpace: 'nowrap', letterSpacing: '0.06em',
         textTransform: 'uppercase', fontFamily: 'monospace',
       }}>
@@ -1171,7 +1169,7 @@ function DeadlinePicker({ value, onChange }: { value: string | null; onChange: (
   return (
     <span
       title={value}
-      style={{ fontSize: 14, fontWeight: 600, color, fontFamily: 'monospace', whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'] }}>
+      style={{ ...DS5, fontWeight: 600, color, whiteSpace: 'nowrap', fontVariantCaps: 'small-caps' as React.CSSProperties['fontVariantCaps'] }}>
       {fmtDate(value)}
     </span>
   )
@@ -1191,7 +1189,7 @@ function SkeletonList() {
 
 function EmptyState() {
   return (
-    <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+    <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-muted)', ...DS5 }}>
       No open action items — clear skies.
     </div>
   )

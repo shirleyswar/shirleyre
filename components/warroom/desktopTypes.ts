@@ -15,7 +15,7 @@ export const DS0: React.CSSProperties = { fontFamily: FONT_DISPLAY, fontSize: 32
 export const DS1: React.CSSProperties = { fontFamily: FONT_DISPLAY, fontSize: 26.5, fontWeight: 500 }
 export const DS2: React.CSSProperties = { fontFamily: FONT_DISPLAY, fontSize: 16.5, fontWeight: 500 }
 /** Row primary */
-export const DS3: React.CSSProperties = { fontFamily: FONT_DISPLAY, fontSize: 15.5, fontWeight: 500 }
+export const DS3: React.CSSProperties = { fontFamily: FONT_DISPLAY, fontSize: 17, fontWeight: 500 }
 /** Row primary compact */
 export const DS4: React.CSSProperties = { fontFamily: FONT_DISPLAY, fontSize: 14.5, fontWeight: 500 }
 /** Row primary dense */
