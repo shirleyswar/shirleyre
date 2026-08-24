@@ -1913,7 +1913,7 @@ export default function WarRoomPage() {
   // Check 52: MM_HEADER is now 55 (has FAB). +24 for the ADDRESS/VALUE/COMM column header row.
   const colBPanels: PanelSpec[] = [
     { header: MM_HEADER + 24, rowHeight: MM_ROW_H, rowCount: mmRowCount },
-    { header: UC_HEADER, rowHeight: UC_ROW_H, rowCount: ucRowCount },
+    { header: UC_HEADER + 24, rowHeight: UC_ROW_H, rowCount: ucRowCount },
   ]
   const colBAllocs = colBHeight > 0 ? computeAlloc(colBHeight, colBPanels) : [
     { height: 300, visibleRows: 5 },
