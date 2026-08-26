@@ -669,7 +669,7 @@ setTaskDetailOpen,
         open={taskDetailOpen}
         task={selectedDetailTask}
         onClose={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
-        onCompleted={(t) => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
+        onCompleted={(t) => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false); setBpRefreshKey(k => k + 1) }}
         onSaved={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false); setBpRefreshKey(k => k + 1) }}
         onDeleted={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
       />

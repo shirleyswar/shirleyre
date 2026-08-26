@@ -39,9 +39,10 @@ interface CalendarPickerProps {
   value: Date | null
   onCancel: () => void
   onDone: (date: Date) => void
+  onChange?: (date: Date) => void  // 49a item 5 — fires immediately on day tap so CONFIRM lights up
 }
 
-export default function CalendarPicker({ value, onCancel, onDone }: CalendarPickerProps) {
+export default function CalendarPicker({ value, onCancel, onDone, onChange }: CalendarPickerProps) {
   const today = new Date()
   const [viewYear, setViewYear] = useState(value ? value.getFullYear() : today.getFullYear())
   const [viewMonth, setViewMonth] = useState(value ? value.getMonth() : today.getMonth())
@@ -160,7 +161,7 @@ export default function CalendarPicker({ value, onCancel, onDone }: CalendarPick
           return (
             <button
               key={day}
-              onClick={() => setSelected(new Date(viewYear, viewMonth, day))}
+              onClick={() => { const d = new Date(viewYear, viewMonth, day); setSelected(d); onChange?.(d) }}
               style={{
                 height: 42,
                 border: 'none',

@@ -122,69 +122,7 @@ function sortTasks(tasks: Task[]): Task[] {
   })
 }
 
-// §13.1 SwipeRow — swipe right to complete, swipe left to expose Tomorrow/Next week
-function SwipeRow({ task, children, onSwipeRight, onSwipeLeft, onNextWeek }: {
-  task: Task
-  children: React.ReactNode
-  onSwipeRight: () => void
-  onSwipeLeft: () => void
-  onNextWeek: () => void
-}) {
-  const [startX, setStartX] = useState(0)
-  const [offsetX, setOffsetX] = useState(0)
-  const [swiping, setSwiping] = useState(false)
-  const THRESHOLD = 80
-
-  // Reveal visibility: only show the relevant panel based on swipe direction.
-  // Neither panel is visible at rest (offsetX === 0).
-  const showRight = offsetX > 0   // swiping right → green DONE
-  const showLeft  = offsetX < 0   // swiping left  → Tomorrow / Next week
-
-  // Whether either reveal is open (snapped, not just mid-swipe)
-  const revealOpen = offsetX === 188 || offsetX === -188
-
-  return (
-    <div style={{ position: 'relative', overflow: 'hidden', minHeight: 64 }}>
-      {/* Left reveal (swipe right exposes): green DONE — hidden unless swiping right. §13.1 gradient recolour (P1C). */}
-      <div style={{ position:'absolute', inset:0, background:'radial-gradient(circle at 50% 30%, #87DFBE 0%, #31A870 45%, #0E4B34 100%)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.25)', display: (showRight || offsetX === 188) ? 'flex' : 'none', alignItems:'center', paddingLeft:18 }}>
-        <span style={{ fontFamily:"'Space Grotesk',system-ui,sans-serif", fontSize:14.5, fontWeight:700, letterSpacing:'0.02em', color:'#0A2E20', textTransform:'uppercase' }}>✓ DONE</span>
-      </div>
-      {/* Right reveal (swipe left exposes): Tomorrow + Next week — hidden unless swiping left. §13.1 gradient recolour (P1C). Width 94px (was 74). */}
-      <div style={{ position:'absolute', inset:0, display: (showLeft || offsetX === -188) ? 'flex' : 'none', justifyContent:'flex-end', alignItems:'stretch' }}>
-        <button
-          onClick={() => { onSwipeLeft(); setOffsetX(0) }}
-          style={{ width:94, background:'radial-gradient(circle at 50% 30%, #FFDDA8 0%, #FFA23A 48%, #B36A12 100%)', border:'none', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2 }}>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, color:'#4A2A05', lineHeight:1 }}>›</span>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, letterSpacing:'0.11em', color:'#4A2A05', textTransform:'uppercase', lineHeight:1 }}>TOMORROW</span>
-        </button>
-        <button
-          onClick={() => { setOffsetX(0); onNextWeek() }}
-          style={{ width:94, background:'rgba(255,255,255,0.12)', border:'none', cursor:'pointer', fontFamily:"'JetBrains Mono',monospace", fontSize:12, fontWeight:700, letterSpacing:'0.11em', color:'#B8B6C6', textTransform:'uppercase' }}>Next week</button>
-      </div>
-      {/* Row content — translates on swipe.
-          When reveal is snapped open, pointer-events are disabled on the content div
-          so taps pass through to the reveal buttons beneath it. */}
-      <div
-        style={{
-          transform: `translateX(${offsetX}px)`,
-          transition: swiping ? 'none' : 'transform 0.2s ease',
-          pointerEvents: revealOpen ? 'none' : 'auto',
-        }}
-        onTouchStart={e => { if (revealOpen) { setOffsetX(0); return } setStartX(e.touches[0].clientX); setSwiping(true) }}
-        onTouchMove={e => { if (!swiping) return; setOffsetX(e.touches[0].clientX - startX) }}
-        onTouchEnd={() => {
-          if (!swiping) return
-          setSwiping(false)
-          if (offsetX > THRESHOLD) { onSwipeRight(); setOffsetX(0) }
-          else if (offsetX < -THRESHOLD) { /* reveal stays exposed for tap */ setOffsetX(-188) }
-          else { setOffsetX(0) }
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  )
-}
+// §13.1 SwipeRow — STRUCK 49a. Swipe actions removed from list row. Open task to work it.
 
 export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refreshKey = 0 }: BattlePlanSheetProps) {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -286,64 +224,18 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
       metaDeal = dealAddr || dealName || null
     }
 
-    async function handleSwipeComplete() {
-      // Optimistic remove — row disappears immediately
-      setTasks(prev => prev.filter(t => t.id !== task.id))
-      setCompletionBar(task)
-      setTimeout(() => setCompletionBar(null), 6000)
-      const { error } = await supabase
-        .from('tasks')
-        .update({ status: 'complete', completed_at: new Date().toISOString() })
-        .eq('id', task.id)
-      if (error) {
-        // Rollback on failure
-        setRetryCount(c => c + 1)
-      }
-    }
-
-    async function handleSwipeTomorrow() {
-      const d = new Date()
-      d.setDate(d.getDate() + 1)
-      const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-      // Optimistic update — re-sort immediately without waiting for reload
-      setTasks(prev => {
-        const updated = prev.map(t => t.id === task.id ? { ...t, due_date: dateStr } : t)
-        return sortTasks(updated)
-      })
-      await supabase.from('tasks').update({ due_date: dateStr }).eq('id', task.id)
-    }
-
-    async function handleSwipeNextWeek() {
-      const d = new Date()
-      d.setDate(d.getDate() + 7)
-      const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-      // Optimistic update — re-sort immediately without waiting for reload
-      setTasks(prev => {
-        const updated = prev.map(t => t.id === task.id ? { ...t, due_date: dateStr } : t)
-        return sortTasks(updated)
-      })
-      await supabase.from('tasks').update({ due_date: dateStr }).eq('id', task.id)
-    }
-
+    // §13.1 swipe handlers removed 49a — swipe struck from list row entirely
     return (
-      <SwipeRow
+      <ListRow
         key={task.id}
-        task={task}
-        onSwipeRight={handleSwipeComplete}
-        onSwipeLeft={handleSwipeTomorrow}
-        onNextWeek={handleSwipeNextWeek}
-      >
-        <ListRow
-          key={task.id}
-          title={task.title}
-          metaDeal={metaDeal}
-          metaBadge={metaBadge}
-          spineColor={spineColor}
-          dayCount={dayCount}
-          dayCountColor={dayCountColor}
-          onPress={() => onOpenTaskDetail?.(task)}
-        />
-      </SwipeRow>
+        title={task.title}
+        metaDeal={metaDeal}
+        metaBadge={metaBadge}
+        spineColor={spineColor}
+        dayCount={dayCount}
+        dayCountColor={dayCountColor}
+        onPress={() => onOpenTaskDetail?.(task)}
+      />
     )
   }
 

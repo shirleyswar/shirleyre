@@ -432,14 +432,31 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
   }
 
   async function handleDone() {
-    // Commit staged changes, then mark complete
-    const ok = await runCommit()
-    if (!ok) return
+    // 49a ruling: CONFIRM owns date. Checkmark does NOT commit a staged date.
+    // Only title, note, and listType are committed by the checkmark.
+    setSaving(true)
+    setError(null)
+    const noteBody = noteText.trim() || null
+    const newTitle = titleEdited ? localTitle : null
+    const newListType = listType !== committeListType ? listType : null
+    const { error: rpcErr } = await supabase.rpc('commit_task_sheet', {
+      p_task_id:   task.id,
+      p_due_date:  null,        // date intentionally excluded — CONFIRM is the only path
+      p_list_type: newListType,
+      p_note_body: noteBody,
+      p_title:     newTitle,
+    })
+    if (rpcErr) {
+      setSaving(false)
+      setError(rpcErr.message || 'Could not complete — try again')
+      return
+    }
     const { error: updateErr } = await supabase
       .from('tasks')
       .update({ status: 'complete', completed_at: new Date().toISOString() })
       .eq('id', task.id)
     if (updateErr) {
+      setSaving(false)
       setError('Staged changes saved — could not mark complete.')
       return
     }
@@ -626,7 +643,6 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
                 background: 'transparent',
                 border: 'none',
                 cursor: saving ? 'not-allowed' : 'pointer',
@@ -634,7 +650,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                 flexShrink: 0,
               }}
             >
-              <span style={{ ...DM2, color: C.moneyIn }}>DONE</span>
+              {/* DONE caption removed 49a — checkmark stands alone */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/assets/check/check-h140.png"

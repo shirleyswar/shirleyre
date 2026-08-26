@@ -265,9 +265,9 @@ export default function TaskDetailSheet({
     setSaving(true)
     setError(null)
 
-    // §18.10 item 11 ruling: checkmark carries staged changes.
-    // If a date is staged or a note is typed, commit them along with completion.
-    const dueDateVal = stagedDate ?? task.due_date
+    // 49a ruling: CONFIRM owns date. Checkmark does NOT commit a staged date.
+    // Only title, note, and listType are committed by the checkmark.
+    const dueDateVal = task.due_date
     const noteBody = noteText.trim() || null
     const newListType = task.is_life ? 'life' : task.is_entity ? 'entity' : null
     const newTitle = mode === 'edit' && titleEdited ? localTitle : null
@@ -357,6 +357,8 @@ export default function TaskDetailSheet({
       setShowCalendar(true)
       return
     }
+    // 49a item 6 — non-pick chip hides calendar immediately
+    setShowCalendar(false)
     setStagedChip(chip)
     if (chip === 'today') setStagedDate(today)
     else if (chip === 'tomorrow') setStagedDate(addDays(1))
@@ -414,16 +416,13 @@ export default function TaskDetailSheet({
       onClick={handleComplete}
       disabled={saving}
       style={{
-        display: 'flex', alignItems: 'center', gap: 6,
+        display: 'flex', alignItems: 'center',
         border: 'none', background: 'transparent',
         cursor: saving ? 'default' : 'pointer',
         flexShrink: 0, padding: 0,
       }}
     >
-      <span style={{
-        fontFamily: FONT_MONO, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em',
-        textTransform: 'uppercase' as const, color: T.moneyIn,
-      }}>DONE</span>
+      {/* DONE caption removed 49a — checkmark stands alone */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/check/check-h140.png" alt="Complete" width={44} height={44} style={{ display: 'block' }} />
     </button>
@@ -675,6 +674,11 @@ export default function TaskDetailSheet({
                   <div style={{ marginTop: 12 }}>
                     <CalendarPicker
                       value={displayedDue ? new Date(displayedDue + 'T00:00:00') : null}
+                      onChange={(d: Date) => {
+                        // 49a item 5 — day tap immediately stages date so CONFIRM lights up
+                        setStagedDate(d.toLocaleDateString('en-CA'))
+                        setStagedChip('pick')
+                      }}
                       onDone={(d: Date) => {
                         const dateStr = d.toLocaleDateString('en-CA')
                         setStagedDate(dateStr)
@@ -688,6 +692,8 @@ export default function TaskDetailSheet({
                     />
                   </div>
                 )}
+                {/* 49a item 7 — scroll spacer when calendar open, so note composer stays reachable */}
+                {showCalendar && <div style={{ height: 80 }} />}
               </div>
 
               {/* 6. NOTES section */}
