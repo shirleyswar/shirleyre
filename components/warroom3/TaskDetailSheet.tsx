@@ -259,40 +259,20 @@ export default function TaskDetailSheet({
     onClose()
   }
 
-  // Complete task — checkmark tap
+  // Complete task — checkmark tap.
+  // Item 8 ruling: checkmark only fires when isActive === false (sheet untouched).
+  // Nothing is staged — no RPC call needed. One write: mark status complete.
   async function handleComplete() {
-    if (!task) return
+    if (!task || isActive) return  // isActive guard: disabled checkmark produces no action
     setSaving(true)
     setError(null)
-
-    // 49a ruling: CONFIRM owns date. Checkmark does NOT commit a staged date.
-    // Only title, note, and listType are committed by the checkmark.
-    const dueDateVal = task.due_date
-    const noteBody = noteText.trim() || null
-    const newListType = task.is_life ? 'life' : task.is_entity ? 'entity' : null
-    const newTitle = mode === 'edit' && titleEdited ? localTitle : null
-
-    // 1. Commit staged fields + note via RPC (COALESCE-safe, RAISE on zero-row)
-    const { error: rpcErr } = await (supabase as any).rpc('commit_task_sheet', {
-      p_task_id:   task.id,
-      p_due_date:  dueDateVal,
-      p_list_type: newListType,
-      p_note_body: noteBody,
-      p_title:     newTitle,
-    })
-    if (rpcErr) {
-      setSaving(false)
-      setError('Could not complete — try again')
-      return
-    }
-    // 2. Mark complete (separate write — RPC owns the task fields above)
     const { error: completeErr } = await supabase
       .from('tasks')
       .update({ status: 'complete', completed_at: new Date().toISOString() })
       .eq('id', task.id)
     if (completeErr) {
       setSaving(false)
-      setError('Staged changes saved — could not mark complete. Try again.')
+      setError('Could not complete — try again')
       return
     }
     setSaving(false)
@@ -411,20 +391,27 @@ export default function TaskDetailSheet({
   // EDIT  → DELETE asset slot (104×44, right-aligned at 18px gutter)
   // One slot, one action, never both.
   const headerAction = mode === 'read' ? (
-    // §13.2 / item 11 ruling: DONE caption + checkmark. Same pattern as CONFIRM plate.
+    // Item 8: checkmark mirrors CONFIRM — live when nothing staged, disabled when staged.
+    // Item 11: accessible name "Mark complete" in both states; aria-disabled when grey.
+    // PROVISIONAL: grey state uses opacity+filter desaturation per operator-authorised
+    // treatment 26 Aug — pending Design's inactive asset.
     <button
       onClick={handleComplete}
-      disabled={saving}
+      disabled={isActive || saving}
+      aria-label="Mark complete"
+      aria-disabled={isActive || saving}
       style={{
         display: 'flex', alignItems: 'center',
         border: 'none', background: 'transparent',
-        cursor: saving ? 'default' : 'pointer',
+        cursor: (isActive || saving) ? 'default' : 'pointer',
         flexShrink: 0, padding: 0,
-      }}
+        opacity: isActive ? 0.35 : 1,
+        filter: isActive ? 'saturate(0)' : 'none',
+        WebkitTapHighlightColor: 'transparent',
+      } as React.CSSProperties}
     >
-      {/* DONE caption removed 49a — checkmark stands alone */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/assets/check/check-h140.png" alt="Complete" width={44} height={44} style={{ display: 'block' }} />
+      <img src="/assets/check/check-h140.png" alt="Mark complete" width={44} height={44} style={{ display: 'block' }} />
     </button>
   ) : (
     // DELETE — 104×44 slot, right-aligned at the 18px gutter.
