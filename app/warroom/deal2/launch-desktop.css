@@ -1,0 +1,75 @@
+/*
+ * launch-desktop.css — Desktop-local Launch control for /warroom/deal2
+ * DESKTOP-LOCAL: DO NOT import this from components/warroom3/ or assets/launch/.
+ *
+ * Pill mount: 550×97.3px clipping box, overflow: hidden.
+ * File rendered at 563.3×112.7px, offset −7.2px left, −7.9px top.
+ * Artboard: 1650×330. Pill inside: 1611×285, inset 21 left, 23 top.
+ *
+ * Blend mode: NONE on the video. Spec directive overrides any prior spec.
+ * Reduced motion: video does not play; rest image stays visible.
+ */
+
+.ld2-launch {
+  /* Clipping box — pill dimensions */
+  position: relative;
+  width: 550px;
+  height: 97.3px;
+  overflow: hidden;
+  border-radius: 0; /* the pill artwork provides its own radius */
+  cursor: pointer;
+  display: block;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* Rest image */
+.ld2-launch__rest {
+  position: absolute;
+  width: 563.3px;
+  height: 112.7px;
+  left: -7.2px;
+  top: -7.9px;
+  display: block;
+  pointer-events: none;
+  /* NO blend mode */
+  transition: opacity 0.22s ease;
+  opacity: 1;
+}
+
+/* Hover video — same geometry as rest image */
+.ld2-launch__hover {
+  position: absolute;
+  width: 563.3px;
+  height: 112.7px;
+  left: -7.2px;
+  top: -7.9px;
+  display: block;
+  pointer-events: none;
+  /* NO blend mode — directive §4 */
+  object-fit: fill;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+/* Hover state: fade out rest, fade in video */
+.ld2-launch:hover .ld2-launch__rest {
+  opacity: 0;
+}
+
+.ld2-launch:hover .ld2-launch__hover {
+  opacity: 1;
+}
+
+/* Reduced motion: never show video, always show rest */
+@media (prefers-reduced-motion: reduce) {
+  .ld2-launch:hover .ld2-launch__rest {
+    opacity: 1;
+  }
+  .ld2-launch:hover .ld2-launch__hover {
+    opacity: 0;
+  }
+}
