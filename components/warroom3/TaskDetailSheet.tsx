@@ -679,8 +679,7 @@ export default function TaskDetailSheet({
                     />
                   </div>
                 )}
-                {/* 49a item 7 — scroll spacer when calendar open, so note composer stays reachable */}
-                {showCalendar && <div style={{ height: 80 }} />}
+                {/* 80px spacer removed — introduced against rejected test target, removed per item 10 */}
               </div>
 
               {/* 6. NOTES section */}

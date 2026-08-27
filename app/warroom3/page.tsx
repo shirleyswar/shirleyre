@@ -518,11 +518,13 @@ setTaskDetailOpen,
   const dateLabel = formatDateLabel()
 
   useEffect(() => {
+    // bpRefreshKey in deps: re-runs on task completion so home count and hero
+    // reconcile from DB immediately without a manual reload. [Item 9 fix]
     loadHomeData()
       .then(({ hero, tiles }) => { setHero(hero); setTiles(tiles) })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [bpRefreshKey])
 
   return (
     <div style={{
