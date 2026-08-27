@@ -416,7 +416,8 @@ function Deal2PageContent() {
     { label: 'Price/SF',       value: fmtPSF(econ?.asking_price, econ?.sqft) },
     { label: 'Building SF',    value: fmtSF(econ?.sqft) },
     { label: 'Land Size',      value: fmtAcres(econ?.land_sqft) },
-    { label: 'Est. Commission', value: '—', glow: true }, // brand-lift glow; no dollar figure (gated Item 32)
+    // Est. Commission: NOT rendered while Item 32 is open (no derived dollar figure permitted).
+    // glow: true but no special filter exemption — slot is absent until Item 32 closes.
   ]
 
   const glanceLease: GlanceCell[] = [
@@ -424,13 +425,14 @@ function Deal2PageContent() {
     { label: 'Lease Rate PSF', value: econ?.lease_rate_psf ? `$${econ.lease_rate_psf}/SF` : '—' },
     { label: 'Building SF',    value: fmtSF(econ?.sqft) },
     { label: 'Land Size',      value: fmtAcres(econ?.land_sqft) },
-    { label: 'Deal Value',     value: '—' }, // not rendered pre-offer (no accepted-price field)
-    { label: 'Est. Commission', value: '—', glow: true },
+    // Deal Value: not rendered pre-offer (no accepted-price field exists per directive §4).
+    // Est. Commission: NOT rendered while Item 32 is open.
   ]
 
   const glanceCells = isLease ? glanceLease : glanceSale
-  // Filter: only render cells that have a non-'—' value, except glow cell which always shows
-  const visibleCells = glanceCells.filter(c => c.value !== '—' || c.glow)
+  // Filter: only render cells that have a real (non-'—') value.
+  // Est. Commission is intentionally absent until Item 32 closes — it is NOT exempted from the filter.
+  const visibleCells = glanceCells.filter(c => c.value !== '—')
 
   return (
     <div style={{ background: T.bgBase, minHeight: '100vh', fontFamily: FONT_DISPLAY }}>
@@ -621,8 +623,10 @@ function Deal2PageContent() {
                 </div>
                 <div style={{
                   ...STYLE_M0,
-                  color: cell.glow ? T.brandLift : T.textHi,
-                  textShadow: cell.glow ? '0 0 22px rgba(167,139,250,0.35)' : undefined,
+                  // Commission slot color: money-in green (#34D399) per 8.27.26 correction.
+                  // Prior spec carried stale violet (brandLift) — corrected by directive, not scored against build.
+                  color: cell.glow ? T.moneyIn : T.textHi,
+                  textShadow: cell.glow ? '0 0 22px rgba(52,211,153,0.35)' : undefined,
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -638,7 +642,10 @@ function Deal2PageContent() {
       {/* ── TWO-COLUMN GRID ─────────────────────────────────────────────────── */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 400px',
+        // Right rail must accommodate Launch pill (550px per item 50 directive).
+        // At 1440px viewport: 1440 - 64px padding - 22px gap = 1354px net.
+        // 1354 - 550 = 804px left column. Ratio ~60/40.
+        gridTemplateColumns: '1fr 550px',
         gap: 22,
         maxWidth: 1440,
         margin: '0 auto',
@@ -938,9 +945,30 @@ function Deal2PageContent() {
             </div>
           </Panel>
 
-          {/* CHAIN — shell, never collapses */}
-          <Panel label="CHAIN" style={{ minHeight: 120 }}>
-            <EmptyState text="No chain steps." />
+          {/* CHAIN — item 47: shell + designed empty state. Full height always. Never collapse, never hide. */}
+          {/* Live rows and clip rule gated on evidence supplement (Stage 2). */}
+          <Panel label="CHAIN" style={{ minHeight: 160 }}>
+            <div style={{ padding: '0 18px 18px' }}>
+              <div style={{
+                fontFamily: FONT_DISPLAY,
+                fontSize: 13,
+                color: T.textLow,
+                lineHeight: 1.6,
+                marginBottom: 8,
+              }}>
+                No deal chain started.
+              </div>
+              <div style={{
+                fontFamily: FONT_MONO,
+                fontSize: 9,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: T.textLow,
+                opacity: 0.6,
+              }}>
+                Chain steps will appear here once the deal is launched.
+              </div>
+            </div>
           </Panel>
 
         </div>
