@@ -42,7 +42,7 @@
   pointer-events: none;
   /* NO blend mode */
   /* clip-path hides black artboard top(0)/right(6.1px)/bottom(7.5px); left open for orb */
-  clip-path: inset(0 6.1px 7.5px 0);
+  clip-path: inset(0 6.1px 7.5px -30px);
   transition: opacity 0.22s ease;
   opacity: 1;
 }
@@ -59,7 +59,7 @@
   /* NO blend mode — directive §4 */
   object-fit: fill;
   /* Same clip-path as rest — ensures identical crop, zero shift on swap */
-  clip-path: inset(0 6.1px 7.5px 0);
+  clip-path: inset(0 6.1px 7.5px -30px);
   opacity: 0;
   transition: opacity 0.22s ease;
 }
