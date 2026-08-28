@@ -2,25 +2,34 @@
  * launch-desktop.css — Desktop-local Launch control for /warroom/deal2
  * DESKTOP-LOCAL: DO NOT import this from components/warroom3/ or assets/launch/.
  *
- * Design ruling (2026-08-27): mix-blend-mode:screen on hover VIDEO only.
- * The 550×97.3 rectangle is an alignment/registration rectangle, NOT a clip box.
- * overflow:visible — the bloom lives outside the pill.
- * NO clip-path on any element. NO overflow:hidden anywhere.
- * Rest image has real alpha — do NOT blend it.
+ * Design-ruled geometry (2026-08-27 geometry round):
+ *   Pill target: 379.9 × 67.2px  (registration rectangle, NOT a clip)
+ *   Scale: 379.9 / 1611 = 0.235816
+ *   File rendered: 389.097 × 77.819px   (1650×330 artboard at scale)
+ *   Left offset: −4.952px  (21px art inset × scale)
+ *   Top offset:  −5.424px  (23px art inset × scale)
+ *   Right overhang:  4.245px  (18px art × scale)
+ *   Bottom overhang: 5.188px  (22px art × scale)
  *
- * Ground sampling (hover_frame.png, 1650×330):
- *   Corners: pure black (0,0,0) → transparent under screen blend ✓
- *   Left pre-pill surround (x=0, y=165): RGB(217,124,255) — orb bloom present ✓
- *   screen blend drops pure black, composites orb bloom correctly ✓
- *   No re-encode needed.
+ * Math verification:
+ *   Width:  389.097 − 4.952 − 4.245 = 379.900 ✓
+ *   Height: 77.819  − 5.424 − 5.188 = 67.208  ✓ (rounds to 67.2)
+ *
+ * The video overhangs the registration rectangle on all four sides — CORRECT.
+ * DO NOT clip, mask, constrain or shrink.
+ *
+ * Compositing (unchanged from prior round):
+ *   mix-blend-mode: screen on hover video ONLY.
+ *   Rest image: no blend (real alpha).
+ *   overflow: visible. No clip-path. No mask.
  */
 
 .ld2-launch {
-  /* Registration rectangle — alignment only, NOT a clipping box */
+  /* Registration rectangle — alignment only, not a clip */
   position: relative;
-  width: 550px;
-  height: 97.3px;
-  /* overflow: visible — bloom lives outside the pill, must escape freely */
+  width: 379.9px;
+  height: 67.2px;
+  /* overflow: visible — bloom overhangs all four sides */
   cursor: pointer;
   display: block;
   background: transparent;
@@ -28,38 +37,36 @@
   padding: 0;
   margin: 0;
   flex-shrink: 0;
-  /* No isolation — must not form a stacking context that breaks blend group */
 }
 
 /* Rest image — real alpha, no blend mode */
 .ld2-launch__rest {
   position: absolute;
-  width: 563.3px;
-  height: 112.7px;
-  left: -7.2px;
-  top: -7.9px;
+  width: 389.097px;
+  height: 77.819px;
+  left: -4.952px;
+  top: -5.424px;
   display: block;
   pointer-events: none;
-  /* NO blend mode — rest has real alpha, composites normally */
-  /* NO clip-path — removed per design ruling */
+  /* NO blend mode */
+  /* NO clip-path */
   transition: opacity 0.22s ease;
   opacity: 1;
 }
 
-/* Hover video — mix-blend-mode:screen to drop pure black artboard */
+/* Hover video — mix-blend-mode:screen drops pure black artboard */
 .ld2-launch__hover {
   position: absolute;
-  width: 563.3px;
-  height: 112.7px;
-  left: -7.2px;
-  top: -7.9px;
+  width: 389.097px;
+  height: 77.819px;
+  left: -4.952px;
+  top: -5.424px;
   display: block;
   pointer-events: none;
-  /* mix-blend-mode: screen — drops pure black, composites orb bloom */
-  /* VIDEO ONLY. Rest image must not take this rule. */
+  /* VIDEO ONLY — rest must not take this rule */
   mix-blend-mode: screen;
   object-fit: fill;
-  /* NO clip-path — removed per design ruling */
+  /* NO clip-path */
   opacity: 0;
   transition: opacity 0.22s ease;
 }

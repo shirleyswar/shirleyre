@@ -657,10 +657,10 @@ function Deal2PageContent() {
       {/* ── TWO-COLUMN GRID ─────────────────────────────────────────────────── */}
       <div style={{
         display: 'grid',
-        // Right rail must accommodate Launch pill (550px per item 50 directive).
-        // At 1440px viewport: 1440 - 64px padding - 22px gap = 1354px net.
-        // 1354 - 550 = 804px left column. Ratio ~60/40.
-        gridTemplateColumns: '1fr 550px',
+        // Design-ruled geometry: 32 / 974 / 22 / 380 / 32 = 1440.
+        // Right rail: 380px. Left column: 1fr (= 974px at 1440, wider at larger viewports).
+        // Outer-width model unchanged (maxWidth:1440, margin:auto, padding:32px sides).
+        gridTemplateColumns: '1fr 380px',
         gap: 22,
         maxWidth: 1440,
         margin: '0 auto',
