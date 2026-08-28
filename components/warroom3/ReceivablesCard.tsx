@@ -1,10 +1,12 @@
 'use client'
 
-// Receivables card — §6 item 7 + §12 step 6
-// §6 item 7: T1 header → D1 figure in money-in (collected, the glowing element)
-//            → T4 caption → split progress bar (§5.9) → footer row
-// §4.3 one-glow rule: D1 carries the one text glow on this screen (collected figure).
-// §5.9 progress bar: 4px height, radius 2px, two flex children: money-in + brand. No track.
+// Receivables — Item 59 re-cut (mobile refresh)
+// LEAD FIGURE: outstanding (billed and not received) in money-in (#34D399)
+// Caption on SAME LINE beside it
+// Split bar 4px: brand-lift for COLLECTED segment, money-in for OUTSTANDING segment
+// FOOTER: collected in brand-lift + deal count mono at far end
+// Old layout was reversed (led with collected) — this is the fix.
+// Query: ar_items + ar_payments tables (read-only, @/lib/supabase)
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -13,67 +15,43 @@ const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
-  bgPanel:   '#12111B',
-  textHi:    '#EFEEF4',
-  textMid:   '#B8B6C6',
-  textLow:   '#8E8CA0',
-  brand:     '#8B5CF6',
-  brandLift: '#A78BFA',
-  moneyIn:   '#34D399',
+  bgPanel:     '#12111B',
+  textHi:      '#EFEEF4',
+  textMid:     '#B8B6C6',
+  textLow:     '#8E8CA0',
+  brand:       '#8B5CF6',
+  brandLift:   '#A78BFA',
+  moneyIn:     '#34D399',
 } as const
 
-// T1 §3.2
-const styleT1: React.CSSProperties = {
+// T2 — section header eyebrow
+const styleT2: React.CSSProperties = {
   fontFamily: FONT_MONO,
-  fontSize: 10.5,
+  fontSize: 12,
   fontWeight: 500,
-  letterSpacing: '0.14em',
+  letterSpacing: '0.15em',
   textTransform: 'uppercase',
-  color: T.textMid,
+  color: T.textLow,
   lineHeight: 1,
-}
-
-// D1 §3.2 — 36px / 700 / -0.035em / accent or text-hi — THE figure, carries the glow
-const styleD1: React.CSSProperties = {
-  fontFamily: FONT_DISPLAY,
-  fontSize: 36,
-  fontWeight: 700,
-  letterSpacing: '-0.035em',
-  color: T.moneyIn,
-  lineHeight: 1,
-  fontVariantNumeric: 'tabular-nums',
-  // §4.3 glow: text-shadow 0 0 22px <money-in at 0.35-0.45 alpha>
-  textShadow: '0 0 22px rgba(52,211,153,0.40)',
-}
-
-// T4 §3.2
-const styleT4: React.CSSProperties = {
-  fontFamily: FONT_DISPLAY,
-  fontSize: 11.5,
-  fontWeight: 400,
-  color: T.textMid,
-  lineHeight: 1.5,
 }
 
 function formatCurrency(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
+  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}K`
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
 
 interface ARData {
-  collected: number     // total payments received (D1, money-in)
-  outstanding: number   // remaining owed (brand-lift)
-  dealCount: number     // number of ar_items
+  collected:   number
+  outstanding: number
+  dealCount:   number
 }
 
+// Verbatim query — reported to Matthew per Class A requirement.
+// SELECT ar_items + ar_payments:
+//   collected   = sum(payments_total ?? paid_to_date ?? 0) across ALL items
+//   outstanding = sum(max(0, sr_portion_amount - paid)) where status = 'receivable'
 async function loadARData(): Promise<ARData> {
-  // Mirrors AccountsReceivablePanel.tsx exactly.
-  // sr_portion_amount = MS Portion — the column the panel tracks.
-  // payments_total per item = sum of ar_payments rows for that item.
-  // Collected = sum(payments_total ?? paid_to_date ?? 0) across ALL items.
-  // Outstanding = sum of msBal for receivable items only,
-  //   where msBal = max(0, sr_portion_amount - payments_total).
   const [itemsRes, paymentsRes] = await Promise.all([
     supabase
       .from('ar_items')
@@ -85,29 +63,24 @@ async function loadARData(): Promise<ARData> {
       .limit(200),
   ])
 
-  // Treat PostgREST errors as fetch failures — throw so caller can set loadError
-  if (itemsRes.error) throw new Error(`ar_items: ${itemsRes.error.message}`)
+  if (itemsRes.error)    throw new Error(`ar_items: ${itemsRes.error.message}`)
   if (paymentsRes.error) throw new Error(`ar_payments: ${paymentsRes.error.message}`)
 
   const items    = (itemsRes.data    ?? []) as any[]
   const payments = (paymentsRes.data ?? []) as any[]
 
-  // Build payments_total per item (mirrors panel enrichment)
   const paymentsByItem: Record<string, number> = {}
   for (const p of payments) {
     paymentsByItem[p.ar_item_id] = (paymentsByItem[p.ar_item_id] || 0) + (p.amount || 0)
   }
 
-  // Collected = sum(payments_total ?? paid_to_date ?? 0) across ALL items
-  const collected = items.reduce((sum: number, i: any) => {
-    return sum + (paymentsByItem[i.id] ?? (i.paid_to_date || 0))
-  }, 0)
+  const collected = items.reduce((sum: number, i: any) =>
+    sum + (paymentsByItem[i.id] ?? (i.paid_to_date || 0)), 0)
 
-  // Outstanding = sum of msBal(receivable items)
   const outstanding = items
     .filter((i: any) => i.status === 'receivable')
     .reduce((sum: number, i: any) => {
-      const ms = i.sr_portion_amount ?? 0
+      const ms   = i.sr_portion_amount ?? 0
       const paid = paymentsByItem[i.id] ?? (i.paid_to_date || 0)
       return sum + Math.max(0, ms - paid)
     }, 0)
@@ -116,7 +89,7 @@ async function loadARData(): Promise<ARData> {
 }
 
 export default function ReceivablesCard() {
-  const [data, setData] = useState<ARData | null>(null)
+  const [data, setData]       = useState<ARData | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
 
@@ -138,113 +111,125 @@ export default function ReceivablesCard() {
   const outstanding = data?.outstanding ?? 0
   const dealCount   = data?.dealCount   ?? 0
   const total       = collected + outstanding
-  const pctCollected = total > 0 ? collected / total : 0
+  const pctCollected  = total > 0 ? collected  / total : 0
+  const pctOutstanding = total > 0 ? outstanding / total : 0
 
   return (
-    <div style={{
-      background: T.bgPanel,
-      border: '1px solid rgba(255,255,255,0.14)',
-      borderRadius: 16,
-      padding: '16px 16px 18px',
-    }}>
-      {/* §5.1 header: T1 label · hairline · (no count — not a list) */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        marginBottom: 16,
-      }}>
-        <span style={styleT1}>Receivables</span>
-        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.11)' }} />
-      </div>
+    <div>
+      {/* Section header — no card wrapper */}
+      <div style={{ ...styleT2, marginBottom: 10 }}>Receivables</div>
 
-      {/* D1 figure — collected, money-in colour, carries the screen glow (§4.3) */}
+      {/* LEAD FIGURE: outstanding in money-in, caption on SAME LINE */}
       {loading ? (
         <div style={{
-          height: 44, width: '60%', borderRadius: 8,
+          height: 36, width: '55%', borderRadius: 8,
           background: 'rgba(255,255,255,0.04)',
           backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 100%)',
           backgroundSize: '200% 100%',
           animation: 'shimmer 1.6s ease-in-out infinite',
-          marginBottom: 8,
+          marginBottom: 10,
         }} />
       ) : loadError ? (
         <div
           onClick={load}
-          style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D', marginBottom: 6, cursor: 'pointer' }}
+          style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: '#FF4D4D', marginBottom: 10, cursor: 'pointer' }}
         >
           Could not load — tap to retry
         </div>
       ) : (
-        <div style={{ ...styleD1, marginBottom: 6 }}>
-          {formatCurrency(collected)}
+        <div style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 10,
+          marginBottom: 10,
+        }}>
+          {/* Lead figure: outstanding, money-in */}
+          <span style={{
+            fontFamily: FONT_DISPLAY,
+            fontSize: 34,
+            fontWeight: 700,
+            letterSpacing: '-0.03em',
+            color: T.moneyIn,
+            lineHeight: 1,
+            fontVariantNumeric: 'tabular-nums',
+          }}>{formatCurrency(outstanding)}</span>
+          {/* Caption on same line */}
+          <span style={{
+            fontFamily: FONT_DISPLAY,
+            fontSize: 12,
+            fontWeight: 400,
+            color: T.textLow,
+            lineHeight: 1,
+          }}>outstanding</span>
         </div>
       )}
 
-      {/* T4 caption */}
-      <div style={{ ...styleT4, marginBottom: 14 }}>
-        {loading ? '—' : loadError ? '' : 'collected'}
-      </div>
-
-      {/* §5.9 split progress bar — hidden during error state */}
+      {/* Split bar, 4px: brand-lift for COLLECTED, money-in for OUTSTANDING */}
       {!loadError && (
         <div style={{
           display: 'flex',
           height: 4,
           borderRadius: 2,
           overflow: 'hidden',
-          marginBottom: 14,
+          marginBottom: 10,
+          background: 'rgba(255,255,255,0.08)',
         }}>
           <div style={{
             flex: loading ? 0.5 : pctCollected,
-            background: T.moneyIn,
+            background: T.brandLift,
             borderRadius: '2px 0 0 2px',
             transition: 'flex 0.6s ease',
           }} />
           <div style={{
-            flex: loading ? 0.5 : 1 - pctCollected,
-            background: T.brand,
+            flex: loading ? 0.5 : pctOutstanding,
+            background: T.moneyIn,
             borderRadius: '0 2px 2px 0',
             transition: 'flex 0.6s ease',
           }} />
         </div>
       )}
 
-      {/* Footer row: outstanding in brand-lift · deal count in mono — hidden during error */}
-      {!loadError && <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 8,
-      }}>
-        {/* Outstanding — brand-lift per spec §6 item 7 */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-          <span style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: 14,
-            fontWeight: 600,
-            color: T.brandLift,
-            fontVariantNumeric: 'tabular-nums',
-            letterSpacing: '-0.01em',
-          }}>
-            {loading ? '—' : formatCurrency(outstanding)}
-          </span>
-          <span style={{ ...styleT4, fontSize: 10.5 }}>outstanding</span>
-        </div>
-
-        {/* Deal count — mono */}
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 11,
-          fontWeight: 500,
-          color: T.textLow,
-          letterSpacing: '0.08em',
-          fontVariantNumeric: 'tabular-nums',
-          whiteSpace: 'nowrap',
+      {/* Footer: collected in brand-lift + deal count mono at far end */}
+      {!loadError && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
         }}>
-          {loading ? '—' : `${dealCount} ${dealCount === 1 ? 'deal' : 'deals'}`}
-        </span>
-      </div>}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: 14,
+              fontWeight: 600,
+              color: T.brandLift,
+              fontVariantNumeric: 'tabular-nums',
+              letterSpacing: '-0.01em',
+            }}>
+              {loading ? '—' : formatCurrency(collected)}
+            </span>
+            <span style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: 11,
+              fontWeight: 400,
+              color: T.textLow,
+              lineHeight: 1,
+            }}>collected</span>
+          </div>
+
+          <span style={{
+            fontFamily: FONT_MONO,
+            fontSize: 11,
+            fontWeight: 500,
+            color: T.textLow,
+            letterSpacing: '0.08em',
+            fontVariantNumeric: 'tabular-nums',
+            whiteSpace: 'nowrap',
+          }}>
+            {loading ? '—' : `${dealCount} ${dealCount === 1 ? 'deal' : 'deals'}`}
+          </span>
+        </div>
+      )}
 
       <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
     </div>

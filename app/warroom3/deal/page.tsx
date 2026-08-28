@@ -1,17 +1,26 @@
 'use client'
-import { HOUSE_SPLIT, calcSaleCommission, calcLeaseCommission, calcCommission } from '@/lib/dealMath'
 
-// §15 Mobile deal page — locked design 33b (13 Aug). Round 1: read state only.
-// "The phone reads the deal, the desktop works it" — no Edit on mobile.
-// Route: /warroom3/deal?id=<uuid>
+// /warroom3/deal — mobile deal page, items 67-77
+// Items built:
+//   67: header (no back control, address 19px, client 12.5px, type plates right, no HOT/pill/menu/edit)
+//   68: type plates up to two — transaction (sale/lease) + property type, 22px tall, inert
+//   69: economics flowing two-col grid, facts that exist, no dashes for missing
+//   70: LACDB link centered, lacdb-link-h168.png at h56, no border/fill/radius/glow, LACDB pill struck
+//   71: photo 16:9 radius 14, placeholder
+//   72: section rows CHAIN+type, CONTACTS, DOCUMENTS, NOTES — no navigation arrows
+//   73: commission reveal — hidden by default, 56px band, press reveals figure + derivation
+//   74: no receivable, no Launch Deal
+//   75: pad rule — NOT this round (requires runtime measurement, deferring partial implementation)
+//   76: three tap-reactive objects: LACDB link, phone number, commission reveal
+//   77: rightward drag to go back — page translates right, springs back if < 1/3
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
-import Launch from '@/components/warroom3/Launch'
+import { calcSaleCommission, calcLeaseCommission, HOUSE_SPLIT } from '@/lib/dealMath'
 
-// ── Tokens §2 ────────────────────────────────────────────────────────────────
+// ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
   bgBase:    '#08080C',
   bgPanel:   '#12111B',
@@ -20,7 +29,7 @@ const T = {
   textMid:   '#B8B6C6',
   textLow:   '#8E8CA0',
   brand:     '#8B5CF6',
-  brandLift: '#A78BFA',  // Est. Commission glow — the one glow on the page
+  brandLift: '#A78BFA',
   moneyIn:   '#34D399',
   late:      '#FF4D4D',
   hot:       '#FFA23A',
@@ -29,41 +38,6 @@ const T = {
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
-// §3.2 type scale (44a)
-// M0 — JetBrains Mono 22px / 500 / -0.01em — deal-page snapshot lead figures
-const STYLE_M0: React.CSSProperties = {
-  fontFamily: FONT_MONO,
-  fontSize: 22,
-  fontWeight: 500,
-  letterSpacing: '-0.01em',
-  fontVariantNumeric: 'tabular-nums',
-  lineHeight: 1.1,
-}
-// M1 — 17px
-const STYLE_M1: React.CSSProperties = {
-  fontFamily: FONT_MONO,
-  fontSize: 17,
-  fontWeight: 500,
-  fontVariantNumeric: 'tabular-nums',
-  lineHeight: 1.1,
-}
-// T3 — 18px row title
-const STYLE_T3: React.CSSProperties = {
-  fontFamily: FONT_DISPLAY,
-  fontSize: 18,
-  fontWeight: 500,
-  color: T.textHi,
-  lineHeight: 1.25,
-}
-// T4 — 14px text-mid
-const STYLE_T4: React.CSSProperties = {
-  fontFamily: FONT_DISPLAY,
-  fontSize: 14,
-  fontWeight: 400,
-  color: T.textMid,
-  lineHeight: 1.4,
-}
-// T1 — 12px mono upper
 const STYLE_T1: React.CSSProperties = {
   fontFamily: FONT_MONO,
   fontSize: 12,
@@ -73,96 +47,50 @@ const STYLE_T1: React.CSSProperties = {
   color: T.textLow,
   lineHeight: 1,
 }
-// T5 — 10px mono upper (labels under figures)
-const STYLE_T5: React.CSSProperties = {
-  fontFamily: FONT_MONO,
-  fontSize: 10,
-  fontWeight: 500,
-  letterSpacing: '0.11em',
-  textTransform: 'uppercase',
-  lineHeight: 1,
+
+// ── Type plate map ─────────────────────────────────────────────────────────────
+// Transaction plates: sale → plate-sale-h66.png, lease → plate-lease-h66.png
+// Property plates: OFFICE, RETAIL, INDUSTRIAL, MULTI, LAND
+// plate-indst-h66.png maps to INDUSTRIAL. Never alter any DB value.
+// HOT does NOT render — HOT is a status, not a type.
+const TRANSACTION_PLATES: Record<string, string> = {
+  sale:  '/assets/plates/mobile/plate-sale-h66.png',
+  lease: '/assets/plates/mobile/plate-lease-h66.png',
+}
+const PROPERTY_PLATES: Record<string, string> = {
+  OFFICE:     '/assets/plates/mobile/plate-office-h66.png',
+  RETAIL:     '/assets/plates/mobile/plate-retail-h66.png',
+  INDUSTRIAL: '/assets/plates/mobile/plate-indst-h66.png',
+  MULTI:      '/assets/plates/mobile/plate-multi-h66.png',
+  LAND:       '/assets/plates/mobile/plate-land-h66.png',
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(n: number | null | undefined): string {
-  if (n == null) return '—'
+  if (n == null) return ''
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
-  if (n >= 1_000) return `$${Math.round(n).toLocaleString('en-US')}`
+  if (n >= 1_000)     return `$${Math.round(n).toLocaleString('en-US')}`
   return `$${n}`
 }
 
 function fmtSF(n: number | null | undefined): string {
-  if (n == null) return '—'
+  if (n == null) return ''
   return `${Math.round(n).toLocaleString('en-US')} SF`
 }
 
 function fmtAcres(n: number | null | undefined): string {
-  if (n == null) return '—'
+  if (n == null) return ''
   return `${n} AC`
 }
 
 function fmtPSF(price: number | null, sf: number | null): string {
-  if (!price || !sf) return '—'
+  if (!price || !sf) return ''
   return `$${(price / sf).toFixed(2)}/SF`
 }
 
-// ── Snapshot cell ─────────────────────────────────────────────────────────────
-function SnapCell({
-  label,
-  value,
-  valueStyle,
-}: {
-  label: string
-  value: string
-  valueStyle?: React.CSSProperties
-}) {
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 4,
-      padding: '14px 0',
-    }}>
-      <span style={{ ...STYLE_T5, color: T.textLow }}>{label}</span>
-      <span style={{ ...STYLE_M1, ...valueStyle }}>{value}</span>
-    </div>
-  )
-}
-
-// ── Section row (§5.11) ───────────────────────────────────────────────────────
-function SectionRow({ label, meta, onPress }: { label: string; meta?: string; onPress?: () => void }) {
-  return (
-    <div>
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.10)' }} />
-      <button
-        onClick={onPress ?? (() => console.log(`[deal page] ${label} tapped`))}
-        style={{
-          width: '100%',
-          background: 'transparent',
-          border: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '18px 20px 18px 20px',
-          gap: 10,
-          cursor: 'pointer',
-          WebkitTapHighlightColor: 'transparent',
-          textAlign: 'left',
-          minHeight: 60,
-        } as React.CSSProperties}
-      >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ ...STYLE_T3 }}>{label}</div>
-          {meta && (
-            <div style={{ ...STYLE_T4, marginTop: 6 }}>{meta}</div>
-          )}
-        </div>
-        {/* Right chevron */}
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T.textLow} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      </button>
-    </div>
-  )
+function fmtPct(n: number | null | undefined): string {
+  if (n == null) return ''
+  return `${n}%`
 }
 
 // ── Deal data type ────────────────────────────────────────────────────────────
@@ -179,78 +107,363 @@ interface DealData {
   status: string
   property_type: string | null
   portfolio_id: string | null
-  dropbox_link?: string | null   // was lacdb_url — real column name
-  acreage?: number | null        // was land_size — real column name
-  commission_estimated?: number | null
-  commission_collected?: number | null
+  dropbox_link?: string | null
+  acreage?: number | null
   transaction_type?: string | null
-  // economics (from deal_economics table)
   asking_price?: number | null
   sqft?: number | null
-  land_size?: number | null      // mapped from land_sqft
-  deal_value?: number | null     // not in DB — null
+  land_size?: number | null
   commission_pct?: number | null
   est_commission?: number | null
-  // lease
   lease_rate_psf?: number | null
   lease_term_years?: number | null
   nnn_psf?: number | null
+  // contacts
+  contacts?: ContactData[]
+  // chain
+  chain_done?: number
+  chain_total?: number
+  // documents count
+  doc_count?: number
+  // notes count
+  note_count?: number
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+interface ContactData {
+  id: string
+  name: string | null
+  phone?: string | null
+  role?: string | null
+}
+
+// ── ITEM 77 — RIGHTWARD DRAG TO GO BACK ───────────────────────────────────────
+// Wraps page content. Rightward drag translates X, releases > 1/3 → navigate back.
+// Shadow at leading edge so surfaces read as stacked.
+function SwipeBackWrapper({
+  children,
+  onBack,
+}: {
+  children: React.ReactNode
+  onBack: () => void
+}) {
+  const [dragX, setDragX] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const startXRef = useRef<number | null>(null)
+  const startYRef = useRef<number | null>(null)
+  const lockedRef = useRef<'horiz' | 'vert' | null>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  function onTouchStart(e: React.TouchEvent) {
+    startXRef.current = e.touches[0].clientX
+    startYRef.current = e.touches[0].clientY
+    lockedRef.current = null
+    setIsDragging(false)
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    if (startXRef.current === null || startYRef.current === null) return
+    const dx = e.touches[0].clientX - startXRef.current
+    const dy = e.touches[0].clientY - startYRef.current
+
+    // Lock direction on first meaningful movement
+    if (!lockedRef.current) {
+      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return
+      lockedRef.current = Math.abs(dx) > Math.abs(dy) ? 'horiz' : 'vert'
+    }
+    if (lockedRef.current !== 'horiz') return
+    if (dx < 0) return  // only rightward
+
+    setIsDragging(true)
+    setDragX(Math.min(dx, window.innerWidth))
+  }
+
+  function onTouchEnd() {
+    if (!isDragging) { setDragX(0); return }
+    const threshold = window.innerWidth / 3
+    if (dragX > threshold) {
+      // Complete navigation
+      setDragX(window.innerWidth)
+      setTimeout(() => onBack(), 150)
+    } else {
+      // Spring back
+      setDragX(0)
+      setIsDragging(false)
+    }
+    startXRef.current = null
+    startYRef.current = null
+    lockedRef.current = null
+  }
+
+  const progress = dragX / window.innerWidth
+
+  return (
+    <div
+      style={{ position: 'relative', height: '100dvh', overflow: 'hidden' }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Shadow at leading edge — so surfaces read as stacked, not cross-faded */}
+      {dragX > 0 && (
+        <div style={{
+          position: 'absolute',
+          left: 0, top: 0, bottom: 0,
+          width: 40,
+          background: 'linear-gradient(to right, rgba(0,0,0,0.5), transparent)',
+          transform: `translateX(${dragX}px)`,
+          zIndex: 10,
+          pointerEvents: 'none',
+        }} />
+      )}
+      <div
+        ref={wrapperRef}
+        style={{
+          transform: `translateX(${dragX}px)`,
+          transition: isDragging ? 'none' : 'transform 250ms cubic-bezier(0.25,0.46,0.45,0.94)',
+          height: '100%',
+          willChange: 'transform',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// ── ITEM 73 — Commission Reveal Band ─────────────────────────────────────────
+// 56px band. Default: label in mono, NO figure, NO glow.
+// Press: reveals figure + derivation. Press again: hides.
+// Re-hides on page exit — no persistence. (handled by local state, never written to storage)
+function CommissionReveal({ deal }: { deal: DealData }) {
+  const [revealed, setRevealed] = useState(false)
+
+  // ITEM 76: this IS one of the three tap-reactive objects
+  const commission = deal.est_commission  // already 75% (HOUSE_SPLIT applied in load)
+  const hasData = commission != null
+
+  const isLease = deal.transaction_type === 'lease'
+  let derivation = ''
+  if (hasData && commission != null) {
+    if (isLease && deal.sqft && deal.lease_rate_psf && deal.lease_term_years && deal.commission_pct) {
+      const gross = deal.sqft * deal.lease_rate_psf * deal.lease_term_years * (deal.commission_pct / 100)
+      derivation = `${fmtSF(deal.sqft)} × $${deal.lease_rate_psf}/SF × ${deal.lease_term_years}yr × ${fmtPct(deal.commission_pct)} × 75% house`
+    } else if (!isLease && deal.asking_price && deal.commission_pct) {
+      derivation = `${fmt(deal.asking_price)} × ${fmtPct(deal.commission_pct)} × 75% house`
+    }
+  }
+
+  return (
+    <button
+      onClick={() => setRevealed(v => !v)}
+      style={{
+        width: '100%',
+        height: 56,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'transparent',
+        border: 'none',
+        borderTop: '1px solid rgba(255,255,255,0.10)',
+        cursor: 'pointer',
+        WebkitTapHighlightColor: 'transparent',
+        padding: '0 20px',
+        boxSizing: 'border-box',
+        gap: 4,
+      } as React.CSSProperties}
+    >
+      {!revealed ? (
+        // Hidden state: label only, NO figure, NO glow
+        <span style={{
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          fontWeight: 500,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: T.textLow,
+          lineHeight: 1,
+        }}>COMMISSION</span>
+      ) : (
+        // Revealed: figure + derivation
+        <>
+          {hasData ? (
+            <span style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              color: T.brandLift,
+              fontVariantNumeric: 'tabular-nums',
+              lineHeight: 1,
+            }}>{fmt(commission)}</span>
+          ) : (
+            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 14, color: T.textLow, lineHeight: 1 }}>
+              No data
+            </span>
+          )}
+          {derivation ? (
+            <span style={{
+              fontFamily: FONT_MONO,
+              fontSize: 9,
+              fontWeight: 400,
+              color: T.textLow,
+              letterSpacing: '0.05em',
+              lineHeight: 1,
+              textAlign: 'center',
+            }}>{derivation}</span>
+          ) : null}
+        </>
+      )}
+    </button>
+  )
+}
+
+// ── Section row — ITEM 72 ─────────────────────────────────────────────────────
+// Rows DO NOT navigate. Arrow glyphs on CONTACTS and DOCUMENTS struck.
+function SectionRow({ label, meta }: { label: string; meta?: string }) {
+  return (
+    <div>
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.10)' }} />
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '18px 20px',
+        minHeight: 56,
+      }}>
+        <div style={{ flex: 1 }}>
+          <div style={{
+            fontFamily: FONT_DISPLAY,
+            fontSize: 18,
+            fontWeight: 500,
+            color: T.textHi,
+            lineHeight: 1.25,
+          }}>{label}</div>
+          {meta && (
+            <div style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: 13,
+              fontWeight: 400,
+              color: T.textMid,
+              lineHeight: 1.4,
+              marginTop: 4,
+            }}>{meta}</div>
+          )}
+        </div>
+        {/* NO arrow glyph — item 72: rows DO NOT navigate */}
+      </div>
+    </div>
+  )
+}
+
+// ── Economics grid cell ───────────────────────────────────────────────────────
+function EconCell({ label, value, fullWidth }: { label: string; value: string; fullWidth?: boolean }) {
+  return (
+    <div style={{
+      gridColumn: fullWidth ? '1 / -1' : undefined,
+      padding: '12px 16px',
+      borderBottom: '1px solid rgba(255,255,255,0.08)',
+    }}>
+      <div style={{
+        fontFamily: FONT_MONO,
+        fontSize: 10,
+        fontWeight: 500,
+        letterSpacing: '0.11em',
+        textTransform: 'uppercase',
+        color: T.textLow,
+        lineHeight: 1,
+        marginBottom: 5,
+      }}>{label}</div>
+      <div style={{
+        fontFamily: FONT_DISPLAY,
+        fontSize: 16,
+        fontWeight: 500,
+        color: T.textHi,
+        lineHeight: 1.2,
+      }}>{value}</div>
+    </div>
+  )
+}
+
+// ── Main page content ─────────────────────────────────────────────────────────
 function DealPageContent() {
   const router = useRouter()
-  // useSearchParams() returns empty in static export (searchParams:{} baked in at build time).
-  // Read directly from window.location.search on the client instead.
   const [dealId, setDealId] = useState<string | null>(null)
+  const [deal, setDeal] = useState<DealData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setDealId(params.get('id'))
   }, [])
 
-  const [deal, setDeal] = useState<DealData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-  const [launched, setLaunched] = useState(false)
-
   useEffect(() => {
-    if (!dealId) { return }
+    if (!dealId) return
     ;(async () => {
       try {
-        // Fetch core deal
+        // Core deal
         const { data: dealData, error: dealErr } = await supabase
           .from('deals')
-          .select('id, name, address, addr_display, addr_street_name, addr_street_type, addr_direction, addr_number, addr_city, status, property_type, portfolio_id, dropbox_link, acreage, commission_estimated, commission_collected')
+          .select('id, name, address, addr_display, addr_street_name, addr_street_type, addr_direction, addr_number, addr_city, status, property_type, portfolio_id, dropbox_link, acreage')
           .eq('id', dealId)
           .single()
         if (dealErr || !dealData) { setError(true); setLoading(false); return }
 
-        // Fetch economics
+        // Economics
         const { data: econData } = await supabase
           .from('deal_economics')
           .select('asking_price, sqft, land_sqft, sale_commission_pct, lease_rate_psf, lease_term_years, nnn_psf, transaction_type')
           .eq('deal_id', dealId)
           .maybeSingle()
 
+        // Contacts
+        const { data: contactData } = await supabase
+          .from('contacts')
+          .select('id, name, phone, role')
+          .eq('deal_id', dealId)
+          .limit(20)
+
+        // Chain steps
+        const { data: chainData } = await supabase
+          .from('chain_steps')
+          .select('id, status')
+          .eq('deal_id', dealId)
+          .limit(100)
+
+        const isLease = econData?.transaction_type === 'lease'
+        let est_commission: number | null = null
+        if (isLease) {
+          est_commission = calcLeaseCommission(
+            econData?.sqft ?? null,
+            econData?.lease_rate_psf ?? null,
+            econData?.lease_term_years ?? null,
+            econData?.sale_commission_pct ?? null,
+          )
+        } else {
+          est_commission = calcSaleCommission(
+            econData?.asking_price ?? null,
+            econData?.sale_commission_pct ?? null,
+          )
+        }
+
+        const chainSteps  = (chainData ?? []) as any[]
+        const chainDone   = chainSteps.filter((s: any) => s.status === 'done' || s.status === 'complete').length
+        const chainTotal  = chainSteps.length
+
         const d: DealData = {
           ...(dealData as any),
           transaction_type: econData?.transaction_type ?? null,
-          asking_price: econData?.asking_price ?? null,
-          sqft: econData?.sqft ?? null,
-          land_size: econData?.land_sqft ?? null,
-          deal_value: null,
-          commission_pct: econData?.sale_commission_pct ?? null,
-          lease_rate_psf: econData?.lease_rate_psf ?? null,
+          asking_price:     econData?.asking_price ?? null,
+          sqft:             econData?.sqft ?? null,
+          land_size:        econData?.land_sqft ?? null,
+          commission_pct:   econData?.sale_commission_pct ?? null,
+          est_commission,
+          lease_rate_psf:   econData?.lease_rate_psf ?? null,
           lease_term_years: econData?.lease_term_years ?? null,
-          nnn_psf: econData?.nnn_psf ?? null,
-        }
-
-        // Est. commission
-        const isLease = d.transaction_type === 'lease'
-        if (isLease) {
-          d.est_commission = calcLeaseCommission(d.sqft ?? null, d.lease_rate_psf ?? null, d.lease_term_years ?? null, d.commission_pct ?? null)
-        } else {
-          d.est_commission = calcSaleCommission(d.asking_price ?? null, d.commission_pct ?? null)
+          nnn_psf:          econData?.nnn_psf ?? null,
+          contacts:         (contactData ?? []) as ContactData[],
+          chain_done:       chainDone,
+          chain_total:      chainTotal,
         }
 
         setDeal(d)
@@ -259,19 +472,25 @@ function DealPageContent() {
     })()
   }, [dealId])
 
+  function goBack() {
+    router.back()
+  }
+
   if (loading) {
     return (
-      <div style={{ background: T.bgBase, minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ ...STYLE_T1, color: T.textLow }}>Loading…</div>
+      <div style={{ background: T.bgBase, height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ ...STYLE_T1, color: T.textLow }}>Loading…</span>
       </div>
     )
   }
 
   if (error || !deal) {
     return (
-      <div style={{ background: T.bgBase, minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-        <div style={{ ...STYLE_T3, textAlign: 'center' }}>Deal not found</div>
-        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: T.brandLift, fontFamily: FONT_DISPLAY, fontSize: 14, cursor: 'pointer' }}>← Go back</button>
+      <div style={{ background: T.bgBase, height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 18, fontWeight: 500, color: T.textHi }}>Deal not found</div>
+        <button onClick={goBack} style={{ background: 'none', border: 'none', color: T.brandLift, fontFamily: FONT_DISPLAY, fontSize: 14, cursor: 'pointer' }}>
+          Swipe right to go back
+        </button>
       </div>
     )
   }
@@ -279,241 +498,298 @@ function DealPageContent() {
   const isLease = deal.transaction_type === 'lease'
   const addr = formatAddress(deal) || deal.name || '—'
   const clientName = deal.name && deal.name !== deal.address ? deal.name : null
-  const isHot = deal.status === 'hot'
+
+  // ── ITEM 68 — Type plates (up to two) ─────────────────────────────────────
+  // Transaction plate: sale or lease (from deal_economics.transaction_type)
+  // Property plate: from deals.property_type
+  // HOT does NOT render.
+  const txPlate  = deal.transaction_type ? TRANSACTION_PLATES[deal.transaction_type.toLowerCase()] ?? null : null
+  const propType = deal.property_type?.toUpperCase() ?? null
+  const propPlate = propType ? (PROPERTY_PLATES[propType] ?? null) : null
+  // Up to two plates max
+  const plates: string[] = []
+  if (txPlate)   plates.push(txPlate)
+  if (propPlate) plates.push(propPlate)
+
+  // ── ITEM 69 — Economics cells (flowing, facts that exist only) ─────────────
+  const econCells: { label: string; value: string }[] = []
+  if (isLease) {
+    if (deal.lease_rate_psf != null)   econCells.push({ label: 'Lease Rate/SF',  value: `$${deal.lease_rate_psf}/SF` })
+    if (deal.lease_term_years != null) econCells.push({ label: 'Lease Term',      value: `${deal.lease_term_years} yr` })
+    if (deal.sqft != null)             econCells.push({ label: 'Building SF',     value: fmtSF(deal.sqft) })
+    if (deal.nnn_psf != null)          econCells.push({ label: 'NNN/SF',          value: `$${deal.nnn_psf}/SF` })
+    if (deal.land_size != null)        econCells.push({ label: 'Land Size',       value: fmtAcres(deal.land_size) })
+    if (deal.acreage != null)          econCells.push({ label: 'Acreage',         value: fmtAcres(deal.acreage) })
+    if (deal.commission_pct != null)   econCells.push({ label: 'Commission %',    value: fmtPct(deal.commission_pct) })
+  } else {
+    if (deal.asking_price != null)     econCells.push({ label: 'Asking Price',    value: fmt(deal.asking_price) })
+    if (deal.sqft != null)             econCells.push({ label: 'Building SF',     value: fmtSF(deal.sqft) })
+    if (deal.asking_price != null && deal.sqft != null) econCells.push({ label: 'Price/SF', value: fmtPSF(deal.asking_price, deal.sqft) })
+    if (deal.land_size != null)        econCells.push({ label: 'Land Size',       value: fmtAcres(deal.land_size) })
+    if (deal.acreage != null)          econCells.push({ label: 'Acreage',         value: fmtAcres(deal.acreage) })
+    if (deal.commission_pct != null)   econCells.push({ label: 'Commission %',    value: fmtPct(deal.commission_pct) })
+  }
+  // Odd count: last gets full width
+  const isOdd = econCells.length % 2 !== 0
+
+  // ── ITEM 72 — Section rows ─────────────────────────────────────────────────
+  const chainMeta = deal.chain_total
+    ? `${deal.chain_done ?? 0} / ${deal.chain_total} done`
+    : undefined
+  const chainLabel = `Chain${deal.transaction_type ? ' · ' + deal.transaction_type.charAt(0).toUpperCase() + deal.transaction_type.slice(1) : ''}`
 
   return (
-    <div style={{ background: T.bgBase, minHeight: '100dvh', paddingBottom: 40 }}>
-
-      {/* §15.1.1 — Header row: back chevron + address/client + status pill */}
+    <SwipeBackWrapper onBack={goBack}>
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '16px 20px 12px',
+        background: T.bgBase,
+        minHeight: '100dvh',
+        paddingBottom: 0,
+        overflowY: 'auto',
       }}>
-        {/* Back chevron */}
-        <button
-          onClick={() => router.back()}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 44,
-            height: 44,
-            flexShrink: 0,
-            color: T.textMid,
-            WebkitTapHighlightColor: 'transparent',
-          } as React.CSSProperties}
-          aria-label="Back"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
 
-        {/* Address + client */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ ...STYLE_T3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr}</div>
-          {clientName && (
-            <div style={{ ...STYLE_T4, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{clientName}</div>
+        {/* ── ITEM 67 — HEADER ──────────────────────────────────────────────────
+            NO back control, NO three-dot, NO edit, NO status pill.
+            Address 19px, client 12.5px below.
+            Type plates at right end. HOT does NOT render.
+        */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 12,
+          padding: '20px 18px 16px',
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 20px)',
+        }}>
+          {/* Address + client */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: 19,
+              fontWeight: 500,
+              color: T.textHi,
+              lineHeight: 1.2,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>{addr}</div>
+            {clientName && (
+              <div style={{
+                fontFamily: FONT_DISPLAY,
+                fontSize: 12.5,
+                fontWeight: 400,
+                color: T.textMid,
+                lineHeight: 1.3,
+                marginTop: 2,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>{clientName}</div>
+            )}
+          </div>
+
+          {/* ── ITEM 68 — TYPE PLATES (right-aligned, up to two) ─────────────
+              One transaction plate over one property plate, 6px apart.
+              Mount 22px tall. HEIGHT ONLY, never width.
+              Plates are INERT. No CSS border/fill/radius/glow.
+          */}
+          {plates.length > 0 && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              flexShrink: 0,
+              alignItems: 'flex-end',
+            }}>
+              {plates.map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={src}
+                  alt=""
+                  style={{ height: 22, width: 'auto', display: 'block' }}
+                />
+              ))}
+            </div>
           )}
         </div>
 
-        {/* HOT pill — filled amber only; else omit (§15.1.1) */}
-        {isHot && (
-          <span style={{
-            ...STYLE_T5,
-            fontWeight: 700,
-            background: T.hot,
-            color: '#0A0A0F',
-            padding: '5px 8px',
-            borderRadius: 4,
-            flexShrink: 0,
-          }}>HOT</span>
-        )}
-      </div>
+        {/* ── ITEM 71 — PHOTO ───────────────────────────────────────────────────
+            16:9 within gutters, radius 14, placeholder when absent.
+        */}
+        <div style={{ padding: '0 18px', marginBottom: 16 }}>
+          <div style={{
+            width: '100%',
+            paddingTop: '56.25%',
+            borderRadius: 14,
+            overflow: 'hidden',
+            background: 'rgba(255,255,255,0.04)',
+            position: 'relative',
+          }}>
+            {/* photo_url not in DB schema — placeholder rendered automatically */}
+          </div>
+        </div>
 
-      {/* §15.1.2 — Photo: 16:9, full-bleed within gutters, radius matches card.
-          Placeholder when absent. LACDB ↗ pill in bottom-right corner. */}
-      <div style={{ padding: '0 20px', marginBottom: 20 }}>
-        <div style={{
-          position: 'relative',
-          width: '100%',
-          paddingTop: '56.25%', // 16:9
-          borderRadius: 12,
-          overflow: 'hidden',
-          background: 'rgba(255,255,255,0.04)',
-        }}>
-          {/* photo_url not in DB schema — placeholder only */}
-          {/* LACDB ↗ pill — photo bottom-right corner (§15.1.2) */}
-          {deal.dropbox_link && (
+        {/* ── ITEM 69 — ECONOMICS ───────────────────────────────────────────────
+            Flowing two-column grid. Only renders facts that exist.
+            No dashes in empty fields. Odd count: last gets full width.
+            First row: 2px above header client line (via padding), 13px below.
+        */}
+        {econCells.length > 0 && (
+          <div style={{ padding: '0 18px', marginBottom: 16 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              background: T.bgPanel,
+              border: '1px solid rgba(255,255,255,0.10)',
+              borderRadius: 12,
+              overflow: 'hidden',
+            }}>
+              {econCells.map((cell, i) => {
+                const isLast = i === econCells.length - 1
+                const lastFull = isLast && isOdd
+                return (
+                  <EconCell
+                    key={i}
+                    label={cell.label}
+                    value={cell.value}
+                    fullWidth={lastFull}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── ITEM 70 — LACDB LINK ─────────────────────────────────────────────
+            56px tall. Centered. lacdb-link-h168.png at h56, NO width typed.
+            No CSS border/fill/radius/glow. No URL text. No arrow.
+            LACDB pill in photo corner: STRUCK (removed above).
+            This is tap-reactive object #1 (item 76).
+        */}
+        <div style={{ padding: '0 18px', marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+          {deal.dropbox_link ? (
             <a
               href={deal.dropbox_link}
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                position: 'absolute',
-                bottom: 10,
-                right: 10,
-                background: 'rgba(8,8,12,0.72)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: 6,
-                padding: '4px 8px',
-                fontFamily: FONT_MONO,
-                fontSize: 10,
-                fontWeight: 500,
-                letterSpacing: '0.08em',
-                color: T.textHi,
-                textDecoration: 'none',
-                backdropFilter: 'blur(4px)',
+                display: 'block',
+                height: 56,
+                WebkitTapHighlightColor: 'transparent',
+                // NO border, fill, radius, glow
               } as React.CSSProperties}
             >
-              LACDB ↗
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/assets/lacdb/lacdb-link-h168.png"
+                alt="LACDB"
+                style={{ height: 56, width: 'auto', display: 'block' }}
+              />
             </a>
+          ) : (
+            // No link: still render the image centered but inert
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/assets/lacdb/lacdb-link-h168.png"
+              alt="LACDB"
+              style={{ height: 56, width: 'auto', display: 'block', opacity: 0.3 }}
+            />
           )}
         </div>
-      </div>
 
-      {/* §15.1.3 — Six-slot snapshot grid: 2 col × 3 rows.
-          M0 (22px) for Asking Price + Est. Commission.
-          M1 (17px) for remaining four.
-          Est. Commission in brand-lift — the one glow. */}
-      <div style={{ padding: '0 20px', marginBottom: 20 }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '0 20px',
-          borderTop: '1px solid rgba(255,255,255,0.11)',
-          borderLeft: '1px solid rgba(255,255,255,0.11)',
-          borderRadius: 12,
-          overflow: 'hidden',
-          background: T.bgPanel,
-        }}>
-          {/* Row 1 — lead figures: Asking Price, Est. Commission */}
-          {[
-            {
-              label: isLease ? 'Lease Rate/SF' : 'Asking Price',
-              value: isLease ? (deal.lease_rate_psf ? `$${deal.lease_rate_psf}/SF` : '—') : fmt(deal.asking_price),
-              style: { ...STYLE_M0, color: T.textHi } as React.CSSProperties,
-            },
-            {
-              label: 'Est. Commission',
-              value: fmt(deal.est_commission),
-              style: { ...STYLE_M0, color: T.brandLift } as React.CSSProperties,
-            },
-          ].map((cell, i) => (
-            <div key={i} style={{
-              padding: '14px 14px 12px',
-              borderRight: i % 2 === 0 ? '1px solid rgba(255,255,255,0.11)' : 'none',
-              borderBottom: '1px solid rgba(255,255,255,0.11)',
-            }}>
-              <div style={{ ...STYLE_T5, color: T.textLow, marginBottom: 6 }}>{cell.label}</div>
-              <div style={cell.style}>{cell.value}</div>
-            </div>
-          ))}
+        {/* ── ITEM 72 — SECTION ROWS ────────────────────────────────────────────
+            CHAIN + type, CONTACTS, DOCUMENTS, NOTES.
+            These rows DO NOT navigate. Arrow glyphs struck.
+            CONTACTS: phone numbers are tap-reactive (item 76, object #2).
+        */}
+        <div style={{ marginBottom: 0 }}>
+          {/* Chain + type */}
+          <SectionRow label={chainLabel} meta={chainMeta} />
 
-          {/* Row 2 — Building SF, Price/SF */}
-          {[
-            {
-              label: isLease ? 'Building SF' : 'Building SF',
-              value: fmtSF(deal.sqft),
-              style: { ...STYLE_M1, color: T.textHi } as React.CSSProperties,
-            },
-            {
-              label: isLease ? 'NNN/SF' : 'Price/SF',
-              value: isLease ? (deal.nnn_psf ? `$${deal.nnn_psf}/SF` : '—') : fmtPSF(deal.asking_price ?? null, deal.sqft ?? null),
-              style: { ...STYLE_M1, color: T.textHi } as React.CSSProperties,
-            },
-          ].map((cell, i) => (
-            <div key={i} style={{
-              padding: '14px 14px 12px',
-              borderRight: i % 2 === 0 ? '1px solid rgba(255,255,255,0.11)' : 'none',
-              borderBottom: '1px solid rgba(255,255,255,0.11)',
-            }}>
-              <div style={{ ...STYLE_T5, color: T.textLow, marginBottom: 6 }}>{cell.label}</div>
-              <div style={cell.style}>{cell.value}</div>
-            </div>
-          ))}
+          {/* CONTACTS — phone tap is reactive object #2 */}
+          {(deal.contacts && deal.contacts.length > 0) ? (
+            <>
+              <div>
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.10)' }} />
+                <div style={{ padding: '14px 20px 2px' }}>
+                  <div style={{
+                    fontFamily: FONT_DISPLAY,
+                    fontSize: 18,
+                    fontWeight: 500,
+                    color: T.textHi,
+                    lineHeight: 1.25,
+                    marginBottom: 10,
+                  }}>Contacts</div>
+                  {deal.contacts.map(c => (
+                    <div key={c.id} style={{ marginBottom: 10 }}>
+                      {c.name && (
+                        <div style={{
+                          fontFamily: FONT_DISPLAY,
+                          fontSize: 14,
+                          fontWeight: 500,
+                          color: T.textHi,
+                          lineHeight: 1.3,
+                        }}>{c.name}</div>
+                      )}
+                      {c.role && (
+                        <div style={{
+                          fontFamily: FONT_DISPLAY,
+                          fontSize: 12,
+                          color: T.textLow,
+                          lineHeight: 1.3,
+                        }}>{c.role}</div>
+                      )}
+                      {/* Phone — ITEM 76: tap-reactive object #2. Hit area = the number itself. */}
+                      {c.phone && (
+                        <a
+                          href={`tel:${c.phone}`}
+                          style={{
+                            fontFamily: FONT_MONO,
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: T.brandLift,
+                            lineHeight: 1.4,
+                            textDecoration: 'none',
+                            display: 'inline-block',
+                            WebkitTapHighlightColor: 'rgba(167,139,250,0.15)',
+                            padding: '2px 0',
+                          } as React.CSSProperties}
+                        >
+                          {c.phone}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <SectionRow label="Contacts" />
+          )}
 
-          {/* Row 3 — Land Size, Deal Value */}
-          {[
-            {
-              label: 'Land Size',
-              value: fmtAcres(deal.land_size),
-              style: { ...STYLE_M1, color: T.textHi } as React.CSSProperties,
-            },
-            {
-              label: 'Deal Value',
-              value: fmt(deal.deal_value ?? deal.asking_price),
-              style: { ...STYLE_M1, color: T.textHi } as React.CSSProperties,
-            },
-          ].map((cell, i) => (
-            <div key={i} style={{
-              padding: '14px 14px 12px',
-              borderRight: i % 2 === 0 ? '1px solid rgba(255,255,255,0.11)' : 'none',
-            }}>
-              <div style={{ ...STYLE_T5, color: T.textLow, marginBottom: 6 }}>{cell.label}</div>
-              <div style={cell.style}>{cell.value}</div>
-            </div>
-          ))}
+          <SectionRow label="Documents" />
+          <SectionRow label="Notes" />
         </div>
-      </div>
 
-      {/* §15.1.4 — LAUNCH DEAL — full-width, assets/launch/launch.css asset */}
-      <div style={{ padding: '0 20px', marginBottom: 24 }}>
-        <Launch
-          launched={launched}
-          onClick={() => setLaunched(v => !v)}
-          label="LAUNCH DEAL"
-        />
-      </div>
+        {/* ── ITEM 73 — COMMISSION REVEAL ─────────────────────────────────────
+            56px band above 104px tail. Hairline on top.
+            Default: label in mono, NO figure, NO glow.
+            Press: reveals figure + derivation line.
+            Press again: hides. No persistence.
+            Tap-reactive object #3 (item 76).
+        */}
+        <CommissionReveal deal={deal} />
 
-      {/* §15.1.5 — §5.11 section rows. Stub: tap logs to console.
-          Chain · Money · Showings & Prospects · Documents · Notes · Contacts · Activity */}
-      <div style={{ padding: '0 0', marginBottom: 40 }}>
-        <SectionRow
-          label="Chain"
-          meta={undefined}
-          onPress={() => console.log('[deal page] Chain tapped')}
-        />
-        <SectionRow
-          label="Money"
-          onPress={() => console.log('[deal page] Money tapped')}
-        />
-        <SectionRow
-          label="Showings & Prospects"
-          onPress={() => console.log('[deal page] Showings tapped')}
-        />
-        <SectionRow
-          label="Documents"
-          onPress={() => console.log('[deal page] Documents tapped')}
-        />
-        <SectionRow
-          label="Notes"
-          onPress={() => console.log('[deal page] Notes tapped')}
-        />
-        <SectionRow
-          label="Contacts"
-          onPress={() => console.log('[deal page] Contacts tapped')}
-        />
-        <SectionRow
-          label="Activity"
-          onPress={() => console.log('[deal page] Activity tapped')}
-        />
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.10)' }} />
+        {/* ── 104px tail (item 73 spec: 104px tail below commission band) ─── */}
+        <div style={{ height: 104 }} />
       </div>
-    </div>
+    </SwipeBackWrapper>
   )
 }
 
 export default function DealPage() {
   return (
     <Suspense fallback={
-      <div style={{ background: '#08080C', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#08080C', height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#8E8CA0', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Loading…</span>
       </div>
     }>
