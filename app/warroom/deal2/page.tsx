@@ -693,7 +693,7 @@ function Deal2PageContent() {
                 0 Showings
               </span>
             </div>
-            <EmptyState text="No showings recorded. Showings will appear here when contacts are linked as prospects." />
+            <EmptyState text="No showings logged. Each one is a record — date, party, their broker, feedback." />
           </Panel>
 
           {/* DOCUMENTS — wired to deals.dropbox_link */}
@@ -771,7 +771,7 @@ function Deal2PageContent() {
             <div style={{ padding: '0 18px 16px' }}>
               {activity.length === 0 ? (
                 <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textLow }}>
-                  No activity recorded.
+                  Nothing yet. Activity is never typed — it writes itself as the deal is worked.
                 </span>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -954,19 +954,8 @@ function Deal2PageContent() {
                 fontSize: 13,
                 color: T.textLow,
                 lineHeight: 1.6,
-                marginBottom: 8,
               }}>
-                No deal chain started.
-              </div>
-              <div style={{
-                fontFamily: FONT_MONO,
-                fontSize: 9,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: T.textLow,
-                opacity: 0.6,
-              }}>
-                Chain steps will appear here once the deal is launched.
+                No open steps.
               </div>
             </div>
           </Panel>
