@@ -534,15 +534,30 @@ function Deal2PageContent() {
             </span>
           )}
 
-          {/* Transaction plate — SALE or LEASE at 44px height */}
+          {/* Transaction plate — SALE or LEASE.
+              Mount rule (section 5, directive): SALE/LEASE carry internal padding.
+              Render file at 142.0×49.8px, offset −3.0 left / −2.8 top.
+              Pill lands at 135.9×44.0px inside the clipping box. */}
           {txPlateSrc && (
-            <div style={{ height: 44, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-              {/* SALE/LEASE plates have internal padding — scale to pill height, let width auto */}
+            <div style={{
+              position: 'relative',
+              width: 135.9,
+              height: 44,
+              overflow: 'hidden',
+              flexShrink: 0,
+            }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={txPlateSrc}
                 alt={txType ?? ''}
-                style={{ height: 44, width: 'auto', display: 'block' }}
+                style={{
+                  position: 'absolute',
+                  width: 142.0,
+                  height: 49.8,
+                  left: -3.0,
+                  top: -2.8,
+                  display: 'block',
+                }}
                 draggable={false}
               />
             </div>

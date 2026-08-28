@@ -2,21 +2,26 @@
  * launch-desktop.css — Desktop-local Launch control for /warroom/deal2
  * DESKTOP-LOCAL: DO NOT import this from components/warroom3/ or assets/launch/.
  *
- * Pill mount: 550×97.3px clipping box, overflow: hidden.
- * File rendered at 563.3×112.7px, offset −7.2px left, −7.9px top.
- * Artboard: 1650×330. Pill inside: 1611×285, inset 21 left, 23 top.
+ * Pill: 550×97.3px. File rendered at 563.3×112.7px, offset −7.2px left, −7.9px top.
+ * Artboard: 1650×330. Pill inside: 1611×285, inset 21 left, 23 top, 18 right, 22 bottom.
  *
- * Blend mode: NONE on the video. Spec directive overrides any prior spec.
+ * CLIP APPROACH (v2):
+ *   .ld2-launch button has NO overflow:hidden — allows orb glow to escape left.
+ *   The black artboard is hidden via clip-path on each img/video child instead:
+ *     inset(0 6.1px 7.5px 0) — clips black right and bottom, left is open.
+ *   The pill still measures 550×97.3 (getBoundingClientRect on .ld2-launch).
+ *   Rest and hover share identical geometry — zero shift on swap.
+ *
+ * Blend mode: NONE on the video. Rest = still. Hover = looped video, crossfade.
  * Reduced motion: video does not play; rest image stays visible.
  */
 
 .ld2-launch {
-  /* Clipping box — pill dimensions */
+  /* Pill dimensions — do not change */
   position: relative;
   width: 550px;
   height: 97.3px;
-  overflow: hidden;
-  border-radius: 0; /* the pill artwork provides its own radius */
+  /* overflow: hidden REMOVED — orb glow must escape left; artboard clipped per-child */
   cursor: pointer;
   display: block;
   background: transparent;
@@ -36,11 +41,13 @@
   display: block;
   pointer-events: none;
   /* NO blend mode */
+  /* clip-path hides black artboard top(0)/right(6.1px)/bottom(7.5px); left open for orb */
+  clip-path: inset(0 6.1px 7.5px 0);
   transition: opacity 0.22s ease;
   opacity: 1;
 }
 
-/* Hover video — same geometry as rest image */
+/* Hover video — identical geometry to rest image */
 .ld2-launch__hover {
   position: absolute;
   width: 563.3px;
@@ -51,6 +58,8 @@
   pointer-events: none;
   /* NO blend mode — directive §4 */
   object-fit: fill;
+  /* Same clip-path as rest — ensures identical crop, zero shift on swap */
+  clip-path: inset(0 6.1px 7.5px 0);
   opacity: 0;
   transition: opacity 0.22s ease;
 }
