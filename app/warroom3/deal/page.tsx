@@ -231,7 +231,7 @@ function SwipeBackWrapper({
 }
 
 // ── ITEM 73 — Commission Reveal Band ─────────────────────────────────────────
-// 56px band. Default: label in mono, NO figure, NO glow.
+// 56px band. Default: "EST. COMMISSION" label in mono, NO figure, NO glow.
 // Press: reveals figure + derivation. Press again: hides.
 // Re-hides on page exit — no persistence. (handled by local state, never written to storage)
 function CommissionReveal({ deal }: { deal: DealData }) {
@@ -282,7 +282,7 @@ function CommissionReveal({ deal }: { deal: DealData }) {
           textTransform: 'uppercase',
           color: T.textLow,
           lineHeight: 1,
-        }}>COMMISSION</span>
+        }}>EST. COMMISSION</span>
       ) : (
         // Revealed: figure + derivation
         <>
@@ -391,11 +391,30 @@ function DealPageContent() {
   const [deal, setDeal] = useState<DealData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const commissionRef = useRef<HTMLDivElement>(null)
+  const [padBottom, setPadBottom] = useState(104)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setDealId(params.get('id'))
   }, [])
+
+  useEffect(() => {
+    if (!commissionRef.current) return
+    const el = commissionRef.current
+    const observer = new ResizeObserver(() => {
+      const vh = window.innerHeight
+      const rect = el.getBoundingClientRect()
+      const scrollEl = document.querySelector('[data-scroll-deal]') as HTMLElement | null
+      if (!scrollEl) return
+      const containerTop = scrollEl.getBoundingClientRect().top
+      const rowH = el.offsetHeight
+      const needed = vh - containerTop - rowH
+      setPadBottom(Math.max(104, needed))
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [deal])
 
   useEffect(() => {
     if (!dealId) return
@@ -540,7 +559,7 @@ function DealPageContent() {
 
   return (
     <SwipeBackWrapper onBack={goBack}>
-      <div style={{
+      <div data-scroll-deal style={{
         background: T.bgBase,
         minHeight: '100dvh',
         paddingBottom: 0,
@@ -624,7 +643,7 @@ function DealPageContent() {
             background: 'rgba(255,255,255,0.04)',
             position: 'relative',
           }}>
-            {/* photo_url not in DB schema — placeholder rendered automatically */}
+            {/* No photo column exists in deals table (confirmed 2026-08-31) — placeholder is the correct state */}
           </div>
         </div>
 
@@ -777,10 +796,12 @@ function DealPageContent() {
             Press again: hides. No persistence.
             Tap-reactive object #3 (item 76).
         */}
-        <CommissionReveal deal={deal} />
+        <div ref={commissionRef}>
+          <CommissionReveal deal={deal} />
+        </div>
 
         {/* ── 104px tail (item 73 spec: 104px tail below commission band) ─── */}
-        <div style={{ height: 104 }} />
+        <div style={{ height: padBottom }} />
       </div>
     </SwipeBackWrapper>
   )

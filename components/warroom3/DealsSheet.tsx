@@ -430,8 +430,7 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
             <DealRow key={deal.id} deal={deal} onPress={() => navigateDeal(deal.id)} />
           ))}
 
-          {/* ITEM 65 — 104px scroll tail */}
-          <div style={{ height: 104 }} />
+
         </div>
       )}
     </BottomSheet>

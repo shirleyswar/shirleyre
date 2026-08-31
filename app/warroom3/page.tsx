@@ -110,6 +110,8 @@ interface TileStat {
 interface DealsControl {
   hotCount: number
   ucCount: number
+  activeCount: number
+  pipelineCount: number
   total: number
 }
 
@@ -200,7 +202,7 @@ async function loadHomeData(): Promise<{
   )
 
   // ── Urgent item (item 56) ─────────────────────────────────────────────────
-  // Qualification: deadline within 14 days OR past due
+  // Qualification: deadline within 10 days OR past due
   let urgentItem: UrgentItem | null = null
 
   if (dlPastDue.length > 0) {
@@ -215,8 +217,8 @@ async function loadHomeData(): Promise<{
       shortAddress: shortAddr,
     }
   } else {
-    // Forward deadlines within 14 days qualify
-    const soon = dlForward.filter((d: any) => daysUntilDate(d.deadline_date) <= 14)
+    // Forward deadlines within 10 days qualify
+    const soon = dlForward.filter((d: any) => daysUntilDate(d.deadline_date) <= 10)
     if (soon.length > 0) {
       const nearest = soon[0] as any
       const days = daysUntilDate(nearest.deadline_date)
@@ -285,11 +287,13 @@ async function loadHomeData(): Promise<{
   // ── Deals control ─────────────────────────────────────────────────────────
   const hotCount = allDeals.filter((d: any) => d.status === 'hot').length
   const ucCount  = allDeals.filter((d: any) => d.status === 'under_contract').length
+  const activeCount = allDeals.filter((d: any) => d.status === 'active').length
+  const pipelineCount = allDeals.filter((d: any) => d.status === 'pipeline').length
 
   return {
     urgentItem,
     tiles,
-    dealsControl: { hotCount, ucCount, total: allDeals.length },
+    dealsControl: { hotCount, ucCount, activeCount, pipelineCount, total: allDeals.length },
   }
 }
 
@@ -478,13 +482,13 @@ function DealsControl({
   loading: boolean
   onOpen: () => void
 }) {
-  const { hotCount, ucCount, total } = control
-  const other = Math.max(0, total - hotCount - ucCount)
+  const { hotCount, ucCount, activeCount, pipelineCount, total } = control
 
-  // Proportion bar segments
-  const pctHot   = total > 0 ? hotCount / total : 0
-  const pctUC    = total > 0 ? ucCount  / total : 0
-  const pctOther = total > 0 ? other    / total : 0
+  // 5px proportion bar: hot | UC | active | pipeline
+  const pctHot      = total > 0 ? hotCount      / total : 0
+  const pctUC       = total > 0 ? ucCount       / total : 0
+  const pctActive   = total > 0 ? activeCount   / total : 0
+  const pctPipeline = total > 0 ? pipelineCount / total : 0
 
   return (
     <div>
@@ -569,7 +573,7 @@ function DealsControl({
         }}>TOTAL</span>
       </div>
 
-      {/* 5px proportion bar: hot | UC | other */}
+      {/* 5px proportion bar: hot | UC | active | pipeline */}
       <div style={{
         display: 'flex',
         height: 5,
@@ -580,9 +584,10 @@ function DealsControl({
       }}>
         {!loading && total > 0 && (
           <>
-            <div style={{ flex: pctHot,   background: T.hot,   transition: 'flex 0.6s ease' }} />
-            <div style={{ flex: pctUC,    background: T.brand, transition: 'flex 0.6s ease' }} />
-            <div style={{ flex: pctOther, background: 'rgba(255,255,255,0.20)', transition: 'flex 0.6s ease' }} />
+            <div style={{ flex: pctHot,      background: T.hot,                    transition: 'flex 0.6s ease' }} />
+            <div style={{ flex: pctUC,       background: T.brand,                  transition: 'flex 0.6s ease' }} />
+            <div style={{ flex: pctActive,   background: T.brandLift,              transition: 'flex 0.6s ease' }} />
+            <div style={{ flex: pctPipeline, background: 'rgba(255,255,255,0.20)', transition: 'flex 0.6s ease' }} />
           </>
         )}
       </div>
@@ -649,7 +654,7 @@ function HomeScreen({
   const [loading, setLoading] = useState(true)
   const [urgentItem, setUrgentItem] = useState<UrgentItem | null>(null)
   const [tiles, setTiles] = useState<TileStat[]>([])
-  const [dealsControl, setDealsControl] = useState<DealsControl>({ hotCount: 0, ucCount: 0, total: 0 })
+  const [dealsControl, setDealsControl] = useState<DealsControl>({ hotCount: 0, ucCount: 0, activeCount: 0, pipelineCount: 0, total: 0 })
   const [bpRefreshKey, setBpRefreshKey] = useState(0)
   const dateLabel = formatDateLabel()
 

@@ -1,7 +1,7 @@
 'use client'
 
 // Receivables — Item 59 re-cut (mobile refresh)
-// LEAD FIGURE: outstanding (billed and not received) in money-in (#34D399)
+// LEAD FIGURE: billed-not-received in money-in (#34D399)
 // Caption on SAME LINE beside it
 // Split bar 4px: brand-lift for COLLECTED segment, money-in for OUTSTANDING segment
 // FOOTER: collected in brand-lift + deal count mono at far end
@@ -49,8 +49,8 @@ interface ARData {
 
 // Verbatim query — reported to Matthew per Class A requirement.
 // SELECT ar_items + ar_payments:
-//   collected   = sum(payments_total ?? paid_to_date ?? 0) across ALL items
-//   outstanding = sum(max(0, sr_portion_amount - paid)) where status = 'receivable'
+//   collected   = sum(ar_payments.amount) per item — paid_to_date intentionally ignored (may be stale)
+//   outstanding = sum(max(0, sr_portion_amount - payments_sum)) across ALL items — not filtered by status
 async function loadARData(): Promise<ARData> {
   const [itemsRes, paymentsRes] = await Promise.all([
     supabase
@@ -75,15 +75,13 @@ async function loadARData(): Promise<ARData> {
   }
 
   const collected = items.reduce((sum: number, i: any) =>
-    sum + (paymentsByItem[i.id] ?? (i.paid_to_date || 0)), 0)
+    sum + (paymentsByItem[i.id] ?? 0), 0)
 
-  const outstanding = items
-    .filter((i: any) => i.status === 'receivable')
-    .reduce((sum: number, i: any) => {
-      const ms   = i.sr_portion_amount ?? 0
-      const paid = paymentsByItem[i.id] ?? (i.paid_to_date || 0)
-      return sum + Math.max(0, ms - paid)
-    }, 0)
+  const outstanding = items.reduce((sum: number, i: any) => {
+    const ms   = i.sr_portion_amount ?? 0
+    const paid = paymentsByItem[i.id] ?? 0
+    return sum + Math.max(0, ms - paid)
+  }, 0)
 
   return { collected, outstanding, dealCount: items.length }
 }
@@ -160,7 +158,7 @@ export default function ReceivablesCard() {
             fontWeight: 400,
             color: T.textLow,
             lineHeight: 1,
-          }}>outstanding</span>
+          }}>billed - not received</span>
         </div>
       )}
 

@@ -6,7 +6,7 @@
 // DUE: four chips (Today · Tomorrow · +3 · Pick date). Today default.
 // Pick date: drawn CalendarPicker — never native <input type="date">.
 // Save: INSERT to `tasks` table. Offline guard. Success → dismiss. Error → inline banner.
-// EYES-AUTO: sheet layout with title focused.
+// EYES-AUTO: sheet layout with title focused — header 44px, content-area calc(100% - 44px), title input top-aligned.
 
 import React, { useState, useEffect, useRef } from 'react'
 import BottomSheet from '@/components/warroom3/BottomSheet'
@@ -134,7 +134,7 @@ export default function TaskSheet({ open, onClose }: TaskSheetProps) {
       <div style={{ padding: '0 18px 24px' }}>
 
         {/* Title field — D3 style: Space Grotesk 22/500, underline border, no box radius */}
-        {/* EYES-AUTO: sheet layout with title focused */}
+        {/* EYES-AUTO: sheet layout with title focused — header 44px, content-area calc(100% - 44px), title input top-aligned */}
         <input
           ref={titleRef}
           type="text"

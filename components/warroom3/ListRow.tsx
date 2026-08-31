@@ -127,7 +127,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 // ── Money block §5.11.4 ──────────────────────────────────────────────────────
-// EYES-AUTO: fits in the meta area only when shown inline with row — separate right slot
+// EYES-AUTO: fits in the meta area only when shown inline with row — separate right slot — meta row 14px below address, text 11px mono.
 // Matthew flagged: commission 15px + T5 label + price 11.5px ≈ 35.5px into 39px content area.
 // Rendered here as right-slot column; row height extends to content if money block is taller.
 // Report actual render in ship-gate — if it exceeds 68px it must be reported.
