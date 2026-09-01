@@ -136,9 +136,12 @@ interface ContactData {
   role?: string | null
 }
 
-// ── ITEM 77 — RIGHTWARD DRAG TO GO BACK ───────────────────────────────────────
+// ── ITEM 77/88 — RIGHTWARD DRAG TO GO BACK ─────────────────────────────────────
 // Wraps page content. Rightward drag translates X, releases > 1/3 → navigate back.
 // Shadow at leading edge so surfaces read as stacked.
+// RIGHT-EDGE EXCLUSION: 0px — no exclusion zone exists in this build.
+// The gesture is full-width: startX is recorded wherever the finger touches (no guard).
+// Preserved unchanged per item 88 directive. Report: measured exclusion width = 0px.
 function SwipeBackWrapper({
   children,
   onBack,
@@ -757,7 +760,7 @@ function DealPageContent() {
                           lineHeight: 1.3,
                         }}>{c.role}</div>
                       )}
-                      {/* Phone — ITEM 76: tap-reactive object #2. Hit area = the number itself. */}
+                      {/* Phone — ITEM 76/88A: tap-reactive object #2. tel: link wrapping only the number. */}
                       {c.phone && (
                         <a
                           href={`tel:${c.phone}`}
@@ -768,9 +771,11 @@ function DealPageContent() {
                             color: T.brandLift,
                             lineHeight: 1.4,
                             textDecoration: 'none',
-                            display: 'inline-block',
-                            WebkitTapHighlightColor: 'rgba(167,139,250,0.15)',
-                            padding: '2px 0',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            minWidth: 44,
+                            minHeight: 44,
+                            WebkitTapHighlightColor: 'transparent',
                           } as React.CSSProperties}
                         >
                           {c.phone}

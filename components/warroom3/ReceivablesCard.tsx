@@ -2,10 +2,9 @@
 
 // Receivables — Item 59 re-cut (mobile refresh)
 // LEAD FIGURE: billed-not-received in money-in (#34D399)
-// Caption on SAME LINE beside it
-// Split bar 4px: brand-lift for COLLECTED segment, money-in for OUTSTANDING segment
-// FOOTER: collected in brand-lift + deal count mono at far end
-// Old layout was reversed (led with collected) — this is the fix.
+// Caption on SAME LINE beside it — item 87: "BILLED · NOT RECEIVED", tracked uppercase.
+// Split bar 4px: outstanding (money-in) FIRST, then collected (brand-lift) — item 87 reversed order.
+// FOOTER: collected in brand-lift + deal count mono at far end — item 87: uppercase DEAL/DEALS + COLLECTED
 // Query: ar_items + ar_payments tables (read-only, @/lib/supabase)
 
 import React, { useState, useEffect } from 'react'
@@ -141,28 +140,30 @@ export default function ReceivablesCard() {
           gap: 10,
           marginBottom: 10,
         }}>
-          {/* Lead figure: outstanding, money-in */}
+          {/* Lead figure: outstanding, money-in — item 87: fontSize 30 (was 34), no textShadow */}
           <span style={{
             fontFamily: FONT_DISPLAY,
-            fontSize: 34,
+            fontSize: 30,
             fontWeight: 700,
             letterSpacing: '-0.03em',
             color: T.moneyIn,
             lineHeight: 1,
             fontVariantNumeric: 'tabular-nums',
           }}>{formatCurrency(outstanding)}</span>
-          {/* Caption on same line */}
+          {/* Caption on same line — item 87: BILLED · NOT RECEIVED, tracked uppercase */}
           <span style={{
             fontFamily: FONT_DISPLAY,
             fontSize: 12,
             fontWeight: 400,
             color: T.textLow,
             lineHeight: 1,
-          }}>billed - not received</span>
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+          }}>BILLED · NOT RECEIVED</span>
         </div>
       )}
 
-      {/* Split bar, 4px: brand-lift for COLLECTED, money-in for OUTSTANDING */}
+      {/* Split bar, 4px — item 87 reversed order: outstanding (money-in) FIRST, collected (brand-lift) SECOND */}
       {!loadError && (
         <div style={{
           display: 'flex',
@@ -172,15 +173,17 @@ export default function ReceivablesCard() {
           marginBottom: 10,
           background: 'rgba(255,255,255,0.08)',
         }}>
-          <div style={{
-            flex: loading ? 0.5 : pctCollected,
-            background: T.brandLift,
-            borderRadius: '2px 0 0 2px',
-            transition: 'flex 0.6s ease',
-          }} />
+          {/* outstanding first */}
           <div style={{
             flex: loading ? 0.5 : pctOutstanding,
             background: T.moneyIn,
+            borderRadius: '2px 0 0 2px',
+            transition: 'flex 0.6s ease',
+          }} />
+          {/* collected second */}
+          <div style={{
+            flex: loading ? 0.5 : pctCollected,
+            background: T.brandLift,
             borderRadius: '0 2px 2px 0',
             transition: 'flex 0.6s ease',
           }} />
@@ -206,25 +209,29 @@ export default function ReceivablesCard() {
             }}>
               {loading ? '—' : formatCurrency(collected)}
             </span>
+            {/* item 87: "collected" → "COLLECTED", tracked uppercase */}
             <span style={{
               fontFamily: FONT_DISPLAY,
               fontSize: 11,
               fontWeight: 400,
               color: T.textLow,
               lineHeight: 1,
-            }}>collected</span>
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+            }}>COLLECTED</span>
           </div>
 
+          {/* item 87: deal/deals → DEAL/DEALS, tracked */}
           <span style={{
             fontFamily: FONT_MONO,
             fontSize: 11,
             fontWeight: 500,
             color: T.textLow,
-            letterSpacing: '0.08em',
+            letterSpacing: '0.15em',
             fontVariantNumeric: 'tabular-nums',
             whiteSpace: 'nowrap',
           }}>
-            {loading ? '—' : `${dealCount} ${dealCount === 1 ? 'deal' : 'deals'}`}
+            {loading ? '—' : `${dealCount} ${dealCount === 1 ? 'DEAL' : 'DEALS'}`}
           </span>
         </div>
       )}

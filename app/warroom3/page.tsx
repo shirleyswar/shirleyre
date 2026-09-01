@@ -293,7 +293,8 @@ async function loadHomeData(): Promise<{
   return {
     urgentItem,
     tiles,
-    dealsControl: { hotCount, ucCount, activeCount, pipelineCount, total: allDeals.length },
+    // item 86: total = LIVE only (hot + UC + active + pipeline). Closed/other excluded.
+    dealsControl: { hotCount, ucCount, activeCount, pipelineCount, total: hotCount + ucCount + activeCount + pipelineCount },
   }
 }
 
@@ -301,22 +302,25 @@ async function loadHomeData(): Promise<{
 function UrgentRow({ item }: { item: UrgentItem }) {
   const days = item.daysUntil
   const isPast = days < 0
+  // item 82: day count reads LATE, never PAST — mobile only
   const dayCount = isPast
-    ? `${Math.abs(days)}d PAST`
-    : days === 0 ? 'TODAY' : `${days}d`
+    ? `${Math.abs(days)}D LATE`
+    : days === 0 ? 'TODAY' : `${days}D`
 
-  // Line 2: task title (left), short address (right)
+  // item 82: ONE LINE — spine · task · spacer · day count · short address
+  // DEADLINE label is STRUCK. Task yields first (flex:1), address never truncates while task has room.
   return (
     <div style={{
       height: 66,
       position: 'relative',
       display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
       paddingLeft: 13,
       paddingRight: 18,
       overflow: 'hidden',
       flexShrink: 0,
+      gap: 8,
     }}>
       {/* Red spine at gutter */}
       <div style={{
@@ -325,65 +329,44 @@ function UrgentRow({ item }: { item: UrgentItem }) {
         width: 3,
         background: T.late,
       }} />
-      {/* Line 1: DEADLINE label + day count */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 4,
-      }}>
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          color: T.textLow,
-          lineHeight: 1,
-        }}>DEADLINE</span>
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          color: T.late,
-          lineHeight: 1,
-        }}>{dayCount}</span>
-      </div>
-      {/* Line 2: task title + address */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 12,
+      {/* Task — flex:1, truncates first */}
+      <span style={{
+        fontFamily: FONT_DISPLAY,
+        fontSize: 19,
+        fontWeight: 500,
+        color: T.textHi,
+        lineHeight: 1,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        flex: 1,
         minWidth: 0,
-      }}>
-        <span style={{
-          fontFamily: FONT_DISPLAY,
-          fontSize: 14,
-          fontWeight: 500,
-          color: T.textHi,
-          lineHeight: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          flex: 1,
-          minWidth: 0,
-        }}>{item.title}</span>
-        <span style={{
-          fontFamily: FONT_DISPLAY,
-          fontSize: 13,
-          fontWeight: 400,
-          color: T.textMid,
-          lineHeight: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          flexShrink: 0,
-          maxWidth: '45%',
-        }}>{item.shortAddress}</span>
-      </div>
+      }}>{item.title}</span>
+      {/* Day count — fixed, late colour */}
+      <span style={{
+        fontFamily: FONT_MONO,
+        fontSize: 12,
+        fontWeight: 700,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: T.late,
+        lineHeight: 1,
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
+      }}>{dayCount}</span>
+      {/* Short address — fixed, right-aligned, never truncates before task */}
+      <span style={{
+        fontFamily: FONT_DISPLAY,
+        fontSize: 13,
+        fontWeight: 400,
+        color: T.textLow,
+        lineHeight: 1,
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        maxWidth: '38%',
+      }}>{item.shortAddress}</span>
     </div>
   )
 }
@@ -492,8 +475,7 @@ function DealsControl({
 
   return (
     <div>
-      {/* Section header — no count, no chevron */}
-      <div style={{ ...styleT2, marginBottom: 10 }}>Deals</div>
+      {/* item 85: DEALS section header STRUCK — block opens on its figures */}
 
       {/* Three figures on one baseline */}
       <div style={{
@@ -573,21 +555,21 @@ function DealsControl({
         }}>TOTAL</span>
       </div>
 
-      {/* 5px proportion bar: hot | UC | active | pipeline */}
+      {/* item 86: 5px proportion bar — HOT #FFA23A · UC #7C3AED · ACTIVE #B8B6C6 · PIPELINE #5C5B6B
+          No hairlines. No unnamed remainder. Zero-population segment omitted entirely.
+          #5C5B6B: named exception — only permitted use is this segment fill (§2.2a). */}
       <div style={{
         display: 'flex',
         height: 5,
-        borderRadius: 3,
         overflow: 'hidden',
         marginBottom: 12,
-        background: 'rgba(255,255,255,0.08)',
       }}>
         {!loading && total > 0 && (
           <>
-            <div style={{ flex: pctHot,      background: T.hot,                    transition: 'flex 0.6s ease' }} />
-            <div style={{ flex: pctUC,       background: T.brand,                  transition: 'flex 0.6s ease' }} />
-            <div style={{ flex: pctActive,   background: T.brandLift,              transition: 'flex 0.6s ease' }} />
-            <div style={{ flex: pctPipeline, background: 'rgba(255,255,255,0.20)', transition: 'flex 0.6s ease' }} />
+            {hotCount > 0 && <div style={{ flex: pctHot,      background: '#FFA23A', transition: 'flex 0.6s ease' }} />}
+            {ucCount  > 0 && <div style={{ flex: pctUC,       background: '#7C3AED', transition: 'flex 0.6s ease' }} />}
+            {activeCount > 0 && <div style={{ flex: pctActive, background: '#B8B6C6', transition: 'flex 0.6s ease' }} />}
+            {pipelineCount > 0 && <div style={{ flex: pctPipeline, background: '#5C5B6B', transition: 'flex 0.6s ease' }} />}
           </>
         )}
       </div>
@@ -683,42 +665,97 @@ function HomeScreen({
       {!loading && urgentItem && (
         <UrgentRow item={urgentItem} />
       )}
-      {/* Gap: if urgent row is absent, tile grid rises exactly 66px — achieved by
-          having no spacer here. The urgent row itself is 66px when present. */}
-
-      {/* ── ITEM 57 — TILE GRID (PANELS label STRUCK) ──────────── */}
+      {/* item 81: 2×2 tile grid STRUCK. Four stacked 60px §5.11 rows.
+          Order: BATTLE PLAN · MONEY MOVERS · DEADLINES · UNDER CONTRACT.
+          Hairline bottom on rows 1–3, none on row 4.
+          Spined rows: spine + qualifier in same accent. Quiet rows: neither. */}
       <div style={{ marginTop: 14 }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 10,
-        }}>
-          {loading ? (
-            [0,1,2,3].map(i => (
-              <div key={i} style={{
-                background: T.bgPanel,
-                border: '1px solid rgba(255,255,255,0.14)',
-                borderRadius: 14,
-                height: 78,
-                opacity: 0.5,
-              }} />
-            ))
-          ) : (
-            tiles.map(stat => (
-              <PanelTile
+        {loading ? (
+          [0,1,2,3].map(i => (
+            <div key={i} style={{
+              height: 60,
+              borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.10)' : 'none',
+              background: 'rgba(255,255,255,0.02)',
+              opacity: 0.5,
+            }} />
+          ))
+        ) : (
+          tiles.map((stat, idx) => {
+            const isLast = idx === tiles.length - 1
+            const hasUrgency = !stat.fetchFailed && stat.urgentToken !== null && stat.urgentCount > 0
+            const spineColor = stat.urgentToken === 'late' ? T.late : stat.urgentToken === 'hot' ? T.hot : 'transparent'
+            const qualColor  = spineColor
+            const chipLabel  = stat.urgentLabel ?? (stat.urgentToken === 'late' ? 'LATE' : 'HOT')
+            const qualifier  = hasUrgency ? `${stat.urgentCount} ${chipLabel}` : ''
+            const onPress = () => {
+              if (stat.panelKey === 'battleplan') setOpenSheet('battleplan')
+              else if (stat.panelKey === 'moneymovers') setOpenSheet('moneymovers')
+              else if (stat.panelKey === 'deadlines') setOpenSheet('deadlines')
+              else if (stat.panelKey === 'undercontract') setOpenSheet('undercontract')
+              else onTilePress(stat.panelKey)
+            }
+            return (
+              <button
                 key={stat.panelKey}
-                stat={stat}
-                onPress={() => {
-                  if (stat.panelKey === 'battleplan') setOpenSheet('battleplan')
-                  else if (stat.panelKey === 'moneymovers') setOpenSheet('moneymovers')
-                  else if (stat.panelKey === 'deadlines') setOpenSheet('deadlines')
-                  else if (stat.panelKey === 'undercontract') setOpenSheet('undercontract')
-                  else onTilePress(stat.panelKey)
-                }}
-              />
-            ))
-          )}
-        </div>
+                onClick={onPress}
+                style={{
+                  width: '100%',
+                  height: 60,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '0 18px',
+                  boxSizing: 'border-box',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.10)',
+                  borderLeft: hasUrgency ? `2px solid ${spineColor}` : '2px solid transparent',
+                  cursor: 'pointer',
+                  WebkitTapHighlightColor: 'transparent',
+                  textAlign: 'left',
+                  position: 'relative',
+                } as React.CSSProperties}
+              >
+                {/* Count */}
+                <span style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: 22,
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  color: T.textHi,
+                  fontVariantNumeric: 'tabular-nums',
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}>{stat.fetchFailed ? '—' : stat.count}</span>
+                {/* Label */}
+                <span style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  color: T.textLow,
+                  lineHeight: 1,
+                  flex: 1,
+                  minWidth: 0,
+                }}>{stat.label}</span>
+                {/* Qualifier — spined rows only, same accent */}
+                {hasUrgency && (
+                  <span style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.10em',
+                    textTransform: 'uppercase',
+                    color: qualColor,
+                    lineHeight: 1,
+                    flexShrink: 0,
+                  }}>{qualifier}</span>
+                )}
+              </button>
+            )
+          })
+        )}
       </div>
 
       {/* ── ITEM 58 — DEALS CONTROL (DealPipelineBand STRUCK) ──── */}
