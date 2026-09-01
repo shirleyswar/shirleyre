@@ -1,12 +1,16 @@
 'use client'
 
-// §5.7 Bottom tab bar — ShirleyCRE mobile spec v1, round3 update (items 83+84)
-// FOUR slots: HOME · DEALS · MONEY · MORE. NEW slot struck (item 83).
-// FAB: 31px local FAB, NO RIM, mounted 16px above bar top (item 84).
+// §5.7 Bottom tab bar — ShirleyCRE mobile spec v1, locked design 19b
+// Fixed. height: NAV_HEIGHT px (lib/layout.ts), box-sizing: border-box.
+// Five labelled slots: HOME · DEALS · NEW · MONEY · MORE.
+// Centre slot is 70px wide and carries the label NEW — not an empty gap.
+// FAB lifted margin-top: -23px exactly (§5.7 arithmetic).
+// Halo opacity 0.34 — down from 0.54 so halo stays around FAB, not washing neighbours.
+// Active tab: text-hi. Inactive: text-low. Active tab is NOT purple — purple = money + FAB.
 // Tab change: instant (§7 — no transition).
-// Active tab: text-hi. Inactive: text-low. Active is NOT purple.
 
 import React from 'react'
+import Fab from '@/components/warroom3/Fab'
 import { NAV_HEIGHT } from '@/lib/layout'
 
 export type TabId = 'home' | 'deals' | 'money' | 'more'
@@ -90,11 +94,11 @@ function TabSlot({ label, icon, active, onClick }: TabSlotProps) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'flex-end',
+        justifyContent: 'flex-end',   // align to label baseline from bottom
         background: 'none',
         border: 'none',
         cursor: 'pointer',
-        padding: '0 0 12px',
+        padding: '0 0 12px',           // 12px from bar bottom → label baseline at ~22px from bottom
         WebkitTapHighlightColor: 'transparent',
         minWidth: 0,
         minHeight: 44,
@@ -108,98 +112,6 @@ function TabSlot({ label, icon, active, onClick }: TabSlotProps) {
   )
 }
 
-// ── Local 31px FAB — item 84 ──────────────────────────────────────────────────
-// NOT the shared Fab component. Implements 31px geometry directly.
-// 31px × 31px box, border-radius 10px, near-black #0D0C15.
-// Plus bars: 12px × 1.9px (h) and 1.9px × 12px (v), white, centred.
-// Halo: box-shadow 0 0 0 12px rgba(139,92,246,0.22) — glow ring, NOT a rim.
-// NO border on the box itself (no rim).
-// Breathe animation: scale 1.00→1.13→1.00, 7s period — ONLY scale transform.
-// Hit target: 44×44 transparent button, z-index 20 (above slot buttons).
-// Mount: position absolute in nav (nav is position:fixed = containing block).
-//   Hit target top: -22px (= -16 - (44-31)/2 = -22.5 → -22px rounded).
-//   Visual box top edge: -16px from bar top → centred in 44px hit area ✓.
-// Rotation: bars only, only when aria-expanded="true" (sheet open).
-function LocalFab({ open, onClick }: { open: boolean; onClick?: () => void }) {
-  return (
-    <>
-      <style>{`
-        @keyframes localFabBreathe {
-          0%, 100% { transform: scale(1.00); }
-          50%       { transform: scale(1.13); }
-        }
-        .lfab-box {
-          animation: localFabBreathe 7s ease-in-out infinite;
-        }
-        .lfab-bar-h {
-          position: absolute;
-          width: 12px;
-          height: 1.9px;
-          background: #FFFFFF;
-          border-radius: 1px;
-          transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        .lfab-bar-v {
-          position: absolute;
-          width: 1.9px;
-          height: 12px;
-          background: #FFFFFF;
-          border-radius: 1px;
-          transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        .lfab-open .lfab-bar-h { transform: rotate(45deg); }
-        .lfab-open .lfab-bar-v { transform: rotate(45deg); }
-      `}</style>
-      {/* Hit target: 44×44, top -22px from bar top, z-index 20 */}
-      <button
-        type="button"
-        aria-label="Create"
-        aria-expanded={open}
-        onClick={onClick}
-        className={open ? 'lfab-open' : ''}
-        style={{
-          position: 'absolute',
-          width: 44,
-          height: 44,
-          top: -22,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          WebkitTapHighlightColor: 'transparent',
-          zIndex: 20,
-          padding: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        } as React.CSSProperties}
-      >
-        {/* Visual box: 31×31, radius 10, near-black, halo via box-shadow, NO border/rim */}
-        <div
-          className="lfab-box"
-          style={{
-            width: 31,
-            height: 31,
-            borderRadius: 10,
-            background: '#0D0C15',
-            // Halo — glow ring 12px outside box. This is NOT a rim.
-            boxShadow: '0 0 0 12px rgba(139,92,246,0.22)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            flexShrink: 0,
-          }}
-        >
-          <span className="lfab-bar-h" />
-          <span className="lfab-bar-v" />
-        </div>
-      </button>
-    </>
-  )
-}
-
 export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: BottomTabBarProps) {
   return (
     <nav
@@ -210,6 +122,7 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         left: 0,
         right: 0,
         // §5.7: NAV_HEIGHT total, box-sizing: border-box.
+        // A tab bar that measures 106px is the box model, not the design.
         height: NAV_HEIGHT,
         boxSizing: 'border-box',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -220,15 +133,36 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         display: 'flex',
         alignItems: 'stretch',
         zIndex: 1000,
-        // position:fixed is a containing block for LocalFab's position:absolute children.
       } as React.CSSProperties}
     >
-      {/* LocalFab — absolutely positioned above bar centre, z-index 20 (item 84) */}
-      <LocalFab open={fabOpen} onClick={onFab} />
-
-      {/* Four equal slots: HOME · DEALS · MONEY · MORE (item 83 — NEW slot struck) */}
       <TabSlot id="home"  label="HOME"  icon={<HomeIcon  active={active==='home'}  />} active={active==='home'}  onClick={() => onTab('home')}  />
       <TabSlot id="deals" label="DEALS" icon={<DealsIcon active={active==='deals'} />} active={active==='deals'} onClick={() => onTab('deals')} />
+
+      {/* FAB centre slot — §5.7, locked design 19b.
+          70px wide (not 64). Label NEW below FAB — not an empty gap.
+          FAB lifted margin-top: -23px (in .wr-fab CSS).
+          Label baseline at paddingBottom 12px = 12px from bar bottom.
+          FAB lower edge = 94 - 23 - (94-35) = 35px from bar top → 59px from bottom → clears label. */}
+      <div style={{
+        width: 70,
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingBottom: 12,
+        position: 'relative',
+      }}>
+        {/* FAB — positioned above the label; margin-top: -23px in fab.css handles lift */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+          <Fab open={fabOpen} onClick={onFab} label="NEW" />
+        </div>
+        {/* NEW label — same baseline as other four §5.7 */}
+        <span style={{ ...LABEL_STYLE, color: '#8E8CA0' }}>
+          NEW
+        </span>
+      </div>
+
       <TabSlot id="money" label="MONEY" icon={<MoneyIcon active={active==='money'} />} active={active==='money'} onClick={() => onTab('money')} />
       <TabSlot id="more"  label="MORE"  icon={<MoreIcon  active={active==='more'}  />} active={active==='more'}  onClick={() => onTab('more')}  />
     </nav>

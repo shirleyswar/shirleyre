@@ -6,7 +6,7 @@
   position: relative;
   width: 58px;
   height: 58px;
-  margin-top: -20px;          /* lifts it above the 94px tab bar */
+  margin-top: -23px;          /* §5.7 / 19b: exact. Lower edge lands 35px from the bar top, 7px clear of the NEW label's 42px baseline. Less lift and the FAB covers its own label. */
   padding: 0;
   border: 0;
   background: none;
@@ -138,3 +138,33 @@
   .wr-fab__bar,
   .wr-fab__halo { transition-duration: .01ms; }
 }
+
+/* Desktop create-control mount — D2.4a: 31px, 0.5345× scale.
+   Applied by wrapping with class="wr-fab-desktop-wrap" on the parent.
+   No rim (0.80px sub-pixel). Face fills body at radius 10. */
+.wr-fab-desktop-wrap .wr-fab {
+  width: 31px;
+  height: 31px;
+  margin-top: 0;
+}
+.wr-fab-desktop-wrap .wr-fab__halo {
+  inset: -12px;
+}
+.wr-fab-desktop-wrap .wr-fab__body {
+  border-radius: 10px;
+  padding: 0; /* no rim */
+}
+.wr-fab-desktop-wrap .wr-fab__rim {
+  display: none; /* no rim at desktop mount */
+}
+.wr-fab-desktop-wrap .wr-fab__face {
+  border-radius: 10px;
+}
+.wr-fab-desktop-wrap .wr-fab__core {
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  margin: -10px 0 0 -10px;
+}
+.wr-fab-desktop-wrap .wr-fab__bar--h { width: 12px; height: 1.9px; margin: -0.95px 0 0 -6px; }
+.wr-fab-desktop-wrap .wr-fab__bar--v { width: 1.9px; height: 12px; margin: -6px 0 0 -0.95px; }

@@ -665,28 +665,28 @@ function HomeScreen({
       {!loading && urgentItem && (
         <UrgentRow item={urgentItem} />
       )}
-      {/* item 81: 2×2 tile grid STRUCK. Four stacked 60px §5.11 rows.
-          Order: BATTLE PLAN · MONEY MOVERS · DEADLINES · UNDER CONTRACT.
-          Hairline bottom on rows 1–3, none on row 4.
-          Spined rows: spine + qualifier in same accent. Quiet rows: neither. */}
-      <div style={{ marginTop: 14 }}>
+      {/* item 89: 2×2 tile grid restored. 78px tiles, radius 14, panel fill + border.
+          Count top-left, qualifier top-right, label bottom.
+          One accent colour per urgent tile, shared by spine and qualifier.
+          Background never tinted. */}
+      <div style={{
+        marginTop: 14,
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 10,
+      }}>
         {loading ? (
           [0,1,2,3].map(i => (
             <div key={i} style={{
-              height: 60,
-              borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.10)' : 'none',
-              background: 'rgba(255,255,255,0.02)',
-              opacity: 0.5,
+              height: 78,
+              borderRadius: 14,
+              background: T.bgPanel,
+              border: '1px solid rgba(255,255,255,0.14)',
+              opacity: 0.4,
             }} />
           ))
         ) : (
-          tiles.map((stat, idx) => {
-            const isLast = idx === tiles.length - 1
-            const hasUrgency = !stat.fetchFailed && stat.urgentToken !== null && stat.urgentCount > 0
-            const spineColor = stat.urgentToken === 'late' ? T.late : stat.urgentToken === 'hot' ? T.hot : 'transparent'
-            const qualColor  = spineColor
-            const chipLabel  = stat.urgentLabel ?? (stat.urgentToken === 'late' ? 'LATE' : 'HOT')
-            const qualifier  = hasUrgency ? `${stat.urgentCount} ${chipLabel}` : ''
+          tiles.map((stat) => {
             const onPress = () => {
               if (stat.panelKey === 'battleplan') setOpenSheet('battleplan')
               else if (stat.panelKey === 'moneymovers') setOpenSheet('moneymovers')
@@ -694,66 +694,7 @@ function HomeScreen({
               else if (stat.panelKey === 'undercontract') setOpenSheet('undercontract')
               else onTilePress(stat.panelKey)
             }
-            return (
-              <button
-                key={stat.panelKey}
-                onClick={onPress}
-                style={{
-                  width: '100%',
-                  height: 60,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '0 18px',
-                  boxSizing: 'border-box',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.10)',
-                  borderLeft: hasUrgency ? `2px solid ${spineColor}` : '2px solid transparent',
-                  cursor: 'pointer',
-                  WebkitTapHighlightColor: 'transparent',
-                  textAlign: 'left',
-                  position: 'relative',
-                } as React.CSSProperties}
-              >
-                {/* Count */}
-                <span style={{
-                  fontFamily: FONT_MONO,
-                  fontSize: 22,
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                  color: T.textHi,
-                  fontVariantNumeric: 'tabular-nums',
-                  lineHeight: 1,
-                  flexShrink: 0,
-                }}>{stat.fetchFailed ? '—' : stat.count}</span>
-                {/* Label */}
-                <span style={{
-                  fontFamily: FONT_MONO,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  color: T.textLow,
-                  lineHeight: 1,
-                  flex: 1,
-                  minWidth: 0,
-                }}>{stat.label}</span>
-                {/* Qualifier — spined rows only, same accent */}
-                {hasUrgency && (
-                  <span style={{
-                    fontFamily: FONT_MONO,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.10em',
-                    textTransform: 'uppercase',
-                    color: qualColor,
-                    lineHeight: 1,
-                    flexShrink: 0,
-                  }}>{qualifier}</span>
-                )}
-              </button>
-            )
+            return <PanelTile key={stat.panelKey} stat={stat} onPress={onPress} />
           })
         )}
       </div>
