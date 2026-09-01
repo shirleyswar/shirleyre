@@ -928,9 +928,11 @@ export default function WarRoom3Page() {
           top: 0,
           left: 0,
           right: 0,
-          // Height is computed: safe-area + 14px gap + 56px row
-          // We express this as paddingTop for the status area + explicit row height
-          paddingTop: 'env(safe-area-inset-top, 0px)',
+          // Height is computed: safe-area + 14px gap + 56px row.
+          // max(env(...), 44px): honours the device inset in PWA/standalone mode;
+          // floors at 44px in a browser tab where env resolves to 0 — keeps
+          // SHIRLEYCRE clear of the OS status bar in every context.
+          paddingTop: 'max(env(safe-area-inset-top, 0px), 44px)',
           paddingBottom: 0,
           background: T.bgBase,
           zIndex: 50,
@@ -995,8 +997,9 @@ export default function WarRoom3Page() {
       */}
       <div style={{
         flex: 1,
-        // Offset the fixed header. calc(env(...) + 14px + 56px)
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 14px + 56px)',
+        // Offset the fixed header. Must mirror the identity block exactly.
+        // max(env(...), 44px) + 14px gap + 56px row.
+        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 14px + 56px)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
