@@ -44,6 +44,11 @@
   position: absolute;
   width: 389.097px;
   height: 77.819px;
+  /* ITEM 51 FIX: neutralise Tailwind preflight's img { max-width: 100% }.
+     Not a specificity problem — !important on width does not override max-width.
+     The inherited constraint is removed here, scoped to this component only.
+     DO NOT touch styles/globals.css or any global reset. */
+  max-width: none;
   left: -4.952px;
   top: -5.424px;
   display: block;
@@ -59,6 +64,9 @@
   position: absolute;
   width: 389.097px;
   height: 77.819px;
+  /* ITEM 51 FIX: neutralise Tailwind preflight's video { max-width: 100% }.
+     Same mechanism as .ld2-launch__rest above. Scoped here only. */
+  max-width: none;
   left: -4.952px;
   top: -5.424px;
   display: block;
