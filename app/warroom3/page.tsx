@@ -1,6 +1,6 @@
 'use client'
 
-// /warroom3 — ShirleyCRE mobile spec — Items 54-77 refresh build
+// /warroom3 — ShirleyCRE mobile spec — Items 89-97 HOME 72a build
 // Production /warroom and /warroom/deal: untouched.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
@@ -53,42 +53,6 @@ const T = {
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
-const styleT1: React.CSSProperties = {
-  fontFamily: FONT_MONO,
-  fontSize: 12,
-  fontWeight: 500,
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase',
-  color: T.textMid,
-  lineHeight: 1,
-}
-
-const styleT2: React.CSSProperties = {
-  fontFamily: FONT_MONO,
-  fontSize: 12,
-  fontWeight: 500,
-  letterSpacing: '0.15em',
-  textTransform: 'uppercase',
-  color: T.textLow,
-  lineHeight: 1,
-}
-
-const styleT3: React.CSSProperties = {
-  fontFamily: FONT_DISPLAY,
-  fontSize: 18,
-  fontWeight: 500,
-  color: T.textHi,
-  lineHeight: 1.25,
-}
-
-const styleT4: React.CSSProperties = {
-  fontFamily: FONT_DISPLAY,
-  fontSize: 14,
-  fontWeight: 400,
-  color: T.textMid,
-  lineHeight: 1.5,
-}
-
 // ── Data types ────────────────────────────────────────────────────────────────
 interface UrgentItem {
   deadlineType: string
@@ -105,6 +69,7 @@ interface TileStat {
   urgentLabel?: string
   panelKey: string
   fetchFailed?: boolean
+  noCorner?: boolean   // CONTRACTS tile has no corner metric
 }
 
 interface DealsControl {
@@ -201,8 +166,7 @@ async function loadHomeData(): Promise<{
     ['pending','extended'].includes(d.status) && d.deadline_date >= today && d.deadline_date <= cutoffStr
   )
 
-  // ── Urgent item (item 56) ─────────────────────────────────────────────────
-  // Qualification: deadline within 10 days OR past due
+  // ── Urgent item ────────────────────────────────────────────────────────────
   let urgentItem: UrgentItem | null = null
 
   if (dlPastDue.length > 0) {
@@ -213,11 +177,10 @@ async function loadHomeData(): Promise<{
     urgentItem = {
       deadlineType: typeLabel,
       daysUntil: days,
-      title: typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1),
-      shortAddress: shortAddr,
+      title: typeLabel.toUpperCase(),
+      shortAddress: shortAddr.toUpperCase(),
     }
   } else {
-    // Forward deadlines within 10 days qualify
     const soon = dlForward.filter((d: any) => daysUntilDate(d.deadline_date) <= 10)
     if (soon.length > 0) {
       const nearest = soon[0] as any
@@ -227,8 +190,8 @@ async function loadHomeData(): Promise<{
       urgentItem = {
         deadlineType: typeLabel,
         daysUntil: days,
-        title: typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1),
-        shortAddress: shortAddr,
+        title: typeLabel.toUpperCase(),
+        shortAddress: shortAddr.toUpperCase(),
       }
     }
   }
@@ -250,7 +213,7 @@ async function loadHomeData(): Promise<{
 
   const tiles: TileStat[] = [
     {
-      label: 'Battle Plan',
+      label: 'TO DO',
       count: bpTotal,
       urgentCount: bpOverdue > 0 ? bpOverdue : bpHot,
       urgentToken: bpOverdue > 0 ? 'late' : bpHot > 0 ? 'hot' : null,
@@ -258,7 +221,7 @@ async function loadHomeData(): Promise<{
       fetchFailed: tasksFailed,
     },
     {
-      label: 'Money Movers',
+      label: 'MONEY MOVERS',
       count: mmTotal,
       urgentCount: mmHot,
       urgentToken: mmHot > 0 ? 'hot' : null,
@@ -266,7 +229,7 @@ async function loadHomeData(): Promise<{
       fetchFailed: mmFailed,
     },
     {
-      label: 'Deadlines',
+      label: 'DEADLINES',
       count: dlTotal,
       urgentCount: dlOverdue > 0 ? dlOverdue : dlHot,
       urgentToken: dlOverdue > 0 ? 'late' : dlHot > 0 ? 'hot' : null,
@@ -275,12 +238,13 @@ async function loadHomeData(): Promise<{
       fetchFailed: deadlinesFailed,
     },
     {
-      label: 'Under Contract',
+      label: 'CONTRACTS',
       count: ucTotal,
       urgentCount: 0,
       urgentToken: null,
       panelKey: 'undercontract',
       fetchFailed: ucFailed,
+      noCorner: true,
     },
   ]
 
@@ -293,92 +257,118 @@ async function loadHomeData(): Promise<{
   return {
     urgentItem,
     tiles,
-    // item 86: total = LIVE only (hot + UC + active + pipeline). Closed/other excluded.
     dealsControl: { hotCount, ucCount, activeCount, pipelineCount, total: hotCount + ucCount + activeCount + pipelineCount },
   }
 }
 
-// ── ITEM 56 — Urgent Row ──────────────────────────────────────────────────────
+// ── Item 91 — Urgent Row (2-line, 72a spec) ────────────────────────────────
 function UrgentRow({ item }: { item: UrgentItem }) {
   const days = item.daysUntil
-  const isPast = days < 0
-  // item 82: day count reads LATE, never PAST — mobile only
-  const dayCount = isPast
-    ? `${Math.abs(days)}D LATE`
-    : days === 0 ? 'TODAY' : `${days}D`
+  // NEVER add LATE or PAST — just the absolute day count + D
+  const dayCount = Math.abs(days) + 'D'
 
-  // item 82: ONE LINE — spine · task · spacer · day count · short address
-  // DEADLINE label is STRUCK. Task yields first (flex:1), address never truncates while task has room.
   return (
     <div style={{
       height: 66,
+      boxSizing: 'border-box',
+      padding: '13px 0 0 13px',
+      borderBottom: '1px solid rgba(255,255,255,.10)',
       position: 'relative',
-      display: 'flex',
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingLeft: 13,
-      paddingRight: 18,
       overflow: 'hidden',
       flexShrink: 0,
-      gap: 8,
     }}>
-      {/* Red spine at gutter */}
+      {/* Red spine — full height, bleeds to screen left edge */}
       <div style={{
         position: 'absolute',
-        left: 0, top: 0, bottom: 0,
+        left: -18,
+        top: 0,
+        bottom: 0,
         width: 3,
-        background: T.late,
+        background: '#FF4D4D',
       }} />
-      {/* Task — flex:1, truncates first */}
-      <span style={{
-        fontFamily: FONT_DISPLAY,
-        fontSize: 19,
-        fontWeight: 500,
-        color: T.textHi,
-        lineHeight: 1,
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-        flex: 1,
-        minWidth: 0,
-      }}>{item.title}</span>
-      {/* Day count — fixed, late colour */}
-      <span style={{
-        fontFamily: FONT_MONO,
-        fontSize: 12,
-        fontWeight: 700,
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        color: T.late,
-        lineHeight: 1,
-        flexShrink: 0,
-        whiteSpace: 'nowrap',
-      }}>{dayCount}</span>
-      {/* Short address — fixed, right-aligned, never truncates before task */}
-      <span style={{
-        fontFamily: FONT_DISPLAY,
-        fontSize: 13,
-        fontWeight: 400,
-        color: T.textLow,
-        lineHeight: 1,
-        flexShrink: 0,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        maxWidth: '38%',
-      }}>{item.shortAddress}</span>
+
+      {/* Line 1: DEADLINE label centred + day count right */}
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'baseline',
+      }}>
+        {/* DEADLINE — absolute, centres on the column */}
+        <span style={{
+          position: 'absolute',
+          left: -13,
+          right: 0,
+          textAlign: 'center',
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          fontWeight: 500,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: T.textLow,
+          lineHeight: 1,
+        }}>DEADLINE</span>
+
+        {/* Spacer — occupies flex width so day count goes to right */}
+        <div style={{ flex: 1 }} />
+
+        {/* Day count — right-aligned, red */}
+        <span style={{
+          fontSize: 12,
+          fontWeight: 500,
+          letterSpacing: '0.05em',
+          color: '#FF4D4D',
+          fontVariantNumeric: 'tabular-nums',
+          fontFamily: FONT_MONO,
+          flexShrink: 0,
+          lineHeight: 1,
+        }}>{dayCount}</span>
+      </div>
+
+      {/* Line 2: type + address */}
+      <div style={{
+        marginTop: 12,
+        display: 'flex',
+        alignItems: 'baseline',
+      }}>
+        {/* Type — flex:1, truncates */}
+        <span style={{
+          fontSize: 19,
+          fontFamily: FONT_DISPLAY,
+          fontWeight: 500,
+          letterSpacing: '-0.02em',
+          color: '#EFEEF4',
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          lineHeight: 1,
+        }}>{item.title}</span>
+
+        {/* Address — fixed right */}
+        <span style={{
+          fontSize: 12.5,
+          fontFamily: 'system-ui',
+          fontWeight: 400,
+          color: T.textMid,
+          flexShrink: 0,
+          whiteSpace: 'nowrap',
+          lineHeight: 1,
+          marginLeft: 8,
+        }}>{item.shortAddress}</span>
+      </div>
     </div>
   )
 }
 
-// ── ITEM 57 — Panel Tile ──────────────────────────────────────────────────────
+// ── Item 92 — Panel Tile (four doors) ─────────────────────────────────────
 function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
   const [pressed, setPressed] = React.useState(false)
   const hasUrgency = !stat.fetchFailed && stat.urgentToken !== null && stat.urgentCount > 0
-  const spineColor = stat.urgentToken === 'late' ? T.late : stat.urgentToken === 'hot' ? T.hot : T.brand
-  const statusColor = stat.urgentToken === 'late' ? T.late : stat.urgentToken === 'hot' ? T.hot : T.textLow
-  const chipLabel = stat.urgentLabel ?? (stat.urgentToken === 'late' ? 'LATE' : 'HOT')
-  const statusNote = stat.urgentCount > 0 ? `${stat.urgentCount} ${chipLabel}` : ''
+  const spineColor = stat.urgentToken === 'late' ? '#FF4D4D' : stat.urgentToken === 'hot' ? '#FFA23A' : '#FFA23A'
+  const cornerText = stat.urgentCount > 0
+    ? `${stat.urgentCount} ${stat.urgentLabel ?? (stat.urgentToken === 'late' ? 'LATE' : 'HOT')}`
+    : null
 
   return (
     <button
@@ -390,224 +380,94 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
       onTouchEnd={() => { setTimeout(() => setPressed(false), 90) }}
       style={{
         position: 'relative',
-        overflow: 'hidden',
-        background: T.bgPanel,
-        border: '1px solid rgba(255,255,255,0.14)',
-        borderRadius: 14,
-        padding: hasUrgency ? '14px 14px 14px 17px' : '14px 14px',
         height: 78,
+        borderRadius: 14,
+        background: '#12111B',
+        border: '1px solid rgba(255,255,255,.14)',
+        padding: '13px 13px 12px',
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
+        boxSizing: 'border-box',
         cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
-        textAlign: 'left',
-        width: '100%',
         transform: pressed ? 'scale(0.98)' : 'scale(1)',
         transition: 'transform 90ms ease',
-        boxSizing: 'border-box',
+        textAlign: 'left',
+        width: '100%',
       } as React.CSSProperties}
     >
-      {/* Spine — quiet tile: absent */}
-      {hasUrgency && (
+      {/* Spine — when has urgency and not CONTRACTS */}
+      {hasUrgency && !stat.noCorner && (
         <div style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0,
-          width: 3, background: spineColor,
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 3,
+          background: spineColor,
         }} />
       )}
 
-      {/* Top: count left, urgency micro-label top-right */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4 }}>
+      {/* Top row: figure + corner */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+      }}>
+        {/* Figure */}
         {stat.fetchFailed ? (
-          <span style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 700, color: T.late, lineHeight: 1 }}>!</span>
-        ) : (
           <span style={{
-            fontFamily: FONT_DISPLAY,
             fontSize: 30,
             fontWeight: 700,
             letterSpacing: '-0.03em',
-            color: T.textHi,
+            color: '#FF4D4D',
+            fontFamily: FONT_DISPLAY,
             lineHeight: 1,
+          }}>!</span>
+        ) : (
+          <span style={{
+            fontSize: 30,
+            fontWeight: 700,
+            letterSpacing: '-0.03em',
+            color: '#EFEEF4',
             fontVariantNumeric: 'tabular-nums',
+            fontFamily: FONT_DISPLAY,
+            lineHeight: 1,
           }}>{stat.count}</span>
         )}
-        {/* micro-label top-right — quiet tile: absent */}
-        {!stat.fetchFailed && hasUrgency && statusNote ? (
+
+        {/* Corner metric — absent for CONTRACTS and quiet tiles */}
+        {!stat.noCorner && !stat.fetchFailed && hasUrgency && cornerText && (
           <span style={{
-            fontFamily: FONT_MONO,
-            fontSize: 9,
-            fontWeight: 700,
+            fontSize: 9.5,
+            fontWeight: 500,
             letterSpacing: '0.11em',
-            textTransform: 'uppercase',
-            color: statusColor,
-            lineHeight: 1,
             marginTop: 3,
-          }}>{statusNote}</span>
-        ) : stat.fetchFailed ? (
-          <span style={{ fontFamily: FONT_MONO, fontSize: 9, fontWeight: 700, color: T.late, lineHeight: 1, marginTop: 3 }}>ERR</span>
-        ) : null}
-      </div>
-
-      {/* Bottom: label */}
-      <div style={{ ...styleT1 }}>{stat.label}</div>
-    </button>
-  )
-}
-
-// ── ITEM 58 — Deals Control ───────────────────────────────────────────────────
-// Rim sweep animation keyframe name: dealsRimSweep (16s)
-function DealsControl({
-  control,
-  loading,
-  onOpen,
-}: {
-  control: DealsControl
-  loading: boolean
-  onOpen: () => void
-}) {
-  const { hotCount, ucCount, activeCount, pipelineCount, total } = control
-
-  // 5px proportion bar: hot | UC | active | pipeline
-  const pctHot      = total > 0 ? hotCount      / total : 0
-  const pctUC       = total > 0 ? ucCount       / total : 0
-  const pctActive   = total > 0 ? activeCount   / total : 0
-  const pctPipeline = total > 0 ? pipelineCount / total : 0
-
-  return (
-    <div>
-      {/* item 85: DEALS section header STRUCK — block opens on its figures */}
-
-      {/* Three figures on one baseline */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'baseline',
-        gap: 0,
-        marginBottom: 8,
-      }}>
-        {/* hot count */}
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 28,
-          fontWeight: 700,
-          letterSpacing: '-0.02em',
-          color: T.hot,
-          fontVariantNumeric: 'tabular-nums',
-          lineHeight: 1,
-        }}>{loading ? '—' : hotCount}</span>
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 10,
-          fontWeight: 500,
-          letterSpacing: '0.10em',
-          textTransform: 'uppercase',
-          color: T.textLow,
-          lineHeight: 1,
-          marginLeft: 5,
-          alignSelf: 'center',
-        }}>HOT</span>
-
-        <div style={{ width: 18 }} />
-
-        {/* UC count */}
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 28,
-          fontWeight: 700,
-          letterSpacing: '-0.02em',
-          color: T.textHi,
-          fontVariantNumeric: 'tabular-nums',
-          lineHeight: 1,
-        }}>{loading ? '—' : ucCount}</span>
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 10,
-          fontWeight: 500,
-          letterSpacing: '0.10em',
-          textTransform: 'uppercase',
-          color: T.textLow,
-          lineHeight: 1,
-          marginLeft: 5,
-          alignSelf: 'center',
-        }}>UC</span>
-
-        <div style={{ flex: 1 }} />
-
-        {/* TOTAL right-aligned */}
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 28,
-          fontWeight: 700,
-          letterSpacing: '-0.02em',
-          color: T.textHi,
-          fontVariantNumeric: 'tabular-nums',
-          lineHeight: 1,
-        }}>{loading ? '—' : total}</span>
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 10,
-          fontWeight: 500,
-          letterSpacing: '0.10em',
-          textTransform: 'uppercase',
-          color: T.textLow,
-          lineHeight: 1,
-          marginLeft: 5,
-          alignSelf: 'center',
-        }}>TOTAL</span>
-      </div>
-
-      {/* item 86: 5px proportion bar — HOT #FFA23A · UC #7C3AED · ACTIVE #B8B6C6 · PIPELINE #5C5B6B
-          No hairlines. No unnamed remainder. Zero-population segment omitted entirely.
-          #5C5B6B: named exception — only permitted use is this segment fill (§2.2a). */}
-      <div style={{
-        display: 'flex',
-        height: 5,
-        overflow: 'hidden',
-        marginBottom: 12,
-      }}>
-        {!loading && total > 0 && (
-          <>
-            {hotCount > 0 && <div style={{ flex: pctHot,      background: '#FFA23A', transition: 'flex 0.6s ease' }} />}
-            {ucCount  > 0 && <div style={{ flex: pctUC,       background: '#7C3AED', transition: 'flex 0.6s ease' }} />}
-            {activeCount > 0 && <div style={{ flex: pctActive, background: '#B8B6C6', transition: 'flex 0.6s ease' }} />}
-            {pipelineCount > 0 && <div style={{ flex: pctPipeline, background: '#5C5B6B', transition: 'flex 0.6s ease' }} />}
-          </>
+            fontFamily: FONT_MONO,
+            lineHeight: 1,
+            color: spineColor,
+          }}>{cornerText}</span>
+        )}
+        {stat.fetchFailed && (
+          <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 500, color: '#FF4D4D', lineHeight: 1, marginTop: 3 }}>ERR</span>
         )}
       </div>
 
-      {/* Aperture bar button — full-width, 52px, border-box, gutter to gutter, radius 17 */}
-      {/* near-black body, rim sweep at 16s, NOT violet */}
-      <button
-        onClick={onOpen}
-        className="deals-aperture-btn"
-        style={{
-          width: '100%',
-          height: 52,
-          boxSizing: 'border-box',
-          borderRadius: 17,
-          background: '#0D0C15',
-          border: '1px solid rgba(255,255,255,0.16)',
-          cursor: 'pointer',
-          WebkitTapHighlightColor: 'transparent',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          overflow: 'hidden',
-        } as React.CSSProperties}
-      >
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: '0.16em',
-          textTransform: 'uppercase',
-          color: T.textHi,
-          lineHeight: 1,
-          position: 'relative',
-          zIndex: 1,
-        }}>DEALS</span>
-      </button>
-    </div>
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+
+      {/* Label — bottom */}
+      <span style={{
+        fontSize: 12,
+        fontWeight: 500,
+        letterSpacing: '0.13em',
+        textTransform: 'uppercase',
+        color: T.textMid,
+        fontFamily: FONT_MONO,
+        lineHeight: 1,
+      }}>{stat.label}</span>
+    </button>
   )
 }
 
@@ -638,7 +498,8 @@ function HomeScreen({
   const [tiles, setTiles] = useState<TileStat[]>([])
   const [dealsControl, setDealsControl] = useState<DealsControl>({ hotCount: 0, ucCount: 0, activeCount: 0, pipelineCount: 0, total: 0 })
   const [bpRefreshKey, setBpRefreshKey] = useState(0)
-  const dateLabel = formatDateLabel()
+  // Item 94: pressed state for DEALS plate
+  const [dealPressed, setDealPressed] = useState(false)
 
   useEffect(() => {
     loadHomeData()
@@ -651,6 +512,10 @@ function HomeScreen({
       .finally(() => setLoading(false))
   }, [bpRefreshKey])
 
+  const { hotCount, ucCount, total } = dealsControl
+  const pctHot = total > 0 ? ((hotCount / total) * 100).toFixed(1) : '0'
+  const pctUC  = total > 0 ? ((ucCount  / total) * 100).toFixed(1) : '0'
+
   return (
     <div style={{
       flex: 1,
@@ -660,20 +525,17 @@ function HomeScreen({
       background: T.bgBase,
     }}>
 
-      {/* ── ITEM 56 — URGENT ROW ─────────────────────────────────── */}
-      {/* When nothing qualifies: absent. No placeholder, no shimmer. */}
+      {/* ── Item 91 — URGENT ROW ────────────────────────────────── */}
       {!loading && urgentItem && (
         <UrgentRow item={urgentItem} />
       )}
-      {/* item 89: 2×2 tile grid restored. 78px tiles, radius 14, panel fill + border.
-          Count top-left, qualifier top-right, label bottom.
-          One accent colour per urgent tile, shared by spine and qualifier.
-          Background never tinted. */}
+
+      {/* ── Item 92 — FOUR DOORS TILE GRID ─────────────────────── */}
       <div style={{
-        marginTop: 14,
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: 10,
+        gap: 11,
+        marginTop: 22,
       }}>
         {loading ? (
           [0,1,2,3].map(i => (
@@ -699,25 +561,154 @@ function HomeScreen({
         )}
       </div>
 
-      {/* ── ITEM 58 — DEALS CONTROL (DealPipelineBand STRUCK) ──── */}
-      <div style={{ marginTop: 18 }}>
-        <DealsControl
-          control={dealsControl}
-          loading={loading}
-          onOpen={() => setOpenSheet('deals')}
-        />
+      {/* ── Item 93 — DEALS BAND ────────────────────────────────── */}
+
+      {/* Section header */}
+      <div style={{
+        marginTop: 18,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+      }}>
+        <span style={{
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          fontWeight: 500,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase' as const,
+          color: T.textMid,
+          lineHeight: 1,
+        }}>DEALS</span>
+        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.10)' }} />
       </div>
 
-      {/* ── ITEM 59 — RECEIVABLES RE-CUT ────────────────────────── */}
-      <div style={{ marginTop: 18 }}>
-        <ReceivablesCard />
+      {/* Stat trio */}
+      <div style={{
+        marginTop: 18,
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: 18,
+      }}>
+        {/* Left: hot count, NO label, paddingBottom:18.5 to baseline with neighbors */}
+        <span style={{
+          fontSize: 30,
+          fontWeight: 700,
+          letterSpacing: '-0.03em',
+          color: '#FFA23A',
+          fontVariantNumeric: 'tabular-nums',
+          fontFamily: FONT_DISPLAY,
+          lineHeight: 1,
+          paddingBottom: 18.5,
+        }}>{loading ? '—' : hotCount}</span>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 38, background: 'rgba(255,255,255,.12)', flexShrink: 0 }} />
+
+        {/* Middle: UC count + UNDER CONTRACT label below */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+          <span style={{
+            fontSize: 30,
+            fontWeight: 700,
+            letterSpacing: '-0.03em',
+            color: '#EFEEF4',
+            fontVariantNumeric: 'tabular-nums',
+            fontFamily: FONT_DISPLAY,
+            lineHeight: 1,
+          }}>{loading ? '—' : ucCount}</span>
+          <span style={{
+            fontSize: 9.5,
+            fontWeight: 500,
+            letterSpacing: '0.11em',
+            fontFamily: FONT_MONO,
+            lineHeight: 1,
+            color: T.textMid,
+            textTransform: 'uppercase' as const,
+          }}>UNDER CONTRACT</span>
+        </div>
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Right: total + TOTAL label below */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          <span style={{
+            fontSize: 30,
+            fontWeight: 700,
+            letterSpacing: '-0.03em',
+            color: T.textMid,
+            fontVariantNumeric: 'tabular-nums',
+            fontFamily: FONT_DISPLAY,
+            lineHeight: 1,
+          }}>{loading ? '—' : total}</span>
+          <span style={{
+            fontSize: 9.5,
+            fontWeight: 500,
+            letterSpacing: '0.11em',
+            fontFamily: FONT_MONO,
+            lineHeight: 1,
+            color: T.textLow,
+            textTransform: 'uppercase' as const,
+          }}>TOTAL</span>
+        </div>
       </div>
 
-      {/* ── ITEM 60 — SCROLL TAIL ────────────────────────────────── */}
-      {/* 104px explicit tail element, not bottom padding */}
+      {/* Proportion bar — 3 segments, 3px gaps */}
+      <div style={{
+        marginTop: 18,
+        display: 'flex',
+        gap: 3,
+        height: 5,
+      }}>
+        {!loading && hotCount > 0 && (
+          <div style={{ flex: `0 0 ${pctHot}%`, background: '#FFA23A', borderRadius: 2 }} />
+        )}
+        {!loading && ucCount > 0 && (
+          <div style={{ flex: `0 0 ${pctUC}%`, background: '#D9D7E2', borderRadius: 2 }} />
+        )}
+        <div style={{ flex: 1, background: '#33323F', borderRadius: 2 }} />
+      </div>
+
+      {/* ── Item 94 — DEALS PLATE (raster asset) ────────────────── */}
+      <div style={{ marginTop: 22 }}>
+        <button
+          onClick={() => setOpenSheet('deals')}
+          aria-label="Open deals"
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            transform: dealPressed ? 'translateY(2px)' : 'none',
+            filter: dealPressed
+              ? 'drop-shadow(0 2px 4px rgba(0,0,0,.8))'
+              : 'drop-shadow(0 6px 10px rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(255,255,255,.10))',
+            transition: 'transform 120ms ease-out, filter 120ms ease-out',
+          } as React.CSSProperties}
+          onMouseDown={() => setDealPressed(true)}
+          onMouseUp={() => setDealPressed(false)}
+          onMouseLeave={() => setDealPressed(false)}
+          onTouchStart={() => setDealPressed(true)}
+          onTouchEnd={() => setTimeout(() => setDealPressed(false), 120)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/deals/deals-pill-v2.png"
+            width={354}
+            height={52}
+            alt="DEALS"
+            style={{ display: 'block' }}
+          />
+        </button>
+      </div>
+
+      {/* ── Item 95 — RECEIVABLES RE-CUT ────────────────────────── */}
+      <ReceivablesCard />
+
+      {/* ── Item 97 — SCROLL TAIL (104px clearance) ─────────────── */}
       <div style={{ height: 104, flexShrink: 0 }} />
 
-      {/* Battle Plan sheet */}
+      {/* ── Sheets ───────────────────────────────────────────────── */}
       <BattlePlanSheet
         open={openSheet === 'battleplan'}
         onClose={() => setOpenSheet(null)}
@@ -733,12 +724,11 @@ function HomeScreen({
         open={taskDetailOpen}
         task={selectedDetailTask}
         onClose={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
-        onCompleted={(t) => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false); setBpRefreshKey(k => k + 1) }}
+        onCompleted={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false); setBpRefreshKey(k => k + 1) }}
         onSaved={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false); setBpRefreshKey(k => k + 1) }}
         onDeleted={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
       />
 
-      {/* ── ITEM 66 — DealsSheet: FAB × while open (handled at root) */}
       <DealsSheet
         open={openSheet === 'deals'}
         onClose={() => setOpenSheet(null)}
@@ -773,29 +763,6 @@ function HomeScreen({
         onClose={() => setOpenSheet(null)}
         onCreated={() => setOpenSheet(null)}
       />
-
-      <style>{`
-        @keyframes shimmer {
-          0%   { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
-        @keyframes dealsRimSweep {
-          0%   { transform: translateX(-100%) skewX(-20deg); opacity: 0; }
-          10%  { opacity: 0.25; }
-          40%  { opacity: 0.18; }
-          60%  { opacity: 0; }
-          100% { transform: translateX(300%) skewX(-20deg); opacity: 0; }
-        }
-        .deals-aperture-btn::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
-          transform: translateX(-100%) skewX(-20deg);
-          animation: dealsRimSweep 16s ease-in-out infinite;
-          pointer-events: none;
-        }
-      `}</style>
     </div>
   )
 }
@@ -814,7 +781,14 @@ function PlaceholderScreen({ label }: { label: string }) {
       justifyContent: 'center',
       gap: 12,
     }}>
-      <span style={styleT1}>{label}</span>
+      <span style={{
+        fontFamily: FONT_MONO,
+        fontSize: 12,
+        fontWeight: 500,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+        color: T.textMid,
+      }}>{label}</span>
       <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textLow }}>Coming in next step</span>
     </div>
   )
@@ -901,9 +875,6 @@ export default function WarRoom3Page() {
   }
 
   return (
-    // ── ITEM 54 — IDENTITY BLOCK FIXED CHROME ──────────────────────────────
-    // The outer wrapper is position:fixed, full viewport.
-    // Inside: ONE fixed identity block pinned to top, scrolling body underneath.
     <div style={{
       display: 'flex',
       flexDirection: 'column',
@@ -915,12 +886,7 @@ export default function WarRoom3Page() {
       inset: 0,
     }}>
 
-      {/* ── ITEM 54 + 55 — IDENTITY BLOCK ─────────────────────────────────────
-          ONE fixed block: status area + identity row = zero gap between.
-          Height = env(safe-area-inset-top) + 14px gap + 56px row. Never a typed literal.
-          NO hairline, no bottom border. Block does NOT scroll away.
-          Scrolling body starts at this computed height via paddingTop on scroll container.
-      */}
+      {/* ── Item 90 — IDENTITY BLOCK (fixed) ──────────────────────────────── */}
       <div
         id="identity-block"
         style={{
@@ -928,78 +894,67 @@ export default function WarRoom3Page() {
           top: 0,
           left: 0,
           right: 0,
-          // Height is computed: safe-area + 14px gap + 56px row.
-          // max(env(...), 44px): honours the device inset in PWA/standalone mode;
-          // floors at 44px in a browser tab where env resolves to 0 — keeps
-          // SHIRLEYCRE clear of the OS status bar in every context.
           paddingTop: 'max(env(safe-area-inset-top, 0px), 44px)',
-          paddingBottom: 0,
-          background: T.bgBase,
+          background: '#08080C',
           zIndex: 50,
-          // NO hairline, no border-bottom
         }}
       >
-        {/* 14px gap between status area bottom and identity row */}
+        {/* 14px spacer between safe-area and identity row */}
         <div style={{ height: 14 }} />
 
-        {/* ── ITEM 55 — IDENTITY ROW ───────────────────────────────
-            56px tall, flex, 18px side padding, 12px gap
-        */}
+        {/* Identity row — 62px, flex, 18px padding, 13px gap */}
         <div style={{
+          height: 62,
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
-          height: 56,
-          paddingLeft: 18,
-          paddingRight: 18,
+          padding: '0 18px',
           boxSizing: 'border-box',
+          gap: 13,
         }}>
-          {/* 48px app mark — NO CSS halo, no radius, no plate */}
+          {/* Star mark — 54×54 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/icons/mark-256.png"
+            src="/icons/mark-star-256.png"
+            width={54}
+            height={54}
             alt=""
-            width={48}
-            height={48}
             style={{ display: 'block', flexShrink: 0 }}
           />
 
-          {/* SHIRLEYCRE wordmark — height 48px only, NEVER width typed */}
+          {/* Wordmark — 172×45.3, optical offset top:-6 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/assets/wordmark/shirleycre-h144.png"
+            src="/assets/wordmark/shirleycre-glow-1269.png"
             alt="SHIRLEYCRE"
-            style={{ height: 48, width: 'auto', display: 'block', flexShrink: 0 }}
+            style={{
+              width: 172,
+              height: 45.3,
+              position: 'relative',
+              top: -6,
+              flexShrink: 0,
+              display: 'block',
+            }}
           />
 
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
-
-          {/* Date — right-aligned, brand-lift */}
+          {/* Date — marginLeft:auto (NOT a flex:1 div), #4D00FE */}
           <span style={{
+            marginLeft: 'auto',
             fontFamily: FONT_MONO,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 500,
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            color: T.brandLift,
-            lineHeight: 1,
+            color: '#4D00FE',
             whiteSpace: 'nowrap',
+            lineHeight: 1,
           }}>{formatDateLabel()}</span>
         </div>
-        {/* NO margin/spacer below row inside block */}
       </div>
 
-      {/* Scroll body — starts BELOW the fixed identity block.
-          paddingTop must equal identity block's visual height: safe-area + 14px + 56px
-          We use a CSS calc() so it's never a typed literal.
-          The safe-area variable resolves to the device value at runtime.
-      */}
+      {/* Scroll body — offset by identity block height */}
       <div style={{
         flex: 1,
-        // Offset the fixed header. Must mirror the identity block exactly.
-        // max(env(...), 44px) + 14px gap + 56px row.
-        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 14px + 56px)',
+        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 14px + 62px)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
