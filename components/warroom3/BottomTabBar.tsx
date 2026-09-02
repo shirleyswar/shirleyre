@@ -1,15 +1,14 @@
 'use client'
 
-// §5.7 + Item 96 — BottomTabBar — raster glyphs, NO labels, NO text under any glyph
-// No SVG icons. No label text. Not even "NEW" under the FAB.
-// Eight raster files delivered: home/deals/money/more, dormant + active.
-// Glyph size: 40px files mounted at 27px.
-
 import React from 'react'
 import Fab from '@/components/warroom3/Fab'
 import { NAV_HEIGHT } from '@/lib/layout'
 
 export type TabId = 'home' | 'deals' | 'money' | 'more'
+
+const DORMANT = '#8E8CA0'
+const ACTIVE  = '#DCD5FF'
+const GLOW    = 'drop-shadow(0 0 6px rgba(167,139,250,.9))'
 
 interface Props {
   active: TabId
@@ -18,7 +17,7 @@ interface Props {
   fabOpen?: boolean
 }
 
-function TabSlot({ src, onClick, active }: { src: string; onClick: () => void; active: boolean }) {
+function SvgSlot({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       onClick={onClick}
@@ -32,11 +31,54 @@ function TabSlot({ src, onClick, active }: { src: string; onClick: () => void; a
         cursor: 'pointer',
         minHeight: 44,
         WebkitTapHighlightColor: 'transparent',
+        color: active ? ACTIVE : DORMANT,
+        filter: active ? GLOW : 'none',
       } as React.CSSProperties}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} width={27} height={27} alt="" />
+      {children}
     </button>
+  )
+}
+
+// HOME — roof wedge over a bar
+function HomeGlyph() {
+  return (
+    <svg width="27" height="27" viewBox="0 0 32 32" fill="none">
+      <polygon points="16,6 28,20 4,20" fill="currentColor"/>
+      <rect x="4" y="22" width="24" height="3" rx="1.5" fill="currentColor"/>
+    </svg>
+  )
+}
+
+// DEALS — three stacked plates
+function DealsGlyph() {
+  return (
+    <svg width="27" height="27" viewBox="0 0 32 32" fill="none">
+      <rect x="4" y="7" width="24" height="4" rx="2" fill="currentColor"/>
+      <rect x="4" y="14" width="24" height="4" rx="2" fill="currentColor"/>
+      <rect x="4" y="21" width="24" height="4" rx="2" fill="currentColor"/>
+    </svg>
+  )
+}
+
+// MONEY — arrow over floor (provisional)
+function MoneyGlyph() {
+  return (
+    <svg width="27" height="27" viewBox="0 0 32 32" fill="none">
+      <polygon points="16,6 26,18 6,18" fill="currentColor"/>
+      <rect x="4" y="22" width="24" height="3" rx="1.5" fill="currentColor"/>
+    </svg>
+  )
+}
+
+// MORE — three horizontal facets
+function MoreGlyph() {
+  return (
+    <svg width="27" height="27" viewBox="0 0 32 32" fill="none">
+      <rect x="5" y="9"  width="22" height="3" rx="1.5" fill="currentColor"/>
+      <rect x="5" y="15" width="22" height="3" rx="1.5" fill="currentColor"/>
+      <rect x="5" y="21" width="22" height="3" rx="1.5" fill="currentColor"/>
+    </svg>
   )
 }
 
@@ -60,18 +102,15 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         zIndex: 1000,
       } as React.CSSProperties}
     >
-      <TabSlot
-        src={active === 'home' ? '/assets/tabbar/home-40.png' : '/assets/tabbar/home-40.png'}
-        onClick={() => onTab('home')}
-        active={active === 'home'}
-      />
-      <TabSlot
-        src={active === 'deals' ? '/assets/tabbar/deals-active-40.png' : '/assets/tabbar/deals-40.png'}
-        onClick={() => onTab('deals')}
-        active={active === 'deals'}
-      />
+      <SvgSlot active={active === 'home'} onClick={() => onTab('home')}>
+        <HomeGlyph />
+      </SvgSlot>
 
-      {/* FAB centre slot — 70px, no label */}
+      <SvgSlot active={active === 'deals'} onClick={() => onTab('deals')}>
+        <DealsGlyph />
+      </SvgSlot>
+
+      {/* FAB centre slot */}
       <div style={{
         width: 70,
         flexShrink: 0,
@@ -83,16 +122,13 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         <Fab open={fabOpen} onClick={onFab} />
       </div>
 
-      <TabSlot
-        src={active === 'money' ? '/assets/tabbar/money-active-40.png' : '/assets/tabbar/money-40.png'}
-        onClick={() => onTab('money')}
-        active={active === 'money'}
-      />
-      <TabSlot
-        src={active === 'more' ? '/assets/tabbar/more-40.png' : '/assets/tabbar/more-40.png'}
-        onClick={() => onTab('more')}
-        active={active === 'more'}
-      />
+      <SvgSlot active={active === 'money'} onClick={() => onTab('money')}>
+        <MoneyGlyph />
+      </SvgSlot>
+
+      <SvgSlot active={active === 'more'} onClick={() => onTab('more')}>
+        <MoreGlyph />
+      </SvgSlot>
     </nav>
   )
 }

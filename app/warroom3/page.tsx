@@ -70,6 +70,7 @@ interface TileStat {
   panelKey: string
   fetchFailed?: boolean
   noCorner?: boolean   // CONTRACTS tile has no corner metric
+  spineOverride?: string
 }
 
 interface DealsControl {
@@ -86,10 +87,7 @@ function todayCST(): string {
 }
 
 function formatDateLabel(): string {
-  const now = new Date()
-  const day = now.toLocaleDateString('en-US', { timeZone: 'America/Chicago', weekday: 'short' }).toUpperCase()
-  const date = now.toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' }).toUpperCase()
-  return `${day} · ${date}`
+  return new Date().toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' }).toUpperCase()
 }
 
 function daysUntilDate(dateStr: string): number {
@@ -121,9 +119,8 @@ async function loadHomeData(): Promise<{
       .order('deadline_date', { ascending: true })
       .limit(100),
     supabase
-      .from('deals')
-      .select('id, status, is_money_mover')
-      .eq('is_money_mover', true)
+      .from('money_movers')
+      .select('id, status')
       .limit(200),
     supabase
       .from('deals')
@@ -219,6 +216,7 @@ async function loadHomeData(): Promise<{
       urgentToken: bpOverdue > 0 ? 'late' : bpHot > 0 ? 'hot' : null,
       panelKey: 'battleplan',
       fetchFailed: tasksFailed,
+      spineOverride: '#34D399',
     },
     {
       label: 'MONEY MOVERS',
@@ -227,6 +225,7 @@ async function loadHomeData(): Promise<{
       urgentToken: mmHot > 0 ? 'hot' : null,
       panelKey: 'moneymovers',
       fetchFailed: mmFailed,
+      noCorner: true,
     },
     {
       label: 'DEADLINES',
@@ -269,10 +268,15 @@ function UrgentRow({ item }: { item: UrgentItem }) {
 
   return (
     <div style={{
+      margin: '0 -18px',
+      padding: '0 18px',
+      background: '#0F0E17',
+      boxShadow: 'inset 0 1px 0 rgba(0,0,0,.60), inset 0 -1px 0 rgba(255,255,255,.05)',
+    }}>
+    <div style={{
       height: 66,
       boxSizing: 'border-box',
       padding: '13px 0 0 13px',
-      borderBottom: '1px solid rgba(255,255,255,.10)',
       position: 'relative',
       overflow: 'hidden',
       flexShrink: 0,
@@ -300,7 +304,7 @@ function UrgentRow({ item }: { item: UrgentItem }) {
           right: 0,
           textAlign: 'center',
           fontFamily: FONT_MONO,
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: 500,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
@@ -358,6 +362,7 @@ function UrgentRow({ item }: { item: UrgentItem }) {
         }}>{item.shortAddress}</span>
       </div>
     </div>
+    </div>
   )
 }
 
@@ -365,7 +370,8 @@ function UrgentRow({ item }: { item: UrgentItem }) {
 function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
   const [pressed, setPressed] = React.useState(false)
   const hasUrgency = !stat.fetchFailed && stat.urgentToken !== null && stat.urgentCount > 0
-  const spineColor = stat.urgentToken === 'late' ? '#FF4D4D' : stat.urgentToken === 'hot' ? '#FFA23A' : '#FFA23A'
+  const spineColor = stat.spineOverride ?? (stat.urgentToken === 'late' ? '#FF4D4D' : '#FFA23A')
+  const showSpine = !!stat.spineOverride || (hasUrgency && !stat.noCorner)
   const cornerText = stat.urgentCount > 0
     ? `${stat.urgentCount} ${stat.urgentLabel ?? (stat.urgentToken === 'late' ? 'LATE' : 'HOT')}`
     : null
@@ -397,8 +403,8 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
         width: '100%',
       } as React.CSSProperties}
     >
-      {/* Spine — when has urgency and not CONTRACTS */}
-      {hasUrgency && !stat.noCorner && (
+      {/* Spine — when spineOverride exists OR has urgency and not CONTRACTS */}
+      {showSpine && (
         <div style={{
           position: 'absolute',
           left: 0,
@@ -561,26 +567,41 @@ function HomeScreen({
         )}
       </div>
 
-      {/* ── Item 93 — DEALS BAND ────────────────────────────────── */}
-
-      {/* Section header */}
-      <div style={{
-        marginTop: 18,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-      }}>
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 11,
-          fontWeight: 500,
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase' as const,
-          color: T.textMid,
-          lineHeight: 1,
-        }}>DEALS</span>
-        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.10)' }} />
+      {/* ── Item 94 — DEALS PLATE (raster asset) ────────────────── */}
+      <div style={{ marginTop: 22 }}>
+        <button
+          onClick={() => setOpenSheet('deals')}
+          aria-label="Open deals"
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            transform: dealPressed ? 'translateY(2px)' : 'none',
+            filter: dealPressed
+              ? 'drop-shadow(0 2px 4px rgba(0,0,0,.8))'
+              : 'drop-shadow(0 6px 10px rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(255,255,255,.10))',
+            transition: 'transform 120ms ease-out, filter 120ms ease-out',
+          } as React.CSSProperties}
+          onMouseDown={() => setDealPressed(true)}
+          onMouseUp={() => setDealPressed(false)}
+          onMouseLeave={() => setDealPressed(false)}
+          onTouchStart={() => setDealPressed(true)}
+          onTouchEnd={() => setTimeout(() => setDealPressed(false), 120)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/deals/deals-pill-v2.png"
+            width={354}
+            height={52}
+            alt="DEALS"
+            style={{ display: 'block' }}
+          />
+        </button>
       </div>
+
+      {/* ── Item 93 — DEALS BAND ────────────────────────────────── */}
 
       {/* Stat trio */}
       <div style={{
@@ -666,40 +687,6 @@ function HomeScreen({
           <div style={{ flex: `0 0 ${pctUC}%`, background: '#D9D7E2', borderRadius: 2 }} />
         )}
         <div style={{ flex: 1, background: '#33323F', borderRadius: 2 }} />
-      </div>
-
-      {/* ── Item 94 — DEALS PLATE (raster asset) ────────────────── */}
-      <div style={{ marginTop: 22 }}>
-        <button
-          onClick={() => setOpenSheet('deals')}
-          aria-label="Open deals"
-          style={{
-            all: 'unset',
-            cursor: 'pointer',
-            display: 'flex',
-            justifyContent: 'center',
-            width: '100%',
-            transform: dealPressed ? 'translateY(2px)' : 'none',
-            filter: dealPressed
-              ? 'drop-shadow(0 2px 4px rgba(0,0,0,.8))'
-              : 'drop-shadow(0 6px 10px rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(255,255,255,.10))',
-            transition: 'transform 120ms ease-out, filter 120ms ease-out',
-          } as React.CSSProperties}
-          onMouseDown={() => setDealPressed(true)}
-          onMouseUp={() => setDealPressed(false)}
-          onMouseLeave={() => setDealPressed(false)}
-          onTouchStart={() => setDealPressed(true)}
-          onTouchEnd={() => setTimeout(() => setDealPressed(false), 120)}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/assets/deals/deals-pill-v2.png"
-            width={354}
-            height={52}
-            alt="DEALS"
-            style={{ display: 'block' }}
-          />
-        </button>
       </div>
 
       {/* ── Item 95 — RECEIVABLES RE-CUT ────────────────────────── */}
@@ -899,44 +886,44 @@ export default function WarRoom3Page() {
           zIndex: 50,
         }}
       >
-        {/* 14px spacer between safe-area and identity row */}
-        <div style={{ height: 14 }} />
+        {/* 4px spacer between safe-area and identity row */}
+        <div style={{ height: 4 }} />
 
-        {/* Identity row — 62px, flex, 18px padding, 13px gap */}
+        {/* Identity row — 72px, flex, 18px padding, 13px gap */}
         <div style={{
-          height: 62,
+          height: 72,
           display: 'flex',
           alignItems: 'center',
           padding: '0 18px',
           boxSizing: 'border-box',
           gap: 13,
         }}>
-          {/* Star mark — 54×54 */}
+          {/* Star mark — 64×64 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/mark-star-256.png"
-            width={54}
-            height={54}
+            width={64}
+            height={64}
             alt=""
             style={{ display: 'block', flexShrink: 0 }}
           />
 
-          {/* Wordmark — 172×45.3, optical offset top:-6 */}
+          {/* Wordmark — 204×53.7, optical offset top:-1 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/wordmark/shirleycre-glow-1269.png"
             alt="SHIRLEYCRE"
             style={{
-              width: 172,
-              height: 45.3,
+              width: 204,
+              height: 53.7,
               position: 'relative',
-              top: -6,
+              top: -1,
               flexShrink: 0,
               display: 'block',
             }}
           />
 
-          {/* Date — marginLeft:auto (NOT a flex:1 div), #4D00FE */}
+          {/* Date — marginLeft:auto (NOT a flex:1 div), #8E8CA0 */}
           <span style={{
             marginLeft: 'auto',
             fontFamily: FONT_MONO,
@@ -944,7 +931,7 @@ export default function WarRoom3Page() {
             fontWeight: 500,
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            color: '#4D00FE',
+            color: '#8E8CA0',
             whiteSpace: 'nowrap',
             lineHeight: 1,
           }}>{formatDateLabel()}</span>
@@ -954,7 +941,7 @@ export default function WarRoom3Page() {
       {/* Scroll body — offset by identity block height */}
       <div style={{
         flex: 1,
-        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 14px + 62px)',
+        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 4px + 72px)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
