@@ -87,7 +87,10 @@ function todayCST(): string {
 }
 
 function formatDateLabel(): string {
-  return new Date().toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' }).toUpperCase()
+  const now = new Date()
+  const m = now.toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'numeric' })
+  const d = now.toLocaleDateString('en-US', { timeZone: 'America/Chicago', day: 'numeric' })
+  return `${m}.${d}`
 }
 
 function daysUntilDate(dateStr: string): number {
@@ -274,7 +277,17 @@ function UrgentRow({ item }: { item: UrgentItem }) {
       padding: '0 18px',
       background: '#0F0E17',
       boxShadow: 'inset 0 1px 0 rgba(0,0,0,.60), inset 0 -1px 0 rgba(255,255,255,.05)',
+      position: 'relative',
     }}>
+      {/* Red spine — lives in well div so overflow:hidden on row doesn't clip it */}
+      <div style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 3,
+        background: '#FF4D4D',
+      }} />
     <div style={{
       height: 66,
       boxSizing: 'border-box',
@@ -283,15 +296,6 @@ function UrgentRow({ item }: { item: UrgentItem }) {
       overflow: 'hidden',
       flexShrink: 0,
     }}>
-      {/* Red spine — full height, bleeds to screen left edge */}
-      <div style={{
-        position: 'absolute',
-        left: -18,
-        top: 0,
-        bottom: 0,
-        width: 3,
-        background: '#FF4D4D',
-      }} />
 
       {/* Line 1: DEADLINE label centred + day count right */}
       <div style={{
@@ -373,6 +377,7 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
   const [pressed, setPressed] = React.useState(false)
   const hasUrgency = !stat.fetchFailed && stat.urgentToken !== null && stat.urgentCount > 0
   const spineColor = stat.spineOverride ?? (stat.urgentToken === 'late' ? '#FF4D4D' : '#FFA23A')
+  const cornerColor = stat.urgentToken === 'late' ? '#FF4D4D' : '#FFA23A'
   const showSpine = !!stat.spineOverride || (hasUrgency && !stat.noCorner)
   const cornerText = stat.urgentCount > 0 ? `${stat.urgentCount}` : null
 
@@ -452,7 +457,7 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
             marginTop: 3,
             fontFamily: FONT_MONO,
             lineHeight: 1,
-            color: spineColor,
+            color: cornerColor,
           }}>{cornerText}</span>
         )}
         {stat.fetchFailed && (
@@ -567,40 +572,6 @@ function HomeScreen({
         )}
       </div>
 
-      {/* ── Item 94 — DEALS PLATE (raster asset) ────────────────── */}
-      <div style={{ marginTop: 22 }}>
-        <button
-          onClick={() => setOpenSheet('deals')}
-          aria-label="Open deals"
-          style={{
-            all: 'unset',
-            cursor: 'pointer',
-            display: 'flex',
-            justifyContent: 'center',
-            width: '100%',
-            transform: dealPressed ? 'translateY(2px)' : 'none',
-            filter: dealPressed
-              ? 'drop-shadow(0 2px 4px rgba(0,0,0,.8))'
-              : 'drop-shadow(0 6px 10px rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(255,255,255,.10))',
-            transition: 'transform 120ms ease-out, filter 120ms ease-out',
-          } as React.CSSProperties}
-          onMouseDown={() => setDealPressed(true)}
-          onMouseUp={() => setDealPressed(false)}
-          onMouseLeave={() => setDealPressed(false)}
-          onTouchStart={() => setDealPressed(true)}
-          onTouchEnd={() => setTimeout(() => setDealPressed(false), 120)}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/assets/deals/deals-pill-v2.png"
-            width={354}
-            height={52}
-            alt="DEALS"
-            style={{ display: 'block' }}
-          />
-        </button>
-      </div>
-
       {/* ── Item 93 — DEALS BAND ────────────────────────────────── */}
 
       {/* Stat trio */}
@@ -610,17 +581,20 @@ function HomeScreen({
         alignItems: 'flex-end',
         gap: 18,
       }}>
-        {/* Left: hot count, NO label, paddingBottom:18.5 to baseline with neighbors */}
-        <span style={{
-          fontSize: 30,
-          fontWeight: 700,
-          letterSpacing: '-0.03em',
-          color: '#FFA23A',
-          fontVariantNumeric: 'tabular-nums',
-          fontFamily: FONT_DISPLAY,
-          lineHeight: 1,
-          paddingBottom: 18.5,
-        }}>{loading ? '—' : hotCount}</span>
+        {/* Left: hot count, NO label, spacer below to align baseline with middle cell's figure */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <span style={{
+            fontSize: 30,
+            fontWeight: 700,
+            letterSpacing: '-0.03em',
+            color: '#FFA23A',
+            fontVariantNumeric: 'tabular-nums',
+            fontFamily: FONT_DISPLAY,
+            lineHeight: 1,
+          }}>{loading ? '—' : hotCount}</span>
+          {/* 18.5px spacer below to push figure to the same baseline as the middle cell's figure (above its label) */}
+          <div style={{ height: 18.5 }} />
+        </div>
 
         {/* Divider */}
         <div style={{ width: 1, height: 38, background: 'rgba(255,255,255,.12)', flexShrink: 0 }} />
@@ -691,6 +665,40 @@ function HomeScreen({
 
       {/* ── Item 95 — RECEIVABLES RE-CUT ────────────────────────── */}
       <ReceivablesCard />
+
+      {/* ── Item 94 — DEALS PLATE (raster asset) — moved under receivables ── */}
+      <div style={{ marginTop: 18 }}>
+        <button
+          onClick={() => setOpenSheet('deals')}
+          aria-label="Open deals"
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            transform: dealPressed ? 'translateY(2px)' : 'none',
+            filter: dealPressed
+              ? 'drop-shadow(0 2px 4px rgba(0,0,0,.8))'
+              : 'drop-shadow(0 6px 10px rgba(0,0,0,.75)) drop-shadow(0 1px 0 rgba(255,255,255,.10))',
+            transition: 'transform 120ms ease-out, filter 120ms ease-out',
+          } as React.CSSProperties}
+          onMouseDown={() => setDealPressed(true)}
+          onMouseUp={() => setDealPressed(false)}
+          onMouseLeave={() => setDealPressed(false)}
+          onTouchStart={() => setDealPressed(true)}
+          onTouchEnd={() => setTimeout(() => setDealPressed(false), 120)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/deals/deals-pill-v2.png"
+            width={354}
+            height={52}
+            alt="DEALS"
+            style={{ display: 'block' }}
+          />
+        </button>
+      </div>
 
       {/* ── Item 97 — SCROLL TAIL (104px clearance) ─────────────── */}
       <div style={{ height: 104, flexShrink: 0 }} />
@@ -889,33 +897,33 @@ export default function WarRoom3Page() {
         {/* 4px spacer between safe-area and identity row */}
         <div style={{ height: 4 }} />
 
-        {/* Identity row — 72px, flex, 18px padding, 13px gap */}
+        {/* Identity row — 80px, flex, 18px padding, 13px gap */}
         <div style={{
-          height: 72,
+          height: 80,
           display: 'flex',
           alignItems: 'center',
           padding: '0 18px',
           boxSizing: 'border-box',
           gap: 13,
         }}>
-          {/* Star mark — 64×64 */}
+          {/* Star mark — 80×80 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/mark-star-256.png"
-            width={64}
-            height={64}
+            width={80}
+            height={80}
             alt=""
             style={{ display: 'block', flexShrink: 0 }}
           />
 
-          {/* Wordmark — 204×53.7, optical offset top:-1 */}
+          {/* Wordmark — 240×63, optical offset top:-1 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/wordmark/shirleycre-glow-1269.png"
             alt="SHIRLEYCRE"
             style={{
-              width: 204,
-              height: 53.7,
+              width: 240,
+              height: 63,
               position: 'relative',
               top: -1,
               flexShrink: 0,
@@ -941,7 +949,7 @@ export default function WarRoom3Page() {
       {/* Scroll body — offset by identity block height */}
       <div style={{
         flex: 1,
-        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 4px + 72px)',
+        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 4px + 80px)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
