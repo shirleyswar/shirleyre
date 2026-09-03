@@ -574,83 +574,83 @@ function HomeScreen({
 
       {/* ── Item 93 — DEALS BAND ────────────────────────────────── */}
 
-      {/* Stat trio */}
+      {/* Stat trio — 2245 spec, copied verbatim */}
       <div style={{
-        marginTop: 26,
         display: 'flex',
         alignItems: 'flex-end',
         gap: 18,
+        marginTop: 18,
       }}>
-        {/* Left: hot count + HOT label below */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
-          <span style={{
+        {/* Left: HOT count */}
+        <div>
+          <div style={{
             fontSize: 30,
             fontWeight: 700,
+            lineHeight: 1,
+            fontFamily: FONT_DISPLAY,
             letterSpacing: '-0.03em',
             color: '#FFA23A',
             fontVariantNumeric: 'tabular-nums',
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
-            lineHeight: 1,
-          }}>{loading ? '—' : hotCount}</span>
-          <span style={{
+          }}>{loading ? '—' : hotCount}</div>
+          <div style={{
             fontSize: 9.5,
             fontWeight: 500,
-            letterSpacing: '0.11em',
-            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
             lineHeight: 1,
+            fontFamily: FONT_MONO,
+            letterSpacing: '0.11em',
             color: '#FFA23A',
             marginTop: 9,
-          }}>HOT</span>
+          }}>HOT</div>
         </div>
 
         {/* Divider */}
         <div style={{ width: 1, height: 38, background: 'rgba(255,255,255,.12)', flexShrink: 0 }} />
 
-        {/* Middle: UC count + UNDER CONTRACT label below */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-          <span style={{
+        {/* Middle: UC count */}
+        <div>
+          <div style={{
             fontSize: 30,
             fontWeight: 700,
+            lineHeight: 1,
+            fontFamily: FONT_DISPLAY,
             letterSpacing: '-0.03em',
             color: '#EFEEF4',
             fontVariantNumeric: 'tabular-nums',
-            fontFamily: FONT_DISPLAY,
-            lineHeight: 1,
-          }}>{loading ? '—' : ucCount}</span>
-          <span style={{
+          }}>{loading ? '—' : ucCount}</div>
+          <div style={{
             fontSize: 9.5,
             fontWeight: 500,
-            letterSpacing: '0.11em',
-            fontFamily: FONT_MONO,
             lineHeight: 1,
+            fontFamily: FONT_MONO,
+            letterSpacing: '0.11em',
             color: T.textMid,
-            textTransform: 'uppercase' as const,
-          }}>UNDER CONTRACT</span>
+            marginTop: 9,
+          }}>UNDER CONTRACT</div>
         </div>
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Right: total + TOTAL label below */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-          <span style={{
+        {/* Right: total — right-aligned */}
+        <div style={{ textAlign: 'right' }}>
+          <div style={{
             fontSize: 30,
             fontWeight: 700,
+            lineHeight: 1,
+            fontFamily: FONT_DISPLAY,
             letterSpacing: '-0.03em',
             color: T.textMid,
             fontVariantNumeric: 'tabular-nums',
-            fontFamily: FONT_DISPLAY,
-            lineHeight: 1,
-          }}>{loading ? '—' : total}</span>
-          <span style={{
+          }}>{loading ? '—' : total}</div>
+          <div style={{
             fontSize: 9.5,
             fontWeight: 500,
-            letterSpacing: '0.11em',
-            fontFamily: FONT_MONO,
             lineHeight: 1,
+            fontFamily: FONT_MONO,
+            letterSpacing: '0.11em',
             color: T.textLow,
-            textTransform: 'uppercase' as const,
-          }}>TOTAL</span>
+            marginTop: 9,
+          }}>TOTAL</div>
         </div>
       </div>
 
@@ -671,7 +671,7 @@ function HomeScreen({
       </div>
 
       {/* ── Item 95 — RECEIVABLES RE-CUT ────────────────────────── */}
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginTop: 16 }}>
         <ReceivablesCard />
       </div>
 
@@ -903,36 +903,34 @@ export default function WarRoom3Page() {
           zIndex: 50,
         }}
       >
-        {/* 0px spacer — row sits directly against safe-area */}
-        <div style={{ height: 0 }} />
-
-        {/* Identity row — 80px, flex, 18px padding, 13px gap */}
+        {/* Identity row — 74px + marginTop:6 = 80px total, 2245 spec values */}
         <div style={{
-          height: 80,
+          height: 74,
+          marginTop: 6,
           display: 'flex',
           alignItems: 'center',
           padding: '0 18px',
           boxSizing: 'border-box',
-          gap: 13,
+          gap: 9,
         }}>
-          {/* Star mark — 80×80 */}
+          {/* Star mark — 70×70, 2245 spec */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/mark-star-256.png"
-            width={80}
-            height={80}
+            width={70}
+            height={70}
             alt=""
             style={{ display: 'block', flexShrink: 0 }}
           />
 
-          {/* Wordmark — 252×66, optical offset top:-1 */}
+          {/* Wordmark — 224×59, optical offset top:-1, 2245 spec */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/wordmark/shirleycre-glow-1269.png"
             alt="SHIRLEYCRE"
             style={{
-              width: 252,
-              height: 66,
+              width: 224,
+              height: 59,
               position: 'relative',
               top: -1,
               flexShrink: 0,
@@ -940,14 +938,14 @@ export default function WarRoom3Page() {
             }}
           />
 
-          {/* Date — marginLeft:auto (NOT a flex:1 div), #8E8CA0, marginTop:1 drops 1px */}
+          {/* Date — 14px, 0.1em, 2245 spec */}
           <span style={{
             marginLeft: 'auto',
             marginTop: 1,
             fontFamily: FONT_MONO,
-            fontSize: 11,
+            fontSize: 14,
             fontWeight: 500,
-            letterSpacing: '0.14em',
+            letterSpacing: '0.1em',
             textTransform: 'uppercase',
             color: '#8E8CA0',
             whiteSpace: 'nowrap',

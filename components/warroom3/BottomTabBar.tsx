@@ -13,7 +13,7 @@ interface Props {
   fabOpen?: boolean
 }
 
-function TabSlot({ dormant, active, isActive, onClick }: { dormant: string; active: string; isActive: boolean; onClick: () => void }) {
+function TabSlot({ dormant, active, isActive, onClick, padLeft, padRight }: { dormant: string; active: string; isActive: boolean; onClick: () => void; padLeft?: number; padRight?: number }) {
   return (
     <button
       onClick={onClick}
@@ -27,6 +27,8 @@ function TabSlot({ dormant, active, isActive, onClick }: { dormant: string; acti
         cursor: 'pointer',
         minHeight: 44,
         WebkitTapHighlightColor: 'transparent',
+        paddingLeft: padLeft ?? 0,
+        paddingRight: padRight ?? 0,
       } as React.CSSProperties}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -66,6 +68,7 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         active="/assets/tabbar/deals-active-128.png"
         isActive={active === 'deals'}
         onClick={() => onTab('deals')}
+        padRight={8}
       />
 
       {/* FAB centre slot */}
@@ -85,6 +88,7 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         active="/assets/tabbar/money-active-128.png"
         isActive={active === 'money'}
         onClick={() => onTab('money')}
+        padLeft={8}
       />
       <TabSlot
         dormant="/assets/tabbar/more-128.png"
