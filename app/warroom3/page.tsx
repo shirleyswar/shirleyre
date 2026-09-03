@@ -576,24 +576,31 @@ function HomeScreen({
 
       {/* Stat trio */}
       <div style={{
-        marginTop: 18,
+        marginTop: 26,
         display: 'flex',
         alignItems: 'flex-end',
         gap: 18,
       }}>
-        {/* Left: hot count, NO label, spacer below to align baseline with middle cell's figure */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        {/* Left: hot count + HOT label below */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
           <span style={{
             fontSize: 30,
             fontWeight: 700,
             letterSpacing: '-0.03em',
             color: '#FFA23A',
             fontVariantNumeric: 'tabular-nums',
-            fontFamily: FONT_DISPLAY,
+            fontFamily: "'Space Grotesk', system-ui, sans-serif",
             lineHeight: 1,
           }}>{loading ? '—' : hotCount}</span>
-          {/* 18.5px spacer below to push figure to the same baseline as the middle cell's figure (above its label) */}
-          <div style={{ height: 18.5 }} />
+          <span style={{
+            fontSize: 9.5,
+            fontWeight: 500,
+            letterSpacing: '0.11em',
+            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+            lineHeight: 1,
+            color: '#FFA23A',
+            marginTop: 9,
+          }}>HOT</span>
         </div>
 
         {/* Divider */}
@@ -664,7 +671,9 @@ function HomeScreen({
       </div>
 
       {/* ── Item 95 — RECEIVABLES RE-CUT ────────────────────────── */}
-      <ReceivablesCard />
+      <div style={{ marginTop: 8 }}>
+        <ReceivablesCard />
+      </div>
 
       {/* ── Item 94 — DEALS PLATE (raster asset) — moved under receivables ── */}
       <div style={{ marginTop: 18 }}>
@@ -894,8 +903,8 @@ export default function WarRoom3Page() {
           zIndex: 50,
         }}
       >
-        {/* 4px spacer between safe-area and identity row */}
-        <div style={{ height: 4 }} />
+        {/* 0px spacer — row sits directly against safe-area */}
+        <div style={{ height: 0 }} />
 
         {/* Identity row — 80px, flex, 18px padding, 13px gap */}
         <div style={{
@@ -916,14 +925,14 @@ export default function WarRoom3Page() {
             style={{ display: 'block', flexShrink: 0 }}
           />
 
-          {/* Wordmark — 240×63, optical offset top:-1 */}
+          {/* Wordmark — 252×66, optical offset top:-1 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/wordmark/shirleycre-glow-1269.png"
             alt="SHIRLEYCRE"
             style={{
-              width: 240,
-              height: 63,
+              width: 252,
+              height: 66,
               position: 'relative',
               top: -1,
               flexShrink: 0,
@@ -931,9 +940,10 @@ export default function WarRoom3Page() {
             }}
           />
 
-          {/* Date — marginLeft:auto (NOT a flex:1 div), #8E8CA0 */}
+          {/* Date — marginLeft:auto (NOT a flex:1 div), #8E8CA0, marginTop:1 drops 1px */}
           <span style={{
             marginLeft: 'auto',
+            marginTop: 1,
             fontFamily: FONT_MONO,
             fontSize: 11,
             fontWeight: 500,
@@ -949,7 +959,7 @@ export default function WarRoom3Page() {
       {/* Scroll body — offset by identity block height */}
       <div style={{
         flex: 1,
-        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 4px + 80px)',
+        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 80px)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
