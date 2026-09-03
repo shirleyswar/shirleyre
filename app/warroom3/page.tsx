@@ -532,7 +532,7 @@ function HomeScreen({
       flex: 1,
       overflowY: 'auto',
       overflowX: 'hidden',
-      padding: '0 18px 0',
+      padding: '24px 18px 0',
       background: T.bgBase,
     }}>
 
@@ -546,7 +546,7 @@ function HomeScreen({
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: 11,
-        marginTop: 22,
+        marginTop: 46,
       }}>
         {loading ? (
           [0,1,2,3].map(i => (
@@ -579,7 +579,7 @@ function HomeScreen({
         display: 'flex',
         alignItems: 'flex-end',
         gap: 18,
-        marginTop: 18,
+        marginTop: 42,
       }}>
         {/* Left: HOT count */}
         <div>
@@ -671,12 +671,12 @@ function HomeScreen({
       </div>
 
       {/* ── Item 95 — RECEIVABLES RE-CUT ────────────────────────── */}
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: 40 }}>
         <ReceivablesCard />
       </div>
 
       {/* ── Item 94 — DEALS PLATE (raster asset) — moved under receivables ── */}
-      <div style={{ marginTop: 18 }}>
+      <div style={{ marginTop: 42 }}>
         <button
           onClick={() => setOpenSheet('deals')}
           aria-label="Open deals"
@@ -709,8 +709,8 @@ function HomeScreen({
         </button>
       </div>
 
-      {/* ── Item 97 — SCROLL TAIL (104px clearance) ─────────────── */}
-      <div style={{ height: 104, flexShrink: 0 }} />
+      {/* ── Item 97 / 129 — SCROLL TAIL ─────────────────────────── */}
+      <div style={{ height: 14, flexShrink: 0 }} />
 
       {/* ── Sheets ───────────────────────────────────────────────── */}
       <BattlePlanSheet
@@ -903,10 +903,10 @@ export default function WarRoom3Page() {
           zIndex: 50,
         }}
       >
-        {/* Identity row — 74px + marginTop:6 = 80px total, 2245 spec values */}
+        {/* Identity row — 74px, flush to safe-area — Item 130A */}
         <div style={{
           height: 74,
-          marginTop: 6,
+          marginTop: 0,
           display: 'flex',
           alignItems: 'center',
           padding: '0 18px',
@@ -957,7 +957,7 @@ export default function WarRoom3Page() {
       {/* Scroll body — offset by identity block height */}
       <div style={{
         flex: 1,
-        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 80px)',
+        paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 44px) + 74px)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',

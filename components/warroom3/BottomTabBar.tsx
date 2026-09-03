@@ -32,7 +32,7 @@ function TabSlot({ dormant, active, isActive, onClick, padLeft, padRight }: { do
       } as React.CSSProperties}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={isActive ? active : dormant} width={27} height={27} alt="" style={{ display: 'block' }} />
+      <img src={isActive ? active : dormant} width={34} height={34} alt="" style={{ display: 'block' }} />
     </button>
   )
 }
@@ -62,6 +62,7 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         active="/assets/tabbar/home-active-128.png"
         isActive={active === 'home'}
         onClick={() => onTab('home')}
+        padLeft={16}
       />
       <TabSlot
         dormant="/assets/tabbar/deals-128.png"
@@ -95,6 +96,7 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         active="/assets/tabbar/more-active-128.png"
         isActive={active === 'more'}
         onClick={() => onTab('more')}
+        padRight={16}
       />
     </nav>
   )
