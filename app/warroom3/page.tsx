@@ -532,7 +532,7 @@ function HomeScreen({
       flex: 1,
       overflowY: 'auto',
       overflowX: 'hidden',
-      padding: '24px 18px 0',
+      padding: '21px 18px 0',
       background: T.bgBase,
     }}>
 
@@ -546,7 +546,7 @@ function HomeScreen({
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: 11,
-        marginTop: 46,
+        marginTop: 43,
       }}>
         {loading ? (
           [0,1,2,3].map(i => (
@@ -579,7 +579,7 @@ function HomeScreen({
         display: 'flex',
         alignItems: 'flex-end',
         gap: 18,
-        marginTop: 42,
+        marginTop: 39,
       }}>
         {/* Left: HOT count */}
         <div>
@@ -671,12 +671,12 @@ function HomeScreen({
       </div>
 
       {/* ── Item 95 — RECEIVABLES RE-CUT ────────────────────────── */}
-      <div style={{ marginTop: 40 }}>
+      <div style={{ marginTop: 37 }}>
         <ReceivablesCard />
       </div>
 
       {/* ── Item 94 — DEALS PLATE (raster asset) — moved under receivables ── */}
-      <div style={{ marginTop: 42 }}>
+      <div style={{ marginTop: 39 }}>
         <button
           onClick={() => setOpenSheet('deals')}
           aria-label="Open deals"
@@ -710,7 +710,7 @@ function HomeScreen({
       </div>
 
       {/* ── Item 97 / 129 — SCROLL TAIL ─────────────────────────── */}
-      <div style={{ height: 14, flexShrink: 0 }} />
+      <div style={{ height: 104, flexShrink: 0 }} />
 
       {/* ── Sheets ───────────────────────────────────────────────── */}
       <BattlePlanSheet
