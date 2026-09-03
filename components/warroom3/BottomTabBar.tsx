@@ -6,10 +6,6 @@ import { NAV_HEIGHT } from '@/lib/layout'
 
 export type TabId = 'home' | 'deals' | 'money' | 'more'
 
-const DORMANT = '#8E8CA0'
-const ACTIVE  = '#DCD5FF'
-const GLOW    = 'drop-shadow(0 0 6px rgba(167,139,250,.9))'
-
 interface Props {
   active: TabId
   onTab: (id: TabId) => void
@@ -17,7 +13,7 @@ interface Props {
   fabOpen?: boolean
 }
 
-function SvgSlot({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function TabSlot({ dormant, active, isActive, onClick }: { dormant: string; active: string; isActive: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -31,54 +27,11 @@ function SvgSlot({ active, onClick, children }: { active: boolean; onClick: () =
         cursor: 'pointer',
         minHeight: 44,
         WebkitTapHighlightColor: 'transparent',
-        color: active ? ACTIVE : DORMANT,
-        filter: active ? GLOW : 'none',
       } as React.CSSProperties}
     >
-      {children}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={isActive ? active : dormant} width={27} height={27} alt="" style={{ display: 'block' }} />
     </button>
-  )
-}
-
-// HOME — roof wedge over a bar
-function HomeGlyph() {
-  return (
-    <svg width="27" height="27" viewBox="0 0 32 32" fill="none">
-      <polygon points="16,6 28,20 4,20" fill="currentColor"/>
-      <rect x="4" y="22" width="24" height="3" rx="1.5" fill="currentColor"/>
-    </svg>
-  )
-}
-
-// DEALS — three stacked plates
-function DealsGlyph() {
-  return (
-    <svg width="27" height="27" viewBox="0 0 32 32" fill="none">
-      <rect x="4" y="7" width="24" height="4" rx="2" fill="currentColor"/>
-      <rect x="4" y="14" width="24" height="4" rx="2" fill="currentColor"/>
-      <rect x="4" y="21" width="24" height="4" rx="2" fill="currentColor"/>
-    </svg>
-  )
-}
-
-// MONEY — arrow over floor (provisional)
-function MoneyGlyph() {
-  return (
-    <svg width="27" height="27" viewBox="0 0 32 32" fill="none">
-      <polygon points="16,6 26,18 6,18" fill="currentColor"/>
-      <rect x="4" y="22" width="24" height="3" rx="1.5" fill="currentColor"/>
-    </svg>
-  )
-}
-
-// MORE — three horizontal facets
-function MoreGlyph() {
-  return (
-    <svg width="27" height="27" viewBox="0 0 32 32" fill="none">
-      <rect x="5" y="9"  width="22" height="3" rx="1.5" fill="currentColor"/>
-      <rect x="5" y="15" width="22" height="3" rx="1.5" fill="currentColor"/>
-      <rect x="5" y="21" width="22" height="3" rx="1.5" fill="currentColor"/>
-    </svg>
   )
 }
 
@@ -102,13 +55,18 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         zIndex: 1000,
       } as React.CSSProperties}
     >
-      <SvgSlot active={active === 'home'} onClick={() => onTab('home')}>
-        <HomeGlyph />
-      </SvgSlot>
-
-      <SvgSlot active={active === 'deals'} onClick={() => onTab('deals')}>
-        <DealsGlyph />
-      </SvgSlot>
+      <TabSlot
+        dormant="/assets/tabbar/home-128.png"
+        active="/assets/tabbar/home-active-128.png"
+        isActive={active === 'home'}
+        onClick={() => onTab('home')}
+      />
+      <TabSlot
+        dormant="/assets/tabbar/deals-128.png"
+        active="/assets/tabbar/deals-active-128.png"
+        isActive={active === 'deals'}
+        onClick={() => onTab('deals')}
+      />
 
       {/* FAB centre slot */}
       <div style={{
@@ -122,13 +80,18 @@ export default function BottomTabBar({ active, onTab, onFab, fabOpen = false }: 
         <Fab open={fabOpen} onClick={onFab} />
       </div>
 
-      <SvgSlot active={active === 'money'} onClick={() => onTab('money')}>
-        <MoneyGlyph />
-      </SvgSlot>
-
-      <SvgSlot active={active === 'more'} onClick={() => onTab('more')}>
-        <MoreGlyph />
-      </SvgSlot>
+      <TabSlot
+        dormant="/assets/tabbar/money-128.png"
+        active="/assets/tabbar/money-active-128.png"
+        isActive={active === 'money'}
+        onClick={() => onTab('money')}
+      />
+      <TabSlot
+        dormant="/assets/tabbar/more-128.png"
+        active="/assets/tabbar/more-active-128.png"
+        isActive={active === 'more'}
+        onClick={() => onTab('more')}
+      />
     </nav>
   )
 }

@@ -119,8 +119,9 @@ async function loadHomeData(): Promise<{
       .order('deadline_date', { ascending: true })
       .limit(100),
     supabase
-      .from('money_movers')
+      .from('deals')
       .select('id, status')
+      .eq('status', 'hot')
       .limit(200),
     supabase
       .from('deals')
@@ -199,8 +200,8 @@ async function loadHomeData(): Promise<{
   const bpOverdue = allTasks.filter(t => t.due_date && t.due_date < today).length
   const bpHot = allTasks.filter(t => t.due_date && t.due_date >= today && daysUntilDate(t.due_date) <= 7).length
 
-  const mmTotal = mmDeals.length
-  const mmHot = mmDeals.filter((d: any) => d.status === 'hot').length
+  const mmTotal = mmDeals.length  // hot deals count
+  const mmHot = 0                 // no corner on MM tile
 
   const dlTotal = dlPastDue.length + dlForward.length
   const dlOverdue = dlPastDue.length
@@ -224,8 +225,9 @@ async function loadHomeData(): Promise<{
       urgentCount: mmHot,
       urgentToken: mmHot > 0 ? 'hot' : null,
       panelKey: 'moneymovers',
-      fetchFailed: mmFailed,
       noCorner: true,
+      spineOverride: '#FFA23A',  // amber spine always
+      fetchFailed: false,        // never show ERR on MM tile
     },
     {
       label: 'DEADLINES',
@@ -372,9 +374,7 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
   const hasUrgency = !stat.fetchFailed && stat.urgentToken !== null && stat.urgentCount > 0
   const spineColor = stat.spineOverride ?? (stat.urgentToken === 'late' ? '#FF4D4D' : '#FFA23A')
   const showSpine = !!stat.spineOverride || (hasUrgency && !stat.noCorner)
-  const cornerText = stat.urgentCount > 0
-    ? `${stat.urgentCount} ${stat.urgentLabel ?? (stat.urgentToken === 'late' ? 'LATE' : 'HOT')}`
-    : null
+  const cornerText = stat.urgentCount > 0 ? `${stat.urgentCount}` : null
 
   return (
     <button
