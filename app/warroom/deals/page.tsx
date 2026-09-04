@@ -995,6 +995,28 @@ function DealsPage() {
               </div>
             ) : (
               <>
+                {/* ── Item 139 — NEW DEAL PAGE sample link ── */}
+                <div style={{
+                  display:'flex', alignItems:'center', justifyContent:'space-between',
+                  padding:'0 24px', height:44, borderBottom:`1px solid ${C.borderHair}`,
+                  background:'rgba(139,92,246,0.06)', flexShrink:0,
+                }}>
+                  <span style={{ fontFamily:FONT_MONO, fontSize:11, fontWeight:500, letterSpacing:'0.18em', color:C.textLow }}>
+                    NEW DEAL PAGE
+                  </span>
+                  <a
+                    href="/warroom/deal2?id=d30740cf-40bf-4dbd-bd88-93ccb170f073"
+                    style={{
+                      fontFamily:FONT_MONO, fontSize:11, fontWeight:700, letterSpacing:'0.14em',
+                      color:C.brandLift, textDecoration:'none',
+                      padding:'5px 12px', border:`1px solid rgba(139,92,246,0.40)`,
+                      borderRadius:5, background:'rgba(139,92,246,0.10)',
+                    }}
+                  >
+                    OPEN SAMPLE →
+                  </a>
+                </div>
+
                 {/* PORTFOLIOS group — always present */}
                 <GroupHeader label="PORTFOLIOS" count={sortedPortfolios.length} />
                 {sortedPortfolios.length === 0
