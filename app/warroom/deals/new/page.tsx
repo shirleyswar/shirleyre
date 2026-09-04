@@ -34,6 +34,7 @@ const C = {
   brandLift:   '#A78BFA',
   brandStrong: '#7C3AED',
   moneyIn:     '#34D399',
+  hot:         '#FFA23A',
   border:      'rgba(255,255,255,0.14)',
   borderPanel: 'rgba(255,255,255,0.11)',
   borderHair:  'rgba(255,255,255,0.10)',
@@ -288,12 +289,14 @@ function PageHeader({
 // ── Field primitives ──────────────────────────────────────────────────────────
 const FIELD_STYLE: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
+  minWidth: 0, maxWidth: '100%',
   height: 52,
   background: 'rgba(255,255,255,0.05)',
   border: `1px solid rgba(255,255,255,0.14)`,
   borderRadius: 10, padding: '0 16px',
   fontFamily: FONT_MONO, fontSize: 17, fontWeight: 500,
   color: C.textHi, outline: 'none',
+  overflow: 'hidden', textOverflow: 'ellipsis',
 }
 
 const PLACEHOLDER_STYLE = `
@@ -350,6 +353,7 @@ interface AddrState {
   raw: string; confirmed: boolean
   addrDisplay: string; addrStreetName: string
   addrDirection: string; addrNumber: string; addrCity: string
+  addrState?: string; addrZip?: string
 }
 
 function parseAddr(raw: string) {
@@ -365,18 +369,118 @@ function parseAddr(raw: string) {
   return { addrNumber, addrDirection, addrStreetName: street.join(' '), addrCity: 'Baton Rouge', addrDisplay: raw.trim() }
 }
 
+// ── Google Maps Places script loader ─────────────────────────────────────────
+let _mapsLoaded = false
+let _mapsLoading = false
+let _mapsCallbacks: Array<() => void> = []
+
+function loadGoogleMaps(apiKey: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (_mapsLoaded) { resolve(); return }
+    _mapsCallbacks.push(resolve)
+    if (_mapsLoading) return
+    _mapsLoading = true
+    const callbackName = '__gmaps_cb_' + Date.now()
+    ;(window as any)[callbackName] = () => {
+      _mapsLoaded = true
+      _mapsLoading = false
+      _mapsCallbacks.forEach(fn => fn())
+      _mapsCallbacks = []
+      delete (window as any)[callbackName]
+    }
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${callbackName}`
+    script.async = true
+    script.onerror = () => {
+      _mapsLoading = false
+      _mapsCallbacks.forEach(fn => fn())
+      _mapsCallbacks = []
+    }
+    document.head.appendChild(script)
+  })
+}
+
+function getACComponent(place: google.maps.places.PlaceResult, type: string): string {
+  const comp = place.address_components?.find(c => c.types.includes(type))
+  return comp?.long_name ?? ''
+}
+function getACComponentShort(place: google.maps.places.PlaceResult, type: string): string {
+  const comp = place.address_components?.find(c => c.types.includes(type))
+  return comp?.short_name ?? ''
+}
+
 function AddressBlock({ addr, onChange, optional }: {
   addr: AddrState; onChange: (a: AddrState) => void; optional?: boolean
 }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const acRef = useRef<google.maps.places.Autocomplete | null>(null)
+  const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? ''
+
+  // Load Google Maps and attach autocomplete
+  useEffect(() => {
+    if (!mapsKey || addr.confirmed) return
+    loadGoogleMaps(mapsKey).then(() => {
+      if (!inputRef.current || acRef.current) return
+      if (typeof google === 'undefined' || !google?.maps?.places) return
+      const ac = new google.maps.places.Autocomplete(inputRef.current, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+        fields: ['address_components', 'formatted_address'],
+      })
+      acRef.current = ac
+      ac.addListener('place_changed', () => {
+        const place = ac.getPlace()
+        if (!place?.address_components) return
+        const streetNum = getACComponent(place, 'street_number')
+        const route = getACComponent(place, 'route')
+        const city = getACComponent(place, 'locality') || 'Baton Rouge'
+        const state = getACComponentShort(place, 'administrative_area_level_1')
+        const zip = getACComponent(place, 'postal_code')
+        // Extract cardinal direction from route
+        const routeTokens = route.split(/\s+/)
+        let addrDirection = ''
+        const streetParts: string[] = []
+        for (const tok of routeTokens) {
+          const up = tok.toUpperCase()
+          if (!addrDirection && DIRECTIONS.includes(up)) { addrDirection = up }
+          else { streetParts.push(tok) }
+        }
+        onChange({
+          raw: place.formatted_address ?? route,
+          confirmed: true,
+          addrDisplay: place.formatted_address ?? '',
+          addrStreetName: streetParts.join(' ') || route,
+          addrDirection,
+          addrNumber: streetNum,
+          addrCity: city,
+          addrState: state,
+          addrZip: zip,
+        })
+      })
+    })
+    return () => {
+      if (acRef.current) {
+        google?.maps?.event?.clearInstanceListeners(acRef.current)
+        acRef.current = null
+      }
+    }
+  }, [mapsKey, addr.confirmed]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const confirm = () => {
     if (!addr.raw.trim()) return
     const parsed = parseAddr(addr.raw)
     onChange({ ...addr, confirmed: true, ...parsed })
   }
-  const reopen = () => onChange({ ...addr, confirmed: false })
+  const reopen = () => {
+    onChange({ ...addr, confirmed: false })
+    // Detach autocomplete so it re-attaches on next render
+    if (acRef.current) {
+      google?.maps?.event?.clearInstanceListeners(acRef.current)
+      acRef.current = null
+    }
+  }
 
   if (addr.confirmed) {
-    // Show "Reitz Ave. 5525" style — street then number
     const shortForm = [addr.addrStreetName, addr.addrNumber].filter(Boolean).join(' ')
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -386,11 +490,12 @@ function AddressBlock({ addr, onChange, optional }: {
           border: `1px solid rgba(52,211,153,0.35)`,
           borderRadius: 10, padding: '12px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          overflow: 'hidden',
         }}>
-          <span style={{ fontFamily: FONT_MONO, fontSize: 15, fontWeight: 600, color: C.textHi }}>
+          <span style={{ fontFamily: FONT_MONO, fontSize: 15, fontWeight: 600, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '0 1 auto' }}>
             {shortForm || addr.addrDisplay}
           </span>
-          <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>STREET</span>
               <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrStreetName || '—'}</span>
@@ -410,7 +515,7 @@ function AddressBlock({ addr, onChange, optional }: {
           </div>
           <button onClick={reopen} style={{
             background: 'none', border: `1px solid ${C.border}`, borderRadius: 6,
-            padding: '4px 12px', cursor: 'pointer',
+            padding: '4px 12px', cursor: 'pointer', flexShrink: 0,
             fontFamily: FONT_MONO, fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', color: C.textLow,
           }}>CHANGE</button>
         </div>
@@ -423,6 +528,7 @@ function AddressBlock({ addr, onChange, optional }: {
       <FieldLabel text={optional ? 'ADDRESS (OPTIONAL)' : 'ADDRESS'} />
       <div style={{ display: 'flex', gap: 8 }}>
         <input
+          ref={inputRef}
           type="text" value={addr.raw}
           onChange={e => onChange({ ...addr, raw: e.target.value })}
           onKeyDown={e => { if (e.key === 'Enter') confirm() }}
@@ -435,6 +541,7 @@ function AddressBlock({ addr, onChange, optional }: {
           border: 'none', cursor: addr.raw.trim() ? 'pointer' : 'default',
           fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700,
           letterSpacing: '0.14em', color: addr.raw.trim() ? '#fff' : C.textLow,
+          flexShrink: 0,
         }}>CONFIRM</button>
       </div>
     </div>
@@ -486,7 +593,7 @@ function SaleLeaseMarks({ saleOn, leaseOn, onSale, onLease }: {
           opacity: saleOn ? 1 : 0.30, transition: 'opacity 0.12s',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/plates/plate-sale-h180.png" alt="SALE"
+          <img src="/assets/plates/plate-sale-v7.png" alt="SALE"
             style={{ height: 32, width: 'auto', display: 'block' }} draggable={false} />
         </button>
         <button onClick={onLease} style={{
@@ -494,7 +601,7 @@ function SaleLeaseMarks({ saleOn, leaseOn, onSale, onLease }: {
           opacity: leaseOn ? 1 : 0.30, transition: 'opacity 0.12s',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/plates/plate-lease-h180.png" alt="LEASE"
+          <img src="/assets/plates/plate-lease-v7.png" alt="LEASE"
             style={{ height: 32, width: 'auto', display: 'block' }} draggable={false} />
         </button>
         {!saleOn && !leaseOn && (
@@ -508,14 +615,40 @@ function SaleLeaseMarks({ saleOn, leaseOn, onSale, onLease }: {
 }
 
 // ── Contact picker (custom field) ─────────────────────────────────────────────
-function ContactPicker({ contacts, value, onChange }: {
-  contacts: ContactRow[]; value: string; onChange: (id: string) => void
-}) {
+type ClientMode = 'search' | 'selected' | 'new'
+
+interface ContactPickerProps {
+  contacts: ContactRow[]
+  value: string
+  onChange: (id: string) => void
+  // new-client fields
+  clientMode: ClientMode
+  onClientModeChange: (m: ClientMode) => void
+  newClientName: string
+  onNewClientNameChange: (v: string) => void
+  newClientEmail: string
+  onNewClientEmailChange: (v: string) => void
+  newClientPhone: string
+  onNewClientPhoneChange: (v: string) => void
+}
+
+function ContactPicker({
+  contacts, value, onChange,
+  clientMode, onClientModeChange,
+  newClientName, onNewClientNameChange,
+  newClientEmail, onNewClientEmailChange,
+  newClientPhone, onNewClientPhoneChange,
+}: ContactPickerProps) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const selected = contacts.find(c => c.id === value)
+
+  // Sync clientMode → search when a contact is selected
+  useEffect(() => {
+    if (value && clientMode !== 'selected') onClientModeChange('selected')
+  }, [value]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = contacts.filter(c =>
     !query || c.name.toLowerCase().includes(query.toLowerCase()) || (c.company ?? '').toLowerCase().includes(query.toLowerCase())
@@ -534,11 +667,89 @@ function ContactPicker({ contacts, value, onChange }: {
     setTimeout(() => setLoading(false), 100)
   }
 
+  const clearSelection = () => {
+    onChange('')
+    setQuery('')
+    onClientModeChange('search')
+  }
+
+  // ── SELECTED mode ──────────────────────────────────────────────────────────
+  if (clientMode === 'selected' && selected) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <FieldLabel text="CLIENT" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            flex: 1, height: 52, background: 'rgba(52,211,153,0.06)',
+            border: `1px solid rgba(52,211,153,0.35)`, borderRadius: 10,
+            padding: '0 16px', display: 'flex', alignItems: 'center', gap: 10, minWidth: 0,
+          }}>
+            <span style={{ fontFamily: FONT_DISP, fontSize: 16, fontWeight: 500, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+              {selected.name}
+            </span>
+            {selected.company && <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textLow, flexShrink: 0 }}>{selected.company}</span>}
+          </div>
+          <button onClick={clearSelection} style={{
+            height: 52, padding: '0 16px', borderRadius: 10, flexShrink: 0,
+            background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.borderHair}`,
+            fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600, letterSpacing: '0.12em',
+            color: C.textMid, cursor: 'pointer',
+          }}>✕ CLEAR</button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── NEW CLIENT mode ────────────────────────────────────────────────────────
+  if (clientMode === 'new') {
+    const newClientReady = newClientEmail.trim().length > 0 || newClientPhone.trim().length > 0
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <FieldLabel text="CLIENT — NEW CONTACT" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10,
+          background: 'rgba(139,92,246,0.06)', border: `1px solid rgba(139,92,246,0.25)`,
+          borderRadius: 10, padding: '16px',
+        }}>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>NAME</span>
+              <input type="text" value={newClientName} onChange={e => onNewClientNameChange(e.target.value)}
+                placeholder="Full name" style={{ ...FIELD_STYLE }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>EMAIL</span>
+              <input type="email" value={newClientEmail} onChange={e => onNewClientEmailChange(e.target.value)}
+                placeholder="Email address" style={{ ...FIELD_STYLE }} />
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>CELL</span>
+              <input type="tel" value={newClientPhone} onChange={e => onNewClientPhoneChange(e.target.value)}
+                placeholder="Cell number" style={{ ...FIELD_STYLE }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: newClientReady ? C.moneyIn : C.hot }}>
+              {newClientReady ? '✓ Ready to save' : 'Need email or cell to save a new client'}
+            </span>
+            <button onClick={() => { onClientModeChange('search'); onNewClientNameChange(''); onNewClientEmailChange(''); onNewClientPhoneChange('') }} style={{
+              background: 'none', border: `1px solid ${C.borderHair}`, borderRadius: 6,
+              padding: '4px 12px', cursor: 'pointer',
+              fontFamily: FONT_MONO, fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: C.textLow,
+            }}>CANCEL</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── SEARCH mode ────────────────────────────────────────────────────────────
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <FieldLabel text="CLIENT" />
       <div style={{ display: 'flex', gap: 10 }}>
-        <div ref={ref} style={{ flex: 1, position: 'relative' }}>
+        <div ref={ref} style={{ flex: 1, position: 'relative', minWidth: 0 }}>
           <div style={{ position: 'relative' }}>
             <span style={{
               position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
@@ -546,7 +757,7 @@ function ContactPicker({ contacts, value, onChange }: {
             }}>⌕</span>
             <input
               type="text"
-              value={selected ? selected.name : query}
+              value={query}
               onChange={e => { setQuery(e.target.value); if (value) onChange('') }}
               onFocus={handleFocus}
               placeholder="Find a contact…"
@@ -563,7 +774,7 @@ function ContactPicker({ contacts, value, onChange }: {
               ) : filtered.length === 0 ? (
                 <div style={{ padding: '12px 16px', fontFamily: FONT_MONO, fontSize: 11, color: C.textLow }}>No contacts found.</div>
               ) : filtered.map(c => (
-                <button key={c.id} onClick={() => { onChange(c.id); setQuery(''); setOpen(false) }} style={{
+                <button key={c.id} onClick={() => { onChange(c.id); setQuery(''); setOpen(false); onClientModeChange('selected') }} style={{
                   display: 'block', width: '100%', textAlign: 'left',
                   padding: '11px 16px', border: 'none', cursor: 'pointer',
                   background: c.id === value ? 'rgba(139,92,246,0.16)' : 'transparent',
@@ -577,16 +788,13 @@ function ContactPicker({ contacts, value, onChange }: {
           )}
         </div>
         {/* NEW CLIENT button */}
-        <button style={{
+        <button onClick={() => { onClientModeChange('new'); setOpen(false); onNewClientNameChange(query) }} style={{
           height: 52, padding: '0 18px', borderRadius: 10, flexShrink: 0,
           background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.borderHair}`,
           fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600, letterSpacing: '0.12em',
           color: C.textMid, cursor: 'pointer',
         }}>+ NEW CLIENT</button>
       </div>
-      {selected && (
-        <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textLow }}>{selected.company || ''}</span>
-      )}
     </div>
   )
 }
@@ -679,7 +887,7 @@ function EconomicsSale({ econ, onChange }: { econ: SaleEcon; onChange: (e: SaleE
   const fmtPsf = (n: number | null) => n == null ? '' : '$' + n.toFixed(2) + '/SF'
 
   const cell = (label: string, field: keyof SaleEcon, placeholder?: string) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0, overflow: 'hidden' }}>
       <FieldLabel text={label} />
       <input type="text" value={econ[field]}
         onChange={e => onChange({ ...econ, [field]: e.target.value })}
@@ -725,7 +933,7 @@ function EconomicsLease({ econ, onChange }: { econ: LeaseEcon; onChange: (e: Lea
   const fmtPsf = (n: number | null) => n == null ? '' : '$' + n.toFixed(2) + '/SF'
 
   const cell = (label: string, field: keyof LeaseEcon, placeholder?: string, type = 'text') => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0, overflow: 'hidden' }}>
       <FieldLabel text={label} />
       <input type={type} value={econ[field]}
         onChange={e => onChange({ ...econ, [field]: e.target.value })}
@@ -784,15 +992,15 @@ function CommissionBlock({ comm, onChange, saleOn, leaseOn, askingPrice, monthly
         COMMISSION
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 14 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0, overflow: 'hidden' }}>
           <FieldLabel text="LISTING RATE (%)" />
           <input type="text" value={comm.listingRate} onChange={e => onChange({ ...comm, listingRate: e.target.value })} style={FIELD_STYLE} />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0, overflow: 'hidden' }}>
           <FieldLabel text="CO-BROKER SPLIT (%)" />
           <input type="text" value={comm.coBrokerSplit} onChange={e => onChange({ ...comm, coBrokerSplit: e.target.value })} style={FIELD_STYLE} />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0, overflow: 'hidden' }}>
           <FieldLabel text="HOUSE SPLIT" />
           <div style={{
             height: 52, background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.borderHair}`,
@@ -974,6 +1182,10 @@ function NewDealForm() {
   const [saleOn, setSaleOn] = useState(false)
   const [leaseOn, setLeaseOn] = useState(false)
   const [clientId, setClientId] = useState('')
+  const [clientMode, setClientMode] = useState<ClientMode>('search')
+  const [newClientName, setNewClientName] = useState('')
+  const [newClientEmail, setNewClientEmail] = useState('')
+  const [newClientPhone, setNewClientPhone] = useState('')
   const [contacts, setContacts] = useState<ContactRow[]>([])
   const [why, setWhy] = useState<WhyReason>('')
   const [when, setWhen] = useState('')
@@ -999,15 +1211,18 @@ function NewDealForm() {
   }, [])
 
   // ── Requirements ──────────────────────────────────────────────────────────
+  const newClientReady2 = newClientEmail.trim().length > 0 || newClientPhone.trim().length > 0
+  const clientMet2 = clientMode === 'new' ? newClientReady2 : !!clientId
+  const clientValue2 = clientMode === 'new' ? newClientName || undefined : contacts.find(c => c.id === clientId)?.name
+
   const reqs: Req[] = (() => {
-    const clientName = contacts.find(c => c.id === clientId)?.name ?? ''
     switch (engagement) {
       case 'LISTING': return [
         { label: 'Engagement', met: true, value: 'LISTING' },
         { label: 'Address', met: addr.confirmed, value: addr.addrStreetName || undefined },
         { label: 'Property type', met: !!propType, value: propType || undefined },
         { label: 'Sale or lease', met: saleOn || leaseOn, value: saleOn && leaseOn ? 'BOTH' : saleOn ? 'SALE' : leaseOn ? 'LEASE' : undefined },
-        { label: 'Client', met: !!clientId, value: clientName || undefined },
+        { label: 'Client', met: clientMet2, value: clientValue2 },
       ]
       case 'TARGET': return [
         { label: 'Engagement', met: true, value: 'TARGET' },
@@ -1018,12 +1233,12 @@ function NewDealForm() {
       case 'TENANT': return [
         { label: 'Engagement', met: true, value: 'TENANT' },
         { label: 'Title', met: title.trim().length > 0, value: title || undefined },
-        { label: 'Client', met: !!clientId, value: clientName || undefined },
+        { label: 'Client', met: clientMet2, value: clientValue2 },
       ]
       case 'BUYER': return [
         { label: 'Engagement', met: true, value: 'BUYER' },
         { label: 'Title', met: title.trim().length > 0, value: title || undefined },
-        { label: 'Client', met: !!clientId, value: clientName || undefined },
+        { label: 'Client', met: clientMet2, value: clientValue2 },
       ]
     }
   })()
@@ -1227,7 +1442,13 @@ function NewDealForm() {
                 <>
                   <GroupDivider />
                   <div style={{ padding: '22px 26px' }}>
-                    <ContactPicker contacts={contacts} value={clientId} onChange={setClientId} />
+                    <ContactPicker
+                      contacts={contacts} value={clientId} onChange={setClientId}
+                      clientMode={clientMode} onClientModeChange={setClientMode}
+                      newClientName={newClientName} onNewClientNameChange={setNewClientName}
+                      newClientEmail={newClientEmail} onNewClientEmailChange={setNewClientEmail}
+                      newClientPhone={newClientPhone} onNewClientPhoneChange={setNewClientPhone}
+                    />
                   </div>
                 </>
               )}
@@ -1404,6 +1625,7 @@ function NewDealPageInner() {
     <div style={{
       display: 'flex', height: '100dvh', background: C.bgBase,
       fontFamily: FONT_DISP, color: C.textHi, overflow: 'hidden',
+      maxWidth: '100vw',
     }}>
       <LeftRail active="DEALS" />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
@@ -1452,6 +1674,10 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
   const [saleOn, setSaleOn] = useState(false)
   const [leaseOn, setLeaseOn] = useState(false)
   const [clientId, setClientId] = useState('')
+  const [clientMode, setClientMode] = useState<ClientMode>('search')
+  const [newClientName, setNewClientName] = useState('')
+  const [newClientEmail, setNewClientEmail] = useState('')
+  const [newClientPhone, setNewClientPhone] = useState('')
   const [contacts, setContacts] = useState<ContactRow[]>([])
   const [why, setWhy] = useState<WhyReason>('')
   const [when, setWhen] = useState('')
@@ -1477,15 +1703,18 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
   }, [])
 
   // ── Requirements ──────────────────────────────────────────────────────────
+  const newClientReady = newClientEmail.trim().length > 0 || newClientPhone.trim().length > 0
+  const clientMet = clientMode === 'new' ? newClientReady : !!clientId
+  const clientValue = clientMode === 'new' ? newClientName || undefined : contacts.find(c => c.id === clientId)?.name
+
   const reqs: Req[] = (() => {
-    const clientName = contacts.find(c => c.id === clientId)?.name ?? ''
     switch (engagement) {
       case 'LISTING': return [
         { label: 'Engagement', met: true, value: 'LISTING' },
         { label: 'Address', met: addr.confirmed, value: addr.addrStreetName || undefined },
         { label: 'Property type', met: !!propType, value: propType || undefined },
         { label: 'Sale or lease', met: saleOn || leaseOn, value: saleOn && leaseOn ? 'BOTH' : saleOn ? 'SALE' : leaseOn ? 'LEASE' : undefined },
-        { label: 'Client', met: !!clientId, value: clientName || undefined },
+        { label: 'Client', met: clientMet, value: clientValue },
       ]
       case 'TARGET': return [
         { label: 'Engagement', met: true, value: 'TARGET' },
@@ -1496,12 +1725,12 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       case 'TENANT': return [
         { label: 'Engagement', met: true, value: 'TENANT' },
         { label: 'Title', met: title.trim().length > 0, value: title || undefined },
-        { label: 'Client', met: !!clientId, value: clientName || undefined },
+        { label: 'Client', met: clientMet, value: clientValue },
       ]
       case 'BUYER': return [
         { label: 'Engagement', met: true, value: 'BUYER' },
         { label: 'Title', met: title.trim().length > 0, value: title || undefined },
-        { label: 'Client', met: !!clientId, value: clientName || undefined },
+        { label: 'Client', met: clientMet, value: clientValue },
       ]
     }
   })()
@@ -1532,6 +1761,18 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
     if (saving || !allMet) return
     setSaving(true)
     try {
+      // Resolve contact id — may need to create a new contact first
+      let resolvedClientId = clientId
+      if (clientMode === 'new' && newClientReady) {
+        const { data: newContact, error: contactErr } = await supabase.from('contacts').insert({
+          name: newClientName.trim(),
+          email: newClientEmail.trim() || null,
+          phone: newClientPhone.trim() || null,
+        }).select('id').single()
+        if (contactErr || !newContact) throw contactErr ?? new Error('Failed to create contact')
+        resolvedClientId = newContact.id
+      }
+
       const dealName = (engagement === 'TENANT' || engagement === 'BUYER')
         ? title.trim()
         : (addr.addrDisplay || addr.raw.trim())
@@ -1575,8 +1816,8 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
           lease_commission_pct: leaseOn ? commPct : null,
         })
       }
-      if (clientId) {
-        await supabase.from('deal_contacts').insert({ deal_id: newId, contact_id: clientId, relationship: 'client' })
+      if (resolvedClientId) {
+        await supabase.from('deal_contacts').insert({ deal_id: newId, contact_id: resolvedClientId, relationship: 'client' })
       }
       if (deadlineWhat && deadlineWhen) {
         await supabase.from('contract_deadlines').insert({
@@ -1590,6 +1831,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       setSaving(false)
     }
   }, [saving, allMet, engagement, title, addr, propType, saleOn, leaseOn, clientId,
+    clientMode, newClientName, newClientEmail, newClientPhone, newClientReady,
     saleEcon, leaseEcon, comm, lacdbUrl, dropboxLink, deadlineWhat, deadlineWhen, leaseTermMo, router])
 
   useEffect(() => { saveCallbackRef.current = handleSave }, [handleSave, saveCallbackRef])
@@ -1609,9 +1851,10 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
           padding: '26px 32px 40px 32px', gap: 22, boxSizing: 'border-box',
         }}>
           {/* FORM COLUMN */}
-          <div style={{ width: 1356, flexShrink: 0 }}>
+          <div style={{ width: 1356, flexShrink: 0, minWidth: 0 }}>
             <div style={{
               background: C.bgPanel, border: `1px solid ${C.borderPanel}`, borderRadius: 14,
+              overflow: 'hidden',
             }}>
               {/* ENGAGEMENT */}
               <div style={{ padding: '22px 26px' }}>
@@ -1680,7 +1923,13 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
               {!isTarget && (<>
                 <GroupDivider />
                 <div style={{ padding: '22px 26px' }}>
-                  <ContactPicker contacts={contacts} value={clientId} onChange={setClientId} />
+                  <ContactPicker
+                    contacts={contacts} value={clientId} onChange={setClientId}
+                    clientMode={clientMode} onClientModeChange={setClientMode}
+                    newClientName={newClientName} onNewClientNameChange={setNewClientName}
+                    newClientEmail={newClientEmail} onNewClientEmailChange={setNewClientEmail}
+                    newClientPhone={newClientPhone} onNewClientPhoneChange={setNewClientPhone}
+                  />
                 </div>
               </>)}
 

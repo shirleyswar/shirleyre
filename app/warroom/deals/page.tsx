@@ -859,7 +859,7 @@ function DealsPage() {
   ]
 
   return (
-    <div style={{ display:'flex', width:'100vw', height:'100vh', background:C.bgBase, color:C.textHi, fontFamily:FONT_DISP, overflow:'hidden' }}>
+    <div style={{ display:'flex', width:'100vw', maxWidth:'100vw', height:'100vh', background:C.bgBase, color:C.textHi, fontFamily:FONT_DISP, overflow:'hidden' }}>
 
       {/* Left rail */}
       <LeftRail active="DEALS" />

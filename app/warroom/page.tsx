@@ -1773,6 +1773,7 @@ export default function WarRoomPage() {
       background: C.bgBase,
       color: C.textHi,
       fontFamily: FONT_DISP,
+      maxWidth: '100vw',
     }}>
       {/* ── Left rail — 96px, own plane ── */}
       <LeftRail active="HOME" />
