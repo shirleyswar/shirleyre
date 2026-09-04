@@ -647,7 +647,7 @@ function DealsPage() {
     if (k === sortKey) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortKey(k); setSortDir('asc') }
   }
-  function navigate(id: string) { router.push(`/warroom/deal?id=${id}`) }
+  function navigate(id: string) { router.push(`/warroom/deal/` + id) }
 
   // ── Data fetch ────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -911,21 +911,22 @@ function DealsPage() {
         {/* ── LISTINGS-specific chrome — filter row + col headers ── */}
         {tab === 'listings' && (
           <>
-            {/* Filter row — 46px FIXED */}
+            {/* Filter row — 46px FIXED, compact inline buttons left-aligned */}
             <div style={{
-              height:46, flexShrink:0, display:'flex', alignItems:'stretch',
-              padding:'0 24px', borderBottom:`1px solid ${C.borderPanel}`,
-              boxSizing:'border-box',
+              height:46, flexShrink:0, display:'flex', alignItems:'center',
+              paddingLeft:44, borderBottom:`1px solid ${C.borderPanel}`,
+              boxSizing:'border-box', gap:0,
             }}>
               {FILTERS.map(f => {
                 const isActive = filter === f.key
                 return (
                   <button key={f.key} onClick={() => setFilter(f.key)} style={{
-                    flex:1, display:'flex', alignItems:'center', justifyContent:'center',
-                    position:'relative', background:'none', border:'none', cursor:'pointer', padding:0,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    position:'relative', background:'none', border:'none', cursor:'pointer',
+                    padding:'0 16px', height:'100%',
                   }}>
                     <span style={{
-                      fontFamily:FONT_MONO, fontSize:16, lineHeight:1,
+                      fontFamily:FONT_MONO, fontSize:13, lineHeight:1,
                       fontWeight: isActive ? 700 : 600,
                       color: isActive ? C.textHi : C.textMid,
                     }}>{f.label}</span>
@@ -935,17 +936,17 @@ function DealsPage() {
               })}
 
               {/* TYPE ▾ */}
-              <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', position:'relative', height:'100%' }}>
                 <button onClick={() => setTypeDropOpen(o => !o)} style={{
-                  display:'flex', alignItems:'center', gap:7, background:'none', border:'none',
-                  cursor:'pointer', padding:0, height:'100%', width:'100%', justifyContent:'center', position:'relative',
+                  display:'flex', alignItems:'center', gap:5, background:'none', border:'none',
+                  cursor:'pointer', padding:'0 16px', height:'100%', position:'relative',
                 }}>
                   <span style={{
-                    fontFamily:FONT_MONO, fontSize:16, lineHeight:1,
+                    fontFamily:FONT_MONO, fontSize:13, lineHeight:1,
                     fontWeight: filter === 'type' ? 700 : 600,
                     color: filter === 'type' ? C.textHi : C.textMid,
                   }}>TYPE</span>
-                  <span style={{ fontFamily:FONT_MONO, fontSize:12, color:C.textLow }}>▾</span>
+                  <span style={{ fontFamily:FONT_MONO, fontSize:11, color:C.textLow }}>▾</span>
                   {filter === 'type' && <div style={{ position:'absolute', left:0, right:0, bottom:0, height:2, background:C.brandStrong }} />}
                 </button>
                 <TypeDropdown open={typeDropOpen} types={allTypes} activeType={typeValue}
@@ -995,28 +996,6 @@ function DealsPage() {
               </div>
             ) : (
               <>
-                {/* ── Item 139 — NEW DEAL PAGE sample link ── */}
-                <div style={{
-                  display:'flex', alignItems:'center', justifyContent:'space-between',
-                  padding:'0 24px', height:44, borderBottom:`1px solid ${C.borderHair}`,
-                  background:'rgba(139,92,246,0.06)', flexShrink:0,
-                }}>
-                  <span style={{ fontFamily:FONT_MONO, fontSize:11, fontWeight:500, letterSpacing:'0.18em', color:C.textLow }}>
-                    NEW DEAL PAGE
-                  </span>
-                  <a
-                    href="/warroom/deal2?id=d30740cf-40bf-4dbd-bd88-93ccb170f073"
-                    style={{
-                      fontFamily:FONT_MONO, fontSize:11, fontWeight:700, letterSpacing:'0.14em',
-                      color:C.brandLift, textDecoration:'none',
-                      padding:'5px 12px', border:`1px solid rgba(139,92,246,0.40)`,
-                      borderRadius:5, background:'rgba(139,92,246,0.10)',
-                    }}
-                  >
-                    OPEN SAMPLE →
-                  </a>
-                </div>
-
                 {/* PORTFOLIOS group — always present */}
                 <GroupHeader label="PORTFOLIOS" count={sortedPortfolios.length} />
                 {sortedPortfolios.length === 0

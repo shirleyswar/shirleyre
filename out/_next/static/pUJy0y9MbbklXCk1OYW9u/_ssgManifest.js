@@ -1,0 +1,1 @@
+self.__SSG_MANIFEST=new Set(["\u002Fwarroom\u002Fdeal\u002F[id]"]);self.__SSG_MANIFEST_CB&&self.__SSG_MANIFEST_CB()
