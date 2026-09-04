@@ -903,7 +903,7 @@ function DealsPage() {
             <div style={{ flex:1 }} />
             {/* FAB — 31px */}
             <div className="wr-fab-desktop-wrap" style={{ flexShrink:0 }}>
-              <Fab label="Add listing" onClick={() => {}} />
+              <Fab label="Add listing" onClick={() => router.push('/warroom/deals/new')} />
             </div>
           </div>
         </div>
