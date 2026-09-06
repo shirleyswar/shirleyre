@@ -12,6 +12,7 @@ import BattlePlanSheet from '@/components/warroom3/BattlePlanSheet'
 import { DealsSheet } from '@/components/warroom3/DealsSheet'
 import ReceivablesCard from '@/components/warroom3/ReceivablesCard'
 import MoneyMoversSheet from '@/components/warroom3/MoneyMoversSheet'
+import MoneyMoverAddSheet from '@/components/warroom3/MoneyMoverAddSheet'
 import DeadlinesSheet from '@/components/warroom3/DeadlinesSheet'
 import UnderContractSheet from '@/components/warroom3/UnderContractSheet'
 import QuickActionsSheet from '@/components/warroom3/QuickActionsSheet'
@@ -483,7 +484,7 @@ function PanelTile({ stat, onPress }: { stat: TileStat; onPress: () => void }) {
 }
 
 // ── Home Screen ───────────────────────────────────────────────────────────────
-type SheetId = 'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract' | 'quickactions' | 'voicenote' | 'portfoliocreate' | 'newdeal' | 'task' | 'event'
+type SheetId = 'battleplan' | 'deals' | 'moneymovers' | 'deadlines' | 'undercontract' | 'quickactions' | 'voicenote' | 'portfoliocreate' | 'newdeal' | 'task' | 'event' | 'moneymovers_add'
 
 function HomeScreen({
   onTilePress,
@@ -509,6 +510,7 @@ function HomeScreen({
   const [tiles, setTiles] = useState<TileStat[]>([])
   const [dealsControl, setDealsControl] = useState<DealsControl>({ hotCount: 0, ucCount: 0, activeCount: 0, pipelineCount: 0, total: 0 })
   const [bpRefreshKey, setBpRefreshKey] = useState(0)
+  const [mmRefreshKey, setMmRefreshKey] = useState(0)
   // Item 94: pressed state for DEALS plate
   const [dealPressed, setDealPressed] = useState(false)
 
@@ -740,7 +742,17 @@ function HomeScreen({
         onOpenNewDeal={() => setOpenSheet('newdeal')}
       />
 
-      <MoneyMoversSheet open={openSheet === 'moneymovers'} onClose={() => setOpenSheet(null)} />
+      <MoneyMoversSheet
+        open={openSheet === 'moneymovers'}
+        onClose={() => setOpenSheet(null)}
+        refreshKey={mmRefreshKey}
+        onOpenAdd={() => setOpenSheet('moneymovers_add')}
+      />
+      <MoneyMoverAddSheet
+        open={openSheet === 'moneymovers_add'}
+        onClose={() => setOpenSheet(null)}
+        onSaved={() => { setMmRefreshKey(k => k + 1) }}
+      />
       <DeadlinesSheet open={openSheet === 'deadlines'} onClose={() => setOpenSheet(null)} />
       <UnderContractSheet open={openSheet === 'undercontract'} onClose={() => setOpenSheet(null)} />
 
@@ -750,6 +762,7 @@ function HomeScreen({
         onOpenVoiceNote={() => setOpenSheet('voicenote')}
         onOpenTask={() => { setOpenSheet(null); setTimeout(() => setOpenSheet('task'), 180) }}
         onOpenEvent={() => { setOpenSheet(null); setTimeout(() => setOpenSheet('event'), 180) }}
+        onOpenMoneyMover={() => { setOpenSheet(null); setTimeout(() => setOpenSheet('moneymovers_add'), 180) }}
       />
 
       <TaskSheet open={openSheet === 'task'} onClose={() => setOpenSheet(null)} />

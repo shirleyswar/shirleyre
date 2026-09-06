@@ -6,7 +6,7 @@
 // All type references bound to §3.2 named levels. No pixel literals for text.
 
 import React from 'react'
-import { Mic, CheckSquare, Calendar } from 'lucide-react'
+import { Mic, CheckSquare, Calendar, DollarSign } from 'lucide-react'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 
 // §3.1: UPPERCASE → JetBrains Mono · sentence case → Space Grotesk
@@ -111,15 +111,16 @@ interface QuickActionsSheetProps {
   onOpenVoiceNote: () => void
   onOpenTask?: () => void
   onOpenEvent?: () => void
+  onOpenMoneyMover?: () => void
 }
 
-export default function QuickActionsSheet({ open, onClose, onOpenVoiceNote, onOpenTask, onOpenEvent }: QuickActionsSheetProps) {
+export default function QuickActionsSheet({ open, onClose, onOpenVoiceNote, onOpenTask, onOpenEvent, onOpenMoneyMover }: QuickActionsSheetProps) {
   return (
     <BottomSheet
       open={open}
       onClose={onClose}
       label="Quick Actions"
-      size="short"
+      size="list"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 11, paddingTop: 4 }}>
         {/* 1. Voice Note — physically larger, top of sheet §18.2 */}
@@ -154,6 +155,17 @@ export default function QuickActionsSheet({ open, onClose, onOpenVoiceNote, onOp
           iconTileSize={38}
           verticalPadding={15}
           onPress={() => { onClose(); setTimeout(() => onOpenEvent?.(), 180) }}
+        />
+
+        {/* 4. Money Mover — opens MoneyMoverAddSheet */}
+        <ActionRow
+          icon={<DollarSign size={18} color={T.textMid} strokeWidth={1.8} />}
+          title="Money Mover"
+          subtitle="Opens here"
+          titleSize={ACTION_TITLE_SIZE}
+          iconTileSize={38}
+          verticalPadding={15}
+          onPress={() => { onClose(); setTimeout(() => onOpenMoneyMover?.(), 180) }}
         />
       </div>
     </BottomSheet>

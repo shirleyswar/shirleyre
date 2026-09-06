@@ -1,139 +1,242 @@
 'use client'
-import { calcCommission, HOUSE_SPLIT } from '@/lib/dealMath'
 
-// Money Movers bottom sheet — §5.11 + §12 step 7
-// §5.11.1: Rows hairline-separated. NO border, NO radius, NO background fill.
-// §5.11.2: No tint on rows. Spine only (hot).
-// §5.11.4: Money labelled — commission primary, sale price secondary.
-// All type references bound to §3.2 named levels. No pixel literals for text.
+// Money Movers bottom sheet — Item 146
+// Fetches from money_movers table (not deals/hot).
+// Each row: title (left) + commission (right, moneyIn) + trash delete button.
+// Props: open, onClose, refreshKey (increments to trigger re-fetch), onOpenAdd.
 
 import React, { useState, useEffect } from 'react'
+import { Trash2, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import BottomSheet from '@/components/warroom3/BottomSheet'
-import ListRow from '@/components/warroom3/ListRow'
-import { formatAddress } from '@/lib/formatAddress'
+import { FAB_APERTURE_GRADIENT, FAB_APERTURE_SHADOW } from '@/lib/fabGradient'
 
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
+const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
+  textHi:    '#EFEEF4',
+  textMid:   '#B8B6C6',
   textLow:   '#8E8CA0',
+  textInvert:'#0A0A0F',
+  moneyIn:   '#34D399',
   late:      '#FF4D4D',
-  hot:       '#FFA23A',
-  brand:     '#8B5CF6',
 } as const
 
-interface HotDeal {
+interface MoneyMover {
   id: string
-  name: string | null
-  address: string | null
-  computedValue: number | null
-  computedCommission: number | null
+  title: string
+  deal_id: string | null
+  commission: number | null
 }
 
-export default function MoneyMoversSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [deals, setDeals] = useState<HotDeal[]>([])
-  const [loading, setLoading] = useState(false)
-  const [loaded, setLoaded] = useState(false)
+interface MoneyMoversSheetProps {
+  open: boolean
+  onClose: () => void
+  refreshKey?: number
+  onOpenAdd?: () => void
+}
+
+function formatCommission(val: number | null): string {
+  if (val == null) return '—'
+  return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
+export default function MoneyMoversSheet({ open, onClose, refreshKey, onOpenAdd }: MoneyMoversSheetProps) {
+  const [movers, setMovers]       = useState<MoneyMover[]>([])
+  const [loading, setLoading]     = useState(false)
+  const [loaded, setLoaded]       = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deletingId, setDeletingId]   = useState<string | null>(null)
+
+  // Fetch on open or refreshKey change
+  useEffect(() => {
+    if (open) {
+      setLoaded(false)
+    }
+  }, [open, refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (open && !loaded) load()
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, loaded]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function load() {
     setLoading(true)
+    setLoadError(false)
+    setDeleteError(null)
     try {
-      const { data: dealsData, error: dealsErr } = await supabase
-        .from('deals')
-        .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city')
-        .eq('status', 'hot')
-        .order('updated_at', { ascending: false })
-        .limit(100)
-      if (dealsErr) { setLoadError(true); setLoading(false); return }
-      const dealList = (dealsData ?? []) as any[]
-      if (dealList.length === 0) { setDeals([]); setLoaded(true); setLoading(false); return }
-      const ids = dealList.map((d: any) => d.id)
-
-      const { data: econData } = await supabase
-        .from('deal_economics')
-        .select('deal_id, asking_price, sale_commission_pct, lease_rate_psf, lease_term_years, lease_commission_pct, sqft, transaction_type')
-        .in('deal_id', ids)
-      const { data: ucData } = await supabase
-        .from('uc_details')
-        .select('deal_id, contract_price, commission_pct, commission_amount')
-        .in('deal_id', ids)
-
-      const econMap: Record<string, any> = {}
-      for (const e of (econData ?? []) as any[]) econMap[e.deal_id] = e
-      const ucMap: Record<string, any> = {}
-      for (const u of (ucData ?? []) as any[]) ucMap[u.deal_id] = u
-
-      const computed = dealList.map((deal: any) => {
-        const e = econMap[deal.id]
-        const u = ucMap[deal.id]
-        let computedValue: number | null = null
-        let computedCommission: number | null = null
-        if (e) {
-          // Use calcCommission from dealMath — single source of truth
-          computedCommission = calcCommission(e)
-          const isLease = e.transaction_type === 'lease'
-          if (isLease) {
-            const gross = e.sqft && e.lease_rate_psf && e.lease_term_years
-              ? Math.round(e.sqft * e.lease_rate_psf * e.lease_term_years) : null
-            computedValue = gross
-          } else {
-            computedValue = e.asking_price ?? null
-          }
-        } else if (u) {
-          computedValue = u.contract_price ?? null
-          computedCommission = u.commission_amount ?? (u.contract_price && u.commission_pct
-            ? Math.round(u.contract_price * (u.commission_pct / 100) * HOUSE_SPLIT) : null)
-        }
-        return { id: deal.id, name: deal.name, address: deal.address, computedValue, computedCommission }
-      })
-
-      setDeals(computed)
+      const { data, error } = await supabase
+        .from('money_movers')
+        .select('id, title, deal_id, commission')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      if (error) { setLoadError(true); setLoading(false); return }
+      setMovers((data ?? []) as MoneyMover[])
       setLoaded(true)
-    } catch { setLoadError(true) }
+    } catch {
+      setLoadError(true)
+    }
     setLoading(false)
   }
 
+  async function handleDelete(id: string) {
+    if (typeof window !== 'undefined' && !window.confirm('Delete this money mover?')) return
+    setDeletingId(id)
+    setDeleteError(null)
+    const { error } = await supabase
+      .from('money_movers')
+      .delete()
+      .eq('id', id)
+    setDeletingId(null)
+    if (error) {
+      setDeleteError(error.message || 'Delete failed — try again')
+    } else {
+      // Re-fetch after successful delete
+      setLoaded(false)
+    }
+  }
+
   return (
-    <BottomSheet open={open} onClose={onClose} label="Money Movers" count={deals.length > 0 ? deals.length : undefined}>
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      label="Money Movers"
+      count={!loading && !loadError && movers.length > 0 ? movers.length : undefined}
+    >
+      {/* Add button inside sheet header area */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 18px 12px' }}>
+        <button
+          onClick={onOpenAdd}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 14px',
+            background: FAB_APERTURE_GRADIENT,
+            boxShadow: FAB_APERTURE_SHADOW,
+            border: 'none',
+            borderRadius: 20,
+            color: T.textInvert,
+            fontFamily: FONT_DISPLAY,
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+          } as React.CSSProperties}
+        >
+          <Plus size={13} strokeWidth={2.5} />
+          Add
+        </button>
+      </div>
+
+      {/* Delete error banner */}
+      {deleteError && (
+        <div style={{
+          margin: '0 18px 12px',
+          padding: '10px 14px',
+          borderRadius: 9,
+          background: 'rgba(255,77,77,0.10)',
+          border: '1px solid rgba(255,77,77,0.22)',
+          fontFamily: FONT_DISPLAY,
+          fontSize: 12,
+          color: T.late,
+        }}>
+          {deleteError}
+        </div>
+      )}
+
       {loading ? (
         <SkeletonRows />
       ) : loadError ? (
-        <div onClick={() => { setLoadError(false); setLoaded(false) }}
-          style={{ textAlign: 'center', padding: '32px 18px', color: '#FF4D4D', fontFamily: FONT_DISPLAY, fontSize: 13, cursor: 'pointer' }}>
+        <div
+          onClick={() => { setLoadError(false); setLoaded(false) }}
+          style={{
+            textAlign: 'center',
+            padding: '32px 18px',
+            color: T.late,
+            fontFamily: FONT_DISPLAY,
+            fontSize: 13,
+            cursor: 'pointer',
+          }}
+        >
           Could not load — tap to retry
         </div>
-      ) : deals.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '32px 18px', color: T.textLow, fontFamily: FONT_DISPLAY, fontSize: 13 }}>
-          No hot deals right now
+      ) : movers.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '32px 18px',
+          color: T.textLow,
+          fontFamily: FONT_DISPLAY,
+          fontSize: 13,
+        }}>
+          No money movers yet
         </div>
       ) : (
         <div>
-          {deals.map(deal => {
-            const addr = formatAddress(deal) || null
-            const clientName = deal.name?.replace(/^📁\s*/, '') || null
-            // §5.11.5 — if addr is null, title = clientName; subline should differ from title
-            const title = addr || clientName || '—'
-            const subline = clientName && clientName !== title ? `${clientName}` : undefined
+          {movers.map((mover, idx) => (
+            <div
+              key={mover.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '13px 18px',
+                borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.07)',
+                gap: 12,
+              }}
+            >
+              {/* Title */}
+              <div style={{
+                flex: 1,
+                minWidth: 0,
+                fontFamily: FONT_DISPLAY,
+                fontSize: 15,
+                fontWeight: 500,
+                color: T.textHi,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {mover.title}
+              </div>
 
-            return (
-              <ListRow
-                key={deal.id}
-                title={title}
-                metaCityClient={subline || null}
-                spineColor={T.hot}
-                showMoney={deal.computedCommission != null}
-                commission={deal.computedCommission}
-                salePrice={deal.computedValue}
-              />
-            )
-          })}
+              {/* Commission */}
+              <div style={{
+                fontFamily: FONT_MONO,
+                fontSize: 13,
+                fontWeight: 500,
+                color: mover.commission != null ? T.moneyIn : T.textLow,
+                flexShrink: 0,
+                letterSpacing: '0.02em',
+              }}>
+                {formatCommission(mover.commission)}
+              </div>
+
+              {/* Trash button */}
+              <button
+                onClick={() => handleDelete(mover.id)}
+                disabled={deletingId === mover.id}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '4px 2px',
+                  cursor: deletingId === mover.id ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  WebkitTapHighlightColor: 'transparent',
+                  opacity: deletingId === mover.id ? 0.4 : 1,
+                } as React.CSSProperties}
+                aria-label="Delete money mover"
+              >
+                <Trash2 size={15} color={T.textLow} strokeWidth={1.7} />
+              </button>
+            </div>
+          ))}
         </div>
       )}
+
       <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
     </BottomSheet>
   )
