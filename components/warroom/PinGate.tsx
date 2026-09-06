@@ -77,24 +77,31 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
   }, [handleKey])
 
   return (
+    // §D6 Item 147: scrollable outer so keypad 0 is never clipped on short viewports.
+    // On tall viewports the inner column centres as before; on short ones the user can scroll.
     <div style={{
       position: 'fixed', inset: 0,
       background: '#08080C',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      // §D6 29a: column metered to 844px viewport — footer 34px above bottom
-      paddingBottom: 34,
+      overflowY: 'auto',
+      overflowX: 'hidden',
     }}>
-      {/* §D6 background radial */}
+      {/* §D6 background radial — fixed so it stays centred even when scrolling */}
       <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
+        position: 'fixed', inset: 0, pointerEvents: 'none',
         background: 'radial-gradient(ellipse 420px 420px at 50% 46%, rgba(139,92,246,0.13) 0%, transparent 68%)',
       }} />
 
-      {/* Main column — centred vertically in remaining space */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', width: '100%' }}>
+      {/* Centred column — min 100vh so it centres on tall screens; grows + scrolls on short ones */}
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '32px 0',
+        boxSizing: 'border-box',
+        position: 'relative',
+      }}>
 
         {/* §D6 + §17.1 + 29a: glow star at 168px mobile (was 128px). star-glow-512.png. No CSS glow. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -186,21 +193,21 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
             )
           })}
         </div>
-      </div>
 
-      {/* §D6 + 29a: footer 11.5px mobile (was 10.5px). 34px above bottom — handled by paddingBottom:34 on container. */}
-      <div style={{
-        fontFamily: FONT_MONO,
-        fontSize: 11.5,
-        fontWeight: 500,
-        letterSpacing: '0.24em',
-        textTransform: 'uppercase',
-        color: '#3F3E4C',
-        paddingLeft: '0.24em',
-        position: 'relative',
-        zIndex: 1,
-      }}>
-        SHIRLEYCRE · RESTRICTED ACCESS
+        {/* §D6 + 29a: footer 11.5px. Now inside the centred column, 40px below keypad. */}
+        <div style={{
+          fontFamily: FONT_MONO,
+          fontSize: 11.5,
+          fontWeight: 500,
+          letterSpacing: '0.24em',
+          textTransform: 'uppercase',
+          color: '#3F3E4C',
+          paddingLeft: '0.24em',
+          marginTop: 40,
+        }}>
+          SHIRLEYCRE · RESTRICTED ACCESS
+        </div>
+
       </div>
     </div>
   )

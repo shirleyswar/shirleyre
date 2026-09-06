@@ -530,13 +530,18 @@ function HomeScreen({
   const pctUC  = total > 0 ? ((ucCount  / total) * 100).toFixed(1) : '0'
 
   return (
+    // Item 147: minHeight:0 is critical — allows this flex child to shrink below content size
+    // so overflowY:auto actually clips and scrolls instead of growing the container.
     <div style={{
       flex: 1,
+      minHeight: 0,
       overflowY: 'auto',
       overflowX: 'hidden',
+      WebkitOverflowScrolling: 'touch',
       padding: '21px 18px 0',
+      paddingBottom: 120,
       background: T.bgBase,
-    }}>
+    } as React.CSSProperties}>
 
       {/* ── Item 91 — URGENT ROW ────────────────────────────────── */}
       {!loading && urgentItem && (
@@ -711,8 +716,7 @@ function HomeScreen({
         </button>
       </div>
 
-      {/* ── Item 97 / 129 — SCROLL TAIL ─────────────────────────── */}
-      <div style={{ height: 104, flexShrink: 0 }} />
+      {/* ── Item 97 / 129 — SCROLL TAIL (paddingBottom:120 on container handles clearance) ── */}
 
       {/* ── Sheets ───────────────────────────────────────────────── */}
       <BattlePlanSheet
