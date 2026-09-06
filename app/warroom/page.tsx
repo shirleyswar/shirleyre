@@ -1645,6 +1645,8 @@ function LeftRail({ active }: { active: RailSlot }) {
 
 // ── ROOT PAGE ─────────────────────────────────────────────────────────────────
 export default function WarRoomPage() {
+  const router = useRouter()
+  const [mobileRedirecting, setMobileRedirecting] = useState(false)
   const [unlocked, setUnlocked] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [drawerTask, setDrawerTask] = useState<Task | null>(null)
@@ -1669,6 +1671,14 @@ export default function WarRoomPage() {
   const [ucRowCount, setUcRowCount] = useState(3)
   const [schedRowCount, setSchedRowCount] = useState(4)
   const [dueRowCount, setDueRowCount] = useState(6)
+
+  // Item 149: P0 mobile redirect — phones go to /warroom3
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setMobileRedirecting(true)
+      router.replace('/warroom3')
+    }
+  }, [router])
 
   useEffect(() => {
     const expiry = localStorage.getItem(SESSION_KEY)
@@ -1753,6 +1763,11 @@ export default function WarRoomPage() {
     due_date: null,
     completed_at: null,
     deal_id: null,
+  }
+
+  // Item 149: show blank dark screen while redirecting mobile to /warroom3
+  if (mobileRedirecting) {
+    return <div style={{ background: '#08080C', minHeight: '100vh' }} />
   }
 
   if (!unlocked) {
