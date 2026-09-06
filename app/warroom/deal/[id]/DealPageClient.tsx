@@ -247,6 +247,20 @@ function DealPageClientInner({ id }: { id: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
+  // Edit mode
+  const [editMode, setEditMode] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editStatus, setEditStatus] = useState('')
+  const [editDropbox, setEditDropbox] = useState('')
+  const [editLacdb, setEditLacdb] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  // Delete mode
+  const [deleteMode, setDeleteMode] = useState(false)
+  const [deletePinInput, setDeletePinInput] = useState('')
+  const [deleteError, setDeleteError] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
   // PIN gate — accept either session key
   const [pinValid, setPinValid] = useState<boolean | null>(null)
   useEffect(() => {
@@ -367,6 +381,43 @@ function DealPageClientInner({ id }: { id: string }) {
         </button>
       </div>
     )
+  }
+
+  // ── SHA256 for delete PIN ──
+  async function sha256(text: string): Promise<string> {
+    const enc = new TextEncoder()
+    const buf = await crypto.subtle.digest('SHA-256', enc.encode(text))
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+
+  const PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
+
+  // ── Edit save ──
+  async function handleEditSave() {
+    if (!deal || saving) return
+    setSaving(true)
+    const updates: Record<string, string> = {}
+    if (editName.trim()) updates.name = editName.trim()
+    if (editStatus) updates.status = editStatus
+    if (editDropbox.trim() !== (deal.dropbox_link ?? '')) updates.dropbox_link = editDropbox.trim()
+    await supabase.from('deals').update(updates).eq('id', dealId)
+    setDeal({ ...deal, ...updates } as DealData)
+    setSaving(false)
+    setEditMode(false)
+  }
+
+  // ── Delete confirm ──
+  async function handleDeleteConfirm() {
+    if (deleting || deletePinInput.length < 4) return
+    const hash = await sha256(deletePinInput)
+    if (hash !== PIN_HASH) {
+      setDeleteError(true)
+      setDeletePinInput('')
+      return
+    }
+    setDeleting(true)
+    await supabase.from('deals').delete().eq('id', dealId)
+    router.push('/warroom/deals')
   }
 
   // ── Derived state ──
@@ -572,34 +623,221 @@ function DealPageClientInner({ id }: { id: string }) {
             </div>
           )}
 
+          {/* DELETE control */}
+          <button
+            onClick={() => { setDeleteMode(true); setDeletePinInput(''); setDeleteError(false) }}
+            style={{
+              background: 'none', border: 'none', padding: '4px 8px',
+              fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700,
+              letterSpacing: '0.14em', textTransform: 'uppercase',
+              color: T.late, cursor: 'pointer', flexShrink: 0,
+            }}
+            aria-label="Delete deal"
+          >
+            DELETE
+          </button>
+
           {/* EDIT control — 44×115px, mix-blend-mode: screen (item 39) */}
           {/* No alpha: source has black surround; screen compositing makes it additive */}
-          <div
-            style={{
-              height: 44,
-              width: 115,
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/assets/buttons/edit-pill-v8.png"
-              alt="Edit"
-              style={{
-                height: 44,
-                width: 115,
-                display: 'block',
-                mixBlendMode: 'screen',  // additive — EDIT ONLY, not Launch
+          {editMode ? (
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
+              <button
+                onClick={handleEditSave}
+                disabled={saving}
+                style={{
+                  background: T.brand, border: 'none', borderRadius: 6, padding: '6px 14px',
+                  fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700,
+                  letterSpacing: '0.14em', textTransform: 'uppercase',
+                  color: '#fff', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1,
+                }}
+              >
+                {saving ? 'SAVING…' : 'SAVE'}
+              </button>
+              <button
+                onClick={() => setEditMode(false)}
+                style={{
+                  background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '6px 14px',
+                  fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700,
+                  letterSpacing: '0.14em', textTransform: 'uppercase',
+                  color: T.textMid, cursor: 'pointer',
+                }}
+              >
+                CANCEL
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setEditName(deal.name ?? '')
+                setEditStatus(deal.status ?? '')
+                setEditDropbox(deal.dropbox_link ?? '')
+                setEditLacdb('')
+                setEditMode(true)
               }}
-              draggable={false}
-            />
-          </div>
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+              aria-label="Edit deal"
+            >
+              <div
+                style={{
+                  height: 44, width: 115, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/assets/buttons/edit-pill-v8.png"
+                  alt="Edit"
+                  style={{ height: 44, width: 115, display: 'block', mixBlendMode: 'screen' }}
+                  draggable={false}
+                />
+              </div>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* ── EDIT PANEL ────────────────────────────────────────────────────── */}
+      {editMode && (
+        <div style={{ borderBottom: `1px solid ${T.borderHair}`, background: T.bgPanel }}>
+          <div style={{ maxWidth: 1440, margin: '0 auto', padding: '20px 32px', display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end' }}>
+            {/* Name / Address */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 240, flex: 2 }}>
+              <label style={{ fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: T.textLow }}>
+                Name / Address
+              </label>
+              <input
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                style={{
+                  background: T.bgRaise, border: `1px solid ${T.borderPanel}`, borderRadius: 8,
+                  padding: '9px 12px', fontFamily: FONT_DISPLAY, fontSize: 15, color: T.textHi,
+                  outline: 'none', width: '100%', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            {/* Status */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 180 }}>
+              <label style={{ fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: T.textLow }}>
+                Status
+              </label>
+              <select
+                value={editStatus}
+                onChange={e => setEditStatus(e.target.value)}
+                style={{
+                  background: T.bgRaise, border: `1px solid ${T.borderPanel}`, borderRadius: 8,
+                  padding: '9px 12px', fontFamily: FONT_MONO, fontSize: 12, color: T.textHi,
+                  outline: 'none', cursor: 'pointer',
+                }}
+              >
+                {['pipeline','active','in_review','in_service','under_contract','hot'].map(s => (
+                  <option key={s} value={s}>{s.replace(/_/g, ' ').toUpperCase()}</option>
+                ))}
+              </select>
+            </div>
+            {/* Dropbox link */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 240, flex: 2 }}>
+              <label style={{ fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: T.textLow }}>
+                Dropbox Link
+              </label>
+              <input
+                value={editDropbox}
+                onChange={e => setEditDropbox(e.target.value)}
+                placeholder="https://www.dropbox.com/…"
+                style={{
+                  background: T.bgRaise, border: `1px solid ${T.borderPanel}`, borderRadius: 8,
+                  padding: '9px 12px', fontFamily: FONT_MONO, fontSize: 12, color: T.textHi,
+                  outline: 'none', width: '100%', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DELETE MODAL ───────────────────────────────────────────────────── */}
+      {deleteMode && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(4,4,8,0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: '#12111B', borderRadius: 16, padding: '28px 24px',
+            width: 320, border: '1px solid rgba(255,255,255,0.12)',
+          }}>
+            <div style={{ fontSize: 13, fontFamily: FONT_MONO, color: '#FF4D4D', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>Delete Deal</div>
+            <div style={{ fontSize: 13, fontFamily: FONT_DISPLAY, color: '#8E8CA0', marginBottom: 24, lineHeight: 1.5 }}>
+              Enter your PIN to permanently delete this deal. This cannot be undone.
+            </div>
+            {/* 4-box PIN entry */}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
+              {[0,1,2,3].map(i => (
+                <div key={i} style={{
+                  width: 48, height: 54, borderRadius: 8,
+                  border: `1px solid ${deletePinInput.length > i ? T.brand : T.borderPanel}`,
+                  background: T.bgRaise,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22, fontFamily: FONT_MONO, color: T.textHi,
+                }}>
+                  {deletePinInput.length > i ? '●' : ''}
+                </div>
+              ))}
+            </div>
+            {/* Numpad */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, idx) => (
+                k === '' ? <div key={idx} /> : (
+                  <button key={idx}
+                    onClick={() => {
+                      setDeleteError(false)
+                      if (k === '⌫') {
+                        setDeletePinInput(p => p.slice(0,-1))
+                      } else if (deletePinInput.length < 4) {
+                        setDeletePinInput(p => p + k)
+                      }
+                    }}
+                    style={{
+                      background: T.bgRaise, border: `1px solid ${T.borderPanel}`, borderRadius: 8,
+                      padding: '12px 0', fontFamily: FONT_MONO, fontSize: 16, color: T.textHi,
+                      cursor: 'pointer', textAlign: 'center',
+                    }}
+                  >{k}</button>
+                )
+              ))}
+            </div>
+            {deleteError && (
+              <div style={{ fontSize: 11, fontFamily: FONT_MONO, color: T.late, letterSpacing: '0.1em', textAlign: 'center', marginBottom: 12 }}>
+                INCORRECT PIN
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deletePinInput.length < 4 || deleting}
+                style={{
+                  flex: 1, background: deletePinInput.length < 4 ? 'rgba(255,77,77,0.3)' : '#FF4D4D',
+                  border: 'none', borderRadius: 8, padding: '11px 0',
+                  fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
+                  textTransform: 'uppercase', color: deletePinInput.length < 4 ? T.textLow : '#fff',
+                  cursor: deletePinInput.length < 4 || deleting ? 'default' : 'pointer',
+                }}
+              >
+                {deleting ? 'DELETING…' : 'CONFIRM DELETE'}
+              </button>
+              <button
+                onClick={() => { setDeleteMode(false); setDeletePinInput(''); setDeleteError(false) }}
+                style={{
+                  background: 'none', border: `1px solid ${T.borderPanel}`, borderRadius: 8,
+                  padding: '11px 14px', fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700,
+                  letterSpacing: '0.12em', textTransform: 'uppercase', color: T.textMid, cursor: 'pointer',
+                }}
+              >
+                CANCEL
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── GLANCE STRIP ───────────────────────────────────────────────────── */}
       {visibleCells.length > 0 && (

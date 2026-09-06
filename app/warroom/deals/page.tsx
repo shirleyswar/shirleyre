@@ -533,14 +533,14 @@ function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
 
       {/* Value */}
       <div style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
-        <span style={{ ...DM1, color:C.textHi, fontVariantNumeric:'tabular-nums' }}>
+        <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.textHi }}>
           {deal._value != null ? fmtMoney(deal._value) : '—'}
         </span>
       </div>
 
       {/* Commission */}
       <div style={{ width:COL.comm, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
-        <span style={{ ...DM1, color:C.moneyIn, fontVariantNumeric:'tabular-nums' }}>
+        <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.moneyIn }}>
           {deal._commission != null ? fmtMoney(deal._commission) : '—'}
         </span>
       </div>
@@ -586,14 +586,14 @@ function PortfolioRow({ portfolio, onNavigate }: { portfolio: PortfolioRollup; o
 
       {/* Value — summed */}
       <div style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
-        <span style={{ ...DM1, color:C.textHi, fontVariantNumeric:'tabular-nums' }}>
+        <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.textHi }}>
           {portfolio.value != null ? fmtMoney(portfolio.value) : '—'}
         </span>
       </div>
 
       {/* Commission — summed */}
       <div style={{ width:COL.comm, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
-        <span style={{ ...DM1, color:C.moneyIn, fontVariantNumeric:'tabular-nums' }}>
+        <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.moneyIn }}>
           {portfolio.commission != null ? fmtMoney(portfolio.commission) : '—'}
         </span>
       </div>

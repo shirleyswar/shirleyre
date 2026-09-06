@@ -1272,9 +1272,12 @@ function NewDealForm() {
     if (saving || !allMet) return
     setSaving(true)
     try {
+      const shortAddr = addr.addrStreetName
+        ? [addr.addrStreetName, addr.addrNumber].filter(Boolean).join(' ')
+        : (addr.addrDisplay || addr.raw.trim())
       const dealName = (engagement === 'TENANT' || engagement === 'BUYER')
         ? title.trim()
-        : (addr.addrDisplay || addr.raw.trim())
+        : shortAddr
       const roleMap: Record<Engagement, string | null> = {
         LISTING: 'landlord', TENANT: 'tenant', BUYER: 'buyer', TARGET: null,
       }
@@ -1773,9 +1776,12 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
         resolvedClientId = newContact.id
       }
 
+      const shortAddr2 = addr.addrStreetName
+        ? [addr.addrStreetName, addr.addrNumber].filter(Boolean).join(' ')
+        : (addr.addrDisplay || addr.raw.trim())
       const dealName = (engagement === 'TENANT' || engagement === 'BUYER')
         ? title.trim()
-        : (addr.addrDisplay || addr.raw.trim())
+        : shortAddr2
       const roleMap: Record<Engagement, string | null> = {
         LISTING: 'landlord', TENANT: 'tenant', BUYER: 'buyer', TARGET: null,
       }
