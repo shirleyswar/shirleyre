@@ -1,8 +1,8 @@
 'use client'
 
-// §18 Quick Actions sheet — FAB's sheet, Phase 1
+// §18 Quick Actions sheet — FAB's sheet, Item 150 P1
 // Short sheet (47% height, top:112px via size="short").
-// Three rows ordered by field frequency: Voice Note · Task · Event.
+// Row order (bottom-anchored — thumb reach): Task · Event · Voice Note · Money Mover.
 // All type references bound to §3.2 named levels. No pixel literals for text.
 
 import React from 'react'
@@ -123,7 +123,29 @@ export default function QuickActionsSheet({ open, onClose, onOpenVoiceNote, onOp
       size="list"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 11, paddingTop: 4 }}>
-        {/* 1. Voice Note — physically larger, top of sheet §18.2 */}
+        {/* 1. Task — top slot (thumb scrolls to bottom, so top is deprioritized) */}
+        <ActionRow
+          icon={<CheckSquare size={18} color={T.textMid} strokeWidth={1.8} />}
+          title="Task"
+          subtitle="Opens here"
+          titleSize={ACTION_TITLE_SIZE}
+          iconTileSize={38}
+          verticalPadding={15}
+          onPress={() => { onClose(); setTimeout(() => onOpenTask?.(), 180) }}
+        />
+
+        {/* 2. Event */}
+        <ActionRow
+          icon={<Calendar size={18} color={T.textMid} strokeWidth={1.8} />}
+          title="Event"
+          subtitle="Opens here"
+          titleSize={ACTION_TITLE_SIZE}
+          iconTileSize={38}
+          verticalPadding={15}
+          onPress={() => { onClose(); setTimeout(() => onOpenEvent?.(), 180) }}
+        />
+
+        {/* 3. Voice Note — bottom-anchored, physically larger, closest to thumb */}
         <ActionRow
           icon={<Mic size={20} color={T.brandLift} strokeWidth={1.8} />}
           title="Voice Note"
@@ -135,29 +157,7 @@ export default function QuickActionsSheet({ open, onClose, onOpenVoiceNote, onOp
           onPress={() => { onClose(); setTimeout(onOpenVoiceNote, 180) }}
         />
 
-        {/* 2. Task — §18.3b / 36a: opens TaskSheet directly */}
-        <ActionRow
-          icon={<CheckSquare size={18} color={T.textMid} strokeWidth={1.8} />}
-          title="Task"
-          subtitle="Opens here"
-          titleSize={ACTION_TITLE_SIZE}
-          iconTileSize={38}
-          verticalPadding={15}
-          onPress={() => { onClose(); setTimeout(() => onOpenTask?.(), 180) }}
-        />
-
-        {/* 3. Event — §18.3c / 36b: opens EventSheet directly */}
-        <ActionRow
-          icon={<Calendar size={18} color={T.textMid} strokeWidth={1.8} />}
-          title="Event"
-          subtitle="Opens here"
-          titleSize={ACTION_TITLE_SIZE}
-          iconTileSize={38}
-          verticalPadding={15}
-          onPress={() => { onClose(); setTimeout(() => onOpenEvent?.(), 180) }}
-        />
-
-        {/* 4. Money Mover — opens MoneyMoverAddSheet */}
+        {/* 4. Money Mover — bottom, opens MoneyMoverAddSheet */}
         <ActionRow
           icon={<DollarSign size={18} color={T.textMid} strokeWidth={1.8} />}
           title="Money Mover"
