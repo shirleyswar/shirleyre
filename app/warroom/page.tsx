@@ -53,6 +53,7 @@ const C = {
   border:     'rgba(255,255,255,0.14)',
   borderPanel:'rgba(255,255,255,0.11)',
   borderHair: 'rgba(255,255,255,0.10)',
+  muted:      '#6a7a80',
 } as const
 
 const FONT_MONO = "'JetBrains Mono', ui-monospace, monospace"
@@ -620,6 +621,8 @@ interface MoneyMoverRow {
   title: string
   deal_id: string | null
   commission: number | null
+  note?: string | null
+  note_typed_at?: string | null
 }
 
 function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight, onCreateFill }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number; onCreateFill?: () => void }) {
@@ -629,11 +632,24 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
   const router = useRouter()
 
   async function loadData() {
-    const { data: mmData } = await supabase
+    // Try with note columns first (D4.2d); if columns don't exist yet degrade gracefully
+    let mmData: any[] | null = null
+    const { data: mmDataFull, error: mmErrFull } = await supabase
       .from('money_movers')
-      .select('id, title, deal_id, commission')
+      .select('id, title, deal_id, commission, note, note_typed_at')
       .order('created_at', { ascending: false })
       .limit(30)
+    if (!mmErrFull) {
+      mmData = mmDataFull
+    } else {
+      // Columns not yet migrated — fall back to base columns
+      const { data: mmDataBase } = await supabase
+        .from('money_movers')
+        .select('id, title, deal_id, commission')
+        .order('created_at', { ascending: false })
+        .limit(30)
+      mmData = mmDataBase
+    }
     const rows = (mmData ?? []) as MoneyMoverRow[]
     setMmRows(rows)
     onCountChange?.(rows.length)
@@ -687,9 +703,9 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
       <PanelHeader
         glyph={G.moneyMovers}
         label="MONEY MOVERS"
-        statusCount={mmCount > 0 ? `${mmCount}` : undefined}
+        statusCount={mmCount > 0 ? `${mmCount} ITEMS` : undefined}
         statusColor={C.textLow}
-        totalCount={headerTotal > 0 ? fmtMoney(headerTotal) : undefined}
+        totalCount={headerTotal > 0 ? `$${Math.round(headerTotal / 1000)}K TOTAL STAKE` : undefined}
         minHeight={55}
         fab={<Fab label="Add money mover" aria-label="Add money mover" onClick={() => onCreateFill?.()} />}
       />
@@ -701,7 +717,8 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
         borderBottom: `1px solid ${C.borderPanel}`,
         flexShrink: 0,
       }}>
-        <span style={{ ...DT8, color: C.textLow, flex: 1 }}>TITLE</span>
+        <span style={{ ...DT8, color: C.textLow, flex: 1 }}>ITEM</span>
+        <span style={{ ...DT8, color: C.textLow, width: 210 }}>NOTE</span>
         <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
         <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
       </div>
@@ -723,12 +740,19 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
                       {mm.title}
                     </div>
                   </div>
-                  <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>
-                    {fmtMoney(mm._dealValue)}
-                  </div>
-                  <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>
-                    {fmtMoney(mm._commission)}
-                  </div>
+                  {(() => {
+                    const noteExpired = mm.note_typed_at ? (Date.now() - new Date(mm.note_typed_at).getTime()) > 7 * 86400000 : true
+                    const noteText = (!noteExpired && mm.note) ? mm.note : ''
+                    const valStr = mm._dealValue != null ? ('$' + Math.abs(mm._dealValue).toLocaleString('en-US', { maximumFractionDigits: 0 })) : ''
+                    const commStr = mm._commission != null ? ('$' + Math.abs(mm._commission).toLocaleString('en-US', { maximumFractionDigits: 0 })) : ''
+                    return (
+                      <>
+                        <div style={{ width: 210, flexShrink: 0, ...DS6, color: C.textMid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{noteText}</div>
+                        <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>{valStr}</div>
+                        <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>{commStr}</div>
+                      </>
+                    )
+                  })()}
                 </div>
                 {i < displayRows.length - 1 && <Hair />}
               </React.Fragment>
@@ -909,240 +933,147 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
   )
 }
 
-// ── NEXT 48 ───────────────────────────────────────────────────────────────────
-type N48Item = {
+// ── NEXT 48 HERO (D3.3b) — 60px strip, full content width ─────────────────────
+type HeroItem = {
   id: string
-  kind: 'event' | 'deadline'
-  deal_id: string | null
+  kind: 'event' | 'task' | 'deadline'
   date: string
   time: string | null
   title: string
-  context: string
+  property: string
   spineColor: string
-  bp_priority: number | null
+  tintColor: string
+  deal_id: string | null
+  href: string | null
 }
 
-function Next48Panel({ refreshKey }: { refreshKey: number }) {
-  const [items, setItems] = useState<N48Item[]>([])
-  const [loading, setLoading] = useState(true)
-  const bandRef = useRef<HTMLDivElement>(null)
-  const [bandInnerWidth, setBandInnerWidth] = useState(0)
+function fmtHeroGutter(dateStr: string, timeStr: string | null): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  const day = ['SUN','MON','TUE','WED','THU','FRI','SAT'][dt.getDay()]
+  if (!timeStr) return `${day} ${d} · —`
+  const [h, min] = timeStr.split(':').map(Number)
+  const h12 = h % 12 || 12
+  const ampm = h >= 12 ? 'P' : 'A'
+  return `${day} ${d} · ${h12}:${String(min).padStart(2,'0')}${ampm}`
+}
 
-  useEffect(() => {
-    if (!bandRef.current) return
-    const ro = new ResizeObserver(([entry]) => {
-      setBandInnerWidth(entry.contentRect.width)
-    })
-    ro.observe(bandRef.current)
-    return () => ro.disconnect()
-  }, [])
+function HeroNext48({ refreshKey, onHeroDeadlineId }: { refreshKey: number; onHeroDeadlineId?: (id: string | null) => void }) {
+  const router = useRouter()
+  const [hero, setHero] = useState<HeroItem | null>(null)
+  const [windowCount, setWindowCount] = useState(0)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
-      const cst = new Date().toLocaleString('en-CA', { timeZone: 'America/Chicago', hour12: false })
-      const todayStr = cst.slice(0, 10)
-      const d1 = new Date(new Date(todayStr).getTime() + 86400000).toISOString().slice(0, 10)
+      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
       const d2 = new Date(new Date(todayStr).getTime() + 86400000 * 2).toISOString().slice(0, 10)
-      const d3 = new Date(new Date(todayStr).getTime() + 86400000 * 3).toISOString().slice(0, 10)
 
-      const [{ data: events }, { data: deadlines }] = await Promise.all([
-        supabase.from('schedule_events').select('id, title, date, time, location, deal_id').gte('date', todayStr).lte('date', d3).order('date').order('time'),
-        supabase.from('contract_deadlines').select('id, label, deadline_date, deadline_type, deal_id, deals(addr_display, name)').in('status', ['pending', 'extended']).gte('deadline_date', todayStr).lte('deadline_date', d3).order('deadline_date'),
+      const [evRes, taskRes, dlRes] = await Promise.all([
+        supabase.from('schedule_events').select('id, title, date, time, location, deal_id').lte('date', d2).gte('date', todayStr).order('date').order('time'),
+        supabase.from('tasks').select('id, title, due_date, deal_id, deals(name, addr_display)').eq('status','open').is('deleted_at',null).lte('due_date', d2).order('due_date').limit(30),
+        supabase.from('contract_deadlines').select('id, label, deadline_type, deadline_date, deal_id, deals(name, addr_display)').in('status',['pending','extended']).lte('deadline_date', d2).order('deadline_date').limit(30),
       ])
 
       const seen = new Set<string>()
-      const merged: N48Item[] = []
+      const items: HeroItem[] = []
+      const todayNow = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 
-      for (const e of (events ?? []) as any[]) {
-        const eDate = e.date ?? e.event_date ?? ''
-        const eTime = e.time ?? e.start_time ?? null
-        const key = `${e.deal_id ?? e.id}_${eDate}`
+      // Events first (they win dedup)
+      for (const e of (evRes.data ?? []) as any[]) {
+        const key = `${e.deal_id ?? e.id}_${e.date}`
         seen.add(key)
-        merged.push({ id: e.id, kind: 'event', deal_id: e.deal_id, date: eDate, time: eTime, title: e.title, context: e.location ?? '', spineColor: C.brand, bp_priority: null })
+        items.push({ id: e.id, kind: 'event', date: e.date, time: e.time, title: e.title, property: e.location ?? '', spineColor: C.brand, tintColor: 'rgba(139,92,246,0.05)', deal_id: e.deal_id, href: e.deal_id ? `/warroom/deal?id=${e.deal_id}` : null })
       }
-      for (const t of (deadlines ?? []) as any[]) {
-        const key = `${t.deal_id ?? t.id}_${t.deadline_date}`
+      // Tasks
+      for (const t of (taskRes.data ?? []) as any[]) {
+        if (!t.due_date) continue
+        const key = `task_${t.id}_${t.due_date}`
         if (seen.has(key)) continue
         seen.add(key)
-        merged.push({ id: t.id, kind: 'deadline', deal_id: t.deal_id, date: t.deadline_date, time: null, title: t.label ?? t.deadline_type ?? 'Deadline', context: t.deals?.addr_display ?? t.deals?.name ?? '', spineColor: C.hot, bp_priority: null })
+        const prop = (t as any).deals?.addr_display ?? (t as any).deals?.name ?? ''
+        items.push({ id: t.id, kind: 'task', date: t.due_date, time: null, title: t.title, property: prop, spineColor: C.late, tintColor: 'rgba(255,77,77,0.05)', deal_id: t.deal_id, href: t.deal_id ? `/warroom/deal?id=${t.deal_id}` : null })
+      }
+      // Deadlines (skip if event already deduped)
+      for (const dl of (dlRes.data ?? []) as any[]) {
+        const key = `${dl.deal_id ?? dl.id}_${dl.deadline_date}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        const prop = (dl as any).deals?.addr_display ?? (dl as any).deals?.name ?? ''
+        items.push({ id: dl.id, kind: 'deadline', date: dl.deadline_date, time: null, title: dl.label ?? dl.deadline_type ?? 'Deadline', property: prop, spineColor: C.hot, tintColor: 'rgba(255,162,58,0.05)', deal_id: dl.deal_id, href: dl.deal_id ? `/warroom/deal?id=${dl.deal_id}` : null })
       }
 
-      setItems(merged)
+      // Sort: overdue first, then ascending date
+      items.sort((a, b) => {
+        const aOverdue = a.date < todayNow
+        const bOverdue = b.date < todayNow
+        if (aOverdue && !bOverdue) return -1
+        if (!aOverdue && bOverdue) return 1
+        return a.date.localeCompare(b.date)
+      })
+
+      const first = items[0] ?? null
+      setHero(first)
+      setWindowCount(Math.max(0, items.length - 1))
+      onHeroDeadlineId?.(first?.kind === 'deadline' ? first.id : null)
       setLoading(false)
     }
     load()
-  }, [refreshKey])
+  }, [refreshKey]) // eslint-disable-line
 
-  function getColDate(offset: number): string {
-    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-    return new Date(new Date(todayStr).getTime() + 86400000 * offset).toISOString().slice(0, 10)
-  }
-
-  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-
-  // Check 50: column headers show weekday + date number (e.g. "TUE 25")
-  function colLabel(dateStr: string): string {
-    const [y, m, d] = dateStr.split('-').map(Number)
-    const dt = new Date(y, m - 1, d)
-    const wd = dt.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
-    return `${wd} ${d}`
-  }
-
-  const COLS = [
-    { label: 'TONIGHT', date: todayStr, dim: false },
-    { label: colLabel(getColDate(1)), date: getColDate(1), dim: false },
-    { label: colLabel(getColDate(2)), date: getColDate(2), dim: false },
-    { label: 'JUST BEYOND', date: getColDate(3), dim: true },
-  ]
-
-  // D3.3a: weighted column allocation
-  // Check 24: empty days collapse to label-width floor; loaded days get the surplus
-  const EMPTY_DAY_W = 70  // narrow label floor for empty columns ("TUE 25")
-  const JUST_BEYOND_W = 120
-
-  // Count rows for real day columns (excluding JUST BEYOND)
-  const overdue = items.filter(i => i.date < todayStr)
-  const colRowCounts = COLS.map((col, idx) => {
-    if (col.label === 'JUST BEYOND') return 2 // floor-only
-    const colItems = items.filter(i => i.date === col.date)
-    const displayItems = col.date === todayStr ? [...overdue, ...colItems.filter(i => i.date === todayStr)] : colItems
-    return displayItems.length
-  })
-
-  // Allocate widths: JUST BEYOND gets fixed width, empty real days get label floor,
-  // loaded real days share remaining proportionally (Check 24)
-  let colWidths: number[] = []
-  if (bandInnerWidth > 0) {
-    const GAP_COUNT = 3  // 3 gaps between 4 columns
-    const totalGaps = GAP_COUNT * 16
-    const availableW = bandInnerWidth - JUST_BEYOND_W - totalGaps
-    const realRowCounts = colRowCounts.slice(0, 3)
-    const loadedDayIndices = realRowCounts.map((c, i) => c > 0 ? i : -1).filter(i => i >= 0)
-    const totalLoadedRows = loadedDayIndices.reduce((s, i) => s + realRowCounts[i], 0)
-    const emptyDayCount = realRowCounts.filter(c => c === 0).length
-    const emptyReserved = emptyDayCount * EMPTY_DAY_W
-    const loadedBudget = availableW - emptyReserved
-
-    const rawWidths = realRowCounts.map((c, i) => {
-      if (c === 0) return EMPTY_DAY_W
-      if (totalLoadedRows === 0) return Math.round(availableW / 3)
-      return Math.max(EMPTY_DAY_W, Math.round((c / totalLoadedRows) * loadedBudget))
-    })
-
-    // Rescale if sum exceeds available (floor bumps can overflow)
-    const rawSum = rawWidths.reduce((a, b) => a + b, 0)
-    if (rawSum > availableW) {
-      const scale = availableW / rawSum
-      colWidths = rawWidths.map(w => Math.floor(w * scale))
-    } else {
-      colWidths = rawWidths
-    }
-    colWidths.push(JUST_BEYOND_W)
-  } else {
-    colWidths = [200, 200, 200, 120]
-  }
-
-  const windowItemCount = COLS.filter(col => col.label !== 'JUST BEYOND').reduce((sum, col, idx) => {
-    return sum + colRowCounts[idx]
-  }, 0)
+  const spineColor = hero ? hero.spineColor : C.muted
+  const tintBg = hero ? `linear-gradient(to right, ${hero.tintColor}, transparent 40%)` : 'none'
 
   return (
-    <div style={{ flexShrink: 0, height: 236, overflow: 'hidden' }}>
-      <Panel style={{ height: '100%' }}>
-        {/* Check 27: proper panel header — glyph, NEXT 48 label, item count left, WINDOW 48H right */}
-        <div style={{
-          flexShrink: 0,
-          padding: '13px 18px 11px',
-          borderBottom: `1px solid ${C.borderPanel}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}>
-          <span style={{ color: C.brandLift, flexShrink: 0 }}>{G.next48}</span>
-          <span style={{ ...DT1, color: C.textMid }}>NEXT 48</span>
-          <div style={{ flex: 1, height: 1, background: C.borderPanel }} />
-          <span style={{ ...DT5, color: C.textLow }}>{windowItemCount} ITEMS · WINDOW 48H</span>
-        </div>
-        <div
-          ref={bandRef}
-          style={{ flex: 1, minHeight: 0, display: 'flex', gap: 16, padding: '0 14px 14px', overflow: 'hidden' }}
-        >
-          {COLS.map((col, colIdx) => {
-            const colItems = items.filter(i => i.date === col.date)
-            const displayItems = col.date === todayStr ? [...overdue, ...colItems.filter(i => i.date === todayStr)] : colItems
-            const colW = colWidths[colIdx] || 180
+    <div
+      onClick={() => { if (hero?.href) router.push(hero.href) }}
+      style={{
+        flexShrink: 0,
+        height: 60,
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        borderRadius: 14,
+        border: `1px solid ${C.border}`,
+        background: C.bgPanel,
+        boxSizing: 'border-box',
+        padding: '0 24px 0 27px',
+        cursor: hero?.href ? 'pointer' : 'default',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Tint wash */}
+      {hero && <div style={{ position: 'absolute', inset: 0, background: tintBg, pointerEvents: 'none', borderRadius: 14 }} />}
+      {/* Spine */}
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: spineColor, borderRadius: '14px 0 0 14px' }} />
 
-            return (
-              <div key={col.label} style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: colW, flexShrink: 0 }}>
-                {/* Column header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 0 4px', flexShrink: 0 }}>
-                  <span style={{ ...DT7 as React.CSSProperties, color: col.dim ? C.textLow : C.textHi }}>{col.label}</span>
-                  <div style={{ flex: 1, height: 1, background: C.borderHair }} />
-                  <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{displayItems.length}</span>
-                </div>
-                {/* Items — D3.3: hairline rows, no cards */}
-                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                  {loading ? null : displayItems.length === 0 ? (
-                    <div style={{ ...DT4, color: C.textLow, padding: '8px 0', textAlign: 'center' }}>CLEAR</div>
-                  ) : (() => {
-                    const isJustBeyond = col.label === 'JUST BEYOND'
-                    const sortedItems = isJustBeyond
-                      ? [...displayItems].sort((a, b) => {
-                          const aIsEvent = a.kind === 'event'
-                          const bIsEvent = b.kind === 'event'
-                          if (aIsEvent && !bIsEvent) return -1
-                          if (!aIsEvent && bIsEvent) return 1
-                          if (aIsEvent && bIsEvent) return a.date.localeCompare(b.date)
-                          if (a.bp_priority === null && b.bp_priority === null) return a.date.localeCompare(b.date)
-                          if (a.bp_priority === null) return 1
-                          if (b.bp_priority === null) return -1
-                          if (b.bp_priority !== a.bp_priority) return b.bp_priority - a.bp_priority
-                          return a.date.localeCompare(b.date)
-                        })
-                      : displayItems
-                    // D3.3a item 8: terminal row replaces last visible row
-                    const maxVisible = isJustBeyond ? 1 : sortedItems.length
-                    const visibleItems = sortedItems.slice(0, maxVisible)
-                    const moreCount = isJustBeyond ? sortedItems.length - 1 : 0
-                    return (
-                      <>
-                        {visibleItems.map((item, ii) => (
-                          <React.Fragment key={item.id}>
-                            <div
-                              style={{
-                                padding: '9px 0 9px 13px',
-                                borderLeft: `3px solid ${item.spineColor}`,
-                                display: 'flex',
-                                gap: 6,
-                                minWidth: 0,
-                              }}
-                            >
-                              {/* D3.3: 40px fixed time gutter */}
-                              <div style={{ flexShrink: 0, width: 40, ...DT8, color: item.time ? C.textHi : C.textLow }}>
-                                {item.time ? item.time.slice(0, 5) : '—'}
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
-                                {item.context && <div style={{ ...DS8, color: C.textLow }}>{item.context}</div>}
-                              </div>
-                            </div>
-                            {ii < visibleItems.length - 1 && <Hair />}
-                          </React.Fragment>
-                        ))}
-                        {moreCount > 0 && (
-                          <div style={{ ...DT8, color: C.textLow, padding: '8px 0' }}>
-                            + {moreCount} MORE TONIGHT
-                          </div>
-                        )}
-                      </>
-                    )
-                  })()}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </Panel>
+      {/* Gutter — 104px */}
+      <div style={{ width: 104, flexShrink: 0, fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, color: hero ? hero.spineColor : C.muted, whiteSpace: 'nowrap', position: 'relative', zIndex: 1 }}>
+        {!loading && hero ? fmtHeroGutter(hero.date, hero.time) : ''}
+      </div>
+
+      {/* Center */}
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
+        {loading ? null : hero ? (
+          <>
+            <div style={{ fontFamily: FONT_DISP, fontSize: 21, fontWeight: 500, color: C.textHi, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.15 }}>{hero.title}</div>
+            {hero.property && <div style={{ fontSize: 15, fontWeight: 400, color: C.textLow, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>{hero.property}</div>}
+          </>
+        ) : (
+          <div style={{ fontFamily: FONT_DISP, fontSize: 21, fontWeight: 500, color: C.textLow, letterSpacing: '-0.01em' }}>NOTHING IN THE NEXT 48</div>
+        )}
+      </div>
+
+      {/* Right group */}
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1, marginLeft: 16 }}>
+        {hero && !loading && (
+          <span style={{ fontFamily: FONT_MONO, fontSize: 11.5, letterSpacing: '0.16em', color: C.textLow, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+            {windowCount > 0 ? `+${windowCount} MORE IN 48H` : 'NOTHING ELSE IN 48H'}
+          </span>
+        )}
+        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.14)' }} />
+        <span style={{ fontFamily: FONT_MONO, fontSize: 11.5, letterSpacing: '0.16em', color: C.textLow }}>NEXT 48</span>
+      </div>
     </div>
   )
 }
@@ -1287,7 +1218,7 @@ interface DeadlineRow {
   deals?: { name: string; address: string | null; addr_display: string | null; addr_street_name: string | null; addr_number: string | null; addr_city: string | null } | null
 }
 
-function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreateFill }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void }) {
+function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreateFill, heroDeadlineId }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void; heroDeadlineId?: string | null }) {
   const [deadlines, setDeadlines] = useState<DeadlineRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -1376,6 +1307,7 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
               const absDays = Math.abs(days)
               const isUrgent = !isPast && days <= 7
               const isFirstFuture = !isPast && (i === 0 || deadlines.slice(0, i).every(x => daysBetween(x.due_date) < 0))
+              const isHero = heroDeadlineId != null && d.id === heroDeadlineId
 
               return (
                 <React.Fragment key={d.id}>
@@ -1386,8 +1318,8 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
                     padding: '9px 14px',
                     minHeight: DUE_ROW_H,
                     boxSizing: 'border-box',
-                    background: isFirstFuture && !isPast ? `rgba(255,163,58,0.05)` : 'transparent',
-                    borderLeft: isPast ? `3px solid ${C.late}` : isFirstFuture ? `3px solid ${C.hot}` : '3px solid transparent',
+                    background: !isHero && isFirstFuture && !isPast ? `rgba(255,163,58,0.05)` : 'transparent',
+                    borderLeft: isHero ? '3px solid transparent' : isPast ? `3px solid ${C.late}` : isFirstFuture ? `3px solid ${C.hot}` : '3px solid transparent',
                     alignItems: 'flex-start',
                   }}>
                     {/* Days gutter */}
@@ -1582,24 +1514,76 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
   )
 }
 
-// ── LEFT RAIL ─────────────────────────────────────────────────────────────────
+// ── LEFT RAIL ──────────────────────────────────────────────────────────────────────────────
+// Rail SVG glyphs (inner content only; wrapped in <svg> below via dangerouslySetInnerHTML)
+const RAIL_HOME_SVG = `<rect x="3" y="3" width="7.5" height="18"/><rect x="13.5" y="3" width="7.5" height="8"/><rect x="13.5" y="14" width="7.5" height="7"/>`
+const RAIL_DEALS_SVG = `<rect x="3.5" y="4" width="17" height="10" rx="1.5"/><path d="M12 14v7M7 7.8h6M7 10.8h9"/>`
+const RAIL_SCHED_SVG = `<rect x="3.5" y="4.5" width="17" height="16" rx="2"/><path d="M3.5 9.5h17"/><rect x="7" y="12.6" width="4" height="4" fill="currentColor" stroke="none"/>`
+const RAIL_DEADLINES_SVG = `<path d="M6 20.8V3.6"/><path d="M6 4.4h10.4l-1.7 4.1 1.7 4.1H6"/>`
+const RAIL_MONEY_SVG = `<rect x="2.6" y="6.4" width="18.8" height="11.2" rx="2.2"/><circle cx="12" cy="12" r="3"/>`
+const RAIL_PORTF_SVG = `<path d="M12 2.8 21 7.4l-9 4.6-9-4.6z"/><path d="M3 12.2 12 16.8l9-4.6"/><path d="M3 16.8 12 21.4l9-4.6"/>`
+const RAIL_ENTITY_SVG = `<rect x="3.6" y="3.2" width="10.2" height="17.6" rx="1.6"/><path d="M13.8 11.2h6.6v9.6h-6.6"/><path d="M6.6 7v1.8M11 7v1.8M6.6 11.1v1.8M11 11.1v1.8M6.6 15.2v1.8M11 15.2v1.8"/>`
+const RAIL_PEOPLE_SVG = `<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6"/><path d="M16 5.4a3.2 3.2 0 0 1 0 6M17.5 14.9c2.1.6 3.5 2.4 3.5 5.1"/>`
+const RAIL_SET_SVG = `<path d="M3.4 8.6h4M13 8.6h7.6M3.4 15.4h7.1M16.1 15.4h4.5"/><circle cx="10.1" cy="8.6" r="2.6"/><circle cx="13.3" cy="15.4" r="2.6"/>`
+
+type RailSlot2 = 'home' | 'deals' | 'sched' | 'deadlines' | 'money' | 'portf' | 'entity' | 'people' | 'set'
+// Legacy alias kept for LeftRail prop type
 type RailSlot = 'HOME' | 'PEOPLE' | 'DEALS'
 
 function LeftRail({ active }: { active: RailSlot }) {
   const router = useRouter()
 
-  // HOME=1 · DEALS=2 · PEOPLE=3 (per D5.2 spec update)
-  const slots: { id: RailSlot; label: string; glyph: React.ReactNode; href: string }[] = [
-    { id: 'HOME',   label: 'HOME',   glyph: G.home,   href: '/warroom' },
-    { id: 'DEALS',  label: 'DEALS',  glyph: (
-      // Document/pipeline glyph per 49a frame
-      <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3.5" y="4" width="17" height="10" rx="1.5"/>
-        <path d="M12 14v7M7 7.8h6M7 10.8h9"/>
-      </svg>
-    ), href: '/warroom/deals' },
-    { id: 'PEOPLE', label: 'PEOPLE', glyph: G.people, href: '/warroom/contacts' },
+  const slots: { id: RailSlot2; label: string; svgInner: string; href: string | null; hasRoute: boolean }[] = [
+    { id: 'home',      label: 'HOME',      svgInner: RAIL_HOME_SVG,      href: '/warroom',          hasRoute: true },
+    { id: 'deals',     label: 'DEALS',     svgInner: RAIL_DEALS_SVG,     href: '/warroom/deals',    hasRoute: true },
+    { id: 'sched',     label: 'SCHED',     svgInner: RAIL_SCHED_SVG,     href: null,                hasRoute: false },
+    { id: 'deadlines', label: 'DEADLINES', svgInner: RAIL_DEADLINES_SVG, href: null,                hasRoute: false },
+    { id: 'money',     label: 'MONEY',     svgInner: RAIL_MONEY_SVG,     href: null,                hasRoute: false },
+    { id: 'portf',     label: 'PORTF',     svgInner: RAIL_PORTF_SVG,     href: null,                hasRoute: false },
+    { id: 'entity',    label: 'ENTITY',    svgInner: RAIL_ENTITY_SVG,    href: null,                hasRoute: false },
+    { id: 'people',    label: 'PEOPLE',    svgInner: RAIL_PEOPLE_SVG,    href: '/warroom/contacts', hasRoute: true },
   ]
+  const setSlot = { id: 'set' as RailSlot2, label: 'SET', svgInner: RAIL_SET_SVG, href: null, hasRoute: false }
+
+  function isSlotActive(slot: typeof slots[0]): boolean {
+    if (!slot.hasRoute) return false
+    if (slot.id === 'home') return active === 'HOME'
+    if (slot.id === 'deals') return active === 'DEALS'
+    if (slot.id === 'people') return active === 'PEOPLE'
+    return false
+  }
+
+  function RailSlotEl({ slot, isSet }: { slot: typeof slots[0] | typeof setSlot; isSet?: boolean }) {
+    const act = !isSet && isSlotActive(slot as typeof slots[0])
+    const color = act ? C.brandLift : C.textLow
+    const inert = !slot.hasRoute
+
+    return (
+      <button
+        onClick={!inert && slot.href ? () => router.push(slot.href!) : undefined}
+        aria-disabled={inert ? 'true' : undefined}
+        style={{
+          width: 76,
+          padding: '13px 0',
+          borderRadius: 10,
+          border: 'none',
+          background: act ? 'rgba(139,92,246,0.14)' : 'transparent',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 7,
+          cursor: inert ? 'default' : 'pointer',
+          color,
+        }}
+      >
+        <span
+          style={{ color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          dangerouslySetInnerHTML={{ __html: `<svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${slot.svgInner}</svg>` }}
+        />
+        <span style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', color }}>{slot.label}</span>
+      </button>
+    )
+  }
 
   return (
     <div style={{
@@ -1614,34 +1598,14 @@ function LeftRail({ active }: { active: RailSlot }) {
       paddingTop: 16,
       gap: 4,
     }}>
-      {slots.map(s => {
-        const isActive = s.id === active
-        return (
-          <button
-            key={s.id}
-            onClick={() => router.push(s.href)}
-            style={{
-              width: 76,
-              padding: '13px 0',
-              borderRadius: 10,
-              border: 'none',
-              background: isActive ? 'rgba(139,92,246,0.14)' : 'transparent',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 7,
-              cursor: 'pointer',
-              color: isActive ? C.brandLift : C.textLow,
-            }}
-          >
-            {s.glyph}
-            <span style={{ ...DT5, color: 'inherit' }}>{s.label}</span>
-          </button>
-        )
-      })}
+      {slots.map(s => <RailSlotEl key={s.id} slot={s} />)}
+      <div style={{ flex: 1 }} />
+      <RailSlotEl slot={setSlot} isSet />
+      <div style={{ height: 16 }} />
     </div>
   )
 }
+
 
 // ── ROOT PAGE ─────────────────────────────────────────────────────────────────
 export default function WarRoomPage() {
@@ -1671,6 +1635,7 @@ export default function WarRoomPage() {
   const [ucRowCount, setUcRowCount] = useState(3)
   const [schedRowCount, setSchedRowCount] = useState(4)
   const [dueRowCount, setDueRowCount] = useState(6)
+  const [heroDeadlineId, setHeroDeadlineId] = useState<string | null>(null)
 
   // Item 149: P0 mobile redirect — phones go to /warroom3
   useEffect(() => {
@@ -1811,7 +1776,7 @@ export default function WarRoomPage() {
         }}>
 
           {/* ── NEXT 48 — 236px fixed ── */}
-          <Next48Panel refreshKey={refreshKey} />
+          <HeroNext48 refreshKey={refreshKey} onHeroDeadlineId={setHeroDeadlineId} />
 
           {/* ── Three-column row — Check 5: widths computed via ResizeObserver ── */}
           <div
@@ -1871,6 +1836,7 @@ export default function WarRoomPage() {
                 visibleRows={colCAllocs[1].visibleRows}
                 onCountChange={setDueRowCount}
                 onCreateFill={() => setFillMode('deadline')}
+                heroDeadlineId={heroDeadlineId}
               />
               <ReceivablesCard refreshKey={refreshKey} />
             </div>
