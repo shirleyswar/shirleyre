@@ -304,47 +304,11 @@ const PLACEHOLDER_STYLE = `
 `
 
 const PAC_STYLE = `
-  /* Force address input to Latin font — override any Google Places injection */
+  /* Force address input to Latin font */
   #wr-address-input,
   input[data-wr-address="1"] {
     font-family: 'Space Grotesk', system-ui, sans-serif !important;
     font-size: 17px !important;
-  }
-  .pac-container {
-    background: #1A1929 !important;
-    border: 1px solid rgba(255,255,255,0.14) !important;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
-    font-family: 'Space Grotesk', system-ui, sans-serif !important;
-    margin-top: 4px !important;
-    z-index: 9999 !important;
-  }
-  .pac-item {
-    padding: 10px 14px !important;
-    font-size: 13px !important;
-    color: #B8B6C6 !important;
-    border-top: 1px solid rgba(255,255,255,0.08) !important;
-    cursor: pointer !important;
-    font-family: 'Space Grotesk', system-ui, sans-serif !important;
-    background: #1A1929 !important;
-  }
-  .pac-item:hover, .pac-item-selected {
-    background: rgba(139,92,246,0.12) !important;
-    color: #EFEEF4 !important;
-  }
-  .pac-item-query {
-    color: #EFEEF4 !important;
-    font-size: 13px !important;
-    font-family: 'Space Grotesk', system-ui, sans-serif !important;
-  }
-  .pac-matched {
-    color: #A78BFA !important;
-  }
-  .pac-icon, .pac-icon-marker {
-    display: none !important;
-  }
-  .pac-logo {
-    display: none !important;
   }
 `
 
@@ -414,123 +378,96 @@ function parseAddr(raw: string) {
   return { addrNumber, addrDirection, addrStreetName: street.join(' '), addrCity: 'Baton Rouge', addrDisplay: raw.trim() }
 }
 
-// ── Google Maps Places script loader ─────────────────────────────────────────
-let _mapsLoaded = false
-let _mapsLoading = false
-let _mapsCallbacks: Array<() => void> = []
-
-function loadGoogleMaps(apiKey: string): Promise<void> {
-  return new Promise((resolve) => {
-    if (_mapsLoaded) { resolve(); return }
-    _mapsCallbacks.push(resolve)
-    if (_mapsLoading) return
-    _mapsLoading = true
-    const callbackName = '__gmaps_cb_' + Date.now()
-    ;(window as any)[callbackName] = () => {
-      _mapsLoaded = true
-      _mapsLoading = false
-      _mapsCallbacks.forEach(fn => fn())
-      _mapsCallbacks = []
-      delete (window as any)[callbackName]
-    }
-    const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${callbackName}`
-    script.async = true
-    script.onerror = () => {
-      _mapsLoading = false
-      _mapsCallbacks.forEach(fn => fn())
-      _mapsCallbacks = []
-    }
-    document.head.appendChild(script)
-  })
-}
-
-function getACComponent(place: google.maps.places.PlaceResult, type: string): string {
-  const comp = place.address_components?.find(c => c.types.includes(type))
-  return comp?.long_name ?? ''
-}
-function getACComponentShort(place: google.maps.places.PlaceResult, type: string): string {
-  const comp = place.address_components?.find(c => c.types.includes(type))
-  return comp?.short_name ?? ''
+interface PriorAddr {
+  addrDisplay: string
+  addrStreetName: string
+  addrDirection: string
+  addrNumber: string
+  addrCity: string
 }
 
 function AddressBlock({ addr, onChange, optional }: {
   addr: AddrState; onChange: (a: AddrState) => void; optional?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const acRef = useRef<google.maps.places.Autocomplete | null>(null)
-  const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? ''
+  const dropRef = useRef<HTMLDivElement>(null)
+  const [priorAddrs, setPriorAddrs] = useState<PriorAddr[]>([])
+  const [dropOpen, setDropOpen] = useState(false)
 
-  // Load Google Maps and attach autocomplete
+  // Fetch all prior deal addresses once on mount
   useEffect(() => {
-    if (!mapsKey || addr.confirmed) return
-    loadGoogleMaps(mapsKey).then(() => {
-      if (!inputRef.current || acRef.current) return
-      if (typeof google === 'undefined' || !google?.maps?.places) return
-      const ac = new google.maps.places.Autocomplete(inputRef.current, {
-        types: ['address'],
-        componentRestrictions: { country: 'us' },
-        fields: ['address_components', 'formatted_address'],
-      })
-      acRef.current = ac
-      ac.addListener('place_changed', () => {
-        const place = ac.getPlace()
-        if (!place?.address_components) return
-        const streetNum = getACComponent(place, 'street_number')
-        const route = getACComponent(place, 'route')
-        const city = getACComponent(place, 'locality') || 'Baton Rouge'
-        const state = getACComponentShort(place, 'administrative_area_level_1')
-        const zip = getACComponent(place, 'postal_code')
-        // Extract cardinal direction from route
-        const routeTokens = route.split(/\s+/)
-        let addrDirection = ''
-        const streetParts: string[] = []
-        for (const tok of routeTokens) {
-          const up = tok.toUpperCase()
-          if (!addrDirection && DIRECTIONS.includes(up)) { addrDirection = up }
-          else { streetParts.push(tok) }
+    supabase
+      .from('deals')
+      .select('addr_display, addr_street_name, addr_direction, addr_number, addr_city')
+      .not('addr_display', 'is', null)
+      .then(({ data }) => {
+        if (!data) return
+        const seen = new Set<string>()
+        const deduped: PriorAddr[] = []
+        for (const d of data) {
+          const key = (d.addr_display ?? '').trim()
+          if (!key || seen.has(key)) continue
+          seen.add(key)
+          deduped.push({
+            addrDisplay: key,
+            addrStreetName: d.addr_street_name ?? '',
+            addrDirection: d.addr_direction ?? '',
+            addrNumber: d.addr_number ?? '',
+            addrCity: d.addr_city ?? 'Baton Rouge',
+          })
         }
-        onChange({
-          raw: place.formatted_address ?? route,
-          confirmed: true,
-          addrDisplay: place.formatted_address ?? '',
-          addrStreetName: streetParts.join(' ') || route,
-          addrDirection,
-          addrNumber: streetNum,
-          addrCity: city,
-          addrState: state,
-          addrZip: zip,
-        })
+        setPriorAddrs(deduped)
       })
-    })
-    return () => {
-      if (acRef.current) {
-        google?.maps?.event?.clearInstanceListeners(acRef.current)
-        acRef.current = null
-      }
-      // Strip Google overlays injected into document.body
-      document.querySelectorAll('iframe[src*="maps.googleapis.com"]').forEach(el => el.remove())
-      document.querySelectorAll('.gm-err-container, .gm-err-content, [class*="gm-err"]').forEach(el => el.remove())
-      document.querySelectorAll('.pac-container').forEach(el => el.remove())
-      // Reset module-level Maps loading state
-      _mapsLoaded = false
-      _mapsLoading = false
-      _mapsCallbacks = []
+  }, [])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!dropOpen) return
+    function handler(e: MouseEvent) {
+      if (
+        inputRef.current && !inputRef.current.contains(e.target as Node) &&
+        dropRef.current && !dropRef.current.contains(e.target as Node)
+      ) setDropOpen(false)
     }
-  }, [mapsKey, addr.confirmed]) // eslint-disable-line react-hooks/exhaustive-deps
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [dropOpen])
+
+  const query = addr.raw.trim()
+  const filtered = query.length > 0
+    ? priorAddrs.filter(p =>
+        p.addrDisplay.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 8)
+    : []
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    onChange({ ...addr, raw: val, confirmed: false })
+    setDropOpen(val.trim().length > 0)
+  }
+
+  const selectAddr = (p: PriorAddr) => {
+    onChange({
+      raw: p.addrDisplay,
+      confirmed: true,
+      addrDisplay: p.addrDisplay,
+      addrStreetName: p.addrStreetName,
+      addrDirection: p.addrDirection,
+      addrNumber: p.addrNumber,
+      addrCity: p.addrCity || 'Baton Rouge',
+    })
+    setDropOpen(false)
+  }
 
   const confirm = () => {
     if (!addr.raw.trim()) return
     const parsed = parseAddr(addr.raw)
     onChange({ ...addr, confirmed: true, ...parsed })
+    setDropOpen(false)
   }
+
   const reopen = () => {
     onChange({ ...addr, confirmed: false })
-    // Detach autocomplete so it re-attaches on next render
-    if (acRef.current) {
-      google?.maps?.event?.clearInstanceListeners(acRef.current)
-      acRef.current = null
-    }
   }
 
   if (addr.confirmed) {
@@ -540,7 +477,7 @@ function AddressBlock({ addr, onChange, optional }: {
         <FieldLabel text={optional ? 'ADDRESS (OPTIONAL)' : 'ADDRESS'} />
         <div style={{
           background: 'rgba(52,211,153,0.06)',
-          border: `1px solid rgba(52,211,153,0.35)`,
+          border: '1px solid rgba(52,211,153,0.35)',
           borderRadius: 10, padding: '12px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           overflow: 'hidden',
@@ -590,11 +527,33 @@ function AddressBlock({ addr, onChange, optional }: {
             id="wr-address-input"
             data-wr-address="1"
             type="text" value={addr.raw}
-            onChange={e => onChange({ ...addr, raw: e.target.value })}
-            onKeyDown={e => { if (e.key === 'Enter') confirm() }}
+            onChange={handleInputChange}
+            onKeyDown={e => {
+              if (e.key === 'Enter') confirm()
+              if (e.key === 'Escape') setDropOpen(false)
+            }}
             placeholder="Street address"
             style={{ ...FIELD_STYLE, paddingLeft: 40, fontFamily: FONT_DISP, fontSize: 17 }}
           />
+          {dropOpen && filtered.length > 0 && (
+            <div ref={dropRef} style={{
+              position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 300,
+              background: '#1A1929', border: `1px solid ${C.border}`, borderRadius: 10,
+              overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+            }}>
+              {filtered.map((p, i) => (
+                <button key={p.addrDisplay} onMouseDown={e => { e.preventDefault(); selectAddr(p) }} style={{
+                  display: 'block', width: '100%', textAlign: 'left', boxSizing: 'border-box',
+                  padding: '11px 16px', border: 'none', cursor: 'pointer',
+                  background: 'transparent',
+                  borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                  fontFamily: FONT_DISP, fontSize: 14, color: C.textMid,
+                }}>
+                  {p.addrDisplay}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <button onClick={confirm} disabled={!addr.raw.trim()} style={{
           height: 52, padding: '0 20px', borderRadius: 10,
