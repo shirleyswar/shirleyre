@@ -68,16 +68,30 @@ export default function MoneyMoversSheet({ open, onClose, refreshKey, onOpenAdd 
     setLoadError(false)
     setDeleteError(null)
     try {
-      const { data, error } = await supabase
+      // Try full column set first (commission + note columns added post-migration).
+      // If columns don't exist yet, fall back to base columns — same pattern as web (app/warroom/page.tsx).
+      let rawData: any[] | null = null
+      const { data: fullData, error: fullErr } = await supabase
         .from('money_movers')
         .select('id, title, deal_id, commission, note, note_typed_at')
         .order('created_at', { ascending: false })
         .limit(50)
-      if (error) { setLoadError(true); setLoading(false); return }
+      if (!fullErr) {
+        rawData = fullData
+      } else {
+        // Columns not yet migrated — fall back to base columns only
+        const { data: baseData, error: baseErr } = await supabase
+          .from('money_movers')
+          .select('id, title, deal_id, commission')
+          .order('created_at', { ascending: false })
+          .limit(50)
+        if (baseErr) { setLoadError(true); setLoading(false); return }
+        rawData = baseData
+      }
 
       // Fetch deal_economics for any linked records so we can compute commission
       // the same way web does (calcCommission from lib/dealMath.ts)
-      const dealIds = (data ?? []).map((m: any) => m.deal_id).filter(Boolean)
+      const dealIds = (rawData ?? []).map((m: any) => m.deal_id).filter(Boolean)
       let econMap: Record<string, any> = {}
       if (dealIds.length > 0) {
         const { data: econData } = await supabase
@@ -88,7 +102,7 @@ export default function MoneyMoversSheet({ open, onClose, refreshKey, onOpenAdd 
       }
 
       // Compute effective commission: calcCommission for linked records, raw commission otherwise
-      const enriched = (data ?? []).map((m: any) => {
+      const enriched = (rawData ?? []).map((m: any) => {
         const econ = m.deal_id ? econMap[m.deal_id] : null
         const _commission = econ ? calcCommission(econ) : (m.commission as number | null)
         return { ...m, _commission }
