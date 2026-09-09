@@ -1567,7 +1567,7 @@ function NewDealForm() {
         })
       }
 
-      router.push('/warroom/deal?id=' + newId)
+      router.push('/warroom/deal/?id=' + newId)
     } catch (err) {
       console.error('Save error:', err)
       setSaving(false)
@@ -2065,7 +2065,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
           deadline_date: deadlineWhen, deadline_type: 'custom', status: 'pending',
         })
       }
-      router.push('/warroom/deal?id=' + newId)
+      router.push('/warroom/deal/?id=' + newId)
     } catch (err) {
       console.error('Save error:', err)
       setSaving(false)

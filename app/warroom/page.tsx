@@ -767,7 +767,7 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
                   </div>
                   <div
                     style={{ width: 34, height: 34, borderRadius: 9, border: '1px solid rgba(139,92,246,0.45)', background: 'rgba(139,92,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
-                    onClick={() => window.open('/warroom/deal?id=' + mm.deal_id, '_self')}
+                    onClick={() => window.open('/warroom/deal/?id=' + mm.deal_id, '_self')}
                   >
                     <span style={{ fontFamily: FONT_DISP, fontSize: 16, color: '#A78BFA' }}>↗</span>
                   </div>
@@ -1207,7 +1207,7 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
                 <React.Fragment key={d.id}>
                   {/* Check 63: whole row clickable → deal page */}
                   <div
-                    onClick={() => router.push('/warroom/deal?id=' + d.id)}
+                    onClick={() => router.push('/warroom/deal/?id=' + d.id)}
                     style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: UC_ROW_H, boxSizing: 'border-box', cursor: 'pointer' }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -1297,7 +1297,7 @@ function HeroNext48({ refreshKey, onHeroDeadlineId }: { refreshKey: number; onHe
       for (const e of (evRes.data ?? []) as any[]) {
         const key = `${e.deal_id ?? e.id}_${e.date}`
         seen.add(key)
-        items.push({ id: e.id, kind: 'event', date: e.date, time: e.time, title: e.title, property: e.location ?? '', spineColor: C.brand, tintColor: 'rgba(139,92,246,0.05)', deal_id: e.deal_id, href: e.deal_id ? `/warroom/deal?id=${e.deal_id}` : null })
+        items.push({ id: e.id, kind: 'event', date: e.date, time: e.time, title: e.title, property: e.location ?? '', spineColor: C.brand, tintColor: 'rgba(139,92,246,0.05)', deal_id: e.deal_id, href: e.deal_id ? `/warroom/deal/?id=${e.deal_id}` : null })
       }
       // Tasks
       for (const t of (taskRes.data ?? []) as any[]) {
@@ -1306,7 +1306,7 @@ function HeroNext48({ refreshKey, onHeroDeadlineId }: { refreshKey: number; onHe
         if (seen.has(key)) continue
         seen.add(key)
         const prop = (t as any).deals?.addr_display ?? (t as any).deals?.name ?? ''
-        items.push({ id: t.id, kind: 'task', date: t.due_date, time: null, title: t.title, property: prop, spineColor: C.late, tintColor: 'rgba(255,77,77,0.05)', deal_id: t.deal_id, href: t.deal_id ? `/warroom/deal?id=${t.deal_id}` : null })
+        items.push({ id: t.id, kind: 'task', date: t.due_date, time: null, title: t.title, property: prop, spineColor: C.late, tintColor: 'rgba(255,77,77,0.05)', deal_id: t.deal_id, href: t.deal_id ? `/warroom/deal/?id=${t.deal_id}` : null })
       }
       // Deadlines (skip if event already deduped)
       for (const dl of (dlRes.data ?? []) as any[]) {
@@ -1314,7 +1314,7 @@ function HeroNext48({ refreshKey, onHeroDeadlineId }: { refreshKey: number; onHe
         if (seen.has(key)) continue
         seen.add(key)
         const prop = (dl as any).deals?.addr_display ?? (dl as any).deals?.name ?? ''
-        items.push({ id: dl.id, kind: 'deadline', date: dl.deadline_date, time: null, title: dl.label ?? dl.deadline_type ?? 'Deadline', property: prop, spineColor: C.hot, tintColor: 'rgba(255,162,58,0.05)', deal_id: dl.deal_id, href: dl.deal_id ? `/warroom/deal?id=${dl.deal_id}` : null })
+        items.push({ id: dl.id, kind: 'deadline', date: dl.deadline_date, time: null, title: dl.label ?? dl.deadline_type ?? 'Deadline', property: prop, spineColor: C.hot, tintColor: 'rgba(255,162,58,0.05)', deal_id: dl.deal_id, href: dl.deal_id ? `/warroom/deal/?id=${dl.deal_id}` : null })
       }
 
       // Sort: overdue first, then ascending date

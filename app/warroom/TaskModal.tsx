@@ -877,7 +877,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
             {/* 3. Deal row */}
             {task.deal_id && task.deals && (
               <a
-                href={`/warroom/deal?id=${task.deal_id}`}
+                href={`/warroom/deal/?id=${task.deal_id}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
