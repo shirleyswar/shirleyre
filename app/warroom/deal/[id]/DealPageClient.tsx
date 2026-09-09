@@ -23,6 +23,7 @@ import { formatDealTitle, editNamePrefill, parseListingFilingName, formatListing
 import { dealPhotoPublicUrl, uploadDealPhoto } from '@/lib/dealPhoto'
 import { HOUSE_SPLIT } from '@/lib/dealMath'
 import LaunchControl from './LaunchControl'
+import LaunchModal from './LaunchModal'
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 const PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -87,11 +88,9 @@ const PROPERTY_PLATE_MAP: Record<string, string> = {
   MULTIFAMILY: '/assets/plates/plate-multi-v7.png',
 }
 
-// Transaction plates
-const TX_PLATE_MAP: Record<string, string> = {
-  sale:  '/assets/plates/plate-sale-v7.png',
-  lease: '/assets/plates/plate-lease-v7.png',
-}
+// 154: new painted plates for independent SALE + LEASE marks
+const SALE_PLATE = '/assets/plates/sale-pill-154.png'
+const LEASE_PLATE = '/assets/plates/lease-pill-154.png'
 
 // ── Panel / card primitives ──────────────────────────────────────────────────
 function Panel({
@@ -285,6 +284,8 @@ function DealPageClientInner({ id }: { id: string }) {
 
   // PIN gate — accept either session key
   const [pinValid, setPinValid] = useState<boolean | null>(null)
+  const [launchOpen, setLaunchOpen] = useState(false)
+  const [launched, setLaunched] = useState(false)
   useEffect(() => {
     const exp1 = parseInt(localStorage.getItem('wr_session_exp_v2') || '0')
     const exp2 = parseInt(localStorage.getItem('wr3_session_exp') || '0')
@@ -511,7 +512,8 @@ function DealPageClientInner({ id }: { id: string }) {
   const propPlateSrc = propType ? (PROPERTY_PLATE_MAP[propType] ?? null) : null
 
   // Transaction plate
-  const txPlateSrc = txType && txType in TX_PLATE_MAP ? TX_PLATE_MAP[txType] : null
+  const showSalePlate  = txType === 'sale'  || txType === 'both'
+  const showLeasePlate = txType === 'lease' || txType === 'both'
 
   // Address formatting
   const shortAddr = formatDealTitle(deal)
@@ -661,30 +663,25 @@ function DealPageClientInner({ id }: { id: string }) {
             </span>
           )}
 
-          {/* Transaction plate — SALE or LEASE.
-              Mount rule (section 5, directive): SALE/LEASE carry internal padding.
-              Render file at 142.0×49.8px, offset −3.0 left / −2.8 top.
-              Pill lands at 135.9×44.0px inside the clipping box. */}
-          {txPlateSrc && (
-            <div style={{
-              position: 'relative',
-              width: 135.9,
-              height: 44,
-              overflow: 'hidden',
-              flexShrink: 0,
-            }}>
+          {/* Transaction marks — SALE and LEASE, independent (154) */}
+          {showSalePlate && (
+            <div style={{ height: 44, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={txPlateSrc}
-                alt={txType ?? ''}
-                style={{
-                  position: 'absolute',
-                  width: 142.0,
-                  height: 49.8,
-                  left: -3.0,
-                  top: -2.8,
-                  display: 'block',
-                }}
+                src={SALE_PLATE}
+                alt="SALE"
+                style={{ height: 44, width: 'auto', display: 'block' }}
+                draggable={false}
+              />
+            </div>
+          )}
+          {showLeasePlate && (
+            <div style={{ height: 44, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={LEASE_PLATE}
+                alt="LEASE"
+                style={{ height: 44, width: 'auto', display: 'block' }}
                 draggable={false}
               />
             </div>
@@ -1244,7 +1241,15 @@ function DealPageClientInner({ id }: { id: string }) {
         }}>
 
           {/* LAUNCH CONTROL — desktop-local, item 50 */}
-          <LaunchControl onClick={() => console.log('[deal2] Launch clicked — stub')} />
+          <LaunchControl onClick={() => setLaunchOpen(true)} launched={launched} />
+          {launchOpen && txType && (
+            <LaunchModal
+              dealId={dealId}
+              txType={txType}
+              onClose={() => setLaunchOpen(false)}
+              onLaunched={() => { setLaunched(true); setLaunchOpen(false) }}
+            />
+          )}
 
           {/* COMMISSION BLOCK — item 49 */}
           {/* If representation_role === 'developer': block is entirely absent (no dash, not zero) */}

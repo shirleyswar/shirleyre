@@ -981,7 +981,7 @@ function SaleLeaseMarks({ saleOn, leaseOn, onSale, onLease }: {
           opacity: saleOn ? 1 : 0.30, transition: 'opacity 0.12s',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/plates/plate-sale-v7.png" alt="SALE"
+          <img src="/assets/plates/sale-pill-154.png" alt="SALE"
             style={{ height: 32, width: 'auto', display: 'block' }} draggable={false} />
         </button>
         <button onClick={onLease} style={{
@@ -989,7 +989,7 @@ function SaleLeaseMarks({ saleOn, leaseOn, onSale, onLease }: {
           opacity: leaseOn ? 1 : 0.30, transition: 'opacity 0.12s',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/plates/plate-lease-v7.png" alt="LEASE"
+          <img src="/assets/plates/lease-pill-154.png" alt="LEASE"
             style={{ height: 32, width: 'auto', display: 'block' }} draggable={false} />
         </button>
         {!saleOn && !leaseOn && (

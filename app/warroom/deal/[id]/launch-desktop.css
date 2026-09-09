@@ -89,3 +89,85 @@
     opacity: 0;
   }
 }
+
+/* 154 — orb + label + chevron composition */
+.ld2-launch--154 {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 380px;
+  height: 64px;
+  padding: 4px 16px 4px 4px;
+  border: 1px solid rgba(167, 139, 250, .30);
+  border-radius: 34px;
+  background: linear-gradient(180deg, #15111F 0%, #0A0912 100%);
+  box-shadow: 0 8px 22px rgba(70, 25, 175, .26);
+  cursor: pointer;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  overflow: visible;
+}
+.ld2-launch--154:hover {
+  border-color: rgba(167, 139, 250, .55);
+  box-shadow: 0 10px 30px rgba(70, 25, 175, .45);
+  transition: border-color .22s ease, box-shadow .22s ease;
+}
+
+/* Energy orb — circular, 56px rendered from 185×185 asset */
+.ld2-launch__orb {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: block;
+  flex-shrink: 0;
+  object-fit: cover;
+  /* soft glow from the art itself — no extra filter */
+}
+
+/* Label */
+.ld2-launch__label154 {
+  flex: 1;
+  font: 700 17px/1 'JetBrains Mono', monospace;
+  letter-spacing: .10em;
+  color: #FFFFFF;
+  text-shadow: 0 0 18px rgba(167, 139, 250, .55);
+  white-space: nowrap;
+}
+
+/* Chevrons >>> */
+.ld2-launch__chevrons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.ld2-launch__chev {
+  font: 700 16px/1 'JetBrains Mono', monospace;
+  color: rgba(167, 139, 250, 0.9);
+  animation-duration: 1.2s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+.ld2-launch__chev--1 { animation-name: ld2-chev-pulse; animation-delay: 0s; }
+.ld2-launch__chev--2 { animation-name: ld2-chev-pulse; animation-delay: 0.2s; }
+.ld2-launch__chev--3 { animation-name: ld2-chev-pulse; animation-delay: 0.4s; }
+
+@keyframes ld2-chev-pulse {
+  0%, 100% { opacity: 0.35; transform: translateX(0); }
+  50%       { opacity: 1;    transform: translateX(2px); }
+}
+
+/* Reduced motion — still frame, no animation */
+.ld2-launch__chevrons--still .ld2-launch__chev {
+  animation: none;
+  opacity: 0.7;
+}
+
+/* Launched state — well cools, chevrons pause */
+.ld2-launch--launched {
+  border-color: rgba(52, 211, 153, .35);
+}
+.ld2-launch--launched .ld2-launch__chevrons {
+  opacity: 0.3;
+}
