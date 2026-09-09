@@ -636,7 +636,9 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
 }) {
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
-  const staged = noteText.trim().length > 0
+  const [titleValue, setTitleValue] = useState(mm.title)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const staged = noteText.trim().length > 0 || titleValue !== mm.title
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -646,27 +648,38 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [onClose])
 
-  async function writeNote() {
-    if (!noteText.trim()) return
+  async function commitStagedChanges() {
+    if (!staged || saving) return
     setSaving(true)
-    await supabase.from('money_movers').update({
-      note: noteText.trim(),
-      note_typed_at: new Date().toISOString(),
-    }).eq('id', mm.id)
-    onNoteAdded(mm.id, noteText.trim())
+    const updates: Record<string, any> = {}
+    const hasNote = noteText.trim().length > 0
+    if (hasNote) {
+      updates.note = noteText.trim()
+      updates.note_typed_at = new Date().toISOString()
+    }
+    const titleChanged = titleValue.trim() !== mm.title
+    if (titleChanged) {
+      updates.title = titleValue.trim() || mm.title
+    }
+    if (Object.keys(updates).length > 0) {
+      await supabase.from('money_movers').update(updates).eq('id', mm.id)
+    }
+    if (hasNote) {
+      onNoteAdded(mm.id, noteText.trim())
+    }
     setNoteText('')
     setSaving(false)
   }
 
   async function handleConfirm() {
     if (staged && !saving) {
-      await writeNote()
+      await commitStagedChanges()
     }
   }
 
   async function handleCloseAndLog() {
     if (staged && !saving) {
-      await writeNote()
+      await commitStagedChanges()
     }
     onCloseAndLog(mm.id)
   }
@@ -742,10 +755,24 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
               <span style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: '#8E8CA0' }}>HOME · MONEY MOVERS</span>
             </div>
             <div style={{ height: 16 }} />
-            {/* Title */}
-            <div style={{ fontFamily: FONT_DISP, fontSize: 32, fontWeight: 500, color: '#EFEEF4', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.09)' }}>
-              {mm.title}
-            </div>
+            {/* Title — tap-to-edit */}
+            {editingTitle ? (
+              <input
+                autoFocus
+                value={titleValue}
+                onChange={e => setTitleValue(e.target.value)}
+                onBlur={() => setEditingTitle(false)}
+                onKeyDown={e => { if (e.key === 'Enter') setEditingTitle(false) }}
+                style={{ fontFamily: FONT_DISP, fontSize: 32, fontWeight: 500, color: '#EFEEF4', paddingBottom: 12, borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '1px solid rgba(255,255,255,0.09)', background: 'transparent', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+              />
+            ) : (
+              <div
+                onClick={() => setEditingTitle(true)}
+                style={{ fontFamily: FONT_DISP, fontSize: 32, fontWeight: 500, color: '#EFEEF4', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.09)', cursor: 'text' }}
+              >
+                {titleValue}
+              </div>
+            )}
             <div style={{ height: 18 }} />
             {/* Deal row */}
             <div style={{ height: 65, flex: 'none', background: '#1E1D26', borderRadius: 12, padding: '0 16px', display: 'flex', alignItems: 'center' }}>
@@ -767,7 +794,7 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
                   </div>
                   <div
                     style={{ width: 34, height: 34, borderRadius: 9, border: '1px solid rgba(139,92,246,0.45)', background: 'rgba(139,92,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
-                    onClick={() => window.open('/warroom/deal/?id=' + mm.deal_id, '_self')}
+                    onClick={e => { e.stopPropagation(); if (mm.deal_id) { window.location.href = '/warroom/deal/?id=' + mm.deal_id } }}
                   >
                     <span style={{ fontFamily: FONT_DISP, fontSize: 16, color: '#A78BFA' }}>↗</span>
                   </div>
@@ -968,10 +995,11 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
 
   const enriched = mmRows.map(mm => {
     const econ = mm.deal_id ? (econMap[mm.deal_id] ?? null) : null
-    const commission = econ ? calcCommission(econ) : null
-    // Operator-typed value wins; otherwise compute from economics
-    let dealValue: number | null = mm.commission ?? null
-    if (dealValue == null && econ) {
+    // For linked records: compute commission from deal economics; for unlinked: use typed commission field
+    const commission = mm.deal_id ? (econ ? calcCommission(econ) : null) : (mm.commission ?? null)
+    // dealValue: only for linked records — compute from deal economics
+    let dealValue: number | null = null
+    if (mm.deal_id && econ) {
       if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price) {
         dealValue = econ.asking_price
       } else if (econ.transaction_type === 'lease') {
