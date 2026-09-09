@@ -625,11 +625,298 @@ interface MoneyMoverRow {
   note_typed_at?: string | null
 }
 
+// D11.15: MoneyMoverModal component
+function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteAdded }: {
+  mm: MoneyMoverRow & { _commission: number | null; _dealValue: number | null }
+  dealMap: Record<string, any>
+  econMap: Record<string, DealEconomics>
+  onClose: () => void
+  onCloseAndLog: (mmId: string) => void
+  onNoteAdded: (mmId: string, note: string) => void
+}) {
+  const [noteText, setNoteText] = useState('')
+  const [saving, setSaving] = useState(false)
+  const staged = noteText.trim().length > 0
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  async function writeNote() {
+    if (!noteText.trim()) return
+    setSaving(true)
+    await supabase.from('money_movers').update({
+      note: noteText.trim(),
+      note_typed_at: new Date().toISOString(),
+    }).eq('id', mm.id)
+    onNoteAdded(mm.id, noteText.trim())
+    setNoteText('')
+    setSaving(false)
+  }
+
+  async function handleConfirm() {
+    if (staged && !saving) {
+      await writeNote()
+    }
+  }
+
+  async function handleCloseAndLog() {
+    if (staged && !saving) {
+      await writeNote()
+    }
+    onCloseAndLog(mm.id)
+  }
+
+  const deal = mm.deal_id ? dealMap[mm.deal_id] : null
+  const econ = mm.deal_id ? econMap[mm.deal_id] : null
+  const commFromEcon = econ ? calcCommission(econ) : null
+  const commProvenance = commFromEcon != null ? 'INHERITED · POST-HOUSE-SPLIT' : 'TYPED ON THIS RECORD'
+
+  function fmtFigure(n: number | null) {
+    if (n == null) return ''
+    return '$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })
+  }
+
+  function fmtNoteTimestamp(iso: string) {
+    const d = new Date(iso)
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+    const mon = months[d.getMonth()]
+    const day = d.getDate()
+    let h = d.getHours(); const m = d.getMinutes()
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    if (h > 12) h -= 12; if (h === 0) h = 12
+    return `${mon} ${day} · ${h}:${String(m).padStart(2,'0')} ${ampm}`
+  }
+
+  function fmtFooterTimestamp() {
+    if (!mm.note_typed_at) return ''
+    const typed = new Date(mm.note_typed_at)
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+    const tMon = months[typed.getMonth()]; const tDay = typed.getDate()
+    return `TYPED ${tMon} ${tDay}`
+  }
+
+  // Deal client name
+  const clientName = deal?.deal_contacts?.[0]?.contacts?.name ?? null
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(5,5,9,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}
+    >
+      <div
+        style={{ width: 960, height: 548, background: '#12111B', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 14, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ height: 72, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid rgba(255,255,255,0.11)' }}>
+          <span style={{ fontFamily: FONT_MONO, fontSize: 18.5, fontWeight: 500, letterSpacing: '0.14em', color: '#B8B6C6', flex: 1 }}>MONEY MOVER</span>
+          {/* Close and Log group */}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+            onClick={handleCloseAndLog}
+          >
+            <img src="/assets/check/check-h140.png" height={56} style={{ height: 56, width: 'auto' }} alt="" />
+            <span style={{ fontFamily: FONT_MONO, fontSize: 11.5, fontWeight: 500, letterSpacing: '0.14em', color: staged ? '#EFEEF4' : '#B8B6C6' }}>CLOSE AND LOG</span>
+          </div>
+          {/* Divider */}
+          <div style={{ width: 1, height: 26, background: 'rgba(255,255,255,0.14)', margin: '0 20px' }} />
+          {/* ESC button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }} onClick={onClose}>
+            <span style={{ fontFamily: FONT_DISP, fontSize: 22, color: '#8E8CA0' }}>×</span>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.14em', color: '#8E8CA0' }}>ESC</span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, display: 'flex', padding: '0 20px', minHeight: 0 }}>
+          {/* Left column */}
+          <div style={{ width: 600, flexShrink: 0, padding: '22px 0', display: 'flex', flexDirection: 'column' }}>
+            {/* Eyebrow */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: '#A78BFA' }}>LIVE</span>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: '#8E8CA0' }}>HOME · MONEY MOVERS</span>
+            </div>
+            <div style={{ height: 16 }} />
+            {/* Title */}
+            <div style={{ fontFamily: FONT_DISP, fontSize: 32, fontWeight: 500, color: '#EFEEF4', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.09)' }}>
+              {mm.title}
+            </div>
+            <div style={{ height: 18 }} />
+            {/* Deal row */}
+            <div style={{ height: 65, flex: 'none', background: '#1E1D26', borderRadius: 12, padding: '0 16px', display: 'flex', alignItems: 'center' }}>
+              {deal ? (
+                <>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: '#8E8CA0' }}>DEAL</div>
+                    <div style={{ height: 7 }} />
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, overflow: 'hidden' }}>
+                      <span style={{ fontFamily: FONT_DISP, fontSize: 17, fontWeight: 500, color: '#EFEEF4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {deal.name ?? deal.addr_display ?? deal.addr_street_name ?? 'Deal'}
+                      </span>
+                      {(clientName || deal.addr_display) && (
+                        <span style={{ fontFamily: FONT_DISP, fontSize: 13, color: '#8E8CA0', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {[clientName].filter(Boolean).join(' · ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    style={{ width: 34, height: 34, borderRadius: 9, border: '1px solid rgba(139,92,246,0.45)', background: 'rgba(139,92,246,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                    onClick={() => window.open('/warroom/deal?id=' + mm.deal_id, '_self')}
+                  >
+                    <span style={{ fontFamily: FONT_DISP, fontSize: 16, color: '#A78BFA' }}>↗</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontFamily: FONT_DISP, fontSize: 17, color: '#A78BFA' }}>+</span>
+                    <span style={{ fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500, letterSpacing: '0.14em', color: '#A78BFA' }}>LINK A DEAL</span>
+                  </div>
+                  <div style={{ flex: 1 }} />
+                  <span style={{ fontFamily: FONT_DISP, fontSize: 13, color: '#8E8CA0' }}>Optional.</span>
+                </>
+              )}
+            </div>
+            <div style={{ height: 18 }} />
+            {/* Figure pair */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', padding: '16px 0', display: 'flex', gap: 40 }}>
+              {mm.deal_id ? (
+                <>
+                  <div style={{ width: 210, flexShrink: 0 }}>
+                    <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.14em', color: '#8E8CA0' }}>VALUE</div>
+                    <div style={{ height: 9 }} />
+                    <div style={{ fontFamily: FONT_MONO, fontSize: 26, lineHeight: 1.04, color: '#EFEEF4', fontVariantNumeric: 'tabular-nums' }}>{fmtFigure(mm._dealValue)}</div>
+                    <div style={{ height: 7 }} />
+                    <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, letterSpacing: '0.12em', color: '#8E8CA0' }}>INHERITED FROM THE DEAL</div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.14em', color: '#8E8CA0' }}>COMM</div>
+                    <div style={{ height: 9 }} />
+                    <div style={{ fontFamily: FONT_MONO, fontSize: 26, lineHeight: 1.04, color: '#34D399', fontVariantNumeric: 'tabular-nums' }}>{fmtFigure(mm._commission)}</div>
+                    <div style={{ height: 7 }} />
+                    <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, letterSpacing: '0.12em', color: '#8E8CA0' }}>{commProvenance}</div>
+                  </div>
+                </>
+              ) : (
+                <div style={{ width: 210, flexShrink: 0 }}>
+                  <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.14em', color: '#8E8CA0' }}>COMM</div>
+                  <div style={{ height: 9 }} />
+                  <div style={{ fontFamily: FONT_MONO, fontSize: 26, lineHeight: 1.04, color: '#34D399', fontVariantNumeric: 'tabular-nums' }}>{fmtFigure(mm._commission)}</div>
+                  <div style={{ height: 7 }} />
+                  <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, letterSpacing: '0.12em', color: '#8E8CA0' }}>TYPED ON THIS RECORD</div>
+                </div>
+              )}
+            </div>
+            {/* NEXT row */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.14em', color: '#8E8CA0' }}>NEXT</span>
+                {mm.note && mm.note_typed_at && (
+                  <span style={{ fontFamily: FONT_MONO, fontSize: 10.5, letterSpacing: '0.12em', color: '#8E8CA0' }}>
+                    TYPED {fmtNoteTimestamp(mm.note_typed_at)}
+                  </span>
+                )}
+              </div>
+              <div style={{ height: 12 }} />
+              {mm.note ? (
+                <div style={{ fontFamily: FONT_DISP, fontSize: 16.5, lineHeight: 1.3, color: '#B8B6C6', paddingBottom: 9, borderBottom: '1px solid rgba(255,255,255,0.09)' }}>
+                  {mm.note}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 9, borderBottom: '1px solid rgba(255,255,255,0.09)' }}>
+                  <span style={{ fontFamily: FONT_DISP, fontSize: 16.5, color: '#A78BFA' }}>+</span>
+                  <span style={{ fontFamily: FONT_MONO, fontSize: 12, letterSpacing: '0.14em', color: '#A78BFA' }}>SET THE NEXT ACTION</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: 20, display: 'flex', justifyContent: 'center', paddingTop: 22, paddingBottom: 22 }}>
+            <div style={{ width: 1, background: 'rgba(255,255,255,0.11)' }} />
+          </div>
+
+          {/* Right rail */}
+          <div style={{ width: 300, flexShrink: 0, padding: '22px 0', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.14em', color: '#8E8CA0', flexShrink: 0 }}>NOTES</div>
+            <div style={{ height: 14 }} />
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {mm.note && mm.note_typed_at ? (
+                <>
+                  <div style={{ fontFamily: FONT_MONO, fontSize: 10.5, letterSpacing: '0.12em', color: '#8E8CA0' }}>{fmtNoteTimestamp(mm.note_typed_at)}</div>
+                  <div style={{ height: 7 }} />
+                  <div style={{ fontFamily: FONT_DISP, fontSize: 13.5, lineHeight: 1.45, color: '#B8B6C6' }}>{mm.note}</div>
+                </>
+              ) : (
+                <span style={{ fontFamily: FONT_DISP, fontSize: 13.5, lineHeight: 1.45, color: '#8E8CA0' }}>No notes yet</span>
+              )}
+            </div>
+            <div style={{ height: 14, flexShrink: 0 }} />
+            {/* Composer */}
+            <textarea
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+              placeholder="Add a note…"
+              style={{
+                flex: 'none',
+                height: 78,
+                border: '1px solid rgba(255,255,255,0.18)',
+                borderRadius: 10,
+                padding: '12px 14px',
+                fontFamily: FONT_DISP,
+                fontSize: 13.5,
+                lineHeight: 1.4,
+                color: '#8E8CA0',
+                background: 'transparent',
+                resize: 'none',
+                outline: 'none',
+                boxSizing: 'border-box',
+                width: '100%',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ height: 72, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 20px', borderTop: '1px solid rgba(255,255,255,0.11)' }}>
+          <div style={{ flex: 1 }}>
+            {mm.note_typed_at && (
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11.5, letterSpacing: '0.14em', color: '#8E8CA0' }}>
+                {fmtFooterTimestamp()}
+              </span>
+            )}
+          </div>
+          {staged ? (
+            <img
+              src="/assets/confirm/confirm-h180.png"
+              height={60}
+              style={{ height: 60, width: 'auto', cursor: 'pointer' }}
+              alt="Confirm"
+              onClick={handleConfirm}
+            />
+          ) : (
+            <div style={{ border: '1px solid rgba(255,255,255,0.18)', borderRadius: 30, width: 148.3, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500, letterSpacing: '0.16em', color: '#8E8CA0' }}>CONFIRM</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight, onCreateFill }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number; onCreateFill?: () => void }) {
   const [mmRows, setMmRows] = useState<MoneyMoverRow[]>([])
   const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
+  const [dealMap, setDealMap] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [selectedMM, setSelectedMM] = useState<(MoneyMoverRow & { _commission: number | null; _dealValue: number | null }) | null>(null)
 
   async function loadData() {
     // Try with note columns first (D4.2d); if columns don't exist yet degrade gracefully
@@ -663,6 +950,14 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
       const map: Record<string, DealEconomics> = {}
       ;(econData ?? []).forEach((e: any) => { map[e.deal_id] = e as DealEconomics })
       setEconMap(map)
+
+      const { data: dealDetails } = await supabase
+        .from('deals')
+        .select('id, name, addr_display, addr_street_name, addr_number, deal_contacts(contacts(name))')
+        .in('id', dealIds)
+      const dmap: Record<string, any> = {}
+      ;(dealDetails ?? []).forEach((d: any) => { dmap[d.id] = d })
+      setDealMap(dmap)
     }
   }
 
@@ -699,6 +994,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
   const h = panelHeight ? panelHeight : undefined
 
   return (
+    <>
     <Panel style={{ flexShrink: 0, height: h }}>
       <PanelHeader
         glyph={G.moneyMovers}
@@ -732,8 +1028,10 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
             {displayRows.map((mm, i) => (
               <React.Fragment key={mm.id}>
                 <div
-                  onClick={mm.deal_id ? () => router.push('/warroom/deal?id=' + mm.deal_id) : undefined}
-                  style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box', cursor: mm.deal_id ? 'pointer' : 'default' }}
+                  onClick={() => setSelectedMM(mm)}
+                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.045)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = ''}
+                  style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box', cursor: 'pointer' }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -764,6 +1062,22 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
         )}
       </div>
     </Panel>
+    {selectedMM && (
+      <MoneyMoverModal
+        mm={selectedMM}
+        dealMap={dealMap}
+        econMap={econMap}
+        onClose={() => setSelectedMM(null)}
+        onCloseAndLog={(mmId) => {
+          setMmRows(prev => prev.filter(r => r.id !== mmId))
+          setSelectedMM(null)
+        }}
+        onNoteAdded={(mmId, note) => {
+          setMmRows(prev => prev.map(r => r.id === mmId ? {...r, note, note_typed_at: new Date().toISOString()} : r))
+        }}
+      />
+    )}
+    </>
   )
 }
 

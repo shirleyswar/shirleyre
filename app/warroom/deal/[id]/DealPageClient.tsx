@@ -24,6 +24,15 @@ import { formatAddress } from '@/lib/formatAddress'
 import { HOUSE_SPLIT } from '@/lib/dealMath'
 import LaunchControl from './LaunchControl'
 
+// ── Auth ─────────────────────────────────────────────────────────────────────
+const PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
+
+async function sha256(text: string): Promise<string> {
+  const enc = new TextEncoder()
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(text))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 // ── Design tokens (spec §2) ──────────────────────────────────────────────────
 const T = {
   bgBase:       '#08080C',
@@ -257,7 +266,8 @@ function DealPageClientInner({ id }: { id: string }) {
 
   // Delete mode
   const [deleteMode, setDeleteMode] = useState(false)
-  const [deletePinInput, setDeletePinInput] = useState('')
+  const [deletePin, setDeletePin] = useState<string[]>([])
+  const [deleteArmed, setDeleteArmed] = useState(false)
   const [deleteError, setDeleteError] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -268,6 +278,48 @@ function DealPageClientInner({ id }: { id: string }) {
     const exp2 = parseInt(localStorage.getItem('wr3_session_exp') || '0')
     setPinValid(Date.now() < exp1 || Date.now() < exp2)
   }, [])
+
+  // Delete gate keyboard handler
+  useEffect(() => {
+    if (!deleteMode) return
+    const handleKey = async (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setDeleteMode(false)
+        setDeletePin([])
+        setDeleteArmed(false)
+        setDeleteError(false)
+        return
+      }
+      if (deleteArmed) {
+        if (e.key === 'Enter') {
+          handleDeleteConfirm()
+        }
+        return
+      }
+      if (e.key === 'Backspace') {
+        setDeletePin(p => p.slice(0, -1))
+        return
+      }
+      if (/^\d$/.test(e.key) && deletePin.length < 4) {
+        const newPin = [...deletePin, e.key]
+        setDeletePin(newPin)
+        if (newPin.length === 4) {
+          const hash = await sha256(newPin.join(''))
+          if (hash === PIN_HASH) {
+            setDeleteArmed(true)
+          } else {
+            setDeleteError(true)
+            setTimeout(() => {
+              setDeleteError(false)
+              setDeletePin([])
+            }, 650)
+          }
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [deleteMode, deletePin, deleteArmed, deleteError])
 
   useEffect(() => {
     if (!dealId) return
@@ -383,15 +435,6 @@ function DealPageClientInner({ id }: { id: string }) {
     )
   }
 
-  // ── SHA256 for delete PIN ──
-  async function sha256(text: string): Promise<string> {
-    const enc = new TextEncoder()
-    const buf = await crypto.subtle.digest('SHA-256', enc.encode(text))
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
-  }
-
-  const PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
-
   // ── Edit save ──
   async function handleEditSave() {
     if (!deal || saving) return
@@ -408,13 +451,7 @@ function DealPageClientInner({ id }: { id: string }) {
 
   // ── Delete confirm ──
   async function handleDeleteConfirm() {
-    if (deleting || deletePinInput.length < 4) return
-    const hash = await sha256(deletePinInput)
-    if (hash !== PIN_HASH) {
-      setDeleteError(true)
-      setDeletePinInput('')
-      return
-    }
+    if (deleting) return
     setDeleting(true)
     await supabase.from('deals').delete().eq('id', dealId)
     router.push('/warroom/deals')
@@ -625,16 +662,17 @@ function DealPageClientInner({ id }: { id: string }) {
 
           {/* DELETE control */}
           <button
-            onClick={() => { setDeleteMode(true); setDeletePinInput(''); setDeleteError(false) }}
-            style={{
-              background: 'none', border: 'none', padding: '4px 8px',
-              fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700,
-              letterSpacing: '0.14em', textTransform: 'uppercase',
-              color: T.late, cursor: 'pointer', flexShrink: 0,
-            }}
+            onClick={() => setDeleteMode(true)}
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}
             aria-label="Delete deal"
           >
-            DELETE
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/assets/delete/delete-pill-candidate.png"
+              alt="DELETE"
+              style={{ height: 44, width: 'auto', display: 'block' }}
+              draggable={false}
+            />
           </button>
 
           {/* EDIT control — 44×115px, mix-blend-mode: screen (item 39) */}
@@ -677,20 +715,13 @@ function DealPageClientInner({ id }: { id: string }) {
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               aria-label="Edit deal"
             >
-              <div
-                style={{
-                  height: 44, width: 115, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/assets/buttons/edit-pill-v8.png"
-                  alt="Edit"
-                  style={{ height: 44, width: 115, display: 'block', mixBlendMode: 'screen' }}
-                  draggable={false}
-                />
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/assets/edit/edit-pill-candidate.png"
+                alt="Edit"
+                style={{ height: 44, width: 'auto', display: 'block' }}
+                draggable={false}
+              />
             </button>
           )}
         </div>
@@ -754,88 +785,123 @@ function DealPageClientInner({ id }: { id: string }) {
         </div>
       )}
 
-      {/* ── DELETE MODAL ───────────────────────────────────────────────────── */}
+      {/* ── DELETE GATE §D6.1 ──────────────────────────────────────────────── */}
       {deleteMode && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 200,
-          background: 'rgba(4,4,8,0.85)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 300,
+            background: 'rgba(5,5,9,0.92)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setDeleteMode(false)
+              setDeletePin([])
+              setDeleteArmed(false)
+              setDeleteError(false)
+            }
+          }}
+        >
+          {/* Star glyph */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/star-glow-512.png" alt="" width={148} height={148} style={{ display: 'block', flexShrink: 0 }} />
+
+          {/* DELETE DEAL label */}
+          <div style={{ height: 24 }} />
           <div style={{
-            background: '#12111B', borderRadius: 16, padding: '28px 24px',
-            width: 320, border: '1px solid rgba(255,255,255,0.12)',
+            fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500,
+            letterSpacing: '0.42em', paddingLeft: '0.42em',
+            color: '#FF4D4D',
+          }}>DELETE DEAL</div>
+
+          {/* Record block — address verbatim */}
+          <div style={{ height: 36 }} />
+          <div style={{
+            fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 500,
+            color: T.textHi, textAlign: 'center', maxWidth: 700,
           }}>
-            <div style={{ fontSize: 13, fontFamily: FONT_MONO, color: '#FF4D4D', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>Delete Deal</div>
-            <div style={{ fontSize: 13, fontFamily: FONT_DISPLAY, color: '#8E8CA0', marginBottom: 24, lineHeight: 1.5 }}>
-              Enter your PIN to permanently delete this deal. This cannot be undone.
-            </div>
-            {/* 4-box PIN entry */}
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
-              {[0,1,2,3].map(i => (
+            {deal?.addr_display || deal?.name || '—'}
+          </div>
+          <div style={{ height: 10 }} />
+          <div style={{
+            fontFamily: FONT_MONO, fontSize: 11.5, fontWeight: 500,
+            letterSpacing: '0.14em', color: T.textLow,
+          }}>
+            {[deal?.property_type, deal?.status?.replace(/_/g,' ').toUpperCase()].filter(Boolean).join(' · ')}
+          </div>
+
+          {/* PIN slots */}
+          <div style={{ height: 44 }} />
+          <div style={{
+            display: 'flex', gap: 12,
+            animation: deleteError ? 'dg-shake 0.26s ease-in-out' : 'none',
+          }}>
+            {[0, 1, 2, 3].map(i => {
+              const filled = i < deletePin.length
+              const isActive = !deleteArmed && i === deletePin.length && !deleteError
+              return (
                 <div key={i} style={{
-                  width: 48, height: 54, borderRadius: 8,
-                  border: `1px solid ${deletePinInput.length > i ? T.brand : T.borderPanel}`,
-                  background: T.bgRaise,
+                  width: 56, height: 66, borderRadius: 12, boxSizing: 'border-box',
+                  background: filled ? '#EFEEF4' : 'rgba(255,77,77,0.06)',
+                  border: deleteError
+                    ? '1px solid #FF4D4D'
+                    : isActive
+                      ? '1px solid #FF4D4D'
+                      : filled
+                        ? 'none'
+                        : '1px solid rgba(255,255,255,0.14)',
+                  boxShadow: isActive ? '0 0 20px rgba(255,77,77,0.35)' : 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22, fontFamily: FONT_MONO, color: T.textHi,
                 }}>
-                  {deletePinInput.length > i ? '●' : ''}
+                  {filled && !deleteArmed && (
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#0A0A0F' }} />
+                  )}
+                  {filled && deleteArmed && (
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#0A0A0F' }} />
+                  )}
+                  {isActive && (
+                    <div style={{
+                      width: 1.5, height: 26, background: '#FF4D4D',
+                      animation: 'dg-caret 1.06s steps(1,end) infinite',
+                    }} />
+                  )}
                 </div>
-              ))}
-            </div>
-            {/* Numpad */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
-              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, idx) => (
-                k === '' ? <div key={idx} /> : (
-                  <button key={idx}
-                    onClick={() => {
-                      setDeleteError(false)
-                      if (k === '⌫') {
-                        setDeletePinInput(p => p.slice(0,-1))
-                      } else if (deletePinInput.length < 4) {
-                        setDeletePinInput(p => p + k)
-                      }
-                    }}
-                    style={{
-                      background: T.bgRaise, border: `1px solid ${T.borderPanel}`, borderRadius: 8,
-                      padding: '12px 0', fontFamily: FONT_MONO, fontSize: 16, color: T.textHi,
-                      cursor: 'pointer', textAlign: 'center',
-                    }}
-                  >{k}</button>
-                )
-              ))}
-            </div>
-            {deleteError && (
-              <div style={{ fontSize: 11, fontFamily: FONT_MONO, color: T.late, letterSpacing: '0.1em', textAlign: 'center', marginBottom: 12 }}>
-                INCORRECT PIN
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: 10 }}>
+              )
+            })}
+          </div>
+
+          {/* Reserved slot for armed pill — always 96px tall so nothing shifts */}
+          <div style={{ height: 44 }} />
+          <div style={{ height: 96, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {deleteArmed && (
               <button
                 onClick={handleDeleteConfirm}
-                disabled={deletePinInput.length < 4 || deleting}
-                style={{
-                  flex: 1, background: deletePinInput.length < 4 ? 'rgba(255,77,77,0.3)' : '#FF4D4D',
-                  border: 'none', borderRadius: 8, padding: '11px 0',
-                  fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
-                  textTransform: 'uppercase', color: deletePinInput.length < 4 ? T.textLow : '#fff',
-                  cursor: deletePinInput.length < 4 || deleting ? 'default' : 'pointer',
-                }}
+                disabled={deleting}
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               >
-                {deleting ? 'DELETING…' : 'CONFIRM DELETE'}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/assets/delete/delete-pill-candidate.png"
+                  alt="DELETE"
+                  style={{ height: 82, width: 'auto', display: 'block', opacity: deleting ? 0.5 : 1 }}
+                  draggable={false}
+                />
               </button>
-              <button
-                onClick={() => { setDeleteMode(false); setDeletePinInput(''); setDeleteError(false) }}
-                style={{
-                  background: 'none', border: `1px solid ${T.borderPanel}`, borderRadius: 8,
-                  padding: '11px 14px', fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700,
-                  letterSpacing: '0.12em', textTransform: 'uppercase', color: T.textMid, cursor: 'pointer',
-                }}
-              >
-                CANCEL
-              </button>
-            </div>
+            )}
           </div>
+
+          {/* Footer */}
+          <div style={{
+            position: 'absolute', bottom: 34, left: 0, right: 0, textAlign: 'center',
+            fontFamily: FONT_MONO, fontSize: 10.5, fontWeight: 500,
+            letterSpacing: '0.24em', color: '#3F3E4C',
+          }}>SHIRLEYCRE · PERMANENT DELETION</div>
+
+          {/* CSS keyframes */}
+          <style>{`
+            @keyframes dg-caret { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+            @keyframes dg-shake { 0%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(4px)} 100%{transform:translateX(0)} }
+          `}</style>
         </div>
       )}
 

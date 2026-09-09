@@ -19,8 +19,6 @@ import { formatAddress } from '@/lib/formatAddress'
 import PinGate from '@/components/warroom/PinGate'
 import TaskModal from '@/app/warroom/TaskModal'
 import type { Task } from '@/app/warroom/TaskModal'
-import Fab from '@/assets/fab/Fab'
-import '@/assets/fab/fab.css'
 import {
   DT1, DT2, DT3, DT5, DT7, DT8,
   DS3, DS5,
@@ -901,10 +899,23 @@ function DealsPage() {
               )
             })}
             <div style={{ flex:1 }} />
-            {/* FAB — 31px */}
-            <div className="wr-fab-desktop-wrap" style={{ flexShrink:0 }}>
-              <Fab label="Add listing" onClick={() => router.push('/warroom/deals/new')} />
-            </div>
+            {/* NEW DEAL pill */}
+            <button
+              onClick={() => router.push('/warroom/deals/new')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px',
+                display: 'flex', alignItems: 'center', flexShrink: 0,
+              }}
+              aria-label="Add new deal"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/assets/deals/deals-add-pill.png"
+                alt="ADD"
+                style={{ height: 44, width: 'auto', display: 'block' }}
+                draggable={false}
+              />
+            </button>
           </div>
         </div>
 

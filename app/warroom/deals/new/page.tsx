@@ -303,6 +303,38 @@ const PLACEHOLDER_STYLE = `
   ::placeholder { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 17px; font-weight: 400; color: #8E8CA0; }
 `
 
+const PAC_STYLE = `
+  .pac-container {
+    background: #1A1929;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    margin-top: 4px;
+  }
+  .pac-item {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #B8B6C6;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+  }
+  .pac-item:hover, .pac-item-selected {
+    background: rgba(139,92,246,0.12);
+    color: #EFEEF4;
+  }
+  .pac-item-query {
+    color: #EFEEF4;
+    font-size: 13px;
+  }
+  .pac-matched {
+    color: #A78BFA;
+  }
+  .pac-icon, .pac-icon-marker {
+    display: none;
+  }
+`
+
 function FieldLabel({ text }: { text: string }) {
   return (
     <span style={{
@@ -463,6 +495,14 @@ function AddressBlock({ addr, onChange, optional }: {
         google?.maps?.event?.clearInstanceListeners(acRef.current)
         acRef.current = null
       }
+      // Strip Google overlays injected into document.body
+      document.querySelectorAll('iframe[src*="maps.googleapis.com"]').forEach(el => el.remove())
+      document.querySelectorAll('.gm-err-container, .gm-err-content, [class*="gm-err"]').forEach(el => el.remove())
+      document.querySelectorAll('.pac-container').forEach(el => el.remove())
+      // Reset module-level Maps loading state
+      _mapsLoaded = false
+      _mapsLoading = false
+      _mapsCallbacks = []
     }
   }, [mapsKey, addr.confirmed]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -527,14 +567,20 @@ function AddressBlock({ addr, onChange, optional }: {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <FieldLabel text={optional ? 'ADDRESS (OPTIONAL)' : 'ADDRESS'} />
       <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          ref={inputRef}
-          type="text" value={addr.raw}
-          onChange={e => onChange({ ...addr, raw: e.target.value })}
-          onKeyDown={e => { if (e.key === 'Enter') confirm() }}
-          placeholder="Street address"
-          style={{ ...FIELD_STYLE, flex: 1 }}
-        />
+        <div style={{ position: 'relative', flex: 1 }}>
+          <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="#8E8CA0" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+            <path d="M12 21s-8-7.5-8-12a8 8 0 0 1 16 0c0 4.5-8 12-8 12z" />
+            <circle cx="12" cy="9" r="2.5" />
+          </svg>
+          <input
+            ref={inputRef}
+            type="text" value={addr.raw}
+            onChange={e => onChange({ ...addr, raw: e.target.value })}
+            onKeyDown={e => { if (e.key === 'Enter') confirm() }}
+            placeholder="Street address"
+            style={{ ...FIELD_STYLE, paddingLeft: 40 }}
+          />
+        </div>
         <button onClick={confirm} disabled={!addr.raw.trim()} style={{
           height: 52, padding: '0 20px', borderRadius: 10,
           background: addr.raw.trim() ? C.brand : 'rgba(139,92,246,0.12)',
@@ -1353,6 +1399,7 @@ function NewDealForm() {
   return (
     <>
       <style>{PLACEHOLDER_STYLE}</style>
+      <style>{PAC_STYLE}</style>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <div style={{
           display: 'flex', alignItems: 'flex-start',
@@ -1851,6 +1898,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
   return (
     <>
       <style>{PLACEHOLDER_STYLE}</style>
+      <style>{PAC_STYLE}</style>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <div style={{
           display: 'flex', alignItems: 'flex-start',
