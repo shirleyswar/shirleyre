@@ -912,7 +912,7 @@ function DealsPage() {
               <img
                 src="/assets/deals/deals-add-pill.png"
                 alt="ADD"
-                style={{ height: 44, width: 'auto', display: 'block' }}
+                style={{ height: 68, width: 'auto', display: 'block' }}
                 draggable={false}
               />
             </button>

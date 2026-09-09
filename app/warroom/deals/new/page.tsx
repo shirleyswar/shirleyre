@@ -578,7 +578,7 @@ function AddressBlock({ addr, onChange, optional }: {
             onChange={e => onChange({ ...addr, raw: e.target.value })}
             onKeyDown={e => { if (e.key === 'Enter') confirm() }}
             placeholder="Street address"
-            style={{ ...FIELD_STYLE, paddingLeft: 40 }}
+            style={{ ...FIELD_STYLE, paddingLeft: 40, fontFamily: FONT_DISP }}
           />
         </div>
         <button onClick={confirm} disabled={!addr.raw.trim()} style={{
