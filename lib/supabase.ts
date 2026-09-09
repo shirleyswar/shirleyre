@@ -37,7 +37,10 @@ export interface Deal {
   addr_street_type?: string | null
   addr_direction?: string | null
   addr_city?: string | null
+  addr_state?: string | null
+  addr_zip?: string | null
   addr_display?: string | null
+  photo_url?: string | null
   created_at: string
   updated_at: string
 }

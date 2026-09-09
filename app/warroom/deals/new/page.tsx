@@ -10,6 +10,8 @@ import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react
 import { useRouter, useSearchParams } from 'next/navigation'
 import PinGate from '@/components/warroom/PinGate'
 import { supabase } from '@/lib/supabase'
+import { formatListingFilingName } from '@/lib/formatAddress'
+import { uploadDealPhoto } from '@/lib/dealPhoto'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -363,20 +365,163 @@ interface AddrState {
   raw: string; confirmed: boolean
   addrDisplay: string; addrStreetName: string
   addrDirection: string; addrNumber: string; addrCity: string
-  addrState?: string; addrZip?: string
+  addrState: string; addrZip: string
 }
 
-function parseAddr(raw: string) {
-  const tokens = raw.trim().split(/\s+/)
+function emptyAddr(): AddrState {
+  return {
+    raw: '', confirmed: false,
+    addrDisplay: '', addrStreetName: '', addrDirection: '', addrNumber: '',
+    addrCity: 'Baton Rouge', addrState: 'LA', addrZip: '',
+  }
+}
+
+function parseStreetTokens(streetLine: string) {
+  const tokens = streetLine.trim().split(/\s+/).filter(Boolean)
   let addrNumber = ''; let addrDirection = ''
   const street: string[] = []
   for (const tok of tokens) {
     const up = tok.toUpperCase()
-    if (!addrNumber && /^\d+$/.test(tok)) { addrNumber = tok }
+    if (!addrNumber && /^\d+[A-Za-z]?$/.test(tok)) { addrNumber = tok }
     else if (!addrDirection && DIRECTIONS.includes(up)) { addrDirection = up }
     else { street.push(tok) }
   }
-  return { addrNumber, addrDirection, addrStreetName: street.join(' '), addrCity: 'Baton Rouge', addrDisplay: raw.trim() }
+  return { addrNumber, addrDirection, addrStreetName: street.join(' ') }
+}
+
+/** CONFIRM path: street tokens plus city/state/ZIP when the raw string is a full address. */
+function parseAddr(raw: string) {
+  const trimmed = raw.trim()
+  const commaParts = trimmed.split(',').map(s => s.trim()).filter(Boolean)
+  let streetLine = trimmed
+  let addrCity = ''
+  let addrState = ''
+  let addrZip = ''
+
+  if (commaParts.length >= 2) {
+    streetLine = commaParts[0]
+    const rest = commaParts.slice(1)
+    const restJoined = rest.join(' ')
+    const zipMatch = restJoined.match(/\b(\d{5}(?:-\d{4})?)\b/)
+    if (zipMatch) addrZip = zipMatch[1]
+    const stateMatch = restJoined.match(/\b([A-Za-z]{2})\b/)
+    if (stateMatch && stateMatch[1].toUpperCase() !== 'US') addrState = stateMatch[1].toUpperCase()
+    const cityCand = rest[0]
+    if (cityCand && !/^[A-Za-z]{2}$/.test(cityCand) && !/^\d{5}/.test(cityCand) && cityCand.toUpperCase() !== 'USA') {
+      addrCity = cityCand
+    }
+  }
+
+  const parsed = parseStreetTokens(streetLine)
+  return {
+    ...parsed,
+    addrCity,
+    addrState,
+    addrZip,
+    addrDisplay: trimmed,
+  }
+}
+
+function listingFilingName(addr: AddrState): string {
+  return formatListingFilingName(addr.addrStreetName, addr.addrDirection, addr.addrNumber)
+    || addr.addrDisplay
+    || addr.raw.trim()
+}
+
+function buildDealInsertRow(
+  engagement: Engagement,
+  title: string,
+  addr: AddrState,
+  propType: PropType,
+  lacdbUrl: string,
+  dropboxLink: string,
+) {
+  const isTitleEngagement = engagement === 'TENANT' || engagement === 'BUYER'
+  const filing = listingFilingName(addr)
+  const dealName = isTitleEngagement ? title.trim() : filing
+  const roleMap: Record<Engagement, string | null> = {
+    LISTING: 'landlord', TENANT: 'tenant', BUYER: 'buyer', TARGET: null,
+  }
+  return {
+    name: dealName,
+    address: addr.addrDisplay || addr.raw.trim() || null,
+    addr_street_name: addr.addrStreetName || null,
+    addr_direction: addr.addrDirection || null,
+    addr_number: addr.addrNumber || null,
+    addr_city: addr.addrCity || 'Baton Rouge',
+    addr_state: addr.addrState || 'LA',
+    addr_zip: addr.addrZip || null,
+    addr_display: isTitleEngagement ? (addr.addrDisplay || null) : (filing || addr.addrDisplay || null),
+    property_type: propType || null,
+    status: 'active',
+    representation_role: roleMap[engagement],
+    lacdb_url: lacdbUrl || null,
+    dropbox_link: dropboxLink || null,
+    type: engagement.toLowerCase(),
+  }
+}
+
+async function persistMainImage(dealId: string, file: File | null) {
+  if (!file) return
+  try {
+    await uploadDealPhoto(dealId, file)
+  } catch (err) {
+    console.error('Deal photo upload failed:', err)
+  }
+}
+
+async function insertDealRow(row: Record<string, unknown>) {
+  let result = await supabase.from('deals').insert(row).select('id').single()
+  if (result.error && /addr_state|addr_zip|photo_url|schema cache|column/i.test(result.error.message ?? '')) {
+    const fallback = { ...row }
+    delete fallback.addr_state
+    delete fallback.addr_zip
+    delete fallback.photo_url
+    result = await supabase.from('deals').insert(fallback).select('id').single()
+  }
+  return result
+}
+
+function CityStateZipRow({ addr, onChange }: { addr: AddrState; onChange: (a: AddrState) => void }) {
+  const miniLabel: React.CSSProperties = {
+    fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em',
+  }
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ flex: 2, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <span style={miniLabel}>CITY</span>
+        <input
+          type="text"
+          value={addr.addrCity}
+          onChange={e => onChange({ ...addr, addrCity: e.target.value })}
+          placeholder="Baton Rouge"
+          style={FIELD_STYLE}
+        />
+      </div>
+      <div style={{ width: 96, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <span style={miniLabel}>STATE</span>
+        <input
+          type="text"
+          value={addr.addrState}
+          onChange={e => onChange({ ...addr, addrState: e.target.value.toUpperCase().slice(0, 2) })}
+          placeholder="LA"
+          maxLength={2}
+          style={{ ...FIELD_STYLE, textTransform: 'uppercase' }}
+        />
+      </div>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <span style={miniLabel}>ZIP</span>
+        <input
+          type="text"
+          value={addr.addrZip}
+          onChange={e => onChange({ ...addr, addrZip: e.target.value })}
+          placeholder="ZIP"
+          inputMode="numeric"
+          style={FIELD_STYLE}
+        />
+      </div>
+    </div>
+  )
 }
 
 // ── Google Maps Places script loader ─────────────────────────────────────────
@@ -470,9 +615,9 @@ function placeResultToAddrState(place: google.maps.places.PlaceResult): AddrStat
     addrStreetName: streetParts.join(' ') || route,
     addrDirection,
     addrNumber: streetNum,
-    addrCity: city,
-    addrState: state,
-    addrZip: zip,
+    addrCity: city || 'Baton Rouge',
+    addrState: state || 'LA',
+    addrZip: zip || '',
   }
 }
 
@@ -504,7 +649,9 @@ function AddressBlock({ addr, onChange, optional }: {
   const [dropOpen, setDropOpen] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
 
-  const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? ''
+  const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
+    || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    || ''
 
   useEffect(() => {
     if (addr.confirmed) return
@@ -613,7 +760,17 @@ function AddressBlock({ addr, onChange, optional }: {
     const current = addrRef.current
     if (!current.raw.trim()) return
     const parsed = parseAddr(current.raw)
-    onChangeRef.current({ ...current, confirmed: true, ...parsed })
+    onChangeRef.current({
+      ...current,
+      confirmed: true,
+      addrStreetName: parsed.addrStreetName,
+      addrDirection: parsed.addrDirection,
+      addrNumber: parsed.addrNumber,
+      addrDisplay: parsed.addrDisplay,
+      addrCity: parsed.addrCity || current.addrCity || 'Baton Rouge',
+      addrState: parsed.addrState || current.addrState || 'LA',
+      addrZip: parsed.addrZip || current.addrZip || '',
+    })
     setPredictions([])
     setDropOpen(false)
     setActiveIdx(-1)
@@ -662,7 +819,7 @@ function AddressBlock({ addr, onChange, optional }: {
   }
 
   if (addr.confirmed) {
-    const shortForm = [addr.addrStreetName, addr.addrNumber].filter(Boolean).join(' ')
+    const shortForm = listingFilingName(addr)
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <FieldLabel text={optional ? 'ADDRESS (OPTIONAL)' : 'ADDRESS'} />
@@ -689,10 +846,6 @@ function AddressBlock({ addr, onChange, optional }: {
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>NUMBER</span>
               <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrNumber || '—'}</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>HELD-NOT-SHOWN</span>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrCity}</span>
-            </div>
           </div>
           <button onClick={reopen} style={{
             background: 'none', border: `1px solid ${C.border}`, borderRadius: 6,
@@ -700,6 +853,7 @@ function AddressBlock({ addr, onChange, optional }: {
             fontFamily: FONT_MONO, fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', color: C.textLow,
           }}>CHANGE</button>
         </div>
+        <CityStateZipRow addr={addr} onChange={onChange} />
       </div>
     )
   }
@@ -777,6 +931,7 @@ function AddressBlock({ addr, onChange, optional }: {
           flexShrink: 0,
         }}>CONFIRM</button>
       </div>
+      <CityStateZipRow addr={addr} onChange={onChange} />
     </div>
   )
 }
@@ -1356,12 +1511,12 @@ function BookPreview({ engagement, addr, title, propType }: {
 }) {
   const displayName = (engagement === 'TENANT' || engagement === 'BUYER')
     ? (title || '—')
-    : (addr.confirmed ? (addr.addrStreetName + (addr.addrNumber ? ' ' + addr.addrNumber : '')) : '—')
+    : (addr.confirmed ? listingFilingName(addr) : '—')
 
   const propPlate = propType ? PROP_ORDER.find(p => p.key === propType) : null
 
   const captionParts = []
-  if (addr.confirmed && addr.addrCity) captionParts.push(addr.addrCity + ', LA')
+  if (addr.confirmed && addr.addrCity) captionParts.push(addr.addrCity + ', ' + (addr.addrState || 'LA'))
   else if (engagement === 'TENANT' || engagement === 'BUYER') captionParts.push(engagement)
   const caption = captionParts.join(' · ') || '—'
 
@@ -1407,10 +1562,7 @@ function NewDealForm() {
     return (tab && TAB_MAP[tab]) ? TAB_MAP[tab] : 'LISTING'
   })
   const [title, setTitle] = useState('')
-  const [addr, setAddr] = useState<AddrState>({
-    raw: '', confirmed: false,
-    addrDisplay: '', addrStreetName: '', addrDirection: '', addrNumber: '', addrCity: 'Baton Rouge',
-  })
+  const [addr, setAddr] = useState<AddrState>(emptyAddr)
   const [propType, setPropType] = useState<PropType>('')
   const [saleOn, setSaleOn] = useState(false)
   const [leaseOn, setLeaseOn] = useState(false)
@@ -1505,32 +1657,12 @@ function NewDealForm() {
     if (saving || !allMet) return
     setSaving(true)
     try {
-      const shortAddr = addr.addrStreetName
-        ? [addr.addrStreetName, addr.addrNumber].filter(Boolean).join(' ')
-        : (addr.addrDisplay || addr.raw.trim())
-      const dealName = (engagement === 'TENANT' || engagement === 'BUYER')
-        ? title.trim()
-        : shortAddr
-      const roleMap: Record<Engagement, string | null> = {
-        LISTING: 'landlord', TENANT: 'tenant', BUYER: 'buyer', TARGET: null,
-      }
-      const { data: dealData, error: dealError } = await supabase.from('deals').insert({
-        name: dealName,
-        address: addr.addrDisplay || null,
-        addr_street_name: addr.addrStreetName || null,
-        addr_direction: addr.addrDirection || null,
-        addr_number: addr.addrNumber || null,
-        addr_city: addr.addrCity || 'Baton Rouge',
-        addr_display: addr.addrDisplay || null,
-        property_type: propType || null,
-        status: 'active',
-        representation_role: roleMap[engagement],
-        lacdb_url: lacdbUrl || null,
-        dropbox_link: dropboxLink || null,
-        type: engagement.toLowerCase(),
-      }).select('id').single()
+      const { data: dealData, error: dealError } = await insertDealRow(
+        buildDealInsertRow(engagement, title, addr, propType, lacdbUrl, dropboxLink),
+      )
       if (dealError || !dealData) throw dealError ?? new Error('No deal returned')
       const newId = dealData.id
+      await persistMainImage(newId, mainImageFile)
 
       // Economics
       const hasSaleData = saleOn && (saleEcon.askingPrice || saleEcon.buildingSf)
@@ -1573,7 +1705,7 @@ function NewDealForm() {
       setSaving(false)
     }
   }, [saving, allMet, engagement, title, addr, propType, saleOn, leaseOn, clientId,
-    saleEcon, leaseEcon, comm, lacdbUrl, dropboxLink, deadlineWhat, deadlineWhen, leaseTermMo, router])
+    saleEcon, leaseEcon, comm, lacdbUrl, dropboxLink, deadlineWhat, deadlineWhen, leaseTermMo, mainImageFile, router])
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const isListing = engagement === 'LISTING'
@@ -1903,10 +2035,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
     return (tab && TAB_MAP[tab]) ? TAB_MAP[tab] : 'LISTING'
   })
   const [title, setTitle] = useState('')
-  const [addr, setAddr] = useState<AddrState>({
-    raw: '', confirmed: false,
-    addrDisplay: '', addrStreetName: '', addrDirection: '', addrNumber: '', addrCity: 'Baton Rouge',
-  })
+  const [addr, setAddr] = useState<AddrState>(emptyAddr)
   const [propType, setPropType] = useState<PropType>('')
   const [saleOn, setSaleOn] = useState(false)
   const [leaseOn, setLeaseOn] = useState(false)
@@ -2010,32 +2139,12 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
         resolvedClientId = newContact.id
       }
 
-      const shortAddr2 = addr.addrStreetName
-        ? [addr.addrStreetName, addr.addrNumber].filter(Boolean).join(' ')
-        : (addr.addrDisplay || addr.raw.trim())
-      const dealName = (engagement === 'TENANT' || engagement === 'BUYER')
-        ? title.trim()
-        : shortAddr2
-      const roleMap: Record<Engagement, string | null> = {
-        LISTING: 'landlord', TENANT: 'tenant', BUYER: 'buyer', TARGET: null,
-      }
-      const { data: dealData, error: dealError } = await supabase.from('deals').insert({
-        name: dealName,
-        address: addr.addrDisplay || null,
-        addr_street_name: addr.addrStreetName || null,
-        addr_direction: addr.addrDirection || null,
-        addr_number: addr.addrNumber || null,
-        addr_city: addr.addrCity || 'Baton Rouge',
-        addr_display: addr.addrDisplay || null,
-        property_type: propType || null,
-        status: 'active',
-        representation_role: roleMap[engagement],
-        lacdb_url: lacdbUrl || null,
-        dropbox_link: dropboxLink || null,
-        type: engagement.toLowerCase(),
-      }).select('id').single()
+      const { data: dealData, error: dealError } = await insertDealRow(
+        buildDealInsertRow(engagement, title, addr, propType, lacdbUrl, dropboxLink),
+      )
       if (dealError || !dealData) throw dealError ?? new Error('No deal returned')
       const newId = dealData.id
+      await persistMainImage(newId, mainImageFile)
 
       const hasSaleData = saleOn && (saleEcon.askingPrice || saleEcon.buildingSf)
       const hasLeaseData = leaseOn && (leaseEcon.availSf || leaseEcon.ratePsf)
@@ -2072,7 +2181,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
     }
   }, [saving, allMet, engagement, title, addr, propType, saleOn, leaseOn, clientId,
     clientMode, newClientName, newClientEmail, newClientPhone, newClientReady,
-    saleEcon, leaseEcon, comm, lacdbUrl, dropboxLink, deadlineWhat, deadlineWhen, leaseTermMo, router])
+    saleEcon, leaseEcon, comm, lacdbUrl, dropboxLink, deadlineWhat, deadlineWhen, leaseTermMo, mainImageFile, router])
 
   useEffect(() => { saveCallbackRef.current = handleSave }, [handleSave, saveCallbackRef])
 

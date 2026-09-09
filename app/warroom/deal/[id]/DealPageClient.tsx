@@ -16,10 +16,11 @@
  * - Launch: desktop-local component. No blend mode on video.
  */
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { formatAddress } from '@/lib/formatAddress'
+import { formatDealTitle, editNamePrefill, parseListingFilingName, formatListingFilingName } from '@/lib/formatAddress'
+import { dealPhotoPublicUrl, uploadDealPhoto } from '@/lib/dealPhoto'
 import { HOUSE_SPLIT } from '@/lib/dealMath'
 import LaunchControl from './LaunchControl'
 
@@ -262,6 +263,18 @@ function DealPageClientInner({ id }: { id: string }) {
   const [editDropbox, setEditDropbox] = useState('')
   const [editLacdb, setEditLacdb] = useState('')
   const [saving, setSaving] = useState(false)
+  const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null)
+  const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null)
+  const [photoVisible, setPhotoVisible] = useState(false)
+  const [photoCacheBust, setPhotoCacheBust] = useState(0)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setPhotoVisible(false)
+    setPhotoCacheBust(0)
+    setEditPhotoFile(null)
+    setEditPhotoPreview(null)
+  }, [dealId])
 
   // Delete mode
   const [deleteMode, setDeleteMode] = useState(false)
@@ -438,14 +451,45 @@ function DealPageClientInner({ id }: { id: string }) {
   async function handleEditSave() {
     if (!deal || saving) return
     setSaving(true)
-    const updates: Record<string, string> = {}
-    if (editName.trim()) updates.name = editName.trim()
+    const updates: Record<string, string | null> = {}
+    const trimmed = editName.trim()
+    const parsed = parseListingFilingName(trimmed)
+    if (parsed) {
+      const filing = formatListingFilingName(parsed.street, parsed.cardinal, parsed.number)
+      updates.name = filing
+      updates.addr_street_name = parsed.street || null
+      updates.addr_direction = parsed.cardinal || null
+      updates.addr_number = parsed.number || null
+      updates.addr_display = filing
+    } else if (trimmed) {
+      updates.name = trimmed
+    }
     if (editStatus) updates.status = editStatus
     if (editDropbox.trim() !== (deal.dropbox_link ?? '')) updates.dropbox_link = editDropbox.trim()
-    await supabase.from('deals').update(updates).eq('id', dealId)
+    if (Object.keys(updates).length > 0) {
+      await supabase.from('deals').update(updates).eq('id', dealId)
+    }
+    if (editPhotoFile) {
+      try {
+        await uploadDealPhoto(dealId, editPhotoFile)
+        setPhotoCacheBust(Date.now())
+        setPhotoVisible(true)
+      } catch (err) {
+        console.error('Deal photo upload failed:', err)
+      }
+    }
     setDeal({ ...deal, ...updates } as DealData)
+    setEditPhotoFile(null)
+    setEditPhotoPreview(null)
     setSaving(false)
     setEditMode(false)
+  }
+
+  function pickEditPhoto(file: File | undefined) {
+    if (!file || !file.type.startsWith('image/')) return
+    setEditPhotoFile(file)
+    setEditPhotoPreview(URL.createObjectURL(file))
+    setPhotoVisible(true)
   }
 
   // ── Delete confirm ──
@@ -470,7 +514,7 @@ function DealPageClientInner({ id }: { id: string }) {
   const txPlateSrc = txType && txType in TX_PLATE_MAP ? TX_PLATE_MAP[txType] : null
 
   // Address formatting
-  const shortAddr = formatAddress(deal)
+  const shortAddr = formatDealTitle(deal)
   // City line — always present
   const cityLine = (() => {
     const city = deal.addr_city ?? 'Baton Rouge'
@@ -691,7 +735,11 @@ function DealPageClientInner({ id }: { id: string }) {
                 {saving ? 'SAVING…' : 'SAVE'}
               </button>
               <button
-                onClick={() => setEditMode(false)}
+                onClick={() => {
+                  setEditMode(false)
+                  setEditPhotoFile(null)
+                  setEditPhotoPreview(null)
+                }}
                 style={{
                   background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '6px 14px',
                   fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700,
@@ -705,10 +753,12 @@ function DealPageClientInner({ id }: { id: string }) {
           ) : (
             <button
               onClick={() => {
-                setEditName(deal.name ?? '')
+                setEditName(editNamePrefill(deal))
                 setEditStatus(deal.status ?? '')
                 setEditDropbox(deal.dropbox_link ?? '')
                 setEditLacdb('')
+                setEditPhotoFile(null)
+                setEditPhotoPreview(null)
                 setEditMode(true)
               }}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
@@ -971,21 +1021,70 @@ function DealPageClientInner({ id }: { id: string }) {
         {/* ── LEFT COLUMN (scrollable) ─────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* PHOTO placeholder */}
+          {/* PHOTO — view shows stored image; EDIT click/drop to upload or replace */}
           <Panel label="PHOTO">
-            <div style={{
-              margin: '0 18px 18px',
-              background: 'rgba(255,255,255,0.03)',
-              borderRadius: 8,
-              height: 180,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <span style={{ ...STYLE_LABEL, letterSpacing: '0.12em' }}>
-                PHOTO — No image uploaded.
-              </span>
+            <div
+              onClick={editMode ? () => photoInputRef.current?.click() : undefined}
+              onDragOver={editMode ? e => e.preventDefault() : undefined}
+              onDrop={editMode ? e => {
+                e.preventDefault()
+                pickEditPhoto(e.dataTransfer.files?.[0])
+              } : undefined}
+              style={{
+                margin: '0 18px 18px',
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: 8,
+                height: 180,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                cursor: editMode ? 'pointer' : 'default',
+                border: editMode ? `2px dashed ${T.border}` : 'none',
+                position: 'relative',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={editPhotoPreview || dealPhotoPublicUrl(dealId, photoCacheBust)}
+                alt=""
+                onLoad={() => setPhotoVisible(true)}
+                onError={() => { if (!editPhotoPreview) setPhotoVisible(false) }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: photoVisible || editPhotoPreview ? 'block' : 'none',
+                }}
+              />
+              {!photoVisible && !editPhotoPreview && (
+                <span style={{ ...STYLE_LABEL, letterSpacing: '0.12em', position: 'absolute' }}>
+                  {editMode ? 'DROP IMAGE OR CLICK TO UPLOAD' : 'PHOTO — No image uploaded.'}
+                </span>
+              )}
+              {editMode && photoVisible && !editPhotoFile && (
+                <span style={{
+                  ...STYLE_LABEL,
+                  letterSpacing: '0.12em',
+                  position: 'absolute',
+                  bottom: 10,
+                  background: 'rgba(8,8,12,0.72)',
+                  padding: '6px 10px',
+                  borderRadius: 6,
+                }}>
+                  CLICK OR DROP TO REPLACE
+                </span>
+              )}
             </div>
+            {editMode && (
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={e => pickEditPhoto(e.target.files?.[0])}
+                style={{ display: 'none' }}
+              />
+            )}
           </Panel>
 
           {/* SHOWINGS & PROSPECTS — shell + empty state */}
