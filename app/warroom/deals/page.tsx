@@ -870,7 +870,7 @@ function DealsPage() {
 
         {/* ── Tab row — 62px, FIXED ── */}
         <div style={{
-          height:62, flexShrink:0, display:'flex', alignItems:'stretch',
+          height:80, flexShrink:0, display:'flex', alignItems:'center',
           padding:'0 24px', boxSizing:'border-box',
           borderBottom: tab === 'listings' ? 'none' : `1px solid ${C.border}`,
         }}>
@@ -912,7 +912,7 @@ function DealsPage() {
               <img
                 src="/assets/deals/deals-add-pill.png"
                 alt="ADD"
-                style={{ height: 68, width: 'auto', display: 'block' }}
+                style={{ height: 76, width: 'auto', display: 'block' }}
                 draggable={false}
               />
             </button>

@@ -304,34 +304,47 @@ const PLACEHOLDER_STYLE = `
 `
 
 const PAC_STYLE = `
+  /* Force address input to Latin font — override any Google Places injection */
+  #wr-address-input,
+  input[data-wr-address="1"] {
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+    font-size: 17px !important;
+  }
   .pac-container {
-    background: #1A1929;
-    border: 1px solid rgba(255,255,255,0.14);
-    border-radius: 8px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-    font-family: 'Space Grotesk', system-ui, sans-serif;
-    margin-top: 4px;
+    background: #1A1929 !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+    margin-top: 4px !important;
+    z-index: 9999 !important;
   }
   .pac-item {
-    padding: 10px 14px;
-    font-size: 13px;
-    color: #B8B6C6;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    cursor: pointer;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    color: #B8B6C6 !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+    cursor: pointer !important;
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+    background: #1A1929 !important;
   }
   .pac-item:hover, .pac-item-selected {
-    background: rgba(139,92,246,0.12);
-    color: #EFEEF4;
+    background: rgba(139,92,246,0.12) !important;
+    color: #EFEEF4 !important;
   }
   .pac-item-query {
-    color: #EFEEF4;
-    font-size: 13px;
+    color: #EFEEF4 !important;
+    font-size: 13px !important;
+    font-family: 'Space Grotesk', system-ui, sans-serif !important;
   }
   .pac-matched {
-    color: #A78BFA;
+    color: #A78BFA !important;
   }
   .pac-icon, .pac-icon-marker {
-    display: none;
+    display: none !important;
+  }
+  .pac-logo {
+    display: none !important;
   }
 `
 
@@ -574,11 +587,13 @@ function AddressBlock({ addr, onChange, optional }: {
           </svg>
           <input
             ref={inputRef}
+            id="wr-address-input"
+            data-wr-address="1"
             type="text" value={addr.raw}
             onChange={e => onChange({ ...addr, raw: e.target.value })}
             onKeyDown={e => { if (e.key === 'Enter') confirm() }}
             placeholder="Street address"
-            style={{ ...FIELD_STYLE, paddingLeft: 40, fontFamily: FONT_DISP }}
+            style={{ ...FIELD_STYLE, paddingLeft: 40, fontFamily: FONT_DISP, fontSize: 17 }}
           />
         </div>
         <button onClick={confirm} disabled={!addr.raw.trim()} style={{
