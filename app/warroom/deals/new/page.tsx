@@ -42,6 +42,7 @@ const C = {
 
 const FONT_MONO = "'JetBrains Mono', ui-monospace, monospace"
 const FONT_DISP = "'Space Grotesk', system-ui, sans-serif"
+const FONT_ADDRESS = "var(--font-space-grotesk), 'Space Grotesk', system-ui, sans-serif"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Engagement = 'LISTING' | 'TENANT' | 'BUYER' | 'TARGET'
@@ -303,11 +304,11 @@ const PLACEHOLDER_STYLE = `
   ::placeholder { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 17px; font-weight: 400; color: #8E8CA0; }
 `
 
-const PAC_STYLE = `
-  /* Force address input to Latin font */
+const ADDRESS_FONT_STYLE = `
+  /* ADDRESS is a normal controlled input — never bind google.maps.places.Autocomplete to it. */
   #wr-address-input,
   input[data-wr-address="1"] {
-    font-family: 'Space Grotesk', system-ui, sans-serif !important;
+    font-family: var(--font-space-grotesk), 'Space Grotesk', system-ui, sans-serif !important;
     font-size: 17px !important;
   }
 `
@@ -378,12 +379,106 @@ function parseAddr(raw: string) {
   return { addrNumber, addrDirection, addrStreetName: street.join(' '), addrCity: 'Baton Rouge', addrDisplay: raw.trim() }
 }
 
-interface PriorAddr {
-  addrDisplay: string
-  addrStreetName: string
-  addrDirection: string
-  addrNumber: string
-  addrCity: string
+// ── Google Maps Places script loader ─────────────────────────────────────────
+// AutocompleteService + PlacesService only. Never bind Autocomplete to the input —
+// the classic widget injects pac-container + a glyph font that paints `!` circles.
+let _mapsLoaded = false
+let _mapsLoading = false
+let _mapsCallbacks: Array<() => void> = []
+
+function mapsPlacesReady(): boolean {
+  return typeof google !== 'undefined' && !!google.maps?.places
+}
+
+function loadGoogleMaps(apiKey: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') { resolve(); return }
+    if (_mapsLoaded || mapsPlacesReady()) { _mapsLoaded = true; resolve(); return }
+    if (!apiKey) { resolve(); return }
+    _mapsCallbacks.push(resolve)
+    if (_mapsLoading) return
+    _mapsLoading = true
+    const existing = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]') as HTMLScriptElement | null
+    if (existing) {
+      existing.addEventListener('load', () => {
+        _mapsLoaded = true
+        _mapsLoading = false
+        _mapsCallbacks.forEach(fn => fn())
+        _mapsCallbacks = []
+      }, { once: true })
+      existing.addEventListener('error', () => {
+        _mapsLoading = false
+        _mapsCallbacks.forEach(fn => fn())
+        _mapsCallbacks = []
+      }, { once: true })
+      return
+    }
+    const callbackName = '__gmaps_cb_' + Date.now()
+    ;(window as unknown as Record<string, () => void>)[callbackName] = () => {
+      _mapsLoaded = true
+      _mapsLoading = false
+      _mapsCallbacks.forEach(fn => fn())
+      _mapsCallbacks = []
+      delete (window as unknown as Record<string, unknown>)[callbackName]
+    }
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${callbackName}`
+    script.async = true
+    script.onerror = () => {
+      _mapsLoading = false
+      _mapsCallbacks.forEach(fn => fn())
+      _mapsCallbacks = []
+    }
+    document.head.appendChild(script)
+  })
+}
+
+function stripGoogleOverlays() {
+  document.querySelectorAll('iframe[src*="maps.googleapis.com"]').forEach(el => el.remove())
+  document.querySelectorAll('.gm-err-container, .gm-err-content').forEach(el => el.remove())
+  document.querySelectorAll('.pac-container').forEach(el => el.remove())
+}
+
+function getACComponent(place: google.maps.places.PlaceResult, type: string): string {
+  const comp = place.address_components?.find(c => c.types.includes(type))
+  return comp?.long_name ?? ''
+}
+function getACComponentShort(place: google.maps.places.PlaceResult, type: string): string {
+  const comp = place.address_components?.find(c => c.types.includes(type))
+  return comp?.short_name ?? ''
+}
+
+/** Same AddrState fill as the old Autocomplete `place_changed` handler. */
+function placeResultToAddrState(place: google.maps.places.PlaceResult): AddrState {
+  const streetNum = getACComponent(place, 'street_number')
+  const route = getACComponent(place, 'route')
+  const city = getACComponent(place, 'locality') || 'Baton Rouge'
+  const state = getACComponentShort(place, 'administrative_area_level_1')
+  const zip = getACComponent(place, 'postal_code')
+  const routeTokens = route.split(/\s+/)
+  let addrDirection = ''
+  const streetParts: string[] = []
+  for (const tok of routeTokens) {
+    const up = tok.toUpperCase()
+    if (!addrDirection && DIRECTIONS.includes(up)) { addrDirection = up }
+    else { streetParts.push(tok) }
+  }
+  return {
+    raw: place.formatted_address ?? route,
+    confirmed: true,
+    addrDisplay: place.formatted_address ?? '',
+    addrStreetName: streetParts.join(' ') || route,
+    addrDirection,
+    addrNumber: streetNum,
+    addrCity: city,
+    addrState: state,
+    addrZip: zip,
+  }
+}
+
+interface PlacePrediction {
+  placeId: string
+  description: string
 }
 
 function AddressBlock({ addr, onChange, optional }: {
@@ -391,36 +486,59 @@ function AddressBlock({ addr, onChange, optional }: {
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const dropRef = useRef<HTMLDivElement>(null)
-  const [priorAddrs, setPriorAddrs] = useState<PriorAddr[]>([])
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const addrRef = useRef(addr)
+  addrRef.current = addr
+  const svcRef = useRef<{
+    auto: google.maps.places.AutocompleteService
+    places: google.maps.places.PlacesService
+    session: google.maps.places.AutocompleteSessionToken
+  } | null>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const predSeqRef = useRef(0)
+  const pendingQueryRef = useRef('')
+  const fetchPredictionsRef = useRef<(input: string) => void>(() => {})
+
+  const [predictions, setPredictions] = useState<PlacePrediction[]>([])
   const [dropOpen, setDropOpen] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(-1)
 
-  // Fetch all prior deal addresses once on mount
+  const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? ''
+
   useEffect(() => {
-    supabase
-      .from('deals')
-      .select('addr_display, addr_street_name, addr_direction, addr_number, addr_city')
-      .not('addr_display', 'is', null)
-      .then(({ data }) => {
-        if (!data) return
-        const seen = new Set<string>()
-        const deduped: PriorAddr[] = []
-        for (const d of data) {
-          const key = (d.addr_display ?? '').trim()
-          if (!key || seen.has(key)) continue
-          seen.add(key)
-          deduped.push({
-            addrDisplay: key,
-            addrStreetName: d.addr_street_name ?? '',
-            addrDirection: d.addr_direction ?? '',
-            addrNumber: d.addr_number ?? '',
-            addrCity: d.addr_city ?? 'Baton Rouge',
-          })
-        }
-        setPriorAddrs(deduped)
-      })
-  }, [])
+    if (addr.confirmed) return
+    if (!mapsKey && !mapsPlacesReady()) return
+    let cancelled = false
+    const attribEl = document.createElement('div')
+    attribEl.setAttribute('aria-hidden', 'true')
+    attribEl.style.cssText = 'display:none;width:0;height:0;overflow:hidden'
+    document.body.appendChild(attribEl)
 
-  // Close dropdown on outside click
+    loadGoogleMaps(mapsKey).then(() => {
+      if (cancelled) return
+      if (!mapsPlacesReady()) return
+      svcRef.current = {
+        auto: new google.maps.places.AutocompleteService(),
+        places: new google.maps.places.PlacesService(attribEl),
+        session: new google.maps.places.AutocompleteSessionToken(),
+      }
+      const q = pendingQueryRef.current || addrRef.current.raw
+      if (q.trim()) fetchPredictionsRef.current(q)
+    })
+
+    return () => {
+      cancelled = true
+      svcRef.current = null
+      if (debounceRef.current != null) {
+        clearTimeout(debounceRef.current)
+        debounceRef.current = null
+      }
+      attribEl.remove()
+      stripGoogleOverlays()
+    }
+  }, [mapsKey, addr.confirmed])
+
   useEffect(() => {
     if (!dropOpen) return
     function handler(e: MouseEvent) {
@@ -433,37 +551,110 @@ function AddressBlock({ addr, onChange, optional }: {
     return () => document.removeEventListener('mousedown', handler)
   }, [dropOpen])
 
-  const query = addr.raw.trim()
-  const filtered = query.length > 0
-    ? priorAddrs.filter(p =>
-        p.addrDisplay.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 8)
-    : []
+  const fetchPredictions = useCallback((input: string) => {
+    const q = input.trim()
+    pendingQueryRef.current = input
+    const svc = svcRef.current
+    if (!q) {
+      setPredictions([])
+      setDropOpen(false)
+      setActiveIdx(-1)
+      return
+    }
+    if (!svc) return
+    const seq = ++predSeqRef.current
+    svc.auto.getPlacePredictions(
+      {
+        input: q,
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+        sessionToken: svc.session,
+      },
+      (results, status) => {
+        if (seq !== predSeqRef.current) return
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !results?.length) {
+          setPredictions([])
+          setDropOpen(false)
+          setActiveIdx(-1)
+          return
+        }
+        setPredictions(results.map(r => ({
+          placeId: r.place_id,
+          description: r.description,
+        })))
+        setDropOpen(true)
+        setActiveIdx(-1)
+      },
+    )
+  }, [])
+  fetchPredictionsRef.current = fetchPredictions
+
+  const selectPrediction = useCallback((p: PlacePrediction) => {
+    const svc = svcRef.current
+    if (!svc) return
+    svc.places.getDetails(
+      {
+        placeId: p.placeId,
+        fields: ['address_components', 'formatted_address'],
+        sessionToken: svc.session,
+      },
+      (place, status) => {
+        svc.session = new google.maps.places.AutocompleteSessionToken()
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !place?.address_components) return
+        onChangeRef.current(placeResultToAddrState(place))
+        setPredictions([])
+        setDropOpen(false)
+        setActiveIdx(-1)
+      },
+    )
+  }, [])
+
+  const confirm = useCallback(() => {
+    const current = addrRef.current
+    if (!current.raw.trim()) return
+    const parsed = parseAddr(current.raw)
+    onChangeRef.current({ ...current, confirmed: true, ...parsed })
+    setPredictions([])
+    setDropOpen(false)
+    setActiveIdx(-1)
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
+    pendingQueryRef.current = val
     onChange({ ...addr, raw: val, confirmed: false })
-    setDropOpen(val.trim().length > 0)
+    if (debounceRef.current != null) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => fetchPredictions(val), 180)
   }
 
-  const selectAddr = (p: PriorAddr) => {
-    onChange({
-      raw: p.addrDisplay,
-      confirmed: true,
-      addrDisplay: p.addrDisplay,
-      addrStreetName: p.addrStreetName,
-      addrDirection: p.addrDirection,
-      addrNumber: p.addrNumber,
-      addrCity: p.addrCity || 'Baton Rouge',
-    })
-    setDropOpen(false)
-  }
-
-  const confirm = () => {
-    if (!addr.raw.trim()) return
-    const parsed = parseAddr(addr.raw)
-    onChange({ ...addr, confirmed: true, ...parsed })
-    setDropOpen(false)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      if (dropOpen) { e.preventDefault(); setDropOpen(false); setActiveIdx(-1) }
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      if (!predictions.length) return
+      e.preventDefault()
+      setDropOpen(true)
+      setActiveIdx(i => (i + 1) % predictions.length)
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      if (!predictions.length) return
+      e.preventDefault()
+      setDropOpen(true)
+      setActiveIdx(i => (i <= 0 ? predictions.length - 1 : i - 1))
+      return
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (dropOpen && predictions.length) {
+        const pick = activeIdx >= 0 ? predictions[activeIdx] : predictions[0]
+        if (pick) selectPrediction(pick)
+        return
+      }
+      confirm()
+    }
   }
 
   const reopen = () => {
@@ -526,32 +717,54 @@ function AddressBlock({ addr, onChange, optional }: {
             ref={inputRef}
             id="wr-address-input"
             data-wr-address="1"
-            type="text" value={addr.raw}
+            type="text"
+            value={addr.raw}
             onChange={handleInputChange}
-            onKeyDown={e => {
-              if (e.key === 'Enter') confirm()
-              if (e.key === 'Escape') setDropOpen(false)
-            }}
+            onKeyDown={handleKeyDown}
             placeholder="Street address"
-            style={{ ...FIELD_STYLE, paddingLeft: 40, fontFamily: FONT_DISP, fontSize: 17 }}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            role="combobox"
+            aria-expanded={dropOpen && predictions.length > 0}
+            aria-autocomplete="list"
+            aria-controls="wr-address-listbox"
+            style={{ ...FIELD_STYLE, paddingLeft: 40, fontFamily: FONT_ADDRESS, fontSize: 17 }}
           />
-          {dropOpen && filtered.length > 0 && (
-            <div ref={dropRef} style={{
-              position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 300,
-              background: '#1A1929', border: `1px solid ${C.border}`, borderRadius: 10,
-              overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-            }}>
-              {filtered.map((p, i) => (
-                <button key={p.addrDisplay} onMouseDown={e => { e.preventDefault(); selectAddr(p) }} style={{
-                  display: 'block', width: '100%', textAlign: 'left', boxSizing: 'border-box',
-                  padding: '11px 16px', border: 'none', cursor: 'pointer',
-                  background: 'transparent',
-                  borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none',
-                  fontFamily: FONT_DISP, fontSize: 14, color: C.textMid,
-                }}>
-                  {p.addrDisplay}
-                </button>
-              ))}
+          {dropOpen && predictions.length > 0 && (
+            <div
+              ref={dropRef}
+              id="wr-address-listbox"
+              role="listbox"
+              style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 300,
+                background: '#1A1929', border: `1px solid ${C.border}`, borderRadius: 10,
+                overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+              }}
+            >
+              {predictions.map((p, i) => {
+                const active = i === activeIdx
+                return (
+                  <button
+                    key={p.placeId}
+                    id={`wr-address-opt-${i}`}
+                    role="option"
+                    aria-selected={active}
+                    onMouseEnter={() => setActiveIdx(i)}
+                    onMouseDown={e => { e.preventDefault(); selectPrediction(p) }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left', boxSizing: 'border-box',
+                      padding: '11px 16px', border: 'none', cursor: 'pointer',
+                      background: active ? 'rgba(139,92,246,0.16)' : 'transparent',
+                      borderBottom: i < predictions.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                      fontFamily: FONT_ADDRESS, fontSize: 14,
+                      color: active ? C.textHi : C.textMid,
+                    }}
+                  >
+                    {p.description}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
@@ -1373,7 +1586,7 @@ function NewDealForm() {
   return (
     <>
       <style>{PLACEHOLDER_STYLE}</style>
-      <style>{PAC_STYLE}</style>
+      <style>{ADDRESS_FONT_STYLE}</style>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <div style={{
           display: 'flex', alignItems: 'flex-start',
@@ -1872,7 +2085,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
   return (
     <>
       <style>{PLACEHOLDER_STYLE}</style>
-      <style>{PAC_STYLE}</style>
+      <style>{ADDRESS_FONT_STYLE}</style>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <div style={{
           display: 'flex', alignItems: 'flex-start',
