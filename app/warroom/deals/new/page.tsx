@@ -507,7 +507,8 @@ function AddressBlock({ addr, onChange, optional }: {
   const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? ''
 
   useEffect(() => {
-    if (!mapsKey || addr.confirmed) return
+    if (addr.confirmed) return
+    if (!mapsKey && !mapsPlacesReady()) return
     let cancelled = false
     const attribEl = document.createElement('div')
     attribEl.setAttribute('aria-hidden', 'true')
