@@ -1,10 +1,9 @@
 'use client'
 /**
- * /warroom/deal2?id=<uuid> — Parallel desktop deal page. Stage 1.
- * Items 34-50. DESKTOP-ONLY (1024px+). Not responsive.
+ * Desktop deal page. Stage 1. Items 34-50. DESKTOP-ONLY (1024px+).
+ * Canonical route: /warroom/deal/?id=<uuid> (static export — one HTML shell).
  *
  * RULES:
- * - Production route /warroom/deal and file app/warroom/deal/page.tsx: NOT TOUCHED.
  * - Shared files (lib/dealMath.ts, lib/formatAddress.ts, lib/supabase.ts,
  *   components/warroom3/Launch.jsx, assets/launch/launch.css, assets/fab/fab.css): READ ONLY.
  * - Classification: deals.property_type (OFFICE/LAND/RETAIL/INDUSTRIAL/MULTIFAMILY).
@@ -245,7 +244,7 @@ function fmtDateTime(iso: string): string {
 function DealPageClientInner({ id }: { id: string }) {
   const router = useRouter()
 
-  // id comes from props (dynamic route)
+  // id comes from /warroom/deal/?id= (or a path-style fallback on the shell)
   const dealId = id
 
   const [deal, setDeal] = useState<DealData | null>(null)
