@@ -10,6 +10,7 @@ import { Trash2, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import { FAB_APERTURE_GRADIENT, FAB_APERTURE_SHADOW } from '@/lib/fabGradient'
+import { calcCommission, fmtMoney } from '@/lib/dealMath'
 
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
@@ -28,6 +29,7 @@ interface MoneyMover {
   title: string
   deal_id: string | null
   commission: number | null
+  _commission: number | null
 }
 
 interface MoneyMoversSheetProps {
@@ -68,11 +70,31 @@ export default function MoneyMoversSheet({ open, onClose, refreshKey, onOpenAdd 
     try {
       const { data, error } = await supabase
         .from('money_movers')
-        .select('id, title, deal_id, commission')
+        .select('id, title, deal_id, commission, note, note_typed_at')
         .order('created_at', { ascending: false })
         .limit(50)
       if (error) { setLoadError(true); setLoading(false); return }
-      setMovers((data ?? []) as MoneyMover[])
+
+      // Fetch deal_economics for any linked records so we can compute commission
+      // the same way web does (calcCommission from lib/dealMath.ts)
+      const dealIds = (data ?? []).map((m: any) => m.deal_id).filter(Boolean)
+      let econMap: Record<string, any> = {}
+      if (dealIds.length > 0) {
+        const { data: econData } = await supabase
+          .from('deal_economics')
+          .select('deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct')
+          .in('deal_id', dealIds)
+        ;(econData ?? []).forEach((e: any) => { econMap[e.deal_id] = e })
+      }
+
+      // Compute effective commission: calcCommission for linked records, raw commission otherwise
+      const enriched = (data ?? []).map((m: any) => {
+        const econ = m.deal_id ? econMap[m.deal_id] : null
+        const _commission = econ ? calcCommission(econ) : (m.commission as number | null)
+        return { ...m, _commission }
+      })
+
+      setMovers(enriched as MoneyMover[])
       setLoaded(true)
     } catch {
       setLoadError(true)
@@ -97,6 +119,11 @@ export default function MoneyMoversSheet({ open, onClose, refreshKey, onOpenAdd 
     }
   }
 
+  const stakeTotal = movers.reduce((s, m) => s + (m._commission ?? 0), 0)
+  const stakeLabel = !loading && !loadError && movers.length > 0
+    ? `${movers.length} ITEMS · ${fmtMoney(stakeTotal)} AT STAKE`
+    : undefined
+
   return (
     <BottomSheet
       open={open}
@@ -104,6 +131,19 @@ export default function MoneyMoversSheet({ open, onClose, refreshKey, onOpenAdd 
       label="Money Movers"
       count={!loading && !loadError && movers.length > 0 ? movers.length : undefined}
     >
+      {/* Stake total sub-header */}
+      {stakeLabel && (
+        <div style={{
+          padding: '0 18px 10px',
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          fontWeight: 500,
+          color: T.textMid,
+          letterSpacing: '0.06em',
+        }}>
+          {stakeLabel}
+        </div>
+      )}
       {/* Add button inside sheet header area */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 18px 12px' }}>
         <button
@@ -200,16 +240,16 @@ export default function MoneyMoversSheet({ open, onClose, refreshKey, onOpenAdd 
                 {mover.title}
               </div>
 
-              {/* Commission */}
+              {/* Commission — computed via calcCommission for linked deals, raw otherwise */}
               <div style={{
                 fontFamily: FONT_MONO,
                 fontSize: 13,
                 fontWeight: 500,
-                color: mover.commission != null ? T.moneyIn : T.textLow,
+                color: mover._commission != null ? T.moneyIn : T.textLow,
                 flexShrink: 0,
                 letterSpacing: '0.02em',
               }}>
-                {formatCommission(mover.commission)}
+                {fmtMoney(mover._commission)}
               </div>
 
               {/* Trash button */}

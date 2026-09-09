@@ -123,9 +123,8 @@ async function loadHomeData(): Promise<{
       .order('deadline_date', { ascending: true })
       .limit(100),
     supabase
-      .from('deals')
-      .select('id, status')
-      .eq('status', 'hot')
+      .from('money_movers')
+      .select('id')
       .limit(200),
     supabase
       .from('deals')
@@ -204,7 +203,7 @@ async function loadHomeData(): Promise<{
   const bpOverdue = allTasks.filter(t => t.due_date && t.due_date < today).length
   const bpHot = allTasks.filter(t => t.due_date && t.due_date >= today && daysUntilDate(t.due_date) <= 7).length
 
-  const mmTotal = mmDeals.length  // hot deals count
+  const mmTotal = mmDeals.length  // money movers count
   const mmHot = 0                 // no corner on MM tile
 
   const dlTotal = dlPastDue.length + dlForward.length
