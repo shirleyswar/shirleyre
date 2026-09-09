@@ -11,11 +11,24 @@ import { Suspense, useEffect } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import DealPageClient from './[id]/DealPageClient'
 
+// Postgres uuid text form. Rejects empty, index.txt, index.html, prospects,
+// and any other non-deal segment even if it arrives as ?id=.
+const DEAL_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isDealId(value: string): boolean {
+  if (!value) return false
+  const lower = value.toLowerCase()
+  if (lower === 'index.txt' || lower === 'index.html' || lower === 'prospects') return false
+  return DEAL_ID_RE.test(value)
+}
+
 function resolveDealId(queryId: string | null, pathname: string): string | null {
-  if (queryId) return queryId
+  const fromQuery = queryId?.trim() ?? ''
+  if (fromQuery) return isDealId(fromQuery) ? fromQuery : null
   const match = pathname.match(/^\/warroom\/deal\/([^/]+)\/?$/)
-  const segment = match?.[1]
-  if (!segment || segment === 'prospects') return null
+  const segment = match?.[1]?.trim() ?? ''
+  if (!isDealId(segment)) return null
   return segment
 }
 

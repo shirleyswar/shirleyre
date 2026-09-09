@@ -572,7 +572,7 @@ function ContactsPageInner() {
               <ContactRow
                 key={c.id}
                 c={c}
-                onDealClick={(dealId) => router.push(`/warroom/deal?id=${dealId}`)}
+                onDealClick={(dealId) => router.push(`/warroom/deal/?id=${dealId}`)}
               />
             ))}
             <div style={{ fontSize: 11, color: '#374151', textAlign: 'center', padding: '12px 0' }}>

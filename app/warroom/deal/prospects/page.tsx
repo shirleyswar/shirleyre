@@ -442,7 +442,7 @@ function ProspectsPageInner() {
       }}>
         {/* Back to deal */}
         <button
-          onClick={() => router.push(`/warroom/deal?id=${dealId}`)}
+          onClick={() => router.push(`/warroom/deal/?id=${dealId}`)}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             background: 'rgba(255,255,255,0.05)',

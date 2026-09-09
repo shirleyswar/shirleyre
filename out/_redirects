@@ -1,9 +1,17 @@
 # War Room deal detail — static export cannot emit HTML per UUID.
-# Path-style /warroom/deal/{uuid}/ (create redirect, bookmarks, hard refresh)
+# Path-style /warroom/deal/{uuid}/ (bookmarks, hard refresh)
 # 302s onto the single client shell at /warroom/deal/?id={uuid}.
-# /warroom/deal/prospects/ is a real page; first-match wins so :id cannot steal it.
+#
+# Cloudflare Pages: first match wins; redirects always run even when a
+# static file exists. There is no regex, so UUID-only :id rules are not
+# possible. Next.js soft-nav fetches /warroom/deal/index.txt; :id matches
+# that segment (path delimiter is only `/`) and was 302ing to
+# ?id=index.txt, wiping the real UUID. Pass static-export files through
+# before the placeholder rules. /warroom/deal/prospects/ is a real page.
 
-/warroom/deal/prospects   /warroom/deal/prospects/   200
-/warroom/deal/prospects/  /warroom/deal/prospects/   200
-/warroom/deal/:id         /warroom/deal/?id=:id      302
-/warroom/deal/:id/        /warroom/deal/?id=:id      302
+/warroom/deal/prospects     /warroom/deal/prospects/     200
+/warroom/deal/prospects/    /warroom/deal/prospects/     200
+/warroom/deal/index.txt     /warroom/deal/index.txt      200
+/warroom/deal/index.html    /warroom/deal/index.html     200
+/warroom/deal/:id           /warroom/deal/?id=:id        302
+/warroom/deal/:id/          /warroom/deal/?id=:id        302

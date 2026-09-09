@@ -645,7 +645,7 @@ function DealsPage() {
     if (k === sortKey) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortKey(k); setSortDir('asc') }
   }
-  function navigate(id: string) { router.push(`/warroom/deal?id=${id}`) }
+  function navigate(id: string) { router.push(`/warroom/deal/?id=${id}`) }
 
   // ── Data fetch ────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
