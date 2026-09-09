@@ -15,7 +15,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { calcCommission, calcLeaseValue, fmtMoney } from '@/lib/dealMath'
-import { formatAddress } from '@/lib/formatAddress'
+import { formatDealTitle } from '@/lib/formatAddress'
 import PinGate from '@/components/warroom/PinGate'
 import TaskModal from '@/app/warroom/TaskModal'
 import type { Task } from '@/app/warroom/TaskModal'
@@ -709,7 +709,7 @@ function DealsPage() {
 
         return {
           ...deal,
-          _shortAddr:    formatAddress(deal),
+          _shortAddr:    formatDealTitle(deal),
           _client:       clientFromDeal(deal),
           _deadlineDays: deadlineDays,
           _deadlineDate: dl?.deadline_date ?? null,
