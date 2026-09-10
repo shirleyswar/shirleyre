@@ -750,13 +750,7 @@ function DealPageClientInner({ id }: { id: string }) {
           ) : (
             <button
               onClick={() => {
-                setEditName(editNamePrefill(deal))
-                setEditStatus(deal.status ?? '')
-                setEditDropbox(deal.dropbox_link ?? '')
-                setEditLacdb('')
-                setEditPhotoFile(null)
-                setEditPhotoPreview(null)
-                setEditMode(true)
+                router.push(`/warroom/deals/new?edit=${dealId}`)
               }}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               aria-label="Edit deal"
@@ -773,63 +767,7 @@ function DealPageClientInner({ id }: { id: string }) {
         </div>
       </div>
 
-      {/* ── EDIT PANEL ────────────────────────────────────────────────────── */}
-      {editMode && (
-        <div style={{ borderBottom: `1px solid ${T.borderHair}`, background: T.bgPanel }}>
-          <div style={{ maxWidth: 1440, margin: '0 auto', padding: '20px 32px', display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end' }}>
-            {/* Name / Address */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 240, flex: 2 }}>
-              <label style={{ fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: T.textLow }}>
-                Name / Address
-              </label>
-              <input
-                value={editName}
-                onChange={e => setEditName(e.target.value)}
-                style={{
-                  background: T.bgRaise, border: `1px solid ${T.borderPanel}`, borderRadius: 8,
-                  padding: '9px 12px', fontFamily: FONT_DISPLAY, fontSize: 15, color: T.textHi,
-                  outline: 'none', width: '100%', boxSizing: 'border-box',
-                }}
-              />
-            </div>
-            {/* Status */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 180 }}>
-              <label style={{ fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: T.textLow }}>
-                Status
-              </label>
-              <select
-                value={editStatus}
-                onChange={e => setEditStatus(e.target.value)}
-                style={{
-                  background: T.bgRaise, border: `1px solid ${T.borderPanel}`, borderRadius: 8,
-                  padding: '9px 12px', fontFamily: FONT_MONO, fontSize: 12, color: T.textHi,
-                  outline: 'none', cursor: 'pointer',
-                }}
-              >
-                {['pipeline','active','in_review','in_service','under_contract','hot'].map(s => (
-                  <option key={s} value={s}>{s.replace(/_/g, ' ').toUpperCase()}</option>
-                ))}
-              </select>
-            </div>
-            {/* Dropbox link */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 240, flex: 2 }}>
-              <label style={{ fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: T.textLow }}>
-                Dropbox Link
-              </label>
-              <input
-                value={editDropbox}
-                onChange={e => setEditDropbox(e.target.value)}
-                placeholder="https://www.dropbox.com/…"
-                style={{
-                  background: T.bgRaise, border: `1px solid ${T.borderPanel}`, borderRadius: 8,
-                  padding: '9px 12px', fontFamily: FONT_MONO, fontSize: 12, color: T.textHi,
-                  outline: 'none', width: '100%', boxSizing: 'border-box',
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── EDIT PANEL — 156.4: removed; EDIT now navigates to /warroom/deals/new?edit=<id> */}
 
       {/* ── DELETE GATE §D6.1 ──────────────────────────────────────────────── */}
       {deleteMode && (
@@ -1031,7 +969,8 @@ function DealPageClientInner({ id }: { id: string }) {
                 margin: '0 18px 18px',
                 background: 'rgba(255,255,255,0.03)',
                 borderRadius: 8,
-                height: 180,
+                minHeight: 120,
+                maxHeight: 420,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1049,8 +988,9 @@ function DealPageClientInner({ id }: { id: string }) {
                 onError={() => { if (!editPhotoPreview) setPhotoVisible(false) }}
                 style={{
                   width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
+                  height: 'auto',
+                  maxHeight: 420,
+                  objectFit: 'contain',
                   display: photoVisible || editPhotoPreview ? 'block' : 'none',
                 }}
               />

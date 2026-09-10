@@ -3,8 +3,8 @@
  * Reads columns, never parses deals.address string.
  * City rule: show addr_city only when NOT null AND NOT 'Baton Rouge'.
  *
- * LISTING filing/name (create + EDIT save) is separate: Street, Cardinal, Number
- * with commas, empty cardinal still occupying the middle slot.
+ * LISTING filing/name (create + EDIT save) is separate: Street, Cardinal, Number.
+ * Empty cardinal omits the middle slot (156.1).
  */
 
 export interface AddrFields {
@@ -40,7 +40,8 @@ export function normalizeCardinal(raw?: string | null): string {
 
 /**
  * LISTING filing name: `Street, Cardinal, Number`.
- * Empty cardinal still occupies the slot: `Phantom Test Pkwy, , 999`.
+ * Empty cardinal: omit middle slot → `Street, Number` (never `Street, , Number`).
+ * 156.1: fix double-comma on empty cardinal.
  */
 export function formatListingFilingName(
   street?: string | null,
@@ -51,12 +52,14 @@ export function formatListingFilingName(
   const c = normalizeCardinal(cardinal)
   const n = (number ?? '').trim()
   if (!s && !c && !n) return ''
-  return `${s}, ${c}, ${n}`
+  const parts = [s, c, n].filter(p => p.length > 0)
+  return parts.join(', ')
 }
 
 export function looksLikeFilingName(raw?: string | null): boolean {
   if (!raw) return false
-  return raw.split(',').length === 3
+  const parts = raw.split(',').length
+  return parts === 2 || parts === 3
 }
 
 export function parseListingFilingName(raw: string): {
@@ -65,12 +68,13 @@ export function parseListingFilingName(raw: string): {
   number: string
 } | null {
   const parts = raw.split(',').map(p => p.trim())
-  if (parts.length !== 3) return null
-  return {
-    street: parts[0],
-    cardinal: normalizeCardinal(parts[1]),
-    number: parts[2],
+  if (parts.length === 2) {
+    return { street: parts[0], cardinal: '', number: parts[1] }
   }
+  if (parts.length === 3) {
+    return { street: parts[0], cardinal: normalizeCardinal(parts[1]), number: parts[2] }
+  }
+  return null
 }
 
 function isNumberFirst(raw?: string | null): boolean {

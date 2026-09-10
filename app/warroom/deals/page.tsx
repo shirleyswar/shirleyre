@@ -87,6 +87,7 @@ interface DealRow {
   addr_city: string | null
   status: string | null
   type: string | null
+  property_type: string | null
   rating: number | null
   lacdb_url: string | null
   dropbox_link: string | null
@@ -406,15 +407,18 @@ function TypeDropdown({ open, types, activeType, onSelect, onClose }: {
       overflow:'hidden', zIndex:200, minWidth:160,
     }}>
       {types.length === 0 && <div style={{ ...DT8, color:C.textLow, padding:'10px 14px' }}>NO TYPES</div>}
-      {types.map(t => (
-        <button key={t} onClick={() => onSelect(t)} style={{
-          display:'block', width:'100%', textAlign:'left', padding:'10px 14px',
-          border:'none', cursor:'pointer',
-          background: t === activeType ? 'rgba(139,92,246,0.18)' : 'transparent',
-          color: t === activeType ? C.brandLift : C.textMid,
-          ...DT5,
-        }}>{t.toUpperCase()}</button>
-      ))}
+      {types.map(t => {
+        const display = t === 'INDUSTRIAL' ? 'INDST' : t === 'MULTIFAMILY' ? 'MULTI' : t
+        return (
+          <button key={t} onClick={() => onSelect(t)} style={{
+            display:'block', width:'100%', textAlign:'left', padding:'10px 14px',
+            border:'none', cursor:'pointer',
+            background: t === activeType ? 'rgba(139,92,246,0.18)' : 'transparent',
+            color: t === activeType ? C.brandLift : C.textMid,
+            ...DT5,
+          }}>{display}</button>
+        )
+      })}
     </div>
   )
 }
@@ -654,7 +658,7 @@ function DealsPage() {
       const [dealsRes, econRes, deadlinesRes, mmRes] = await Promise.all([
         supabase.from('deals').select(`
           id, name, address, addr_display, addr_number, addr_street_name, addr_street_type,
-          addr_direction, addr_city, status, type, rating, lacdb_url, dropbox_link,
+          addr_direction, addr_city, status, type, property_type, rating, lacdb_url, dropbox_link,
           portfolio_id, is_money_mover, deal_contacts(contacts(name))
         `).order('addr_street_name'),
 
@@ -722,10 +726,8 @@ function DealsPage() {
       setRatings(ratingInit)
       setAllDeals(enriched)
 
-      // Distinct types
-      const typeSet = new Set<string>()
-      rawDeals.forEach(d => { if (d.type) typeSet.add(d.type) })
-      setAllTypes(Array.from(typeSet).sort())
+      // 156.3: TYPE filter uses property_type, not deal engagement type
+      setAllTypes(['OFFICE', 'RETAIL', 'INDUSTRIAL', 'MULTIFAMILY', 'LAND'])
 
       // Tab counts (LISTINGS = all, tenants/buyers/targets by type)
       setTabCounts({
@@ -770,7 +772,7 @@ function DealsPage() {
       case 'hot':   return (d.rating ?? 0) >= 4 || d.status?.toLowerCase() === 'hot'
       case 'uc':    return d.status?.toLowerCase() === 'under_contract'
       case 'money': return d._isMoneyMover
-      case 'type':  return typeValue ? d.type?.toLowerCase() === typeValue.toLowerCase() : true
+      case 'type':  return typeValue ? (d.property_type?.toUpperCase() === typeValue.toUpperCase()) : true
       default:      return true
     }
   }

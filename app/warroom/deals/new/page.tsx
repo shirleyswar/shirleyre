@@ -217,12 +217,13 @@ function LeftRail({ active }: { active: string }) {
 
 // ── PageHeader ────────────────────────────────────────────────────────────────
 function PageHeader({
-  onBack, allMet, saving, onSave,
+  onBack, allMet, saving, onSave, editId,
 }: {
   onBack: () => void
   allMet: boolean
   saving: boolean
   onSave: () => void
+  editId?: string | null
 }) {
   return (
     <div style={{
@@ -248,10 +249,10 @@ function PageHeader({
       {/* Hairline divider */}
       <div style={{ width: 1, height: 22, background: C.borderHair, flexShrink: 0 }} />
 
-      {/* "New deal" — 23px/500 Space Grotesk sentence case */}
+      {/* "New deal" / "Edit deal" — 23px/500 Space Grotesk sentence case */}
       <span style={{
         fontFamily: FONT_DISP, fontSize: 23, fontWeight: 500, color: C.textHi,
-      }}>New deal</span>
+      }}>{editId ? 'Edit deal' : 'New deal'}</span>
 
       <div style={{ flex: 1 }} />
 
@@ -264,7 +265,7 @@ function PageHeader({
         letterSpacing: '0.12em', color: C.textMid, cursor: 'pointer',
       }}>CANCEL</button>
 
-      {/* CREATE DEAL button — inert until allMet */}
+      {/* CREATE DEAL / SAVE CHANGES button — inert until allMet */}
       <button
         onClick={allMet && !saving ? onSave : undefined}
         style={{
@@ -284,7 +285,7 @@ function PageHeader({
           cursor: allMet ? 'pointer' : 'default',
           transition: 'box-shadow 0.2s, background 0.2s',
         }}
-      >{saving ? 'SAVING…' : 'CREATE DEAL'}</button>
+      >{saving ? 'SAVING…' : editId ? 'SAVE CHANGES' : 'CREATE DEAL'}</button>
     </div>
   )
 }
@@ -1984,6 +1985,8 @@ function NewDealFormShell({ onBack, allMetRef, savingRef, onSave }: {
 // ── Inner page — needs allMet/saving state lifted for header ──────────────────
 function NewDealPageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('edit') ?? null
   // We lift allMet/saving up to share with header via state hoisting
   // The form manages its own state; header buttons mirror via callbacks
   const [allMet, setAllMet] = useState(false)
@@ -2000,10 +2003,11 @@ function NewDealPageInner() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
         <IdentityBand />
         <PageHeader
-          onBack={() => router.push('/warroom/deals')}
+          onBack={() => router.push(editId ? '/warroom/deal/?id=' + editId : '/warroom/deals')}
           allMet={allMet}
           saving={saving}
           onSave={() => saveCallbackRef.current?.()}
+          editId={editId}
         />
         <Suspense fallback={
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -2029,6 +2033,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
 }) {
   const router = useRouter()
   const params = useSearchParams()
+  const editId = params.get('edit') ?? null
 
   const [engagement, setEngagement] = useState<Engagement>(() => {
     const tab = params.get('tab')
@@ -2067,6 +2072,61 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       if (data) setContacts(data as ContactRow[])
     })
   }, [])
+
+  // ── 156.4: Prefill from existing deal when editing ────────────────────────
+  useEffect(() => {
+    if (!editId) return
+    ;(async () => {
+      const { data: deal } = await supabase
+        .from('deals')
+        .select('*, deal_economics(*)')
+        .eq('id', editId)
+        .single()
+      if (!deal) return
+      // Prefill engagement
+      const engMap: Record<string, Engagement> = { listing: 'LISTING', tenant: 'TENANT', buyer: 'BUYER', target: 'TARGET' }
+      if (deal.type && engMap[deal.type]) setEngagement(engMap[deal.type])
+      // Prefill title (for tenant/buyer)
+      if (deal.name) setTitle(deal.name)
+      // Prefill address
+      if (deal.addr_display || deal.addr_street_name) {
+        setAddr({
+          raw: deal.addr_display || deal.addr_street_name || '',
+          confirmed: true,
+          addrDisplay: deal.addr_display || '',
+          addrStreetName: deal.addr_street_name || '',
+          addrDirection: deal.addr_direction || '',
+          addrNumber: deal.addr_number || '',
+          addrCity: deal.addr_city || 'Baton Rouge',
+          addrState: 'LA',
+          addrZip: '',
+        })
+      }
+      // Prefill property type
+      if (deal.property_type) setPropType(deal.property_type as PropType)
+      // Prefill sale/lease
+      const econ = Array.isArray(deal.deal_economics) ? deal.deal_economics[0] : deal.deal_economics
+      if (econ) {
+        setSaleOn(econ.transaction_type === 'sale' || econ.transaction_type === 'both')
+        setLeaseOn(econ.transaction_type === 'lease' || econ.transaction_type === 'both')
+        setSaleEcon({
+          askingPrice: econ.asking_price ? String(econ.asking_price) : '',
+          buildingSf: econ.sqft ? String(econ.sqft) : '',
+          landSize: econ.land_sqft ? String(econ.land_sqft) : '',
+          yearBuilt: '',
+        })
+        setLeaseEcon(prev => ({
+          ...prev,
+          availSf: econ.sqft ? String(econ.sqft) : '',
+          ratePsf: econ.lease_rate_psf ? String(econ.lease_rate_psf) : '',
+          leaseTermMonths: econ.lease_term_years ? String(econ.lease_term_years * 12) : '',
+        }))
+      }
+      // Prefill links
+      if (deal.lacdb_url) setLacdbUrl(deal.lacdb_url)
+      if (deal.dropbox_link) setDropboxLink(deal.dropbox_link)
+    })()
+  }, [editId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Requirements ──────────────────────────────────────────────────────────
   const newClientReady = newClientEmail.trim().length > 0 || newClientPhone.trim().length > 0
@@ -2127,6 +2187,28 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
     if (saving || !allMet) return
     setSaving(true)
     try {
+      // 156.4: If editing, update existing deal instead of insert
+      if (editId) {
+        const filing = formatListingFilingName(addr.addrStreetName, addr.addrDirection, addr.addrNumber)
+        const isTitleEng = engagement === 'TENANT' || engagement === 'BUYER'
+        const dealName = isTitleEng ? title.trim() : filing
+        const { error: updateError } = await supabase.from('deals').update({
+          name: dealName,
+          address: addr.addrDisplay || null,
+          addr_street_name: addr.addrStreetName || null,
+          addr_direction: addr.addrDirection || null,
+          addr_number: addr.addrNumber || null,
+          addr_city: addr.addrCity || 'Baton Rouge',
+          addr_display: addr.addrDisplay || null,
+          property_type: propType || null,
+          lacdb_url: lacdbUrl || null,
+          dropbox_link: dropboxLink || null,
+        }).eq('id', editId)
+        if (updateError) throw updateError
+        router.push('/warroom/deal/?id=' + editId)
+        return
+      }
+
       // Resolve contact id — may need to create a new contact first
       let resolvedClientId = clientId
       if (clientMode === 'new' && newClientReady) {
@@ -2181,7 +2263,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
     }
   }, [saving, allMet, engagement, title, addr, propType, saleOn, leaseOn, clientId,
     clientMode, newClientName, newClientEmail, newClientPhone, newClientReady,
-    saleEcon, leaseEcon, comm, lacdbUrl, dropboxLink, deadlineWhat, deadlineWhen, leaseTermMo, mainImageFile, router])
+    saleEcon, leaseEcon, comm, lacdbUrl, dropboxLink, deadlineWhat, deadlineWhen, leaseTermMo, mainImageFile, router, editId])
 
   useEffect(() => { saveCallbackRef.current = handleSave }, [handleSave, saveCallbackRef])
 
