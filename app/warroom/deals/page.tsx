@@ -71,7 +71,7 @@ const COL = {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TabKey    = 'listings' | 'tenants' | 'buyers' | 'targets'
-type FilterKey = 'all' | 'hot' | 'uc' | 'money' | 'type'
+type FilterKey = 'all' | 'hot' | 'uc' | 'money' | 'type'  // 'money' is dead code (DI-2)
 type SortKey   = 'address' | 'client' | 'deadline' | 'lacdb' | 'task' | 'rank' | 'value' | 'comm' | 'dbx'
 type SortDir   = 'asc' | 'desc'
 
@@ -247,13 +247,14 @@ function IdentityBand() {
   )
 }
 
-// ── LeftRail — HOME=1 · DEALS=2 · PEOPLE=3 ───────────────────────────────────
-type RailSlot = 'HOME' | 'DEALS' | 'PEOPLE'
+// ── LeftRail — DI-1: 9 slots (157) ───────────────────────────────────────────
+// HOME · DEALS · SCHED · DEADLINES · MONEY · PORTF · ENTITY · PEOPLE [spacer] SET
+type RailSlot = 'HOME' | 'DEALS' | 'SCHED' | 'DEADLINES' | 'MONEY' | 'PORTF' | 'ENTITY' | 'PEOPLE' | 'SET'
 
+// SVG glyphs from /assets/rail/*.svg (inline to avoid img flicker)
 const G_HOME = (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/>
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7.5" height="18"/><rect x="13.5" y="3" width="7.5" height="8"/><rect x="13.5" y="14" width="7.5" height="7"/>
   </svg>
 )
 const G_DEALS = (
@@ -262,41 +263,105 @@ const G_DEALS = (
     <path d="M12 14v7M7 7.8h6M7 10.8h9"/>
   </svg>
 )
+const G_SCHED = (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3.5" y="4.5" width="17" height="16" rx="2"/><path d="M3.5 9.5h17"/><rect x="7" y="12.6" width="4" height="4" fill="currentColor" stroke="none"/>
+  </svg>
+)
+const G_DEADLINES = (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 20.8V3.6"/><path d="M6 4.4h10.4l-1.7 4.1 1.7 4.1H6"/>
+  </svg>
+)
+const G_MONEY = (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2.6" y="6.4" width="18.8" height="11.2" rx="2.2"/><circle cx="12" cy="12" r="3"/>
+  </svg>
+)
+const G_PORTF = (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2.8 21 7.4l-9 4.6-9-4.6z"/><path d="M3 12.2 12 16.8l9-4.6"/><path d="M3 16.8 12 21.4l9-4.6"/>
+  </svg>
+)
+const G_ENTITY = (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3.6" y="3.2" width="10.2" height="17.6" rx="1.6"/><path d="M13.8 11.2h6.6v9.6h-6.6"/><path d="M6.6 7v1.8M11 7v1.8M6.6 11.1v1.8M11 11.1v1.8M6.6 15.2v1.8M11 15.2v1.8"/>
+  </svg>
+)
 const G_PEOPLE = (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="9" cy="8" r="3.2"/>
     <path d="M3 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6"/>
     <path d="M16 5.4a3.2 3.2 0 0 1 0 6M17.5 14.9c2.1.6 3.5 2.4 3.5 5.1"/>
   </svg>
 )
+const G_SET = (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3.4 8.6h4M13 8.6h7.6M3.4 15.4h7.1M16.1 15.4h4.5"/><circle cx="10.1" cy="8.6" r="2.6"/><circle cx="13.3" cy="15.4" r="2.6"/>
+  </svg>
+)
+
+interface RailSlotDef {
+  id: RailSlot
+  label: string
+  href: string | null  // null = inert slot
+  glyph: React.ReactNode
+}
 
 function LeftRail({ active }: { active: RailSlot }) {
   const router = useRouter()
-  const slots: { id: RailSlot; label: string; href: string; glyph: React.ReactNode }[] = [
-    { id: 'HOME',   label: 'HOME',   href: '/warroom',          glyph: G_HOME   },
-    { id: 'DEALS',  label: 'DEALS',  href: '/warroom/deals',    glyph: G_DEALS  },
-    { id: 'PEOPLE', label: 'PEOPLE', href: '/warroom/contacts', glyph: G_PEOPLE },
+
+  // DI-1: 9 slots — slots without routes render inert (no click, no cursor pointer)
+  const mainSlots: RailSlotDef[] = [
+    { id: 'HOME',      label: 'HOME',      href: '/warroom',          glyph: G_HOME      },
+    { id: 'DEALS',     label: 'DEALS',     href: '/warroom/deals',    glyph: G_DEALS     },
+    { id: 'SCHED',     label: 'SCHED',     href: null,                glyph: G_SCHED     },
+    { id: 'DEADLINES', label: 'DEADLINES', href: null,                glyph: G_DEADLINES },
+    { id: 'MONEY',     label: 'MONEY',     href: null,                glyph: G_MONEY     },
+    { id: 'PORTF',     label: 'PORTF',     href: null,                glyph: G_PORTF     },
+    { id: 'ENTITY',    label: 'ENTITY',    href: null,                glyph: G_ENTITY    },
+    { id: 'PEOPLE',    label: 'PEOPLE',    href: '/warroom/contacts', glyph: G_PEOPLE    },
   ]
+  const setSlot: RailSlotDef = { id: 'SET', label: 'SET', href: null, glyph: G_SET }
+
+  function renderSlot(s: RailSlotDef) {
+    const isActive = s.id === active
+    const canClick = s.href !== null
+    return (
+      <button
+        key={s.id}
+        onClick={canClick ? () => router.push(s.href!) : undefined}
+        style={{
+          width: 76, height: 68, borderRadius: 10, border: 'none', flexShrink: 0,
+          background: isActive ? 'rgba(139,92,246,0.14)' : 'transparent',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
+          cursor: canClick ? 'pointer' : 'default', color: isActive ? C.brandLift : C.textLow,
+          padding: 0,
+        }}
+      >
+        {s.glyph}
+        <span style={{
+          fontFamily: FONT_MONO, fontSize: 8.5, fontWeight: 500,
+          letterSpacing: '0.10em', textTransform: 'uppercase', color: 'inherit',
+          lineHeight: 1, whiteSpace: 'nowrap',
+        }}>{s.label}</span>
+      </button>
+    )
+  }
+
   return (
     <div style={{
       width: 96, flexShrink: 0, height: '100%', background: C.bgRail,
       borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', paddingTop: 16, gap: 4,
+      alignItems: 'center', paddingTop: 8, boxSizing: 'border-box',
     }}>
-      {slots.map(s => {
-        const isActive = s.id === active
-        return (
-          <button key={s.id} onClick={() => router.push(s.href)} style={{
-            width: 76, padding: '13px 0', borderRadius: 10, border: 'none',
-            background: isActive ? 'rgba(139,92,246,0.14)' : 'transparent',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
-            cursor: 'pointer', color: isActive ? C.brandLift : C.textLow,
-          }}>
-            {s.glyph}
-            <span style={{ ...DT5, color: 'inherit' }}>{s.label}</span>
-          </button>
-        )
-      })}
+      {/* Main 8 slots */}
+      {mainSlots.map(s => renderSlot(s))}
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+      {/* SET at bottom */}
+      {renderSlot(setSlot)}
+      <div style={{ height: 8 }} />
     </div>
   )
 }
@@ -507,9 +572,10 @@ function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
 
       {/* Next deadline */}
       <div style={{ width:COL.deadline, flexShrink:0, padding:'0 14px', boxSizing:'border-box' }}>
+        {/* DI-5: no dash in deadline cell when empty */}
         {deal._deadlineDays !== null && deal._deadlineDate
           ? <span style={{ ...DT7, color: deadlineUrgent ? C.hot : C.textMid, whiteSpace:'nowrap' }}>{fmtDeadline(deal._deadlineDays, deal._deadlineDate)}</span>
-          : <span style={{ ...DT8, color:C.textLow }}>—</span>
+          : null
         }
       </div>
 
@@ -536,14 +602,16 @@ function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
       {/* Value */}
       <div style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
         <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.textHi }}>
-          {deal._value != null ? fmtMoney(deal._value) : '—'}
+          {/* DI-5: blank when no value */}
+          {deal._value != null ? fmtMoney(deal._value) : ''}
         </span>
       </div>
 
       {/* Commission */}
       <div style={{ width:COL.comm, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
         <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.moneyIn }}>
-          {deal._commission != null ? fmtMoney(deal._commission) : '—'}
+          {/* DI-5: blank when no commission */}
+          {deal._commission != null ? fmtMoney(deal._commission) : ''}
         </span>
       </div>
 
@@ -572,10 +640,8 @@ function PortfolioRow({ portfolio, onNavigate }: { portfolio: PortfolioRollup; o
         <span style={{ ...DT7, color:C.textLow, flexShrink:0 }}>{portfolio.siteCount} SITES</span>
       </div>
 
-      {/* Client */}
-      <div style={{ width:COL.client, flexShrink:0, padding:'0 14px', boxSizing:'border-box', overflow:'hidden' }}>
-        <span style={{ ...DS5, color:C.textMid, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{portfolio.client}</span>
-      </div>
+      {/* Client — DI-7: empty on rollup rows */}
+      <div style={{ width:COL.client, flexShrink:0 }} />
 
       {/* Deadline — empty */}
       <div style={{ width:COL.deadline, flexShrink:0 }} />
@@ -589,14 +655,16 @@ function PortfolioRow({ portfolio, onNavigate }: { portfolio: PortfolioRollup; o
       {/* Value — summed */}
       <div style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
         <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.textHi }}>
-          {portfolio.value != null ? fmtMoney(portfolio.value) : '—'}
+          {/* DI-5: blank when no value */}
+          {portfolio.value != null ? fmtMoney(portfolio.value) : ''}
         </span>
       </div>
 
       {/* Commission — summed */}
       <div style={{ width:COL.comm, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
         <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.moneyIn }}>
-          {portfolio.commission != null ? fmtMoney(portfolio.commission) : '—'}
+          {/* DI-5: blank when no commission */}
+          {portfolio.commission != null ? fmtMoney(portfolio.commission) : ''}
         </span>
       </div>
 
@@ -851,11 +919,11 @@ function DealsPage() {
     { key: 'targets',  label: 'TARGETS',  count: tabCounts.targets  },
   ]
 
+  // DI-2: MONEY filter segment removed — result: ALL · HOT · UC · TYPE ▾
   const FILTERS: { key: FilterKey; label: string }[] = [
-    { key: 'all',   label: 'ALL'   },
-    { key: 'hot',   label: 'HOT'   },
-    { key: 'uc',    label: 'UC'    },
-    { key: 'money', label: 'MONEY' },
+    { key: 'all',   label: 'ALL' },
+    { key: 'hot',   label: 'HOT' },
+    { key: 'uc',    label: 'UC'  },
   ]
 
   return (
@@ -902,22 +970,46 @@ function DealsPage() {
             })}
             <div style={{ flex:1 }} />
             {/* NEW DEAL pill */}
+            {/* DI-3: bare 31px FAB — no label, no rim, no rotation */}
             <button
               onClick={() => router.push('/warroom/deals/new')}
+              aria-label="Add listing"
               style={{
-                background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px',
-                display: 'flex', alignItems: 'center', flexShrink: 0,
+                flexShrink: 0,
+                position: 'relative',
+                width: 31, height: 31, borderRadius: 10,
+                border: 'none',
+                background: 'radial-gradient(circle at 50% 47%, #5B3FA8 0%, #2A1D52 26%, #120E22 62%, #07060C 100%)',
+                boxShadow: 'inset 0 1px 0 rgba(196,181,253,.24), inset 0 0 8px 2px rgba(0,0,0,.5)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                animation: 'fab-breathe 7s ease-in-out infinite',
+                overflow: 'visible',
               }}
-              aria-label="Add new deal"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/assets/deals/deals-add-pill.png"
-                alt="ADD"
-                style={{ height: 76, width: 'auto', display: 'block' }}
-                draggable={false}
-              />
+              {/* Halo: inset -12px, unclamped */}
+              <span style={{
+                position: 'absolute',
+                inset: -12,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(155,105,255,.42), rgba(124,58,237,.08) 46%, transparent 72%)',
+                animation: 'fab-breathe 7s ease-in-out infinite',
+                pointerEvents: 'none',
+              }} />
+              {/* Core — 20px */}
+              <span style={{
+                position: 'relative', zIndex: 1,
+                width: 20, height: 20,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {/* Bars: 12×1.9 */}
+                <span style={{ position: 'absolute', width: 12, height: 1.9, background: '#EFEEF4', borderRadius: 1 }} />
+                <span style={{ position: 'absolute', width: 1.9, height: 12, background: '#EFEEF4', borderRadius: 1 }} />
+              </span>
             </button>
+            <style>{`
+              @keyframes fab-breathe { 0%,100% { opacity:.72; transform:scale(1) } 50% { opacity:1; transform:scale(1.13) } }
+            `}</style>
           </div>
         </div>
 

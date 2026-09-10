@@ -1,14 +1,11 @@
 'use client'
 /**
- * LaunchControl — 154 edition
- * Demo look: energy orb LEFT · LAUNCH DEAL label · >>> chevrons RIGHT
- * Primary: composited CSS control (orb PNG + label + animated chevrons)
- * Fallback: launch-deal-pill.png poster
- * Spec: WARROOM-154 §6 E1, evidence/demo.mp4
+ * LaunchControl — 157 edition (DP-2)
+ * Threshold control from launch.css + rest-master-v2.png (550×162)
+ * No chevrons (>>>). No crop-offset math — v2 is native 3.395:1.
  */
 
-import React, { useState, useEffect } from 'react'
-import './launch-desktop.css'
+import React from 'react'
 
 interface LaunchControlProps {
   onClick?: () => void
@@ -16,43 +13,51 @@ interface LaunchControlProps {
 }
 
 export default function LaunchControl({ onClick, launched = false }: LaunchControlProps) {
-  const [prefersReduced, setPrefersReduced] = useState(false)
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setPrefersReduced(mq.matches)
-    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
-
   return (
-    <button
-      type="button"
-      className={`ld2-launch ld2-launch--154${launched ? ' ld2-launch--launched' : ''}`}
-      onClick={onClick}
-      aria-label="Launch Deal"
-      data-state={launched ? 'launched' : undefined}
-    >
-      {/* Energy orb — LEFT */}
+    <div style={{ position: 'relative', width: 550, userSelect: 'none' }}>
+      {/* Rest art — 550×162 behind the control */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/assets/launch/energy-orb.png"
+        src="/assets/launch/rest-master-v2.png"
         alt=""
-        className="ld2-launch__orb"
+        width={550}
+        height={162}
+        style={{
+          display: 'block',
+          width: 550,
+          height: 162,
+          pointerEvents: 'none',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 0,
+        }}
         draggable={false}
-        aria-hidden="true"
       />
 
-      {/* Label */}
-      <span className="ld2-launch__label154">LAUNCH DEAL</span>
-
-      {/* Chevrons >>> — RIGHT */}
-      <span className={`ld2-launch__chevrons${prefersReduced ? ' ld2-launch__chevrons--still' : ''}`} aria-hidden="true">
-        <span className="ld2-launch__chev ld2-launch__chev--1">&gt;</span>
-        <span className="ld2-launch__chev ld2-launch__chev--2">&gt;</span>
-        <span className="ld2-launch__chev ld2-launch__chev--3">&gt;</span>
-      </span>
-    </button>
+      {/* launch.css control — mounted on top of rest art */}
+      <div style={{ position: 'relative', zIndex: 1, padding: '49px 0' }}>
+        <link rel="stylesheet" href="/assets/launch/launch.css" />
+        <button
+          type="button"
+          className="wr-launch"
+          onClick={onClick}
+          aria-label="Launch Deal"
+          data-state={launched ? 'launched' : ''}
+          style={{ maxWidth: 380, margin: '0 auto' }}
+        >
+          <span className="wr-launch__mark">
+            <span className="wr-launch__halo"></span>
+            <span className="wr-launch__body"></span>
+            <span className="wr-launch__rim"></span>
+            <span className="wr-launch__face"><span className="wr-launch__core"></span></span>
+            <span className="wr-launch__ring"></span>
+            <span className="wr-launch__orbit"><span className="wr-launch__dot"></span></span>
+          </span>
+          <span className="wr-launch__label">LAUNCH DEAL</span>
+        </button>
+      </div>
+    </div>
   )
 }
