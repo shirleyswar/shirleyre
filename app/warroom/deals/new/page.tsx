@@ -2088,7 +2088,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       if (deal.type && engMap[deal.type]) setEngagement(engMap[deal.type])
       // Prefill title (for tenant/buyer)
       if (deal.name) setTitle(deal.name)
-      // Prefill address
+      // Prefill address (including zip — 156C.2)
       if (deal.addr_display || deal.addr_street_name) {
         setAddr({
           raw: deal.addr_display || deal.addr_street_name || '',
@@ -2098,8 +2098,8 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
           addrDirection: deal.addr_direction || '',
           addrNumber: deal.addr_number || '',
           addrCity: deal.addr_city || 'Baton Rouge',
-          addrState: 'LA',
-          addrZip: '',
+          addrState: (deal as any).addr_state || 'LA',
+          addrZip: (deal as any).addr_zip || '',
         })
       }
       // Prefill property type
@@ -2121,10 +2121,34 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
           ratePsf: econ.lease_rate_psf ? String(econ.lease_rate_psf) : '',
           leaseTermMonths: econ.lease_term_years ? String(econ.lease_term_years * 12) : '',
         }))
+        // Prefill commission rates
+        if (econ.sale_commission_pct || econ.lease_commission_pct) {
+          const rate = econ.sale_commission_pct ?? econ.lease_commission_pct ?? 6
+          setComm({ listingRate: String(rate), coBrokerSplit: '50' })
+        }
       }
       // Prefill links
       if (deal.lacdb_url) setLacdbUrl(deal.lacdb_url)
       if (deal.dropbox_link) setDropboxLink(deal.dropbox_link)
+      // Prefill client contact (156C.2) — load deal_contacts
+      const { data: dcRows } = await supabase
+        .from('deal_contacts')
+        .select('contact_id, relationship')
+        .eq('deal_id', editId)
+        .eq('relationship', 'client')
+        .limit(1)
+      if (dcRows && dcRows.length > 0) {
+        setClientId(dcRows[0].contact_id)
+        setClientMode('selected')
+      }
+      // Prefill photo preview (156C.2) — show stored photo url so user sees it
+      const { dealPhotoPublicUrl } = await import('@/lib/dealPhoto')
+      const photoUrl = dealPhotoPublicUrl(editId, 0)
+      // Try to load photo — set preview if it exists
+      const img = new Image()
+      img.onload = () => setMainImagePreview(photoUrl)
+      img.onerror = () => {}
+      img.src = photoUrl
     })()
   }, [editId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2187,24 +2211,63 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
     if (saving || !allMet) return
     setSaving(true)
     try {
-      // 156.4: If editing, update existing deal instead of insert
+      // 156C.2: If editing, UPDATE with full create-parity persistence
       if (editId) {
-        const filing = formatListingFilingName(addr.addrStreetName, addr.addrDirection, addr.addrNumber)
-        const isTitleEng = engagement === 'TENANT' || engagement === 'BUYER'
-        const dealName = isTitleEng ? title.trim() : filing
-        const { error: updateError } = await supabase.from('deals').update({
-          name: dealName,
-          address: addr.addrDisplay || null,
-          addr_street_name: addr.addrStreetName || null,
-          addr_direction: addr.addrDirection || null,
-          addr_number: addr.addrNumber || null,
-          addr_city: addr.addrCity || 'Baton Rouge',
-          addr_display: addr.addrDisplay || null,
-          property_type: propType || null,
-          lacdb_url: lacdbUrl || null,
-          dropbox_link: dropboxLink || null,
-        }).eq('id', editId)
-        if (updateError) throw updateError
+        // Build the same row payload as create (includes addr_zip, status, type, representation_role, etc.)
+        const updatePayload = buildDealInsertRow(engagement, title, addr, propType, lacdbUrl, dropboxLink)
+        // Preserve existing status rather than resetting to 'active' on every edit
+        // (omit status from update so it stays as-is, unless we have a new one)
+        const { status: _dropStatus, ...updateWithoutStatus } = updatePayload as Record<string, unknown>
+        // Attempt full update (with addr_zip etc.); fall back gracefully if columns missing
+        let updateResult = await supabase.from('deals').update(updateWithoutStatus).eq('id', editId).select('id').single()
+        if (updateResult.error && /addr_state|addr_zip|photo_url|schema cache|column/i.test(updateResult.error.message ?? '')) {
+          const fallback = { ...updateWithoutStatus }
+          delete fallback.addr_state
+          delete fallback.addr_zip
+          updateResult = await supabase.from('deals').update(fallback).eq('id', editId).select('id').single()
+        }
+        if (updateResult.error) throw updateResult.error
+
+        // Persist photo if changed
+        await persistMainImage(editId, mainImageFile)
+
+        // Upsert deal_economics
+        const hasSaleData = saleOn && (saleEcon.askingPrice || saleEcon.buildingSf)
+        const hasLeaseData = leaseOn && (leaseEcon.availSf || leaseEcon.ratePsf)
+        if (hasSaleData || hasLeaseData) {
+          const txType = (saleOn && leaseOn) ? 'both' : saleOn ? 'sale' : 'lease'
+          const listRate = parseFloat(comm.listingRate) || 0
+          const coBrokerFrac = (parseFloat(comm.coBrokerSplit) || 0) / 100
+          const commPct = listRate * coBrokerFrac
+          await supabase.from('deal_economics').upsert({
+            deal_id: editId, transaction_type: txType,
+            asking_price: parseFloat(saleEcon.askingPrice.replace(/[^0-9.]/g,'')) || null,
+            sqft: parseFloat((saleOn ? saleEcon.buildingSf : leaseEcon.availSf).replace(/[^0-9.]/g,'')) || null,
+            land_sqft: parseFloat(saleEcon.landSize.replace(/[^0-9.]/g,'')) || null,
+            sale_commission_pct: saleOn ? commPct : null,
+            lease_rate_psf: parseFloat(leaseEcon.ratePsf.replace(/[^0-9.]/g,'')) || null,
+            nnn_psf: parseFloat(leaseEcon.nnnPsf.replace(/[^0-9.]/g,'')) || null,
+            lease_term_years: leaseTermMo ? leaseTermMo / 12 : null,
+            lease_commission_pct: leaseOn ? commPct : null,
+          }, { onConflict: 'deal_id' })
+        }
+
+        // Resolve/create contact then upsert deal_contacts
+        let resolvedClientId = clientId
+        if (clientMode === 'new' && newClientReady) {
+          const { data: newContact, error: contactErr } = await supabase.from('contacts').insert({
+            name: newClientName.trim(),
+            email: newClientEmail.trim() || null,
+            phone: newClientPhone.trim() || null,
+          }).select('id').single()
+          if (!contactErr && newContact) resolvedClientId = newContact.id
+        }
+        if (resolvedClientId) {
+          // Remove old client link then re-insert (upsert by deal_id+contact_id)
+          await supabase.from('deal_contacts').delete().eq('deal_id', editId).eq('relationship', 'client')
+          await supabase.from('deal_contacts').insert({ deal_id: editId, contact_id: resolvedClientId, relationship: 'client' })
+        }
+
         router.push('/warroom/deal/?id=' + editId)
         return
       }

@@ -83,20 +83,34 @@ function isNumberFirst(raw?: string | null): boolean {
 }
 
 /**
+ * Normalize a stored filing-shaped string: split on comma, trim, filter empty
+ * parts (including lone dashes), rejoin. Prevents stored `, ,` from rendering.
+ * 156C.1 fix.
+ */
+function normalizeFilingDisplay(raw: string): string {
+  return raw.split(',').map(p => p.trim()).filter(p => p.length > 0 && p !== '-').join(', ')
+}
+
+/**
  * Deal hero + index ADDRESS.
  * New LISTING creates store Street, Cardinal, Number on `name` / `addr_display`.
  * Historical rows keep addr_display (e.g. `Bluebonnet Blvd. 5139`) unless the
  * stored title is number-first — then we rebuild from addr_* parts.
  * Does not rewrite the database.
+ * 156C.1: after looksLikeFilingName, normalize empty parts so `, ,` never renders.
  */
 export function formatDealTitle(d: AddrFields): string {
   const name = (d.name ?? '').trim()
-  if (looksLikeFilingName(name)) return name
+  if (looksLikeFilingName(name)) return normalizeFilingDisplay(name)
 
   const filing = formatListingFilingName(d.addr_street_name, d.addr_direction, d.addr_number)
   const display = (d.addr_display ?? '').trim()
   if (filing && (isNumberFirst(display) || isNumberFirst(name))) return filing
-  if (display) return display
+  if (display) {
+    // display may also be a stored filing-shaped string with empty middle
+    if (looksLikeFilingName(display)) return normalizeFilingDisplay(display)
+    return display
+  }
   if (filing) return filing
   return name || '—'
 }
@@ -104,7 +118,7 @@ export function formatDealTitle(d: AddrFields): string {
 /** Prefill the EDIT name field without turning a client-style name into an address. */
 export function editNamePrefill(d: AddrFields): string {
   const name = (d.name ?? '').trim()
-  if (looksLikeFilingName(name)) return name
+  if (looksLikeFilingName(name)) return normalizeFilingDisplay(name)
   const filing = formatListingFilingName(d.addr_street_name, d.addr_direction, d.addr_number)
   const spaceJoined = [d.addr_street_name, d.addr_number].filter(Boolean).join(' ')
   const numberFirst = [d.addr_number, d.addr_street_name].filter(Boolean).join(' ')
