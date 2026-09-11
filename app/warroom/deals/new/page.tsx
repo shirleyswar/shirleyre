@@ -423,8 +423,14 @@ function parseAddr(raw: string) {
   }
 }
 
+function cleanCardinal(raw: string | null | undefined): string {
+  const c = (raw ?? '').trim()
+  if (c === '-' || c === '—' || c === '–' || c === '\u2014' || c === '\u2013') return ''
+  return c
+}
+
 function listingFilingName(addr: AddrState): string {
-  return formatListingFilingName(addr.addrStreetName, addr.addrDirection, addr.addrNumber)
+  return formatListingFilingName(addr.addrStreetName, cleanCardinal(addr.addrDirection), addr.addrNumber)
     || addr.addrDisplay
     || addr.raw.trim()
 }
@@ -447,7 +453,7 @@ function buildDealInsertRow(
     name: dealName,
     address: addr.addrDisplay || addr.raw.trim() || null,
     addr_street_name: addr.addrStreetName || null,
-    addr_direction: addr.addrDirection || null,
+    addr_direction: cleanCardinal(addr.addrDirection) || null,
     addr_number: addr.addrNumber || null,
     addr_city: addr.addrCity || 'Baton Rouge',
     addr_state: addr.addrState || 'LA',
@@ -841,7 +847,7 @@ function AddressBlock({ addr, onChange, optional }: {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>CARDINAL</span>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrDirection || '—'}</span>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrDirection || ''}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>NUMBER</span>
@@ -1137,8 +1143,8 @@ function ContactPicker({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <FieldLabel text="CLIENT" />
-      <div style={{ display: 'flex', gap: 10 }}>
-        <div ref={ref} style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+      <div style={{ position: 'relative' }}>
+        <div ref={ref} style={{ position: 'relative', minWidth: 0 }}>
           <div style={{ position: 'relative' }}>
             <span style={{
               position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
@@ -1160,29 +1166,35 @@ function ContactPicker({
             }}>
               {loading ? (
                 <div style={{ padding: '12px 16px', fontFamily: FONT_MONO, fontSize: 11, color: C.textLow }}>Loading…</div>
-              ) : filtered.length === 0 ? (
-                <div style={{ padding: '12px 16px', fontFamily: FONT_MONO, fontSize: 11, color: C.textLow }}>No contacts found.</div>
-              ) : filtered.map(c => (
-                <button key={c.id} onClick={() => { onChange(c.id); setQuery(''); setOpen(false); onClientModeChange('selected') }} style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  padding: '11px 16px', border: 'none', cursor: 'pointer',
-                  background: c.id === value ? 'rgba(139,92,246,0.16)' : 'transparent',
-                  fontFamily: FONT_DISP, fontSize: 14, color: c.id === value ? C.textHi : C.textMid,
-                }}>
-                  {c.name}
-                  {c.company && <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textLow, marginLeft: 10 }}>{c.company}</span>}
-                </button>
-              ))}
+              ) : (
+                <>
+                  {filtered.length === 0 && (
+                    <div style={{ padding: '12px 16px', fontFamily: FONT_MONO, fontSize: 11, color: C.textLow }}>No contacts found.</div>
+                  )}
+                  {filtered.map(c => (
+                    <button key={c.id} onClick={() => { onChange(c.id); setQuery(''); setOpen(false); onClientModeChange('selected') }} style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '11px 16px', border: 'none', cursor: 'pointer',
+                      background: c.id === value ? 'rgba(139,92,246,0.16)' : 'transparent',
+                      fontFamily: FONT_DISP, fontSize: 14, color: c.id === value ? C.textHi : C.textMid,
+                    }}>
+                      {c.name}
+                      {c.company && <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textLow, marginLeft: 10 }}>{c.company}</span>}
+                    </button>
+                  ))}
+                  {/* 158.2: + NEW CLIENT always inside the dropdown as the last row */}
+                  <button onClick={() => { onClientModeChange('new'); setOpen(false); onNewClientNameChange(query) }} style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '11px 16px', border: 'none', borderTop: filtered.length > 0 ? `1px solid rgba(255,255,255,0.06)` : 'none',
+                    cursor: 'pointer', background: 'transparent',
+                    fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600, letterSpacing: '0.12em',
+                    color: '#8B5CF6',
+                  }}>+ NEW CLIENT</button>
+                </>
+              )}
             </div>
           )}
         </div>
-        {/* NEW CLIENT button */}
-        <button onClick={() => { onClientModeChange('new'); setOpen(false); onNewClientNameChange(query) }} style={{
-          height: 52, padding: '0 18px', borderRadius: 10, flexShrink: 0,
-          background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.borderHair}`,
-          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600, letterSpacing: '0.12em',
-          color: C.textMid, cursor: 'pointer',
-        }}>+ NEW CLIENT</button>
       </div>
     </div>
   )
@@ -1789,7 +1801,7 @@ function NewDealForm() {
                   <div style={{ padding: '22px 26px' }}>
                     {isListing ? (
                       <SaleLeaseMarks saleOn={saleOn} leaseOn={leaseOn}
-                        onSale={() => setSaleOn(!saleOn)} onLease={() => setLeaseOn(!leaseOn)} />
+                        onSale={() => { setSaleOn(true); setLeaseOn(false) }} onLease={() => { setLeaseOn(true); setSaleOn(false) }} />
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         <FieldLabel text="TRANSACTION" />
@@ -1894,7 +1906,7 @@ function NewDealForm() {
                   >
                     {mainImagePreview ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={mainImagePreview} alt="Main" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={mainImagePreview} alt="Main" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     ) : (
                       <>
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
@@ -2092,10 +2104,10 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       if (deal.addr_display || deal.addr_street_name) {
         setAddr({
           raw: deal.addr_display || deal.addr_street_name || '',
-          confirmed: true,
+          confirmed: false,
           addrDisplay: deal.addr_display || '',
           addrStreetName: deal.addr_street_name || '',
-          addrDirection: deal.addr_direction || '',
+          addrDirection: cleanCardinal(deal.addr_direction),
           addrNumber: deal.addr_number || '',
           addrCity: deal.addr_city || 'Baton Rouge',
           addrState: (deal as any).addr_state || 'LA',
@@ -2107,8 +2119,13 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       // Prefill sale/lease
       const econ = Array.isArray(deal.deal_economics) ? deal.deal_economics[0] : deal.deal_economics
       if (econ) {
-        setSaleOn(econ.transaction_type === 'sale' || econ.transaction_type === 'both')
-        setLeaseOn(econ.transaction_type === 'lease' || econ.transaction_type === 'both')
+        // 158.3: exclusive — 'both' resolves to sale
+        if (econ.transaction_type === 'both') {
+          setSaleOn(true); setLeaseOn(false)
+        } else {
+          setSaleOn(econ.transaction_type === 'sale')
+          setLeaseOn(econ.transaction_type === 'lease')
+        }
         setSaleEcon({
           askingPrice: econ.asking_price ? String(econ.asking_price) : '',
           buildingSf: econ.sqft ? String(econ.sqft) : '',
@@ -2398,7 +2415,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
                 <div style={{ padding: '22px 26px' }}>
                   {isListing ? (
                     <SaleLeaseMarks saleOn={saleOn} leaseOn={leaseOn}
-                      onSale={() => setSaleOn(!saleOn)} onLease={() => setLeaseOn(!leaseOn)} />
+                      onSale={() => { setSaleOn(true); setLeaseOn(false) }} onLease={() => { setLeaseOn(true); setSaleOn(false) }} />
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       <FieldLabel text="TRANSACTION" />
@@ -2487,7 +2504,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
                   >
                     {mainImagePreview ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={mainImagePreview} alt="Main" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={mainImagePreview} alt="Main" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     ) : (
                       <>
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
