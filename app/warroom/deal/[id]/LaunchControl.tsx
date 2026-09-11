@@ -38,7 +38,6 @@ export default function LaunchControl({ onClick, launched = false }: LaunchContr
 
       {/* launch.css control — mounted on top of rest art */}
       <div style={{ position: 'relative', zIndex: 1, padding: '49px 0' }}>
-        <link rel="stylesheet" href="/assets/launch/launch.css" />
         <button
           type="button"
           className="wr-launch"

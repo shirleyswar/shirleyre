@@ -382,7 +382,7 @@ function parseStreetTokens(streetLine: string) {
   let addrNumber = ''; let addrDirection = ''
   const street: string[] = []
   for (const tok of tokens) {
-    const up = tok.toUpperCase()
+    const up = tok.replace(/\.+$/, '').toUpperCase()
     if (!addrNumber && /^\d+[A-Za-z]?$/.test(tok)) { addrNumber = tok }
     else if (!addrDirection && DIRECTIONS.includes(up)) { addrDirection = up }
     else { street.push(tok) }
@@ -502,7 +502,7 @@ function CityStateZipRow({ addr, onChange }: { addr: AddrState; onChange: (a: Ad
           value={addr.addrCity}
           onChange={e => onChange({ ...addr, addrCity: e.target.value })}
           placeholder="Baton Rouge"
-          style={FIELD_STYLE}
+          style={{ ...FIELD_STYLE, fontFamily: FONT_ADDRESS }}
         />
       </div>
       <div style={{ width: 96, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -513,7 +513,7 @@ function CityStateZipRow({ addr, onChange }: { addr: AddrState; onChange: (a: Ad
           onChange={e => onChange({ ...addr, addrState: e.target.value.toUpperCase().slice(0, 2) })}
           placeholder="LA"
           maxLength={2}
-          style={{ ...FIELD_STYLE, textTransform: 'uppercase' }}
+          style={{ ...FIELD_STYLE, textTransform: 'uppercase', fontFamily: FONT_ADDRESS }}
         />
       </div>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -524,7 +524,7 @@ function CityStateZipRow({ addr, onChange }: { addr: AddrState; onChange: (a: Ad
           onChange={e => onChange({ ...addr, addrZip: e.target.value })}
           placeholder="ZIP"
           inputMode="numeric"
-          style={FIELD_STYLE}
+          style={{ ...FIELD_STYLE, fontFamily: FONT_ADDRESS }}
         />
       </div>
     </div>
@@ -611,7 +611,7 @@ function placeResultToAddrState(place: google.maps.places.PlaceResult): AddrStat
   let addrDirection = ''
   const streetParts: string[] = []
   for (const tok of routeTokens) {
-    const up = tok.toUpperCase()
+    const up = tok.replace(/\.+$/, '').toUpperCase()
     if (!addrDirection && DIRECTIONS.includes(up)) { addrDirection = up }
     else { streetParts.push(tok) }
   }
