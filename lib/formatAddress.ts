@@ -3,8 +3,15 @@
  * Reads columns, never parses deals.address string.
  * City rule: show addr_city only when NOT null AND NOT 'Baton Rouge'.
  *
- * LISTING filing/name (create + EDIT save) is separate: Street, Cardinal, Number.
- * Empty cardinal omits the middle slot (156.1).
+ * 158C.1: LISTING filing display = Street Cardinal. Number (space-joined).
+ *   Matthew spoke it: "Cabela's Pkwy. S. 2703"
+ *   STREET = thoroughfare without leading direction.
+ *   CARDINAL = direction alone, period appended in display only.
+ *   NUMBER = house number.
+ *   NEVER glue direction onto front of street.
+ *   Structured columns (addr_street_name / addr_direction / addr_number) take
+ *   priority over stored addr_display / name, so a wrong stored value does not
+ *   persist to the hero or index.
  */
 
 export interface AddrFields {
@@ -18,33 +25,28 @@ export interface AddrFields {
   address?: string | null  // legacy param, ignored
 }
 
-export function formatAddress(d: AddrFields): string {
-  if (d.addr_display) return d.addr_display
+/** Cardinal abbreviations — matched case-insensitively after stripping trailing dots. */
+const DIRECTIONS_LIST = ['NE', 'NW', 'SE', 'SW', 'N', 'S', 'E', 'W']
 
-  if (d.addr_street_name) {
-    const parts: string[] = [d.addr_street_name]
-    if (d.addr_direction) parts.push(d.addr_direction + '.')
-    if (d.addr_number) parts.push(d.addr_number)
-    const city = d.addr_city && d.addr_city !== 'Baton Rouge' ? d.addr_city : null
-    if (city) parts.push('·', city)
-    return parts.join(' ')
-  }
-
-  return d.name ?? '—'
-}
-
-/** Strip trailing dots; cardinals are stored without a period (`W` not `W.`). */
+/** Strip trailing dots + uppercase for direction comparison. */
 export function normalizeCardinal(raw?: string | null): string {
   return (raw ?? '').trim().replace(/\.+$/, '').toUpperCase()
 }
 
-/** Cardinal abbreviations (with and without dot). */
-const DIRECTIONS_LIST = ['NE', 'NW', 'SE', 'SW', 'N', 'S', 'E', 'W']
+/**
+ * 158C.1 / 158C.2: treat empty, whitespace, and lone dash variants as empty.
+ * Never write these glyphs into addr_direction or display them as a filled cardinal.
+ */
+export function cleanCardinalStrict(raw?: string | null): string {
+  const c = normalizeCardinal(raw)
+  if (!c || c === '-' || c === '—' || c === '–') return ''
+  return c
+}
 
 /**
- * 158C.1: If a street name starts with a cardinal token (e.g. "S. Cabela's Pkwy"),
- * strip it out and return it separately. Used at display time and on SAVE so that
- * stored filing strings with embedded leading cardinals are corrected automatically.
+ * 158C.1: strip a leading cardinal token (N/S/E/W/NE/NW/SE/SW with optional dot)
+ * from a street name string and return it separately.
+ * e.g. "S. Cabela's Pkwy" → { street: "Cabela's Pkwy", cardinal: "S" }
  */
 function splitLeadingCardinal(raw: string): { street: string; cardinal: string } {
   const tokens = raw.trim().split(/\s+/)
@@ -57,33 +59,59 @@ function splitLeadingCardinal(raw: string): { street: string; cardinal: string }
 }
 
 /**
- * LISTING filing name: `Street, Cardinal, Number`.
- * Empty cardinal: omit middle slot → `Street, Number` (never `Street, , Number`).
- * 156.1: fix double-comma on empty cardinal.
- * 158C.1: if no cardinal supplied but street starts with one, strip it into cardinal slot.
+ * 158C.1: spoken filing display — "Cabela's Pkwy. S. 2703"
+ * Joins: Street + space + Cardinal. + space + Number
+ * Strips leading cardinal from street if addr_direction is empty.
+ * Cardinal gets a period appended in display only (never stored).
+ * Empty cardinal → "Street Number" (no middle slot, no dash).
+ */
+export function spokenFilingDisplay(
+  street?: string | null,
+  cardinal?: string | null,
+  number?: string | null,
+): string {
+  let s = (street ?? '').trim()
+  let c = cleanCardinalStrict(cardinal)
+  const n = (number ?? '').trim()
+
+  // 158C.1: if no explicit cardinal but street starts with one, extract it
+  if (s && !c) {
+    const split = splitLeadingCardinal(s)
+    if (split.cardinal) { s = split.street; c = split.cardinal }
+  }
+
+  if (!s && !n) return ''
+
+  const parts: string[] = []
+  if (s) parts.push(s)
+  if (c) parts.push(c + '.')  // "S." — period is display-only
+  if (n) parts.push(n)
+  return parts.join(' ')  // "Cabela's Pkwy. S. 2703"
+}
+
+/**
+ * LISTING filing name written to name + addr_display on create/EDIT SAVE.
+ * 158C.1: produces spoken format "Street Cardinal. Number" (space-joined).
+ * Strips leading cardinal from street when none explicitly provided.
  */
 export function formatListingFilingName(
   street?: string | null,
   cardinal?: string | null,
   number?: string | null,
 ): string {
-  let s = (street ?? '').trim()
-  let c = normalizeCardinal(cardinal)
-  const n = (number ?? '').trim()
-  // 158C.1: strip leading cardinal from street when no cardinal is explicitly provided
-  if (!c && s) {
-    const split = splitLeadingCardinal(s)
-    if (split.cardinal) { s = split.street; c = split.cardinal }
-  }
-  if (!s && !c && !n) return ''
-  const parts = [s, c, n].filter(p => p.length > 0)
-  return parts.join(', ')
+  return spokenFilingDisplay(street, cardinal, number)
 }
 
 export function looksLikeFilingName(raw?: string | null): boolean {
   if (!raw) return false
-  const parts = raw.split(',').length
-  return parts === 2 || parts === 3
+  // Comma-joined legacy (2–3 parts): "Street, Number" or "Street, Cardinal, Number"
+  const commaParts = raw.split(',').length
+  if (commaParts === 2 || commaParts === 3) return true
+  // Space-joined spoken format: has a number token that is not at position 0
+  // Pattern: at least two tokens, last token is numeric, first is not numeric
+  const tokens = raw.trim().split(/\s+/)
+  if (tokens.length >= 2 && /^\d+[A-Za-z]?$/.test(tokens[tokens.length - 1]) && !/^\d/.test(tokens[0])) return true
+  return false
 }
 
 export function parseListingFilingName(raw: string): {
@@ -91,12 +119,31 @@ export function parseListingFilingName(raw: string): {
   cardinal: string
   number: string
 } | null {
-  const parts = raw.split(',').map(p => p.trim())
-  if (parts.length === 2) {
-    return { street: parts[0], cardinal: '', number: parts[1] }
+  // Try comma-joined first (legacy)
+  const commaParts = raw.split(',').map(p => p.trim())
+  if (commaParts.length === 2) {
+    return { street: commaParts[0], cardinal: '', number: commaParts[1] }
   }
-  if (parts.length === 3) {
-    return { street: parts[0], cardinal: normalizeCardinal(parts[1]), number: parts[2] }
+  if (commaParts.length === 3) {
+    return { street: commaParts[0], cardinal: normalizeCardinal(commaParts[1]), number: commaParts[2] }
+  }
+  // Try spoken format: "Street [Cardinal.] Number"
+  const tokens = raw.trim().split(/\s+/)
+  if (tokens.length >= 2) {
+    const last = tokens[tokens.length - 1]
+    if (/^\d+[A-Za-z]?$/.test(last)) {
+      const rest = tokens.slice(0, -1)
+      const penult = rest[rest.length - 1]
+      const penultClean = penult ? penult.replace(/\.+$/, '').toUpperCase() : ''
+      if (rest.length >= 2 && DIRECTIONS_LIST.includes(penultClean)) {
+        return {
+          street: rest.slice(0, -1).join(' '),
+          cardinal: penultClean,
+          number: last,
+        }
+      }
+      return { street: rest.join(' '), cardinal: '', number: last }
+    }
   }
   return null
 }
@@ -107,67 +154,67 @@ function isNumberFirst(raw?: string | null): boolean {
 }
 
 /**
- * Normalize a stored filing-shaped string: split on comma, trim, filter empty
- * parts (including lone dashes), rejoin. Prevents stored `, ,` from rendering.
- * 156C.1 fix.
- * 158C.1 fix: if the street slot starts with a cardinal token (e.g. "S. Cabela's Pkwy"),
- * pull it out to the cardinal slot so the hero renders "Cabela's Pkwy, S, 2703".
+ * Normalize a stored filing-shaped string for display.
+ * Handles both legacy comma-joined and new spoken space-joined formats.
+ * Strips leading cardinal from the street slot.
+ * 158C.1 / 156C.1.
  */
 function normalizeFilingDisplay(raw: string): string {
-  const parts = raw.split(',').map(p => p.trim()).filter(p => p.length > 0 && p !== '-' && p !== '—' && p !== '–')
-  if (parts.length === 0) return ''
-  // 158C.1: street is always parts[0]; strip any leading cardinal from it
-  const streetRaw = parts[0]
-  const { street, cardinal } = splitLeadingCardinal(streetRaw)
-  if (cardinal && street) {
-    // Reconstruct with cardinal in its correct slot
-    if (parts.length === 2) {
-      // was: "S. Cabela's Pkwy, 2703" → "Cabela's Pkwy, S, 2703"
-      return [street, cardinal, parts[1]].join(', ')
-    } else if (parts.length === 3) {
-      // was: "S. Cabela's Pkwy, S, 2703" (duplicate cardinal) → deduplicate
-      const existingCardinal = normalizeCardinal(parts[1])
-      if (existingCardinal === cardinal) {
-        return [street, cardinal, parts[2]].join(', ')
-      }
-      // Different existing cardinal — keep it, use it
-      return [street, existingCardinal || cardinal, parts[2]].join(', ')
-    }
+  const parsed = parseListingFilingName(raw)
+  if (parsed) {
+    return spokenFilingDisplay(parsed.street, parsed.cardinal, parsed.number)
   }
-  return parts.join(', ')
+  return raw.trim()
 }
 
 /**
- * Deal hero + index ADDRESS.
- * New LISTING creates store Street, Cardinal, Number on `name` / `addr_display`.
- * Historical rows keep addr_display (e.g. `Bluebonnet Blvd. 5139`) unless the
- * stored title is number-first — then we rebuild from addr_* parts.
- * Does not rewrite the database.
- * 156C.1: after looksLikeFilingName, normalize empty parts so `, ,` never renders.
+ * Deal hero + index ADDRESS — 158C.1.
+ * Priority: structured columns (addr_street_name / addr_direction / addr_number)
+ * because they allow correct spoke-format display even when stored name/addr_display
+ * still has the wrong (cardinal-first) value.
+ * Falls back to stored name/addr_display for legacy rows without structured columns.
  */
 export function formatDealTitle(d: AddrFields): string {
-  const name = (d.name ?? '').trim()
-  if (looksLikeFilingName(name)) return normalizeFilingDisplay(name)
+  // 158C.1: structured columns first — produces correct spoken display
+  // even when stored addr_display / name still contain wrong cardinal-first form
+  const spoken = spokenFilingDisplay(d.addr_street_name, d.addr_direction, d.addr_number)
+  if (spoken) return spoken
 
-  const filing = formatListingFilingName(d.addr_street_name, d.addr_direction, d.addr_number)
+  // Legacy fallback: stored name / addr_display
+  const name = (d.name ?? '').trim()
   const display = (d.addr_display ?? '').trim()
-  if (filing && (isNumberFirst(display) || isNumberFirst(name))) return filing
-  if (display) {
-    // display may also be a stored filing-shaped string with empty middle
-    if (looksLikeFilingName(display)) return normalizeFilingDisplay(display)
-    return display
+  const raw = name || display
+  if (!raw) return '—'
+
+  if (looksLikeFilingName(raw)) return normalizeFilingDisplay(raw)
+  if (isNumberFirst(raw)) return raw  // can't restructure without structured columns
+  return raw
+}
+
+/**
+ * formatAddress — used for display outside LISTING filing contexts.
+ * 158C.1: prefer structured columns for spoke-format display.
+ */
+export function formatAddress(d: AddrFields): string {
+  // Prefer structured columns
+  if (d.addr_street_name) {
+    const spoken = spokenFilingDisplay(d.addr_street_name, d.addr_direction, d.addr_number)
+    if (spoken) {
+      const city = d.addr_city && d.addr_city !== 'Baton Rouge' ? d.addr_city : null
+      return city ? spoken + ' · ' + city : spoken
+    }
   }
-  if (filing) return filing
-  return name || '—'
+
+  // Legacy fallback
+  if (d.addr_display) return d.addr_display
+  return d.name ?? '—'
 }
 
 /** Prefill the EDIT name field without turning a client-style name into an address. */
 export function editNamePrefill(d: AddrFields): string {
+  const spoken = spokenFilingDisplay(d.addr_street_name, d.addr_direction, d.addr_number)
+  if (spoken) return spoken
   const name = (d.name ?? '').trim()
   if (looksLikeFilingName(name)) return normalizeFilingDisplay(name)
-  const filing = formatListingFilingName(d.addr_street_name, d.addr_direction, d.addr_number)
-  const spaceJoined = [d.addr_street_name, d.addr_number].filter(Boolean).join(' ')
-  const numberFirst = [d.addr_number, d.addr_street_name].filter(Boolean).join(' ')
-  if (filing && (name === spaceJoined || name === numberFirst || isNumberFirst(name))) return filing
   return name
 }

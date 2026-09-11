@@ -847,7 +847,7 @@ function AddressBlock({ addr, onChange, optional }: {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>CARDINAL</span>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrDirection || ''}</span>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{cleanCardinal(addr.addrDirection)}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>NUMBER</span>
