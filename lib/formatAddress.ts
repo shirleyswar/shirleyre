@@ -38,19 +38,43 @@ export function normalizeCardinal(raw?: string | null): string {
   return (raw ?? '').trim().replace(/\.+$/, '').toUpperCase()
 }
 
+/** Cardinal abbreviations (with and without dot). */
+const DIRECTIONS_LIST = ['NE', 'NW', 'SE', 'SW', 'N', 'S', 'E', 'W']
+
+/**
+ * 158C.1: If a street name starts with a cardinal token (e.g. "S. Cabela's Pkwy"),
+ * strip it out and return it separately. Used at display time and on SAVE so that
+ * stored filing strings with embedded leading cardinals are corrected automatically.
+ */
+function splitLeadingCardinal(raw: string): { street: string; cardinal: string } {
+  const tokens = raw.trim().split(/\s+/)
+  if (tokens.length < 2) return { street: raw.trim(), cardinal: '' }
+  const firstUp = tokens[0].replace(/\.+$/, '').toUpperCase()
+  if (DIRECTIONS_LIST.includes(firstUp)) {
+    return { street: tokens.slice(1).join(' '), cardinal: firstUp }
+  }
+  return { street: raw.trim(), cardinal: '' }
+}
+
 /**
  * LISTING filing name: `Street, Cardinal, Number`.
  * Empty cardinal: omit middle slot → `Street, Number` (never `Street, , Number`).
  * 156.1: fix double-comma on empty cardinal.
+ * 158C.1: if no cardinal supplied but street starts with one, strip it into cardinal slot.
  */
 export function formatListingFilingName(
   street?: string | null,
   cardinal?: string | null,
   number?: string | null,
 ): string {
-  const s = (street ?? '').trim()
-  const c = normalizeCardinal(cardinal)
+  let s = (street ?? '').trim()
+  let c = normalizeCardinal(cardinal)
   const n = (number ?? '').trim()
+  // 158C.1: strip leading cardinal from street when no cardinal is explicitly provided
+  if (!c && s) {
+    const split = splitLeadingCardinal(s)
+    if (split.cardinal) { s = split.street; c = split.cardinal }
+  }
   if (!s && !c && !n) return ''
   const parts = [s, c, n].filter(p => p.length > 0)
   return parts.join(', ')
@@ -86,9 +110,31 @@ function isNumberFirst(raw?: string | null): boolean {
  * Normalize a stored filing-shaped string: split on comma, trim, filter empty
  * parts (including lone dashes), rejoin. Prevents stored `, ,` from rendering.
  * 156C.1 fix.
+ * 158C.1 fix: if the street slot starts with a cardinal token (e.g. "S. Cabela's Pkwy"),
+ * pull it out to the cardinal slot so the hero renders "Cabela's Pkwy, S, 2703".
  */
 function normalizeFilingDisplay(raw: string): string {
-  return raw.split(',').map(p => p.trim()).filter(p => p.length > 0 && p !== '-').join(', ')
+  const parts = raw.split(',').map(p => p.trim()).filter(p => p.length > 0 && p !== '-' && p !== '—' && p !== '–')
+  if (parts.length === 0) return ''
+  // 158C.1: street is always parts[0]; strip any leading cardinal from it
+  const streetRaw = parts[0]
+  const { street, cardinal } = splitLeadingCardinal(streetRaw)
+  if (cardinal && street) {
+    // Reconstruct with cardinal in its correct slot
+    if (parts.length === 2) {
+      // was: "S. Cabela's Pkwy, 2703" → "Cabela's Pkwy, S, 2703"
+      return [street, cardinal, parts[1]].join(', ')
+    } else if (parts.length === 3) {
+      // was: "S. Cabela's Pkwy, S, 2703" (duplicate cardinal) → deduplicate
+      const existingCardinal = normalizeCardinal(parts[1])
+      if (existingCardinal === cardinal) {
+        return [street, cardinal, parts[2]].join(', ')
+      }
+      // Different existing cardinal — keep it, use it
+      return [street, existingCardinal || cardinal, parts[2]].join(', ')
+    }
+  }
+  return parts.join(', ')
 }
 
 /**
