@@ -10,7 +10,7 @@ import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react
 import { useRouter, useSearchParams } from 'next/navigation'
 import PinGate from '@/components/warroom/PinGate'
 import { supabase } from '@/lib/supabase'
-import { formatListingFilingName } from '@/lib/formatAddress'
+import { formatListingFilingName, spokenFilingDisplay } from '@/lib/formatAddress'
 import { uploadDealPhoto } from '@/lib/dealPhoto'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -2101,13 +2101,17 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       // Prefill title (for tenant/buyer)
       if (deal.name) setTitle(deal.name)
       // Prefill address (including zip — 156C.2)
+      // 158C.1: use spoken filing format for raw so user sees "Cabela's Pkwy. S. 2703", not stored wrong form
       if (deal.addr_display || deal.addr_street_name) {
+        const cleanDir = cleanCardinal(deal.addr_direction)
+        const spokenRaw = spokenFilingDisplay(deal.addr_street_name, cleanDir, deal.addr_number)
+          || deal.addr_display || deal.addr_street_name || ''
         setAddr({
-          raw: deal.addr_display || deal.addr_street_name || '',
+          raw: spokenRaw,
           confirmed: false,
           addrDisplay: deal.addr_display || '',
           addrStreetName: deal.addr_street_name || '',
-          addrDirection: cleanCardinal(deal.addr_direction),
+          addrDirection: cleanDir,
           addrNumber: deal.addr_number || '',
           addrCity: deal.addr_city || 'Baton Rouge',
           addrState: (deal as any).addr_state || 'LA',
