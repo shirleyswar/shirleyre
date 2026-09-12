@@ -1867,10 +1867,11 @@ const RAIL_PORTF_SVG = `<path d="M12 2.8 21 7.4l-9 4.6-9-4.6z"/><path d="M3 12.2
 const RAIL_ENTITY_SVG = `<rect x="3.6" y="3.2" width="10.2" height="17.6" rx="1.6"/><path d="M13.8 11.2h6.6v9.6h-6.6"/><path d="M6.6 7v1.8M11 7v1.8M6.6 11.1v1.8M11 11.1v1.8M6.6 15.2v1.8M11 15.2v1.8"/>`
 const RAIL_PEOPLE_SVG = `<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.4 2.7-5.6 6-5.6s6 2.2 6 5.6"/><path d="M16 5.4a3.2 3.2 0 0 1 0 6M17.5 14.9c2.1.6 3.5 2.4 3.5 5.1"/>`
 const RAIL_SET_SVG = `<path d="M3.4 8.6h4M13 8.6h7.6M3.4 15.4h7.1M16.1 15.4h4.5"/><circle cx="10.1" cy="8.6" r="2.6"/><circle cx="13.3" cy="15.4" r="2.6"/>`
+const RAIL_LOGS_SVG = `<rect x="5.4" y="4" width="13.2" height="16"/><path d="M8.6 8.4h7M8.6 12h7M8.6 15.6h4.2"/>`
 
-type RailSlot2 = 'home' | 'deals' | 'sched' | 'deadlines' | 'money' | 'portf' | 'entity' | 'people' | 'set'
+type RailSlot2 = 'home' | 'deals' | 'sched' | 'deadlines' | 'money' | 'portf' | 'entity' | 'people' | 'logs' | 'set'
 // Legacy alias kept for LeftRail prop type
-type RailSlot = 'HOME' | 'PEOPLE' | 'DEALS'
+type RailSlot = 'HOME' | 'PEOPLE' | 'DEALS' | 'LOGS'
 
 function LeftRail({ active }: { active: RailSlot }) {
   const router = useRouter()
@@ -1885,6 +1886,7 @@ function LeftRail({ active }: { active: RailSlot }) {
     { id: 'entity',    label: 'ENTITY',    svgInner: RAIL_ENTITY_SVG,    href: null,                hasRoute: false },
     { id: 'people',    label: 'PEOPLE',    svgInner: RAIL_PEOPLE_SVG,    href: '/warroom/contacts', hasRoute: true },
   ]
+  const logsSlot = { id: 'logs' as RailSlot2, label: 'LOGS', svgInner: RAIL_LOGS_SVG, href: '/warroom/logs', hasRoute: true }
   const setSlot = { id: 'set' as RailSlot2, label: 'SET', svgInner: RAIL_SET_SVG, href: null, hasRoute: false }
 
   function isSlotActive(slot: typeof slots[0]): boolean {
@@ -1892,6 +1894,7 @@ function LeftRail({ active }: { active: RailSlot }) {
     if (slot.id === 'home') return active === 'HOME'
     if (slot.id === 'deals') return active === 'DEALS'
     if (slot.id === 'people') return active === 'PEOPLE'
+    if (slot.id === 'logs') return active === 'LOGS'
     return false
   }
 
@@ -1942,6 +1945,8 @@ function LeftRail({ active }: { active: RailSlot }) {
     }}>
       {slots.map(s => <RailSlotEl key={s.id} slot={s} />)}
       <div style={{ flex: 1 }} />
+      {/* Bottom group: LOGS · SET */}
+      <RailSlotEl slot={logsSlot} />
       <RailSlotEl slot={setSlot} isSet />
       <div style={{ height: 16 }} />
     </div>

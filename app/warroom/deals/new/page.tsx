@@ -131,8 +131,8 @@ function IdentityBand() {
   )
 }
 
-// ── LeftRail — 9 slots ────────────────────────────────────────────────────────
-const RAIL_SLOTS = [
+// ── LeftRail — 160: 10 slots (top 8 + spacer + LOGS + SET) ──────────────────
+const RAIL_TOP_SLOTS = [
   { id: 'HOME',      label: 'HOME',      href: '/warroom',          glyph: (
     <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -176,42 +176,59 @@ const RAIL_SLOTS = [
       <path d="M16 5.4a3.2 3.2 0 0 1 0 6M17.5 14.9c2.1.6 3.5 2.4 3.5 5.1"/>
     </svg>
   )},
-  { id: 'SET',       label: 'SET',       href: '/warroom',          glyph: (
-    <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-    </svg>
-  )},
 ] as const
+
+const RAIL_LOGS_SLOT = { id: 'LOGS', label: 'LOGS', href: '/warroom/logs', glyph: (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5.4" y="4" width="13.2" height="16"/>
+    <path d="M8.6 8.4h7M8.6 12h7M8.6 15.6h4.2"/>
+  </svg>
+)}
+const RAIL_SET_SLOT = { id: 'SET', label: 'SET', href: '/warroom', glyph: (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+  </svg>
+)}
 
 function LeftRail({ active }: { active: string }) {
   const router = useRouter()
+
+  function RailBtn({ s }: { s: { id: string; label: string; href: string; glyph: React.ReactNode } }) {
+    const isActive = s.id === active
+    return (
+      <button key={s.id} onClick={() => router.push(s.href)} style={{
+        width: 76, padding: '13px 0',
+        background: isActive ? 'rgba(139,92,246,0.14)' : 'transparent',
+        border: 'none', cursor: 'pointer',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
+        borderRadius: 10, color: isActive ? C.brandLift : C.textLow,
+      }}>
+        {s.glyph}
+        <span style={{
+          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500,
+          letterSpacing: '0.08em', color: 'inherit', textTransform: 'uppercase',
+          lineHeight: '15px',
+        }}>{s.label}</span>
+      </button>
+    )
+  }
+
   return (
     <div style={{
-      width: 96, flexShrink: 0, background: C.bgRail,
+      width: 96, flexShrink: 0, height: '100%', background: C.bgRail,
       borderRight: `1px solid ${C.border}`,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      padding: '13px 0', gap: 7,
+      paddingTop: 13, boxSizing: 'border-box',
     }}>
-      {RAIL_SLOTS.map(s => {
-        const isActive = s.id === active
-        return (
-          <button key={s.id} onClick={() => router.push(s.href)} style={{
-            width: 76, padding: '13px 0',
-            background: isActive ? 'rgba(139,92,246,0.14)' : 'transparent',
-            border: 'none', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
-            borderRadius: 10, color: isActive ? C.brandLift : C.textLow,
-          }}>
-            {s.glyph}
-            <span style={{
-              fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500,
-              letterSpacing: '0.08em', color: 'inherit', textTransform: 'uppercase',
-              lineHeight: '15px',
-            }}>{s.label}</span>
-          </button>
-        )
-      })}
+      {/* Top 8 slots */}
+      {RAIL_TOP_SLOTS.map(s => <RailBtn key={s.id} s={s} />)}
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+      {/* Bottom group: LOGS · SET */}
+      <RailBtn s={RAIL_LOGS_SLOT} />
+      <RailBtn s={RAIL_SET_SLOT} />
+      <div style={{ height: 8 }} />
     </div>
   )
 }

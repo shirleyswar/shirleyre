@@ -247,9 +247,9 @@ function IdentityBand() {
   )
 }
 
-// ── LeftRail — DI-1: 9 slots (157) ───────────────────────────────────────────
-// HOME · DEALS · SCHED · DEADLINES · MONEY · PORTF · ENTITY · PEOPLE [spacer] SET
-type RailSlot = 'HOME' | 'DEALS' | 'SCHED' | 'DEADLINES' | 'MONEY' | 'PORTF' | 'ENTITY' | 'PEOPLE' | 'SET'
+// ── LeftRail — 160: 10 slots ─────────────────────────────────────────────────
+// HOME · DEALS · SCHED · DEADLINES · MONEY · PORTF · ENTITY · PEOPLE [spacer] LOGS · SET
+type RailSlot = 'HOME' | 'DEALS' | 'SCHED' | 'DEADLINES' | 'MONEY' | 'PORTF' | 'ENTITY' | 'PEOPLE' | 'LOGS' | 'SET'
 
 // SVG glyphs from /assets/rail/*.svg (inline to avoid img flicker)
 const G_HOME = (
@@ -300,6 +300,12 @@ const G_SET = (
     <path d="M3.4 8.6h4M13 8.6h7.6M3.4 15.4h7.1M16.1 15.4h4.5"/><circle cx="10.1" cy="8.6" r="2.6"/><circle cx="13.3" cy="15.4" r="2.6"/>
   </svg>
 )
+const G_LOGS = (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5.4" y="4" width="13.2" height="16"/>
+    <path d="M8.6 8.4h7M8.6 12h7M8.6 15.6h4.2"/>
+  </svg>
+)
 
 interface RailSlotDef {
   id: RailSlot
@@ -322,6 +328,7 @@ function LeftRail({ active }: { active: RailSlot }) {
     { id: 'ENTITY',    label: 'ENTITY',    href: null,                glyph: G_ENTITY    },
     { id: 'PEOPLE',    label: 'PEOPLE',    href: '/warroom/contacts', glyph: G_PEOPLE    },
   ]
+  const logsSlot: RailSlotDef = { id: 'LOGS', label: 'LOGS', href: '/warroom/logs', glyph: G_LOGS }
   const setSlot: RailSlotDef = { id: 'SET', label: 'SET', href: null, glyph: G_SET }
 
   function renderSlot(s: RailSlotDef) {
@@ -358,7 +365,8 @@ function LeftRail({ active }: { active: RailSlot }) {
       {mainSlots.map(s => renderSlot(s))}
       {/* Spacer */}
       <div style={{ flex: 1 }} />
-      {/* SET at bottom */}
+      {/* Bottom group: LOGS · SET */}
+      {renderSlot(logsSlot)}
       {renderSlot(setSlot)}
       <div style={{ height: 8 }} />
     </div>
