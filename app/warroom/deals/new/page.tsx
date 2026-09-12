@@ -205,8 +205,9 @@ function LeftRail({ active }: { active: string }) {
           }}>
             {s.glyph}
             <span style={{
-              fontFamily: FONT_MONO, fontSize: 10, fontWeight: 500,
+              fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500,
               letterSpacing: '0.08em', color: 'inherit', textTransform: 'uppercase',
+              lineHeight: '15px',
             }}>{s.label}</span>
           </button>
         )

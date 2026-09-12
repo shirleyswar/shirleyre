@@ -1922,7 +1922,7 @@ function LeftRail({ active }: { active: RailSlot }) {
           style={{ color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           dangerouslySetInnerHTML={{ __html: `<svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${slot.svgInner}</svg>` }}
         />
-        <span style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', color }}>{slot.label}</span>
+        <span style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', lineHeight: '15px', color }}>{slot.label}</span>
       </button>
     )
   }

@@ -332,18 +332,17 @@ function LeftRail({ active }: { active: RailSlot }) {
         key={s.id}
         onClick={canClick ? () => router.push(s.href!) : undefined}
         style={{
-          width: 76, height: 68, borderRadius: 10, border: 'none', flexShrink: 0,
+          width: 76, padding: '13px 0', borderRadius: 10, border: 'none', flexShrink: 0,
           background: isActive ? 'rgba(139,92,246,0.14)' : 'transparent',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
           cursor: canClick ? 'pointer' : 'default', color: isActive ? C.brandLift : C.textLow,
-          padding: 0,
         }}
       >
         {s.glyph}
         <span style={{
-          fontFamily: FONT_MONO, fontSize: 8.5, fontWeight: 500,
+          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500,
           letterSpacing: '0.10em', textTransform: 'uppercase', color: 'inherit',
-          lineHeight: 1, whiteSpace: 'nowrap',
+          lineHeight: '15px', whiteSpace: 'nowrap',
         }}>{s.label}</span>
       </button>
     )
