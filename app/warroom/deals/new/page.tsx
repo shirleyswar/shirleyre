@@ -843,7 +843,7 @@ function AddressBlock({ addr, onChange, optional }: {
           <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>STREET</span>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrStreetName || '—'}</span>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrStreetName || ''}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>CARDINAL</span>
@@ -851,7 +851,7 @@ function AddressBlock({ addr, onChange, optional }: {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>NUMBER</span>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrNumber || '—'}</span>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrNumber || ''}</span>
             </div>
           </div>
           <button onClick={reopen} style={{
