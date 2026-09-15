@@ -24,6 +24,7 @@ import {
   DS3, DS5,
   DM1,
 } from '@/components/warroom/desktopTypes'
+import Fab from '@/assets/fab/Fab'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -976,47 +977,8 @@ function DealsPage() {
               )
             })}
             <div style={{ flex:1 }} />
-            {/* NEW DEAL pill */}
-            {/* DI-3: bare 31px FAB — no label, no rim, no rotation */}
-            <button
-              onClick={() => router.push('/warroom/deals/new')}
-              aria-label="Add listing"
-              style={{
-                flexShrink: 0,
-                position: 'relative',
-                width: 31, height: 31, borderRadius: 10,
-                border: 'none',
-                background: 'radial-gradient(circle at 50% 47%, #5B3FA8 0%, #2A1D52 26%, #120E22 62%, #07060C 100%)',
-                boxShadow: 'inset 0 1px 0 rgba(196,181,253,.24), inset 0 0 8px 2px rgba(0,0,0,.5)',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                animation: 'fab-breathe 7s ease-in-out infinite',
-                overflow: 'visible',
-              }}
-            >
-              {/* Halo: inset -12px, unclamped */}
-              <span style={{
-                position: 'absolute',
-                inset: -12,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(155,105,255,.42), rgba(124,58,237,.08) 46%, transparent 72%)',
-                animation: 'fab-breathe 7s ease-in-out infinite',
-                pointerEvents: 'none',
-              }} />
-              {/* Core — 20px */}
-              <span style={{
-                position: 'relative', zIndex: 1,
-                width: 20, height: 20,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {/* Bars: 12×1.9 */}
-                <span style={{ position: 'absolute', width: 12, height: 1.9, background: '#EFEEF4', borderRadius: 1 }} />
-                <span style={{ position: 'absolute', width: 1.9, height: 12, background: '#EFEEF4', borderRadius: 1 }} />
-              </span>
-            </button>
-            <style>{`
-              @keyframes fab-breathe { 0%,100% { opacity:.72; transform:scale(1) } 50% { opacity:1; transform:scale(1.13) } }
-            `}</style>
+            {/* DI-3: delivered Fab object */}
+            <Fab label="Add listing" aria-label="Add listing" onClick={() => router.push('/warroom/deals/new')} />
           </div>
         </div>
 

@@ -1,9 +1,10 @@
 'use client'
 /**
- * LaunchControl — 158C.3 (DP-2)
- * ONE delivered control: launch.css Threshold aperture (wr-launch).
- * rest-master-v2.png dropped — stacking both produced two icons (evidence 02).
- * launch.css is imported globally in warroom/layout.tsx.
+ * LaunchControl — 162 Item 4 DP-2
+ * Threshold aperture at full 550px width. No maxWidth cap.
+ * launch.css imported globally in warroom/layout.tsx.
+ * The .wr-launch button IS the full Threshold object: 64px tall pill,
+ * dark-field with the orbit-break glyph on the left and LAUNCH DEAL label.
  */
 
 import React from 'react'
@@ -22,7 +23,7 @@ export default function LaunchControl({ onClick, launched = false }: LaunchContr
         onClick={onClick}
         aria-label="Launch Deal"
         data-state={launched ? 'launched' : ''}
-        style={{ maxWidth: 380, margin: '0 auto' }}
+        style={{ width: '100%' }}
       >
         <span className="wr-launch__mark">
           <span className="wr-launch__halo"></span>

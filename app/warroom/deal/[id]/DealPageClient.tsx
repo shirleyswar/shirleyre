@@ -134,6 +134,8 @@ interface DealData {
   property_type: string | null
   dropbox_link?: string | null
   representation_role?: string | null
+  under_contract_at?: string | null
+  closed_at?: string | null
 }
 
 interface DealEcon {
@@ -146,9 +148,6 @@ interface DealEcon {
   lease_rate_psf: number | null
   lease_term_years: number | null
   nnn_psf: number | null
-  // 157: new fields
-  listing_rate?: number | null
-  co_broker_split?: number | null
 }
 
 interface ContactRow {
@@ -217,9 +216,10 @@ function fmtDateTime(iso: string): string {
 
 // ── DP-1: Commission math helpers ────────────────────────────────────────────
 function calcCommissionChain(econ: DealEcon | null) {
-  // listing_rate and co_broker_split may come from deal_economics or use defaults
-  const listRate = econ?.listing_rate ?? (econ?.sale_commission_pct ? econ.sale_commission_pct * 2 : 6.0)
-  const coBroker = econ?.co_broker_split ?? 0.5
+  // listing_rate / co_broker_split not yet migrated to DB — use defaults
+  // listRate: sale_commission_pct is the broker-side rate (3% each side); × 2 gives listing rate
+  const listRate = econ?.sale_commission_pct ? econ.sale_commission_pct * 2 : 6.0
+  const coBroker = 0.5
   const askPrice = econ?.asking_price ?? null
   const estComm  = askPrice ? Math.round(askPrice * (listRate / 100) * coBroker * 0.75) : null
   const derivation = askPrice
@@ -322,7 +322,7 @@ function DealPageClientInner({ id }: { id: string }) {
 
         const { data: econData } = await supabase
           .from('deal_economics')
-          .select('transaction_type,asking_price,sqft,land_sqft,sale_commission_pct,lease_commission_pct,lease_rate_psf,lease_term_years,nnn_psf,listing_rate,co_broker_split')
+          .select('transaction_type,asking_price,sqft,land_sqft,sale_commission_pct,lease_commission_pct,lease_rate_psf,lease_term_years,nnn_psf')
           .eq('deal_id', dealId)
           .maybeSingle()
 
@@ -465,11 +465,27 @@ function DealPageClientInner({ id }: { id: string }) {
   // Glance strip
   type GlanceCell = { label: string; value: string; glow?: boolean }
 
+  // D5.1a.4: slot 6 — UNDER CONTRACT AT / CLOSED AT
+  const contractDateRaw = deal.closed_at ?? deal.under_contract_at ?? null
+  const contractDateFmt = contractDateRaw
+    ? new Date(contractDateRaw).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : ''
+  const contractLabel = deal.status === 'closed' ? 'CLOSED AT' : 'UNDER CONTRACT AT'
+  const showContractSlot = (
+    deal.status === 'under_contract' ||
+    deal.status === 'pending_payment' ||
+    deal.status === 'closed'
+  ) && !!contractDateFmt
+
   const glanceSale: GlanceCell[] = [
     { label: 'Asking Price', value: fmt(econ?.asking_price) },
     { label: 'Price/SF',     value: fmtPSF(econ?.asking_price, econ?.sqft) },
     { label: 'Building SF',  value: fmtSF(econ?.sqft) },
     { label: 'Land Size',    value: fmtAcres(econ?.land_sqft) },
+    // Slot 5: EST. COMMISSION
+    ...(estComm != null ? [{ label: 'Est. Commission', value: `$${estComm.toLocaleString()}`, glow: true }] : []),
+    // Slot 6: CLOSED AT / UNDER CONTRACT AT
+    ...(showContractSlot ? [{ label: contractLabel, value: contractDateFmt }] : []),
   ]
 
   const glanceLease: GlanceCell[] = [
@@ -477,6 +493,10 @@ function DealPageClientInner({ id }: { id: string }) {
     { label: 'Lease Rate PSF', value: econ?.lease_rate_psf ? `$${econ.lease_rate_psf}/SF` : '' },
     { label: 'Building SF',    value: fmtSF(econ?.sqft) },
     { label: 'Land Size',      value: fmtAcres(econ?.land_sqft) },
+    // Slot 5: EST. COMMISSION
+    ...(estComm != null ? [{ label: 'Est. Commission', value: `$${estComm.toLocaleString()}`, glow: true }] : []),
+    // Slot 6: CLOSED AT / UNDER CONTRACT AT
+    ...(showContractSlot ? [{ label: contractLabel, value: contractDateFmt }] : []),
   ]
 
   const glanceCells = isLease ? glanceLease : glanceSale
