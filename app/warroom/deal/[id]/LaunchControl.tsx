@@ -23,7 +23,6 @@ export default function LaunchControl({ onClick, launched = false }: LaunchContr
         onClick={onClick}
         aria-label="Launch Deal"
         data-state={launched ? 'launched' : ''}
-        style={{ width: '100%' }}
       >
         <span className="wr-launch__mark">
           <span className="wr-launch__halo"></span>

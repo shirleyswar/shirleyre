@@ -73,9 +73,9 @@ const PROPERTY_PLATE_MAP: Record<string, string> = {
   MULTIFAMILY: '/assets/plates/plate-multi-v7.png',
 }
 
-// 154: painted plates for SALE + LEASE marks (44px header pills — not h180)
-const SALE_PLATE  = '/assets/plates/sale-pill-154.png'
-const LEASE_PLATE = '/assets/plates/lease-pill-154.png'
+// DP-5: matte h180 plates for SALE + LEASE header pills (no baked glow)
+const SALE_PLATE  = '/assets/plates/sale-h180.png'
+const LEASE_PLATE = '/assets/plates/lease-h180.png'
 
 // ── Panel ────────────────────────────────────────────────────────────────────
 function Panel({
@@ -501,17 +501,13 @@ function DealPageClientInner({ id }: { id: string }) {
   // Glance strip
   type GlanceCell = { label: string; value: string; glow?: boolean }
 
-  // D5.1a.4: slot 6 — UNDER CONTRACT AT / CLOSED AT
-  const contractDateRaw = deal.closed_at ?? deal.under_contract_at ?? null
-  const contractDateFmt = contractDateRaw
-    ? new Date(contractDateRaw).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : ''
-  const contractLabel = deal.status === 'closed' ? 'CLOSED AT' : 'UNDER CONTRACT AT'
-  const showContractSlot = (
-    deal.status === 'under_contract' ||
-    deal.status === 'pending_payment' ||
-    deal.status === 'closed'
-  ) && !!contractDateFmt
+  // D5.1a.4: slot 6 — label = CLOSED AT (closed) or UNDER CONTRACT AT (uc/pending)
+  // Figure = same money figure (estComm or asking price) — NOT a date, NO DB date column needed
+  const isClosed = deal.status === 'closed'
+  const isUnderContract = deal.status === 'under_contract' || deal.status === 'pending_payment'
+  const contractLabel = isClosed ? 'CLOSED AT' : 'UNDER CONTRACT AT'
+  const contractFigure = estComm != null ? `$${estComm.toLocaleString()}` : fmt(econ?.asking_price)
+  const showContractSlot = (isClosed || isUnderContract) && contractFigure !== ''
 
   const glanceSale: GlanceCell[] = [
     { label: 'Asking Price', value: fmt(econ?.asking_price) },
@@ -520,8 +516,8 @@ function DealPageClientInner({ id }: { id: string }) {
     { label: 'Land Size',    value: fmtAcres(econ?.land_sqft) },
     // Slot 5: EST. COMMISSION
     ...(estComm != null ? [{ label: 'Est. Commission', value: `$${estComm.toLocaleString()}`, glow: true }] : []),
-    // Slot 6: CLOSED AT / UNDER CONTRACT AT
-    ...(showContractSlot ? [{ label: contractLabel, value: contractDateFmt }] : []),
+    // Slot 6: CLOSED AT / UNDER CONTRACT AT — money figure (D5.1a.4)
+    ...(showContractSlot ? [{ label: contractLabel, value: contractFigure }] : []),
   ]
 
   const glanceLease: GlanceCell[] = [
@@ -531,8 +527,8 @@ function DealPageClientInner({ id }: { id: string }) {
     { label: 'Land Size',      value: fmtAcres(econ?.land_sqft) },
     // Slot 5: EST. COMMISSION
     ...(estComm != null ? [{ label: 'Est. Commission', value: `$${estComm.toLocaleString()}`, glow: true }] : []),
-    // Slot 6: CLOSED AT / UNDER CONTRACT AT
-    ...(showContractSlot ? [{ label: contractLabel, value: contractDateFmt }] : []),
+    // Slot 6: CLOSED AT / UNDER CONTRACT AT — money figure (D5.1a.4)
+    ...(showContractSlot ? [{ label: contractLabel, value: contractFigure }] : []),
   ]
 
   const glanceCells = isLease ? glanceLease : glanceSale
@@ -590,13 +586,13 @@ function DealPageClientInner({ id }: { id: string }) {
           {showSalePlate && (
             <div style={{ height: 44, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={SALE_PLATE} alt="SALE" style={{ height: 44, width: 'auto', display: 'block' }} draggable={false} />
+              <img src={SALE_PLATE} alt="SALE" style={{ height: 44, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
             </div>
           )}
           {showLeasePlate && (
             <div style={{ height: 44, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={LEASE_PLATE} alt="LEASE" style={{ height: 44, width: 'auto', display: 'block' }} draggable={false} />
+              <img src={LEASE_PLATE} alt="LEASE" style={{ height: 44, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
             </div>
           )}
 
@@ -604,7 +600,7 @@ function DealPageClientInner({ id }: { id: string }) {
           {propPlateSrc && (
             <div style={{ height: 44, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={propPlateSrc} alt={propType ?? ''} style={{ height: 44, width: 'auto', display: 'block' }} draggable={false} />
+              <img src={propPlateSrc} alt={propType ?? ''} style={{ height: 44, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
             </div>
           )}
 
@@ -614,7 +610,7 @@ function DealPageClientInner({ id }: { id: string }) {
               {/* DELETE — matte (DP-5) */}
               <button onClick={() => setDeleteMode(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }} aria-label="Delete deal">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/delete/delete-pill-candidate.png" alt="DELETE" style={{ height: 44, width: 'auto', display: 'block' }} draggable={false} />
+                <img src="/assets/delete/delete-pill-candidate.png" alt="DELETE" style={{ height: 44, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
               </button>
 
               {/* DP-7: EDIT pill — edit-pill-master.png 44×115, mix-blend-mode: screen */}
@@ -630,14 +626,14 @@ function DealPageClientInner({ id }: { id: string }) {
               ) : (
                 <button
                   onClick={() => router.push(`/warroom/deals/new?edit=${dealId}`)}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', mixBlendMode: 'screen' as React.CSSProperties['mixBlendMode'] }}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                   aria-label="Edit deal"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/assets/buttons/edit-pill-master.png"
                     alt="Edit"
-                    style={{ height: 44, width: 115, display: 'block' }}
+                    style={{ height: 44, width: 115, display: 'block', filter: 'none', boxShadow: 'none' }}
                     draggable={false}
                   />
                 </button>

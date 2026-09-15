@@ -28,6 +28,15 @@
      </span>
      <span class="wr-launch__label">LAUNCH DEAL</span>
    </button>
+
+   Label is 17px mono (was 14.5px, raised 8.25.26): at 14.5 the type read as a
+   caption beside a 56px well, which made the control look like a labelled icon
+   rather than the primary action on the page. 17px is the ceiling before the
+   label crowds the well's halo at the 550px mount.
+
+   The pill is NOT a violet slab, and that is the point of the control — see the
+   note at the top of this file. The light comes out of the WELL; the body stays
+   #15111F→#0A0912 with a .24 violet rim. Do not fill the pill violet.
 */
 
 .wr-launch {
@@ -188,7 +197,7 @@
 .wr-launch__label {
   flex: 1;
   padding-right: 40px;
-  font: 700 14.5px/1 'JetBrains Mono', monospace;
+  font: 700 17px/1 'JetBrains Mono', monospace;
   letter-spacing: .1em;
   white-space: nowrap;
   color: #FFFFFF;
