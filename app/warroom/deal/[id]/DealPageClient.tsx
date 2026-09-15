@@ -267,6 +267,13 @@ function DealPageClientInner({ id }: { id: string }) {
   const [deleteError, setDeleteError] = useState(false)
   const [deleting,    setDeleting]    = useState(false)
 
+  // Reopen mode (violet gate — for closed deals)
+  const [reopenMode, setReopenMode] = useState(false)
+  const [reopenDigits, setReopenDigits] = useState<string[]>([])
+  const [reopenError, setReopenError] = useState(false)
+  const [reopenShake, setReopenShake] = useState(false)
+  const [reopening, setReopening] = useState(false)
+
   // Launch gate
   const [pinValid,    setPinValid]    = useState<boolean | null>(null)
   const [launchOpen,  setLaunchOpen]  = useState(false)
@@ -308,6 +315,35 @@ function DealPageClientInner({ id }: { id: string }) {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [deleteMode, deletePin, deleteArmed, deleteError])
+
+  // Reopen gate keyboard
+  useEffect(() => {
+    if (!reopenMode) return
+    const handleReopenKey = async (e: KeyboardEvent) => {
+      if (reopenError || reopening) return
+      if (e.key === 'Escape') { setReopenMode(false); setReopenDigits([]); setReopenError(false); return }
+      if (e.key === 'Backspace') { setReopenDigits(d => d.slice(0, -1)); return }
+      if (e.key >= '0' && e.key <= '9') {
+        if (reopenDigits.length >= 4) return
+        const next = [...reopenDigits, e.key]
+        setReopenDigits(next)
+        if (next.length === 4) {
+          const hash = await sha256(next.join(''))
+          if (hash === PIN_HASH) {
+            setReopening(true)
+            await supabase.from('deals').update({ status: 'active' }).eq('id', dealId)
+            router.push('/warroom/deals')
+          } else {
+            setReopenShake(true)
+            setReopenError(true)
+            setTimeout(() => { setReopenShake(false); setReopenError(false); setReopenDigits([]) }, 650)
+          }
+        }
+      }
+    }
+    window.addEventListener('keydown', handleReopenKey)
+    return () => window.removeEventListener('keydown', handleReopenKey)
+  }, [reopenMode, reopenDigits, reopenError, reopening, dealId, router])
 
   useEffect(() => {
     if (!dealId) return
@@ -572,36 +608,55 @@ function DealPageClientInner({ id }: { id: string }) {
             </div>
           )}
 
-          {/* DELETE — matte (DP-5) */}
-          <button onClick={() => setDeleteMode(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }} aria-label="Delete deal">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/delete/delete-pill-candidate.png" alt="DELETE" style={{ height: 44, width: 'auto', display: 'block' }} draggable={false} />
-          </button>
+          {/* DELETE and EDIT — hidden on closed deals */}
+          {deal?.status !== 'closed' && (
+            <>
+              {/* DELETE — matte (DP-5) */}
+              <button onClick={() => setDeleteMode(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }} aria-label="Delete deal">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/assets/delete/delete-pill-candidate.png" alt="DELETE" style={{ height: 44, width: 'auto', display: 'block' }} draggable={false} />
+              </button>
 
-          {/* DP-7: EDIT pill — edit-pill-master.png 44×115, mix-blend-mode: screen */}
-          {editMode ? (
-            <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
-              <button onClick={handleEditSave} disabled={saving} style={{ background: T.brand, border: 'none', borderRadius: 6, padding: '6px 14px', fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#fff', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>
-                {saving ? 'SAVING…' : 'SAVE'}
-              </button>
-              <button onClick={() => { setEditMode(false); setEditPhotoFile(null); setEditPhotoPreview(null) }} style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '6px 14px', fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: T.textMid, cursor: 'pointer' }}>
-                CANCEL
-              </button>
-            </div>
-          ) : (
+              {/* DP-7: EDIT pill — edit-pill-master.png 44×115, mix-blend-mode: screen */}
+              {editMode ? (
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
+                  <button onClick={handleEditSave} disabled={saving} style={{ background: T.brand, border: 'none', borderRadius: 6, padding: '6px 14px', fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#fff', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+                    {saving ? 'SAVING…' : 'SAVE'}
+                  </button>
+                  <button onClick={() => { setEditMode(false); setEditPhotoFile(null); setEditPhotoPreview(null) }} style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '6px 14px', fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: T.textMid, cursor: 'pointer' }}>
+                    CANCEL
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => router.push(`/warroom/deals/new?edit=${dealId}`)}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', mixBlendMode: 'screen' as React.CSSProperties['mixBlendMode'] }}
+                  aria-label="Edit deal"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/assets/buttons/edit-pill-master.png"
+                    alt="Edit"
+                    style={{ height: 44, width: 115, display: 'block' }}
+                    draggable={false}
+                  />
+                </button>
+              )}
+            </>
+          )}
+
+          {/* REOPEN button — violet pill, only on closed deals */}
+          {deal?.status === 'closed' && (
             <button
-              onClick={() => router.push(`/warroom/deals/new?edit=${dealId}`)}
-              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', mixBlendMode: 'screen' as React.CSSProperties['mixBlendMode'] }}
-              aria-label="Edit deal"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/assets/buttons/edit-pill-master.png"
-                alt="Edit"
-                style={{ height: 44, width: 115, display: 'block' }}
-                draggable={false}
-              />
-            </button>
+              data-action="reopen"
+              onClick={() => { setReopenMode(true); setReopenDigits([]); setReopenError(false) }}
+              style={{
+                background: 'none', border: '1px solid #A78BFA', borderRadius: 24,
+                padding: '8px 20px', cursor: 'pointer', flexShrink: 0,
+                fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.14em',
+                textTransform: 'uppercase', color: '#A78BFA',
+              }}
+            >REOPEN</button>
           )}
         </div>
       </div>
@@ -894,6 +949,47 @@ function DealPageClientInner({ id }: { id: string }) {
 
         </div>
       </div>
+
+      {/* ── VIOLET REOPEN GATE ─────────────────────────────────────────────── */}
+      {reopenMode && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(5,5,9,0.92)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+          onClick={e => { if (e.target === e.currentTarget) { setReopenMode(false); setReopenDigits([]); setReopenError(false) } }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/star-glow-512.png" alt="" width={148} height={148} style={{ display: 'block', flexShrink: 0 }} />
+          <div style={{ height: 20 }} />
+          <div style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.42em', paddingLeft: '0.42em', color: '#A78BFA' }}>WAR ROOM</div>
+          <div style={{ height: 12 }} />
+          <div style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.16em', color: '#A09EB8', textAlign: 'center', maxWidth: 500, textTransform: 'uppercase' }}>
+            REOPEN · {deal?.addr_display || deal?.name || ''}
+          </div>
+          <div style={{ height: 32 }} />
+          {/* 4 violet cells */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            {[0,1,2,3].map(i => {
+              const filled = i < reopenDigits.length
+              const isActive = i === reopenDigits.length && !reopenError
+              return (
+                <div key={i} style={{
+                  width: 56, height: 66, borderRadius: 12,
+                  background: filled ? '#EFEEF4' : 'rgba(167,139,250,0.07)',
+                  border: reopenError ? '1px solid #A78BFA' : isActive ? '1px solid #A78BFA' : '1px solid rgba(167,139,250,0.25)',
+                  boxShadow: isActive ? '0 0 20px rgba(167,139,250,0.35)' : reopenError ? '0 0 16px rgba(167,139,250,0.35)' : 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                }}>
+                  {filled && <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#0A0A0F' }} />}
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ height: 24 }} />
+          <div style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.24em', color: '#6B6980', textTransform: 'uppercase' }}>
+            {reopening ? 'REOPENING…' : 'ENTER PIN'}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

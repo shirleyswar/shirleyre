@@ -755,6 +755,8 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
     if (staged && !saving) {
       await commitStagedChanges()
     }
+    // Write logged_at timestamp so this appears in LOGS tab
+    await supabase.from('money_movers').update({ logged_at: new Date().toISOString() }).eq('id', mm.id)
     onCloseAndLog(mm.id)
   }
 
