@@ -651,10 +651,11 @@ function DealPageClientInner({ id }: { id: string }) {
               data-action="reopen"
               onClick={() => { setReopenMode(true); setReopenDigits([]); setReopenError(false) }}
               style={{
-                background: 'none', border: '1px solid #A78BFA', borderRadius: 24,
-                padding: '8px 20px', cursor: 'pointer', flexShrink: 0,
+                background: 'rgba(167,139,250,0.14)', border: '1px solid #A78BFA', borderRadius: 24,
+                padding: '8px 22px', cursor: 'pointer', flexShrink: 0,
                 fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.14em',
                 textTransform: 'uppercase', color: '#A78BFA',
+                boxShadow: '0 0 12px rgba(167,139,250,0.2)',
               }}
             >REOPEN</button>
           )}
