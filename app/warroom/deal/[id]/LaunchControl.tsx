@@ -1,13 +1,12 @@
 'use client'
 /**
- * LaunchControl — 162 Item 4 DP-2
- * Threshold aperture at full 550px width. No maxWidth cap.
- * launch.css imported globally in warroom/layout.tsx.
- * The .wr-launch button IS the full Threshold object: 64px tall pill,
- * dark-field with the orbit-break glyph on the left and LAUNCH DEAL label.
+ * LaunchControl — 162D Matthew override 9.15.26
+ * REST = painted rest-master-1650.png (1650×330, display ~550×110)
+ * HOVER = hover-full.mp4 (plasma/sparks, chevrons L→R, glow outside pill)
+ * NOT CSS wr-launch Orbit Break at rest — that is the FAIL this corrects.
  */
 
-import React from 'react'
+import React, { useState } from 'react'
 
 interface LaunchControlProps {
   onClick?: () => void
@@ -15,25 +14,74 @@ interface LaunchControlProps {
 }
 
 export default function LaunchControl({ onClick, launched = false }: LaunchControlProps) {
+  const [hovered, setHovered] = useState(false)
+
   return (
-    <div style={{ width: 550, display: 'flex', alignItems: 'center', justifyContent: 'center', userSelect: 'none' }}>
-      <button
-        type="button"
-        className="wr-launch"
+    <div
+      style={{
+        width: 550,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        userSelect: 'none',
+        // padding beyond pill bounds so hover glow/particles are not clipped
+        padding: '16px 0',
+      }}
+    >
+      <div
+        style={{
+          position: 'relative',
+          width: 550,
+          height: 110,
+          cursor: 'pointer',
+          borderRadius: 34,
+          overflow: 'visible',
+        }}
         onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        role="button"
         aria-label="Launch Deal"
-        data-state={launched ? 'launched' : ''}
+        tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick?.() }}
       >
-        <span className="wr-launch__mark">
-          <span className="wr-launch__halo"></span>
-          <span className="wr-launch__body"></span>
-          <span className="wr-launch__rim"></span>
-          <span className="wr-launch__face"><span className="wr-launch__core"></span></span>
-          <span className="wr-launch__ring"></span>
-          <span className="wr-launch__orbit"><span className="wr-launch__dot"></span></span>
-        </span>
-        <span className="wr-launch__label">LAUNCH DEAL</span>
-      </button>
+        {/* REST state — painted PNG */}
+        {!hovered && !launched && (
+          <img
+            src="/assets/launch/rest-master-1650.png"
+            alt="LAUNCH DEAL"
+            style={{
+              width: 550,
+              height: 110,
+              display: 'block',
+              objectFit: 'contain',
+              borderRadius: 34,
+              userSelect: 'none',
+              pointerEvents: 'none',
+            }}
+            draggable={false}
+          />
+        )}
+
+        {/* HOVER state — video */}
+        {(hovered || launched) && (
+          <video
+            src="/assets/launch/hover-full.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              width: 550,
+              height: 110,
+              display: 'block',
+              objectFit: 'contain',
+              borderRadius: 34,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </div>
     </div>
   )
 }
