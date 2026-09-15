@@ -626,27 +626,101 @@ interface MoneyMoverRow {
 }
 
 // D11.15: MoneyMoverModal component
-function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteAdded }: {
+function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteAdded, onDeleteMM, onDealLinked }: {
   mm: MoneyMoverRow & { _commission: number | null; _dealValue: number | null }
   dealMap: Record<string, any>
   econMap: Record<string, DealEconomics>
   onClose: () => void
   onCloseAndLog: (mmId: string) => void
   onNoteAdded: (mmId: string, note: string) => void
+  onDeleteMM: (mmId: string) => void
+  onDealLinked?: (mmId: string, dealId: string) => void
 }) {
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
   const [titleValue, setTitleValue] = useState(mm.title)
   const [editingTitle, setEditingTitle] = useState(false)
+  // MM-1: delete PIN gate state
+  const [showDeleteGate, setShowDeleteGate] = useState(false)
+  const [deletePin, setDeletePin] = useState('')
+  const [deleteArmed, setDeleteArmed] = useState(false)
+  const [deleteError, setDeleteError] = useState(false)
+  const [deletingRecord, setDeletingRecord] = useState(false)
+  // LINK A DEAL state
+  const [linkingDeal, setLinkingDeal] = useState(false)
+  const [dealQuery, setDealQuery] = useState('')
+  const [dealResults, setDealResults] = useState<any[]>([])
+  const composerRef = useRef<HTMLTextAreaElement>(null)
   const staged = noteText.trim().length > 0 || titleValue !== mm.title
 
   useEffect(() => {
+    if (showDeleteGate) return // delete gate has its own keydown handler
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  }, [onClose, showDeleteGate])
+
+  // MM-1: delete PIN gate keyboard handler
+  useEffect(() => {
+    if (!showDeleteGate) return
+    async function onDeleteKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setShowDeleteGate(false)
+        setDeletePin('')
+        setDeleteArmed(false)
+        setDeleteError(false)
+        return
+      }
+      if (deleteArmed && (e.key === 'Enter' || /^\d$/.test(e.key))) {
+        // COMMIT deletion
+        setDeletingRecord(true)
+        await supabase.from('money_movers').delete().eq('id', mm.id)
+        onDeleteMM(mm.id)
+        setShowDeleteGate(false)
+        return
+      }
+      if (/^\d$/.test(e.key)) {
+        const next = deletePin + e.key
+        if (next.length < 4) {
+          setDeletePin(next)
+          setDeleteError(false)
+        } else if (next.length === 4) {
+          // Verify PIN
+          const hash = await sha256(next)
+          if (hash === PIN_HASH) {
+            setDeletePin(next)
+            setDeleteArmed(true)
+            setDeleteError(false)
+          } else {
+            setDeletePin('')
+            setDeleteArmed(false)
+            setDeleteError(true)
+          }
+        }
+      } else if (e.key === 'Backspace') {
+        setDeletePin(p => p.slice(0, -1))
+        setDeleteArmed(false)
+        setDeleteError(false)
+      }
+    }
+    window.addEventListener('keydown', onDeleteKeyDown)
+    return () => window.removeEventListener('keydown', onDeleteKeyDown)
+  }, [showDeleteGate, deletePin, deleteArmed, mm.id, onDeleteMM])
+
+  // LINK A DEAL: search
+  useEffect(() => {
+    if (!linkingDeal || dealQuery.trim().length < 1) {
+      setDealResults([])
+      return
+    }
+    const t = setTimeout(async () => {
+      const { data } = await supabase.from('deals').select('id,name,addr_display,addr_street_name,status').ilike('name', `%${dealQuery}%`).limit(8)
+      setDealResults(data ?? [])
+    }, 250)
+    return () => clearTimeout(t)
+  }, [linkingDeal, dealQuery])
 
   async function commitStagedChanges() {
     if (!staged || saving) return
@@ -728,18 +802,33 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
         {/* Header */}
         <div style={{ height: 72, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid rgba(255,255,255,0.11)' }}>
           <span style={{ fontFamily: FONT_MONO, fontSize: 18.5, fontWeight: 500, letterSpacing: '0.14em', color: '#B8B6C6', flex: 1 }}>MONEY MOVER</span>
-          {/* Close and Log group */}
+          {/* MM-1: DELETE pill (read state) */}
+          <img
+            src="/assets/delete/delete-pill-candidate.png"
+            height={40}
+            style={{ height: 40, width: 'auto', cursor: 'pointer', marginRight: 10 }}
+            alt="Delete"
+            onClick={() => { setShowDeleteGate(true); setDeletePin(''); setDeleteArmed(false); setDeleteError(false) }}
+          />
+          {/* MM-1: EDIT pill (read state) */}
+          <img
+            src="/assets/edit/edit-h180.png"
+            height={40}
+            style={{ height: 40, width: 'auto', cursor: 'pointer' }}
+            alt="Edit"
+            onClick={() => setEditingTitle(true)}
+          />
+          {/* Divider */}
+          <div style={{ width: 1, height: 26, background: 'rgba(255,255,255,0.14)', margin: '0 20px' }} />
+          {/* MM-8: Close and Log group — bare check, no label */}
           <div
             style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
             onClick={handleCloseAndLog}
           >
             <img src="/assets/check/check-h140.png" height={56} style={{ height: 56, width: 'auto' }} alt="" />
-            <span style={{ fontFamily: FONT_MONO, fontSize: 11.5, fontWeight: 500, letterSpacing: '0.14em', color: staged ? '#EFEEF4' : '#B8B6C6' }}>CLOSE AND LOG</span>
           </div>
-          {/* Divider */}
-          <div style={{ width: 1, height: 26, background: 'rgba(255,255,255,0.14)', margin: '0 20px' }} />
           {/* ESC button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }} onClick={onClose}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', marginLeft: 10 }} onClick={onClose}>
             <span style={{ fontFamily: FONT_DISP, fontSize: 22, color: '#8E8CA0' }}>×</span>
             <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.14em', color: '#8E8CA0' }}>ESC</span>
           </div>
@@ -749,35 +838,36 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
         <div style={{ flex: 1, display: 'flex', padding: '0 20px', minHeight: 0 }}>
           {/* Left column */}
           <div style={{ width: 600, flexShrink: 0, padding: '22px 0', display: 'flex', flexDirection: 'column' }}>
-            {/* Eyebrow */}
+            {/* Eyebrow — MM-5: breadcrumb removed */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: '#A78BFA' }}>LIVE</span>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: '#8E8CA0' }}>HOME · MONEY MOVERS</span>
             </div>
             <div style={{ height: 16 }} />
-            {/* Title — tap-to-edit */}
-            {editingTitle ? (
-              <input
-                autoFocus
-                value={titleValue}
-                onChange={e => setTitleValue(e.target.value)}
-                onBlur={() => setEditingTitle(false)}
-                onKeyDown={e => { if (e.key === 'Enter') setEditingTitle(false) }}
-                style={{ fontFamily: FONT_DISP, fontSize: 32, fontWeight: 500, color: '#EFEEF4', paddingBottom: 12, borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '1px solid rgba(255,255,255,0.09)', background: 'transparent', outline: 'none', width: '100%', boxSizing: 'border-box' }}
-              />
-            ) : (
-              <div
-                onClick={() => setEditingTitle(true)}
-                style={{ fontFamily: FONT_DISP, fontSize: 32, fontWeight: 500, color: '#EFEEF4', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.09)', cursor: 'text' }}
-              >
-                {titleValue}
-              </div>
-            )}
+            {/* Title — tap-to-edit — MM-6 violet wash */}
+            <div style={{ background: 'rgba(139,92,246,0.10)', borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(139,92,246,0.42)', paddingLeft: 12, paddingRight: 12, marginLeft: -12 }}>
+              {editingTitle ? (
+                <input
+                  autoFocus
+                  value={titleValue}
+                  onChange={e => setTitleValue(e.target.value)}
+                  onBlur={() => setEditingTitle(false)}
+                  onKeyDown={e => { if (e.key === 'Enter') setEditingTitle(false) }}
+                  style={{ fontFamily: FONT_DISP, fontSize: 32, fontWeight: 500, color: '#EFEEF4', paddingBottom: 12, border: 'none', background: 'transparent', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                />
+              ) : (
+                <div
+                  onClick={() => setEditingTitle(true)}
+                  style={{ fontFamily: FONT_DISP, fontSize: 32, fontWeight: 500, color: '#EFEEF4', paddingBottom: 12, cursor: 'text' }}
+                >
+                  {titleValue}
+                </div>
+              )}
+            </div>
             <div style={{ height: 18 }} />
-            {/* Deal row */}
-            <div style={{ height: 65, flex: 'none', background: '#1E1D26', borderRadius: 12, padding: '0 16px', display: 'flex', alignItems: 'center' }}>
+            {/* Deal row — DEAL card stays bg-raise; LINK A DEAL gets violet wash (MM-6) */}
+            <div style={{ position: 'relative' }}>
               {deal ? (
-                <>
+                <div style={{ height: 65, flex: 'none', background: '#1E1D26', borderRadius: 12, padding: '0 16px', display: 'flex', alignItems: 'center' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: '#8E8CA0' }}>DEAL</div>
                     <div style={{ height: 7 }} />
@@ -798,16 +888,55 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
                   >
                     <span style={{ fontFamily: FONT_DISP, fontSize: 16, color: '#A78BFA' }}>↗</span>
                   </div>
-                </>
+                </div>
               ) : (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontFamily: FONT_DISP, fontSize: 17, color: '#A78BFA' }}>+</span>
-                    <span style={{ fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500, letterSpacing: '0.14em', color: '#A78BFA' }}>LINK A DEAL</span>
-                  </div>
-                  <div style={{ flex: 1 }} />
-                  <span style={{ fontFamily: FONT_DISP, fontSize: 13, color: '#8E8CA0' }}>Optional.</span>
-                </>
+                /* MM-6: LINK A DEAL control — violet wash */
+                <div
+                  style={{ height: 65, background: 'rgba(139,92,246,0.10)', borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(139,92,246,0.42)', paddingLeft: 12, paddingRight: 12, marginLeft: -12, display: 'flex', alignItems: 'center', cursor: linkingDeal ? 'default' : 'pointer' }}
+                  onClick={() => { if (!linkingDeal) setLinkingDeal(true) }}
+                >
+                  {linkingDeal ? (
+                    <input
+                      autoFocus
+                      value={dealQuery}
+                      onChange={e => setDealQuery(e.target.value)}
+                      placeholder="Search deals…"
+                      style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontFamily: FONT_MONO, fontSize: 13, color: '#EFEEF4', letterSpacing: '0.08em' }}
+                      onKeyDown={e => { if (e.key === 'Escape') { setLinkingDeal(false); setDealQuery(''); setDealResults([]) } }}
+                    />
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontFamily: FONT_DISP, fontSize: 17, color: '#A78BFA' }}>+</span>
+                        <span style={{ fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500, letterSpacing: '0.14em', color: '#A78BFA' }}>LINK A DEAL</span>
+                      </div>
+                      <div style={{ flex: 1 }} />
+                      <span style={{ fontFamily: FONT_DISP, fontSize: 13, color: '#8E8CA0' }}>Optional.</span>
+                    </>
+                  )}
+                </div>
+              )}
+              {/* Deal search results — absolute overlay */}
+              {linkingDeal && dealResults.length > 0 && (
+                <div style={{ position: 'absolute', top: 65, left: -12, right: 0, background: '#1E1D26', border: '1px solid rgba(139,92,246,0.35)', borderRadius: '0 0 10px 10px', zIndex: 10, overflow: 'hidden' }}>
+                  {dealResults.map((d, i) => (
+                    <div
+                      key={d.id}
+                      style={{ padding: '10px 16px', cursor: 'pointer', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}
+                      onMouseDown={async (e) => {
+                        e.preventDefault()
+                        await supabase.from('money_movers').update({ deal_id: d.id }).eq('id', mm.id)
+                        setLinkingDeal(false)
+                        setDealQuery('')
+                        setDealResults([])
+                        onDealLinked?.(mm.id, d.id)
+                      }}
+                    >
+                      <span style={{ fontFamily: FONT_DISP, fontSize: 14, color: '#EFEEF4' }}>{d.name ?? d.addr_display ?? d.addr_street_name ?? 'Deal'}</span>
+                      {d.status && <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: '#8E8CA0', marginLeft: 8, letterSpacing: '0.1em' }}>{d.status}</span>}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
             <div style={{ height: 18 }} />
@@ -840,7 +969,7 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
                 </div>
               )}
             </div>
-            {/* NEXT row */}
+            {/* NEXT row — MM-6 violet wash on content area */}
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.14em', color: '#8E8CA0' }}>NEXT</span>
@@ -852,11 +981,17 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
               </div>
               <div style={{ height: 12 }} />
               {mm.note ? (
-                <div style={{ fontFamily: FONT_DISP, fontSize: 16.5, lineHeight: 1.3, color: '#B8B6C6', paddingBottom: 9, borderBottom: '1px solid rgba(255,255,255,0.09)' }}>
-                  {mm.note}
+                <div style={{ background: 'rgba(139,92,246,0.10)', borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(139,92,246,0.42)', paddingLeft: 12, paddingRight: 12, marginLeft: -12, paddingBottom: 9 }}>
+                  <div style={{ fontFamily: FONT_DISP, fontSize: 16.5, lineHeight: 1.3, color: '#B8B6C6' }}>
+                    {mm.note}
+                  </div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 9, borderBottom: '1px solid rgba(255,255,255,0.09)' }}>
+                /* MM-6: SET THE NEXT ACTION — violet wash + wire focus */
+                <div
+                  style={{ background: 'rgba(139,92,246,0.10)', borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(139,92,246,0.42)', paddingLeft: 12, paddingRight: 12, marginLeft: -12, paddingBottom: 9, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                  onClick={() => composerRef.current?.focus()}
+                >
                   <span style={{ fontFamily: FONT_DISP, fontSize: 16.5, color: '#A78BFA' }}>+</span>
                   <span style={{ fontFamily: FONT_MONO, fontSize: 12, letterSpacing: '0.14em', color: '#A78BFA' }}>SET THE NEXT ACTION</span>
                 </div>
@@ -885,28 +1020,31 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
               )}
             </div>
             <div style={{ height: 14, flexShrink: 0 }} />
-            {/* Composer */}
-            <textarea
-              value={noteText}
-              onChange={e => setNoteText(e.target.value)}
-              placeholder="Add a note…"
-              style={{
-                flex: 'none',
-                height: 78,
-                border: '1px solid rgba(255,255,255,0.18)',
-                borderRadius: 10,
-                padding: '12px 14px',
-                fontFamily: FONT_DISP,
-                fontSize: 13.5,
-                lineHeight: 1.4,
-                color: '#8E8CA0',
-                background: 'transparent',
-                resize: 'none',
-                outline: 'none',
-                boxSizing: 'border-box',
-                width: '100%',
-              }}
-            />
+            {/* Composer — MM-6 violet wash wrapper */}
+            <div style={{ background: 'rgba(139,92,246,0.10)', borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(139,92,246,0.42)', paddingLeft: 12, paddingRight: 12, marginLeft: -12, flex: 'none' }}>
+              <textarea
+                ref={composerRef}
+                value={noteText}
+                onChange={e => setNoteText(e.target.value)}
+                placeholder="Add a note…"
+                style={{
+                  flex: 'none',
+                  height: 78,
+                  border: 'none',
+                  borderRadius: 0,
+                  padding: '12px 0',
+                  fontFamily: FONT_DISP,
+                  fontSize: 13.5,
+                  lineHeight: 1.4,
+                  color: '#8E8CA0',
+                  background: 'transparent',
+                  resize: 'none',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  width: '100%',
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -934,6 +1072,48 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
           )}
         </div>
       </div>
+      {/* MM-1: DELETE PIN gate overlay */}
+      {showDeleteGate && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(5,5,9,0.92)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <img src="/icons/star-glow-512.png" width={148} height={148} style={{ width: 148, height: 148 }} alt="" />
+          <div style={{ height: 20 }} />
+          <span style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.18em', color: '#8E8CA0' }}>WAR ROOM</span>
+          <div style={{ height: 16 }} />
+          <div style={{ fontFamily: FONT_MONO, fontSize: 13, letterSpacing: '0.12em', color: '#EF4444', textAlign: 'center' }}>
+            MONEY MOVER · {mm.title}
+          </div>
+          <div style={{ height: 32 }} />
+          {/* 4 PIN cells */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            {[0,1,2,3].map(i => {
+              const filled = i < deletePin.length
+              const armed = deleteArmed && i < 4
+              const cellBorder = (deleteError || deleteArmed) ? '#EF4444' : 'rgba(255,255,255,0.18)'
+              const cellBg = armed ? 'rgba(239,68,68,0.18)' : filled ? '#EFEEF4' : 'transparent'
+              return (
+                <div key={i} style={{ width: 56, height: 66, borderRadius: 12, border: `1.5px solid ${cellBorder}`, background: cellBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {filled && !armed && <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#0A0A0F' }} />}
+                  {armed && <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#EF4444' }} />}
+                </div>
+              )
+            })}
+          </div>
+          {deleteArmed && (
+            <>
+              <div style={{ height: 24 }} />
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.14em', color: '#EF4444' }}>ARMED — PRESS ANY KEY TO DELETE</span>
+            </>
+          )}
+          {deleteError && (
+            <>
+              <div style={{ height: 24 }} />
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.14em', color: '#EF4444' }}>INCORRECT PIN</span>
+            </>
+          )}
+          <div style={{ height: 32 }} />
+          <span style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.14em', color: '#8E8CA0' }}>ESC TO CANCEL</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -1102,6 +1282,15 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
         }}
         onNoteAdded={(mmId, note) => {
           setMmRows(prev => prev.map(r => r.id === mmId ? {...r, note, note_typed_at: new Date().toISOString()} : r))
+        }}
+        onDeleteMM={(mmId) => {
+          setMmRows(prev => prev.filter(r => r.id !== mmId))
+          setSelectedMM(null)
+        }}
+        onDealLinked={(mmId, dealId) => {
+          setMmRows(prev => prev.map(r => r.id === mmId ? {...r, deal_id: dealId} : r))
+          // Reload to get deal details
+          loadData()
         }}
       />
     )}
