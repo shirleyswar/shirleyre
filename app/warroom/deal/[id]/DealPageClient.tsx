@@ -216,9 +216,9 @@ function fmtDateTime(iso: string): string {
 
 // ── DP-1: Commission math helpers ────────────────────────────────────────────
 function calcCommissionChain(econ: DealEcon | null) {
-  // listing_rate / co_broker_split not yet migrated to DB — use defaults
-  // listRate: sale_commission_pct is the broker-side rate (3% each side); × 2 gives listing rate
-  const listRate = econ?.sale_commission_pct ? econ.sale_commission_pct * 2 : 6.0
+  // listing_rate / co_broker_split columns do not exist in deal_economics yet.
+  // Use standard defaults: 6% listing rate, 50% co-broker split, 75% house split.
+  const listRate = 6.0
   const coBroker = 0.5
   const askPrice = econ?.asking_price ?? null
   const estComm  = askPrice ? Math.round(askPrice * (listRate / 100) * coBroker * 0.75) : null
