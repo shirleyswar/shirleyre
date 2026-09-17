@@ -373,12 +373,15 @@ function LogsInner() {
           setLoading(false)
         })
     } else {
+      // 163C.1: closed_at column does not exist in DB; do NOT year-gate on updated_at
+      // (updated_at is last-touched, not close date — year-gating on it drops closed deals
+      // whose last update falls outside the selected year). Show all status=closed deals;
+      // YEAR selector still meaningful for TASKS/MONEY-MOVERS tabs.
+      // Chosen close-timestamp field: updated_at (best available; closed_at absent).
       supabase
         .from('deals')
         .select('id,addr_display,addr_street_name,status,updated_at,property_type,deal_contacts(contacts(name)),deal_economics(asking_price,commission_estimated)')
         .eq('status','closed')
-        .gte('updated_at', yearStart)
-        .lte('updated_at', yearEnd)
         .order('updated_at', { ascending:false })
         .then(({ data, error }) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -528,7 +531,7 @@ function LogsInner() {
 
   function DealsBody() {
     if (loading) return <EmptyMsg msg="LOADING…" />
-    if (!deals.length) return <EmptyMsg msg="NO CLOSED DEALS THIS YEAR" />
+    if (!deals.length) return <EmptyMsg msg="NO CLOSED DEALS" />
     return (
       <>
         {deals.map((d) => {
