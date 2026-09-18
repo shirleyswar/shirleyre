@@ -305,6 +305,14 @@ interface MMRow {
   deal_id: string | null
   deals: { name: string | null; addr_display: string | null } | null
 }
+interface DealEcon {
+  asking_price:        number | null
+  sale_commission_pct: number | null
+  lease_rate_psf:      number | null
+  lease_term_years:    number | null
+  lease_commission_pct:number | null
+  sqft:                number | null
+}
 interface DealRow {
   id: string
   addr_display: string | null
@@ -313,7 +321,21 @@ interface DealRow {
   updated_at: string | null
   property_type: string | null
   deal_contacts: { contacts: { name: string | null } | null }[] | null
-  deal_economics: { asking_price: number | null; commission_estimated: number | null }[] | null
+  deal_economics: DealEcon[] | null
+}
+
+// 163C2: calculate commission from real deal_economics columns (commission_estimated DNE)
+function calcCommission(econ: DealEcon | null | undefined): number | null {
+  if (!econ) return null
+  // Sale: asking_price × sale_commission_pct%
+  if (econ.asking_price != null && econ.sale_commission_pct != null && econ.sale_commission_pct > 0) {
+    return econ.asking_price * (econ.sale_commission_pct / 100)
+  }
+  // Lease: rate_psf × sqft × term_years × lease_commission_pct%
+  if (econ.lease_rate_psf != null && econ.sqft != null && econ.lease_term_years != null && econ.lease_commission_pct != null) {
+    return econ.lease_rate_psf * econ.sqft * econ.lease_term_years * (econ.lease_commission_pct / 100)
+  }
+  return null
 }
 
 // ── Main inner component (uses useSearchParams) ───────────────────────────────
@@ -373,19 +395,21 @@ function LogsInner() {
           setLoading(false)
         })
     } else {
-      // 163C.1: closed_at column does not exist in DB; do NOT year-gate on updated_at
-      // (updated_at is last-touched, not close date — year-gating on it drops closed deals
-      // whose last update falls outside the selected year). Show all status=closed deals;
-      // YEAR selector still meaningful for TASKS/MONEY-MOVERS tabs.
-      // Chosen close-timestamp field: updated_at (best available; closed_at absent).
+      // 163C.1: no year-gate on deals (closed_at absent; updated_at is last-touch not close date).
+      // 163C2: commission_estimated column DNE — use real columns and calcCommission().
+      //        Never silent-swallow: log PostgREST errors to console so failures are visible.
       supabase
         .from('deals')
-        .select('id,addr_display,addr_street_name,status,updated_at,property_type,deal_contacts(contacts(name)),deal_economics(asking_price,commission_estimated)')
+        .select('id,addr_display,addr_street_name,status,updated_at,property_type,deal_contacts(contacts(name)),deal_economics(asking_price,sale_commission_pct,lease_rate_psf,lease_term_years,lease_commission_pct,sqft)')
         .eq('status','closed')
         .order('updated_at', { ascending:false })
         .then(({ data, error }) => {
+          if (error) {
+            // eslint-disable-next-line no-console
+            console.error('[LOGS/DEALS] Supabase error:', error)
+          }
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if (!error && data) setDeals(data as unknown as DealRow[])
+          if (data) setDeals(data as unknown as DealRow[])
           setLoading(false)
         })
     }
@@ -402,7 +426,7 @@ function LogsInner() {
   }, 0)
   const dealCommTotal = deals.reduce((s, d) => {
     const econ = Array.isArray(d.deal_economics) ? d.deal_economics[0] : d.deal_economics
-    return s + (econ?.commission_estimated ?? 0)
+    return s + (calcCommission(econ) ?? 0)
   }, 0)
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -580,7 +604,7 @@ function LogsInner() {
               {/* COMM */}
               <div style={{ width:150, textAlign:'right' }}>
                 <span style={{ fontFamily:FONT_MONO, fontSize:13, color:C.moneyIn, fontWeight:600 }}>
-                  {fmtMoney(econ?.commission_estimated ?? null)}
+                  {fmtMoney(calcCommission(econ))}
                 </span>
               </div>
               {/* CLOSED */}
