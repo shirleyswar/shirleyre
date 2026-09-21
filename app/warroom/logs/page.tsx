@@ -561,8 +561,8 @@ function LogsInner() {
         {deals.map((d) => {
           const contactsArr = Array.isArray(d.deal_contacts) ? d.deal_contacts : []
           const clientName = contactsArr[0]?.contacts?.name ?? ''
-          const econArr = Array.isArray(d.deal_economics) ? d.deal_economics : []
-          const econ = econArr[0] ?? null
+          // 164.2: normalize identically to totals (object | array[0]) — fixes dashes while footer shows dollars
+          const econ = Array.isArray(d.deal_economics) ? d.deal_economics[0] : d.deal_economics
           const addrLabel = d.addr_display ?? d.addr_street_name ?? ''
           const plate = plateSrc(d.property_type)
           const canReopen = isCurrentYear

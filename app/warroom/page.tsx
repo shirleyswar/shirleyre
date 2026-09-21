@@ -5,7 +5,7 @@
  * D9 items 1–6 · 8.20.26 2145
  * Builds against SHIRLEYCRE_DESKTOP_SPEC 8.20.26 2145.md
  *
- * Layout: 100vh, no scroll, rail + identity band + NEXT48 + 3 columns.
+ * Layout: 100vh, chrome fixed (rail+identity band); content area scrolls as ONE object below 1080 (D4.4a).
  * Type: DS1–DS8 (Space Grotesk), DT1–DT8 (Mono labels), DM0–DM2 (Mono figures).
  * All type lives in desktopTypes.ts — no raw fontSize in this file.
  */
@@ -2160,13 +2160,14 @@ export default function WarRoomPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerW, setContainerW] = useState(0)
 
-  // D4.4: Column B ref for elastic allocation
+  // D4.4: Column B / C refs (width used by layout; height NOT fed into allocator — D4.4a fixed budget)
   const colBRef = useRef<HTMLDivElement>(null)
-  const [colBHeight, setColBHeight] = useState(0)
-
-  // D4.4: Column C ref for elastic allocation
   const colCRef = useRef<HTMLDivElement>(null)
-  const [colCHeight, setColCHeight] = useState(0)
+
+  // D4.4a: viewport height — drives scroll vs no-scroll; snaps on settle, never transitions
+  const [viewportH, setViewportH] = useState<number>(
+    typeof window !== 'undefined' ? window.innerHeight : 1080
+  )
 
   // Check 30: real record counts from panels (lifted up for elastic allocator)
   const [mmRowCount, setMmRowCount] = useState(5)
@@ -2216,47 +2217,40 @@ export default function WarRoomPage() {
     return { A: Math.round(A), B: Math.round(B), C: Math.round(C) }
   })()
 
-  // D4.4: measure column B height
+  // D4.4a: debounced viewport-height listener — snaps on settle (~150ms), never per-frame
   useEffect(() => {
-    if (!colBRef.current) return
-    const ro = new ResizeObserver(([entry]) => {
-      setColBHeight(entry.contentRect.height)
-    })
-    ro.observe(colBRef.current)
-    return () => ro.disconnect()
-  }, [unlocked])
+    let timer: ReturnType<typeof setTimeout>
+    function onResize() {
+      clearTimeout(timer)
+      timer = setTimeout(() => setViewportH(window.innerHeight), 150)
+    }
+    window.addEventListener('resize', onResize)
+    return () => { window.removeEventListener('resize', onResize); clearTimeout(timer) }
+  }, [])
 
-  // D4.4: measure column C height
-  useEffect(() => {
-    if (!colCRef.current) return
-    const ro = new ResizeObserver(([entry]) => {
-      setColCHeight(entry.contentRect.height)
-    })
-    ro.observe(colCRef.current)
-    return () => ro.disconnect()
-  }, [unlocked])
+  // D4.4a: fixed 1080 budget — same row counts and panel heights on every machine.
+  // chrome: identity 112 + rail 96 (horizontal) — vertical consumed: identity 112.
+  // content padding: 18 top + 20 bottom = 38. NEXT48 height 60 + gap 18 = 78.
+  // columns height at 1080: 1080 - 112 - 38 - 78 = 852.
+  // col B budget: 852 (MM + UC fill the column).
+  // col C budget: 852 - RECV_HEIGHT(130) - 2*gap(36) = 686.
+  const COL_BUDGET_1080 = 852
+  const COL_C_BUDGET_1080 = COL_BUDGET_1080 - RECV_HEIGHT - 2 * 18  // 686
 
-  // D4.4: Compute column B allocations (MM + UC)
+  // D4.4: Compute column B allocations (MM + UC) — always from 1080 budget
   // Check 52: MM_HEADER is now 55 (has FAB). +24 for the ADDRESS/VALUE/COMM column header row.
   const colBPanels: PanelSpec[] = [
     { header: MM_HEADER + 24, rowHeight: MM_ROW_H, rowCount: mmRowCount },
     { header: UC_HEADER + 24, rowHeight: UC_ROW_H, rowCount: ucRowCount },
   ]
-  const colBAllocs = colBHeight > 0 ? computeAlloc(colBHeight, colBPanels) : [
-    { height: 300, visibleRows: 5 },
-    { height: 250, visibleRows: 4 },
-  ]
+  const colBAllocs = computeAlloc(COL_BUDGET_1080, colBPanels)
 
-  // D4.4: Compute column C allocations (SCHEDULE + DUE, RECEIVABLES is flex:none)
+  // D4.4: Compute column C allocations (SCHEDULE + DUE, RECEIVABLES is flex:none) — always from 1080 budget
   const colCPanels: PanelSpec[] = [
     { header: SCHED_HEADER, rowHeight: SCHED_ROW_H, rowCount: schedRowCount },
     { header: DUE_HEADER, rowHeight: DUE_ROW_H, rowCount: dueRowCount },
   ]
-  const colCBudget = colCHeight > 0 ? colCHeight - RECV_HEIGHT - 2 * 18 : 400
-  const colCAllocs = colCBudget > 0 ? computeAlloc(colCBudget, colCPanels) : [
-    { height: 200, visibleRows: 4 },
-    { height: 200, visibleRows: 4 },
-  ]
+  const colCAllocs = computeAlloc(COL_C_BUDGET_1080, colCPanels)
 
   // Create mode: open TaskModal with an empty-ish task for creation
   const createTask: Task = {
@@ -2283,6 +2277,11 @@ export default function WarRoomPage() {
     )
   }
 
+  // D4.4a.3: content area scrolls as one object below 1080; chrome (identity + rail) stays fixed.
+  // Board always laid out at 1080 budget — same panel heights and row counts on every machine.
+  // At >=1080: content overflow hidden (no scroll). Below 1080: content overflowY auto (one scroller).
+  const boardScrolls = viewportH < 1080
+
   return (
     <div style={{
       height: '100vh',
@@ -2296,21 +2295,22 @@ export default function WarRoomPage() {
       {/* ── Left rail — 96px, own plane ── */}
       <LeftRail active="HOME" />
 
-      {/* ── Main area ── */}
+      {/* ── Main area — identity band (fixed) + scrollable content area ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
 
-        {/* ── Identity band — 112px ── */}
+        {/* ── Identity band — 112px, fixed (never scrolls) ── */}
         <IdentityBand />
 
-        {/* ── Content area ── */}
+        {/* ── Content area — D4.4a: one scroll object when viewport < 1080; hidden when >= 1080 ── */}
         <div style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
           padding: '18px 24px 20px',
           gap: 18,
-          overflow: 'hidden',
-          minHeight: 0,
+          // D4.4a: board always 1080 layout; below 1080 this single div scrolls
+          minHeight: boardScrolls ? (1080 - 112) : undefined,
+          overflow: boardScrolls ? 'auto' : 'hidden',
         }}>
 
           {/* ── NEXT 48 — 236px fixed ── */}
