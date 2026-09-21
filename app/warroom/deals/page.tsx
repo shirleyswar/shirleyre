@@ -107,6 +107,7 @@ interface DealEcon {
   lease_rate_psf?: number | null
   lease_term_years?: number | null
   lease_commission_pct?: number | null
+  offer_price?: number | null
 }
 
 interface DeadlineRow {
@@ -739,7 +740,7 @@ function DealsPage() {
         `).order('addr_street_name'),
 
         supabase.from('deal_economics').select(
-          'deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct'
+          'deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct, offer_price'
         ),
 
         supabase.from('contract_deadlines')
@@ -774,13 +775,21 @@ function DealsPage() {
         ratingInit[deal.id] = deal.rating
 
         const econ       = econMap[deal.id] ?? null
-        const commission = econ ? calcCommission(econ) : null
+        const isBuyerDeal = deal.type?.toLowerCase() === 'buyer'
         let value: number | null = null
+        let commission: number | null = null
         if (econ) {
-          if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price != null) {
+          if (isBuyerDeal) {
+            value = econ.offer_price ?? null
+            if (value && econ.sale_commission_pct) {
+              commission = value * econ.sale_commission_pct * 0.75
+            }
+          } else if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price != null) {
             value = econ.asking_price
+            commission = calcCommission(econ)
           } else if (econ.transaction_type === 'lease') {
             value = calcLeaseValue(econ.sqft ?? null, econ.lease_rate_psf ?? null, econ.lease_term_years ?? null)
+            commission = calcCommission(econ)
           }
         }
 
@@ -809,7 +818,7 @@ function DealsPage() {
       setTabCounts({
         listings: rawDeals.length,
         tenants:  rawDeals.filter(d => d.type?.toLowerCase() === 'tenant_rep').length,
-        buyers:   rawDeals.filter(d => d.type?.toLowerCase() === 'buyer_rep').length,
+        buyers:   rawDeals.filter(d => d.type?.toLowerCase() === 'buyer').length,
         targets:  rawDeals.filter(d => d.type?.toLowerCase() === 'potential_listing' || d.type?.toLowerCase() === 'target').length,
       })
 
@@ -1092,12 +1101,25 @@ function DealsPage() {
                 }
               </>
             )
+          ) : tab === 'buyers' ? (
+            filteredDeals.filter(d => d.type?.toLowerCase() === 'buyer').length === 0 ? (
+              <div style={{ padding:'40px 44px' }}>
+                <span style={{ ...DT3, color:C.textLow, fontFamily:FONT_MONO }}>NO BUYER ENGAGEMENTS</span>
+              </div>
+            ) : (
+              <>
+                {filteredDeals.filter(d => d.type?.toLowerCase() === 'buyer').map(d => (
+                  <DealRow key={d.id} deal={d} ratings={ratings}
+                    onRatingChange={handleRatingChange}
+                    onTaskOpen={setTaskDeal}
+                    onNavigate={navigate} />
+                ))}
+              </>
+            )
           ) : (
-            /* Placeholder for TENANTS / BUYERS / TARGETS */
             <div style={{ padding:'40px 44px' }}>
               <span style={{ ...DT3, color:C.textLow, fontFamily:FONT_MONO }}>
                 {tab === 'tenants'  && 'TENANT ENGAGEMENTS WILL LIVE HERE'}
-                {tab === 'buyers'   && 'BUYER ENGAGEMENTS WILL LIVE HERE'}
                 {tab === 'targets'  && 'PROPERTY TARGETS WILL LIVE HERE'}
               </span>
             </div>

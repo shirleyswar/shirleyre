@@ -993,6 +993,30 @@ function PropTypeSelector({ value, onChange }: { value: PropType; onChange: (v: 
   )
 }
 
+// 165: BUYER multi-select property type
+function BuyerPropTypeSelector({ value, onChange }: { value: PropType[]; onChange: (v: PropType[]) => void }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <FieldLabel text="PROPERTY TYPE" />
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        {PROP_ORDER.map(({ key, img }) => {
+          const active = value.includes(key)
+          return (
+            <button key={key} onClick={() => onChange(active ? value.filter(v => v !== key) : [...value, key])} style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              opacity: active ? 1 : 0.30,
+              transition: 'opacity 0.12s',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img} alt={key} style={{ height: 32, width: 'auto', display: 'block' }} draggable={false} />
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── Sale/Lease marks ──────────────────────────────────────────────────────────
 function SaleLeaseMarks({ saleOn, leaseOn, onSale, onLease }: {
   saleOn: boolean; leaseOn: boolean; onSale: () => void; onLease: () => void
@@ -1389,11 +1413,12 @@ function EconomicsLease({ econ, onChange }: { econ: LeaseEcon; onChange: (e: Lea
 // ── Commission block ──────────────────────────────────────────────────────────
 interface CommState { listingRate: string; coBrokerSplit: string }
 
-function CommissionBlock({ comm, onChange, saleOn, leaseOn, askingPrice, monthlyBase, leaseTermMonths, engagement }: {
+function CommissionBlock({ comm, onChange, saleOn, leaseOn, askingPrice, monthlyBase, leaseTermMonths, engagement, offerPrice }: {
   comm: CommState; onChange: (c: CommState) => void
   saleOn: boolean; leaseOn: boolean
   askingPrice: number | null; monthlyBase: number | null; leaseTermMonths: number | null
   engagement: Engagement
+  offerPrice?: number | null
 }) {
   const rate = parseFloat(comm.listingRate) || null
   const coBroker = parseFloat(comm.coBrokerSplit) || null
@@ -1462,17 +1487,24 @@ function CommissionBlock({ comm, onChange, saleOn, leaseOn, askingPrice, monthly
         </div>
       )}
 
-      {/* TENANT/BUYER — row visible, figures blank */}
-      {!isListing && (
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center',
-          background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '11px 16px',
-          border: `1px solid ${C.borderHair}` }}>
-          <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: C.textLow, letterSpacing: '0.14em', flex: 1 }}>
-            {engagement === 'BUYER' ? 'EST. COMMISSION IF SOLD' : 'EST. COMMISSION IF LEASED'}
-          </span>
-          <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 700, color: C.textLow }} />
-        </div>
-      )}
+      {/* TENANT/BUYER — BUYER gets offer-derived figure; TENANT stays blank */}
+      {!isListing && (() => {
+        const calcBought = (engagement === 'BUYER' && rate && coBroker && offerPrice)
+          ? offerPrice * (rate / 100) * (coBroker / 100) * 0.75 : null
+        return (
+          <div style={{ display: 'flex', gap: 20, alignItems: 'center',
+            background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '11px 16px',
+            border: `1px solid ${C.borderHair}` }}>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: C.textLow, letterSpacing: '0.14em', flex: 1 }}>
+              {engagement === 'BUYER' ? 'EST. COMMISSION IF BOUGHT' : 'EST. COMMISSION IF LEASED'}
+            </span>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 700, color: calcBought ? C.moneyIn : C.textLow }}>
+              {calcBought ? fmtD(calcBought) : ''}
+            </span>
+            {calcBought && <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow }}>offer × rate × co-broker × 0.75</span>}
+          </div>
+        )
+      })()}
     </>
   )
 }
@@ -2096,12 +2128,59 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
   const [deadlineWhen, setDeadlineWhen] = useState('')
   const [saving, setSaving] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  // 165: BUYER criteria
+  const [buyerPropTypes, setBuyerPropTypes] = useState<PropType[]>([])
+  const [buyerPriceFrom, setBuyerPriceFrom] = useState('')
+  const [buyerPriceTo, setBuyerPriceTo] = useState('')
+  const [buyerSizeFrom, setBuyerSizeFrom] = useState('')
+  const [buyerSizeTo, setBuyerSizeTo] = useState('')
+  const [buyerWhere, setBuyerWhere] = useState('')
+  const [buyerFunding, setBuyerFunding] = useState<'CASH' | 'FINANCED' | ''>('')
+  const [buyer1031, setBuyer1031] = useState<'YES' | 'NO' | ''>('')
+  const [buyer1031Clock, setBuyer1031Clock] = useState<'NOT_STARTED' | 'STARTED' | ''>('')
+  const [buyer1031RelinquishedDate, setBuyer1031RelinquishedDate] = useState('')
+  // 165: BUYER offer
+  const [buyerOfferAddr, setBuyerOfferAddr] = useState<AddrState>(emptyAddr)
+  const [buyerOfferAsking, setBuyerOfferAsking] = useState('')
+  const [buyerOfferBuildingSf, setBuyerOfferBuildingSf] = useState('')
+  const [buyerOfferPrice, setBuyerOfferPrice] = useState('')
+  const [buyerOfferDate, setBuyerOfferDate] = useState('')
+  const [buyerOfferStatus, setBuyerOfferStatus] = useState<'OFFERED' | 'COUNTERED' | 'ACCEPTED' | 'REJECTED' | 'DEAD' | ''>('')
+  // 165: title composition
+  const [titleComposed, setTitleComposed] = useState(true)
 
   useEffect(() => {
     supabase.from('contacts').select('id, name, company').order('name').then(({ data }) => {
       if (data) setContacts(data as ContactRow[])
     })
   }, [])
+
+  // 165: BUYER title composition
+  useEffect(() => {
+    if (engagement !== 'BUYER' || !titleComposed) return
+    const parts: string[] = []
+    if (buyerPropTypes.length > 0) {
+      const labels: Record<string, string> = { OFFICE: 'Office', RETAIL: 'Retail', INDUSTRIAL: 'Industrial', MULTIFAMILY: 'Multifamily', LAND: 'Land' }
+      parts.push(buyerPropTypes.map(t => labels[t] || t).join(' / '))
+    }
+    const priceFromNum = parseFloat(buyerPriceFrom.replace(/[^0-9.]/g,'')) || null
+    const priceToNum = parseFloat(buyerPriceTo.replace(/[^0-9.]/g,'')) || null
+    if (priceFromNum || priceToNum) {
+      const fmtK = (n: number) => n >= 1000000 ? `$${(n/1000000).toFixed(n%1000000===0?0:1)}M` : `$${Math.round(n/1000)}K`
+      if (priceFromNum && priceToNum) parts.push(`${fmtK(priceFromNum)}–${fmtK(priceToNum)}`)
+      else if (priceToNum) parts.push(`under ${fmtK(priceToNum)}`)
+      else if (priceFromNum) parts.push(`over ${fmtK(priceFromNum)}`)
+    }
+    const sizeFromNum = parseFloat(buyerSizeFrom.replace(/[^0-9.]/g,'')) || null
+    const sizeToNum = parseFloat(buyerSizeTo.replace(/[^0-9.]/g,'')) || null
+    if (sizeFromNum || sizeToNum) {
+      const fmtSf = (n: number) => `${Math.round(n/1000)}K SF`
+      if (sizeFromNum && sizeToNum) parts.push(`${fmtSf(sizeFromNum)}–${fmtSf(sizeToNum)}`)
+      else if (sizeToNum) parts.push(`under ${fmtSf(sizeToNum)}`)
+      else if (sizeFromNum) parts.push(`over ${fmtSf(sizeFromNum)}`)
+    }
+    setTitle(parts.join(' · '))
+  }, [engagement, titleComposed, buyerPropTypes, buyerPriceFrom, buyerPriceTo, buyerSizeFrom, buyerSizeTo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 156.4: Prefill from existing deal when editing ────────────────────────
   useEffect(() => {
@@ -2166,6 +2245,27 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
           setComm({ listingRate: String(rate), coBrokerSplit: '50' })
         }
       }
+      // 165: prefill buyer fields
+      if (engMap[deal.type] === 'BUYER' || deal.type === 'buyer') {
+        if (econ) {
+          if ((econ as any).buyer_prop_types) setBuyerPropTypes(((econ as any).buyer_prop_types as string).split(',').filter(Boolean) as PropType[])
+          if ((econ as any).buyer_price_from) setBuyerPriceFrom(String((econ as any).buyer_price_from))
+          if ((econ as any).buyer_price_to) setBuyerPriceTo(String((econ as any).buyer_price_to))
+          if ((econ as any).buyer_size_from_sf) setBuyerSizeFrom(String((econ as any).buyer_size_from_sf))
+          if ((econ as any).buyer_size_to_sf) setBuyerSizeTo(String((econ as any).buyer_size_to_sf))
+          if ((econ as any).buyer_where) setBuyerWhere((econ as any).buyer_where)
+          if ((econ as any).buyer_funding) setBuyerFunding((econ as any).buyer_funding)
+          if ((econ as any).buyer_1031) setBuyer1031((econ as any).buyer_1031)
+          if ((econ as any).buyer_1031_clock) setBuyer1031Clock((econ as any).buyer_1031_clock)
+          if ((econ as any).buyer_1031_relinquished) setBuyer1031RelinquishedDate((econ as any).buyer_1031_relinquished)
+          if ((econ as any).offer_price) setBuyerOfferPrice(String((econ as any).offer_price))
+          if (econ.asking_price) setBuyerOfferAsking(String(econ.asking_price))
+          if (econ.sqft) setBuyerOfferBuildingSf(String(econ.sqft))
+          if ((econ as any).offer_date) setBuyerOfferDate((econ as any).offer_date)
+          if ((econ as any).offer_status) setBuyerOfferStatus((econ as any).offer_status)
+          setTitleComposed(false)
+        }
+      }
       // Prefill links
       if (deal.lacdb_url) setLacdbUrl(deal.lacdb_url)
       if (deal.dropbox_link) setDropboxLink(deal.dropbox_link)
@@ -2218,7 +2318,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       ]
       case 'BUYER': return [
         { label: 'Engagement', met: true, value: 'BUYER' },
-        { label: 'Title', met: title.trim().length > 0, value: title || undefined },
+        { label: 'Title', met: title.trim().length > 0, value: (engagement === 'BUYER' && titleComposed && title.length > 0) ? 'COMPOSED' : (title || undefined) },
         { label: 'Client', met: clientMet, value: clientValue },
       ]
     }
@@ -2307,6 +2407,47 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
           await supabase.from('deal_contacts').insert({ deal_id: editId, contact_id: resolvedClientId, relationship: 'client' })
         }
 
+        // 165: BUYER criteria/offer/1031 persist (edit)
+        if (engagement === 'BUYER') {
+          const offerPriceNum = parseFloat(buyerOfferPrice.replace(/[^0-9.]/g,'')) || null
+          const listRate = parseFloat(comm.listingRate) || 0
+          const coBrokerFrac = (parseFloat(comm.coBrokerSplit) || 0) / 100
+          try {
+            await supabase.from('deal_economics').upsert({
+              deal_id: editId,
+              transaction_type: 'buyer',
+              sale_commission_pct: listRate * coBrokerFrac || null,
+              buyer_prop_types: buyerPropTypes.length > 0 ? buyerPropTypes.join(',') : null,
+              buyer_price_from: parseFloat(buyerPriceFrom.replace(/[^0-9.]/g,'')) || null,
+              buyer_price_to: parseFloat(buyerPriceTo.replace(/[^0-9.]/g,'')) || null,
+              buyer_size_from_sf: parseFloat(buyerSizeFrom.replace(/[^0-9.]/g,'')) || null,
+              buyer_size_to_sf: parseFloat(buyerSizeTo.replace(/[^0-9.]/g,'')) || null,
+              buyer_where: buyerWhere || null,
+              buyer_funding: buyerFunding || null,
+              buyer_1031: buyer1031 || null,
+              buyer_1031_clock: buyer1031Clock || null,
+              buyer_1031_relinquished: buyer1031RelinquishedDate || null,
+              asking_price: parseFloat(buyerOfferAsking.replace(/[^0-9.]/g,'')) || null,
+              sqft: parseFloat(buyerOfferBuildingSf.replace(/[^0-9.]/g,'')) || null,
+              offer_price: offerPriceNum,
+              offer_date: buyerOfferDate || null,
+              offer_status: buyerOfferStatus || null,
+            }, { onConflict: 'deal_id' })
+          } catch(e) { console.warn('165 buyer econ edit:', e) }
+          await supabase.from('contract_deadlines').delete().eq('deal_id', editId).eq('deadline_type', '1031')
+          if (buyer1031 === 'YES' && buyer1031Clock === 'STARTED' && buyer1031RelinquishedDate) {
+            const [y, m, d] = buyer1031RelinquishedDate.split('-').map(Number)
+            const base = new Date(y, m - 1, d)
+            const id45 = new Date(base); id45.setDate(id45.getDate() + 45)
+            const cl180 = new Date(base); cl180.setDate(cl180.getDate() + 180)
+            const toISO = (dt: Date) => dt.toISOString().slice(0, 10)
+            await supabase.from('contract_deadlines').insert([
+              { deal_id: editId, label: 'IDENTIFY BY', deadline_date: toISO(id45), deadline_type: '1031', status: 'pending' },
+              { deal_id: editId, label: 'CLOSE BY', deadline_date: toISO(cl180), deadline_type: '1031', status: 'pending' },
+            ])
+          }
+        }
+
         router.push('/warroom/deal/?id=' + editId)
         return
       }
@@ -2352,6 +2493,45 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       if (resolvedClientId) {
         await supabase.from('deal_contacts').insert({ deal_id: newId, contact_id: resolvedClientId, relationship: 'client' })
       }
+      // 165: BUYER criteria/offer/1031 persist
+      if (engagement === 'BUYER') {
+        const offerPriceNum = parseFloat(buyerOfferPrice.replace(/[^0-9.]/g,'')) || null
+        const listRate = parseFloat(comm.listingRate) || 0
+        const coBrokerFrac = (parseFloat(comm.coBrokerSplit) || 0) / 100
+        try {
+          await supabase.from('deal_economics').insert({
+            deal_id: newId,
+            transaction_type: 'buyer',
+            sale_commission_pct: listRate * coBrokerFrac || null,
+            buyer_prop_types: buyerPropTypes.length > 0 ? buyerPropTypes.join(',') : null,
+            buyer_price_from: parseFloat(buyerPriceFrom.replace(/[^0-9.]/g,'')) || null,
+            buyer_price_to: parseFloat(buyerPriceTo.replace(/[^0-9.]/g,'')) || null,
+            buyer_size_from_sf: parseFloat(buyerSizeFrom.replace(/[^0-9.]/g,'')) || null,
+            buyer_size_to_sf: parseFloat(buyerSizeTo.replace(/[^0-9.]/g,'')) || null,
+            buyer_where: buyerWhere || null,
+            buyer_funding: buyerFunding || null,
+            buyer_1031: buyer1031 || null,
+            buyer_1031_clock: buyer1031Clock || null,
+            buyer_1031_relinquished: buyer1031RelinquishedDate || null,
+            asking_price: parseFloat(buyerOfferAsking.replace(/[^0-9.]/g,'')) || null,
+            sqft: parseFloat(buyerOfferBuildingSf.replace(/[^0-9.]/g,'')) || null,
+            offer_price: offerPriceNum,
+            offer_date: buyerOfferDate || null,
+            offer_status: buyerOfferStatus || null,
+          })
+        } catch(e) { console.warn('165 buyer econ:', e) }
+        if (buyer1031 === 'YES' && buyer1031Clock === 'STARTED' && buyer1031RelinquishedDate) {
+          const [y, m, d] = buyer1031RelinquishedDate.split('-').map(Number)
+          const base = new Date(y, m - 1, d)
+          const id45 = new Date(base); id45.setDate(id45.getDate() + 45)
+          const cl180 = new Date(base); cl180.setDate(cl180.getDate() + 180)
+          const toISO = (dt: Date) => dt.toISOString().slice(0, 10)
+          await supabase.from('contract_deadlines').insert([
+            { deal_id: newId, label: 'IDENTIFY BY', deadline_date: toISO(id45), deadline_type: '1031', status: 'pending' },
+            { deal_id: newId, label: 'CLOSE BY', deadline_date: toISO(cl180), deadline_type: '1031', status: 'pending' },
+          ])
+        }
+      }
       if (deadlineWhat && deadlineWhen) {
         await supabase.from('contract_deadlines').insert({
           deal_id: newId, label: deadlineWhat,
@@ -2365,7 +2545,10 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
     }
   }, [saving, allMet, engagement, title, addr, propType, saleOn, leaseOn, clientId,
     clientMode, newClientName, newClientEmail, newClientPhone, newClientReady,
-    saleEcon, leaseEcon, comm, lacdbUrl, dropboxLink, deadlineWhat, deadlineWhen, leaseTermMo, mainImageFile, router, editId])
+    saleEcon, leaseEcon, comm, lacdbUrl, dropboxLink, deadlineWhat, deadlineWhen, leaseTermMo, mainImageFile, router, editId,
+    buyerPropTypes, buyerPriceFrom, buyerPriceTo, buyerSizeFrom, buyerSizeTo, buyerWhere, buyerFunding,
+    buyer1031, buyer1031Clock, buyer1031RelinquishedDate, buyerOfferPrice, buyerOfferAsking,
+    buyerOfferBuildingSf, buyerOfferDate, buyerOfferStatus])
 
   useEffect(() => { saveCallbackRef.current = handleSave }, [handleSave, saveCallbackRef])
 
@@ -2404,7 +2587,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
                 <div style={{ padding: '22px 26px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <FieldLabel text="TITLE" />
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+                    <input type="text" value={title} onChange={e => { setTitle(e.target.value); if (engagement === 'BUYER') setTitleComposed(false) }}
                       placeholder="Name it" style={FIELD_STYLE} />
                   </div>
                 </div>
@@ -2491,6 +2674,185 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
                 </div>
               </>)}
 
+              {/* 165: WHAT HE IS BUYING (BUYER only) */}
+              {engagement === 'BUYER' && (<>
+                <GroupDivider />
+                <div style={{ padding: '22px 26px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', color: C.textLow }}>WHAT HE IS BUYING</div>
+                  <BuyerPropTypeSelector value={buyerPropTypes} onChange={setBuyerPropTypes} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 14 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>PRICE FROM</span>
+                      <input type="text" value={buyerPriceFrom} onChange={e => setBuyerPriceFrom(e.target.value)} placeholder="No floor" style={FIELD_STYLE} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>PRICE TO</span>
+                      <input type="text" value={buyerPriceTo} onChange={e => setBuyerPriceTo(e.target.value)} placeholder="No ceiling" style={FIELD_STYLE} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>SIZE FROM (SF)</span>
+                      <input type="text" value={buyerSizeFrom} onChange={e => setBuyerSizeFrom(e.target.value)} placeholder="Any size" style={FIELD_STYLE} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>SIZE TO (SF)</span>
+                      <input type="text" value={buyerSizeTo} onChange={e => setBuyerSizeTo(e.target.value)} placeholder="Any size" style={FIELD_STYLE} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>WHERE</span>
+                    <input type="text" value={buyerWhere} onChange={e => setBuyerWhere(e.target.value)} placeholder="Submarket, city" style={FIELD_STYLE} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>FUNDING</span>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {(['CASH', 'FINANCED'] as const).map(f => (
+                        <button key={f} onClick={() => setBuyerFunding(buyerFunding === f ? '' : f)} style={{
+                          height: 36, padding: '0 20px', borderRadius: 8,
+                          border: `1px solid ${buyerFunding === f ? '#8B5CF6' : C.borderHair}`,
+                          background: buyerFunding === f ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
+                          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600,
+                          color: buyerFunding === f ? '#8B5CF6' : C.textLow,
+                          cursor: 'pointer', letterSpacing: '0.12em',
+                        }}>{f}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>1031 EXCHANGE</span>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {(['YES', 'NO'] as const).map(v => (
+                        <button key={v} onClick={() => { setBuyer1031(buyer1031 === v ? '' : v); if (v !== 'YES') { setBuyer1031Clock(''); setBuyer1031RelinquishedDate('') } }} style={{
+                          height: 36, padding: '0 20px', borderRadius: 8,
+                          border: `1px solid ${buyer1031 === v ? '#8B5CF6' : C.borderHair}`,
+                          background: buyer1031 === v ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
+                          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600,
+                          color: buyer1031 === v ? '#8B5CF6' : C.textLow,
+                          cursor: 'pointer', letterSpacing: '0.12em',
+                        }}>{v}</button>
+                      ))}
+                    </div>
+                    {buyer1031 === 'YES' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 16, borderLeft: '2px solid #8B5CF6', marginTop: 4 }}>
+                        <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>THE CLOCK</span>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          {(['NOT_STARTED', 'STARTED'] as const).map(s => (
+                            <button key={s} onClick={() => { setBuyer1031Clock(buyer1031Clock === s ? '' : s); if (s !== 'STARTED') setBuyer1031RelinquishedDate('') }} style={{
+                              height: 36, padding: '0 20px', borderRadius: 8,
+                              border: `1px solid ${buyer1031Clock === s ? '#8B5CF6' : C.borderHair}`,
+                              background: buyer1031Clock === s ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
+                              fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600,
+                              color: buyer1031Clock === s ? '#8B5CF6' : C.textLow,
+                              cursor: 'pointer', letterSpacing: '0.12em', whiteSpace: 'nowrap',
+                            }}>{s === 'NOT_STARTED' ? 'NOT STARTED' : 'STARTED — PICK THE DATE'}</button>
+                          ))}
+                        </div>
+                        {buyer1031Clock === 'STARTED' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                              <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>RELINQUISHED CLOSED</span>
+                              <input type="date" value={buyer1031RelinquishedDate} onChange={e => setBuyer1031RelinquishedDate(e.target.value)} style={FIELD_STYLE} />
+                            </div>
+                            {buyer1031RelinquishedDate && (() => {
+                              const [y, m, d] = buyer1031RelinquishedDate.split('-').map(Number)
+                              const base = new Date(y, m - 1, d)
+                              const id45 = new Date(base); id45.setDate(id45.getDate() + 45)
+                              const cl180 = new Date(base); cl180.setDate(cl180.getDate() + 180)
+                              const fmtDt = (dt: Date) => `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getMonth()]} ${dt.getDate()} ${dt.getFullYear()}`
+                              return (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                    <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>IDENTIFY BY</span>
+                                    <div style={{ height: 52, background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.borderHair}`, borderRadius: 10, padding: '0 16px', display: 'flex', alignItems: 'center', fontFamily: FONT_MONO, fontSize: 14, color: C.textHi }}>{fmtDt(id45)}</div>
+                                    <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow }}>relinquished + 45 calendar days</span>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                    <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>CLOSE BY</span>
+                                    <div style={{ height: 52, background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.borderHair}`, borderRadius: 10, padding: '0 16px', display: 'flex', alignItems: 'center', fontFamily: FONT_MONO, fontSize: 14, color: C.textHi }}>{fmtDt(cl180)}</div>
+                                    <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow }}>relinquished + 180 calendar days</span>
+                                  </div>
+                                </div>
+                              )
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>)}
+
+              {/* 165: PROPERTY UNDER OFFER (BUYER only) */}
+              {engagement === 'BUYER' && (<>
+                <GroupDivider />
+                <div style={{ padding: '22px 26px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', color: C.textLow }}>PROPERTY UNDER OFFER</div>
+                  <AddressBlock addr={buyerOfferAddr} onChange={setBuyerOfferAddr} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 14 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>ASKING PRICE</span>
+                      <input type="text" value={buyerOfferAsking} onChange={e => setBuyerOfferAsking(e.target.value)} placeholder="Their number" style={FIELD_STYLE} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>BUILDING SF</span>
+                      <input type="text" value={buyerOfferBuildingSf} onChange={e => setBuyerOfferBuildingSf(e.target.value)} placeholder="SF" style={FIELD_STYLE} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>OFFER PRICE</span>
+                      <input type="text" value={buyerOfferPrice} onChange={e => setBuyerOfferPrice(e.target.value)} placeholder="Our number" style={FIELD_STYLE} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>OFFER DATE</span>
+                      <input type="date" value={buyerOfferDate} onChange={e => setBuyerOfferDate(e.target.value)} style={FIELD_STYLE} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>STATUS</span>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {(['OFFERED', 'COUNTERED', 'ACCEPTED', 'REJECTED', 'DEAD'] as const).map(s => (
+                        <button key={s} onClick={() => setBuyerOfferStatus(buyerOfferStatus === s ? '' : s)} style={{
+                          height: 36, padding: '0 16px', borderRadius: 8,
+                          border: `1px solid ${buyerOfferStatus === s ? '#8B5CF6' : C.borderHair}`,
+                          background: buyerOfferStatus === s ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
+                          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600,
+                          color: buyerOfferStatus === s ? '#8B5CF6' : C.textLow,
+                          cursor: 'pointer', letterSpacing: '0.12em',
+                        }}>{s}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {(() => {
+                    const offerNum = parseFloat(buyerOfferPrice.replace(/[^0-9.]/g,'')) || null
+                    const askingNum = parseFloat(buyerOfferAsking.replace(/[^0-9.]/g,'')) || null
+                    const sfNum = parseFloat(buyerOfferBuildingSf.replace(/[^0-9.]/g,'')) || null
+                    const offerPsf = (offerNum && sfNum) ? offerNum / sfNum : null
+                    const vsAsking = (offerNum && askingNum) ? offerNum - askingNum : null
+                    const vsAskingPct = (offerNum && askingNum) ? ((offerNum - askingNum) / askingNum * 100) : null
+                    if (!offerPsf && vsAsking == null) return null
+                    const fmtN = (n: number) => n >= 0 ? `+$${Math.round(n).toLocaleString()}` : `-$${Math.round(Math.abs(n)).toLocaleString()}`
+                    return (
+                      <div style={{ display: 'flex', gap: 24 }}>
+                        {offerPsf && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>OFFER PSF</span>
+                            <span style={{ fontFamily: FONT_MONO, fontSize: 16, fontWeight: 700, color: C.textHi }}>${offerPsf.toFixed(2)}</span>
+                            <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow }}>offer ÷ building SF</span>
+                          </div>
+                        )}
+                        {vsAsking != null && askingNum && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>VS ASKING</span>
+                            <span style={{ fontFamily: FONT_MONO, fontSize: 16, fontWeight: 700, color: C.textLow }}>
+                              {fmtN(vsAsking)}{vsAskingPct != null ? ` (${vsAskingPct >= 0 ? '+' : ''}${vsAskingPct.toFixed(1)}%)` : ''}
+                            </span>
+                            <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow }}>offer − asking</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              </>)}
+
               {/* COMMISSION */}
               {showCommission && (<>
                 <GroupDivider />
@@ -2500,6 +2862,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
                     saleOn={saleOn} leaseOn={leaseOn}
                     askingPrice={asking} monthlyBase={monthlyBase}
                     leaseTermMonths={leaseTermMo} engagement={engagement}
+                    offerPrice={parseFloat(buyerOfferPrice.replace(/[^0-9.]/g,'')) || null}
                   />
                 </div>
               </>)}
