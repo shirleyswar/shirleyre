@@ -507,6 +507,119 @@ async function insertDealRow(row: Record<string, unknown>) {
   return result
 }
 
+function parseOptionalNumber(raw: string): number | null {
+  const cleaned = raw.replace(/[^0-9.]/g, '')
+  if (!cleaned) return null
+  const n = parseFloat(cleaned)
+  return Number.isFinite(n) ? n : null
+}
+
+function dateOnly(v: unknown): string {
+  if (v == null || v === '') return ''
+  return String(v).slice(0, 10)
+}
+
+function offerAddrDisplay(addr: AddrState): string | null {
+  const display = addr.confirmed
+    ? (listingFilingName(addr) || addr.addrDisplay || addr.raw)
+    : (addr.addrDisplay || addr.raw)
+  const trimmed = display.trim()
+  return trimmed || null
+}
+
+function saveErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message
+  if (err && typeof err === 'object' && 'message' in err) {
+    const message = (err as { message?: unknown }).message
+    if (typeof message === 'string' && message) return message
+  }
+  return 'Save failed'
+}
+
+// 165: one economics row per deal (deal_id is UNIQUE). Supabase JS returns { error }
+// and does not throw — callers must check it. transaction_type 'buyer' is allowed
+// on the live table (no check rejects it).
+async function writeBuyerEconomics(input: {
+  dealId: string
+  listingRate: string
+  coBrokerSplit: string
+  propTypes: string[]
+  priceFrom: string
+  priceTo: string
+  sizeFrom: string
+  sizeTo: string
+  where: string
+  funding: string
+  exchange1031: string
+  clock: string
+  relinquished: string
+  offerAsking: string
+  offerSf: string
+  offerPrice: string
+  offerDate: string
+  offerStatus: string
+  offerAddr: AddrState
+}) {
+  const listRate = parseFloat(input.listingRate) || 0
+  const coBrokerFrac = (parseFloat(input.coBrokerSplit) || 0) / 100
+  const effectivePct = listRate * coBrokerFrac
+  const row = {
+    deal_id: input.dealId,
+    transaction_type: 'buyer',
+    sale_commission_pct: effectivePct || null,
+    buyer_prop_types: input.propTypes.length > 0 ? input.propTypes.join(',') : null,
+    buyer_price_from: parseOptionalNumber(input.priceFrom),
+    buyer_price_to: parseOptionalNumber(input.priceTo),
+    buyer_size_from_sf: parseOptionalNumber(input.sizeFrom),
+    buyer_size_to_sf: parseOptionalNumber(input.sizeTo),
+    buyer_where: input.where.trim() || null,
+    buyer_funding: input.funding || null,
+    buyer_1031: input.exchange1031 || null,
+    buyer_1031_clock: input.clock || null,
+    buyer_1031_relinquished: input.relinquished || null,
+    asking_price: parseOptionalNumber(input.offerAsking),
+    sqft: parseOptionalNumber(input.offerSf),
+    offer_price: parseOptionalNumber(input.offerPrice),
+    offer_date: input.offerDate || null,
+    offer_status: input.offerStatus || null,
+    offer_addr_display: offerAddrDisplay(input.offerAddr),
+  }
+  const upserted = await supabase.from('deal_economics').upsert(row, { onConflict: 'deal_id' })
+  if (!upserted.error) return
+  const msg = upserted.error.message ?? 'write failed'
+  if (/no unique|exclusion constraint|42P10/i.test(msg)) {
+    const existing = await supabase.from('deal_economics').select('id').eq('deal_id', input.dealId).maybeSingle()
+    if (existing.error) throw new Error(`Buyer criteria: ${existing.error.message}`)
+    const written = existing.data
+      ? await supabase.from('deal_economics').update(row).eq('deal_id', input.dealId)
+      : await supabase.from('deal_economics').insert(row)
+    if (written.error) throw new Error(`Buyer criteria: ${written.error.message}`)
+    return
+  }
+  throw new Error(`Buyer criteria: ${msg}`)
+}
+
+// deadline_type '1031' violates contract_deadlines_deadline_type_check.
+// 'custom' is allowed; notes='1031' marks the pair so a later save can replace it.
+async function writeBuyer1031Deadlines(dealId: string, exchange1031: string, clock: string, relinquished: string) {
+  const delType = await supabase.from('contract_deadlines').delete().eq('deal_id', dealId).eq('deadline_type', '1031')
+  if (delType.error) throw new Error(`1031 deadlines: ${delType.error.message}`)
+  const delNotes = await supabase.from('contract_deadlines').delete().eq('deal_id', dealId).eq('notes', '1031')
+  if (delNotes.error) throw new Error(`1031 deadlines: ${delNotes.error.message}`)
+  if (exchange1031 !== 'YES' || clock !== 'STARTED' || !relinquished) return
+  const [y, m, d] = relinquished.split('-').map(Number)
+  if (!y || !m || !d) throw new Error('1031 deadlines: relinquished date is not a valid date')
+  const base = new Date(y, m - 1, d)
+  const id45 = new Date(base); id45.setDate(id45.getDate() + 45)
+  const cl180 = new Date(base); cl180.setDate(cl180.getDate() + 180)
+  const toISO = (dt: Date) => dt.toISOString().slice(0, 10)
+  const inserted = await supabase.from('contract_deadlines').insert([
+    { deal_id: dealId, label: 'IDENTIFY BY', deadline_date: toISO(id45), deadline_type: 'custom', status: 'pending', notes: '1031' },
+    { deal_id: dealId, label: 'CLOSE BY', deadline_date: toISO(cl180), deadline_type: 'custom', status: 'pending', notes: '1031' },
+  ])
+  if (inserted.error) throw new Error(`1031 deadlines: ${inserted.error.message}`)
+}
+
 function CityStateZipRow({ addr, onChange }: { addr: AddrState; onChange: (a: AddrState) => void }) {
   const miniLabel: React.CSSProperties = {
     fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em',
@@ -2127,7 +2240,10 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
   const [deadlineWhat, setDeadlineWhat] = useState('')
   const [deadlineWhen, setDeadlineWhen] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  // If the deal row landed and criteria then failed, a retry must update that id.
+  const persistedDealIdRef = useRef<string | null>(null)
   // 165: BUYER criteria
   const [buyerPropTypes, setBuyerPropTypes] = useState<PropType[]>([])
   const [buyerPriceFrom, setBuyerPriceFrom] = useState('')
@@ -2240,30 +2356,49 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
           leaseTermMonths: econ.lease_term_years ? String(econ.lease_term_years * 12) : '',
         }))
         // Prefill commission rates
-        if (econ.sale_commission_pct || econ.lease_commission_pct) {
+        // Buyer stores sale_commission_pct as listing rate × co-broker (6 × 0.5 = 3).
+        // Reloading that product as the listing rate halves EST. COMMISSION IF BOUGHT.
+        // Keep the form defaults (6.00 / 50) on a buyer record.
+        const isBuyerDeal = engMap[deal.type] === 'BUYER' || deal.type === 'buyer'
+        if (!isBuyerDeal && (econ.sale_commission_pct || econ.lease_commission_pct)) {
           const rate = econ.sale_commission_pct ?? econ.lease_commission_pct ?? 6
           setComm({ listingRate: String(rate), coBrokerSplit: '50' })
         }
       }
-      // 165: prefill buyer fields
+      // 165: prefill buyer fields. Numeric 0 is a value; date columns come back as YYYY-MM-DD.
       if (engMap[deal.type] === 'BUYER' || deal.type === 'buyer') {
+        setTitleComposed(false)
         if (econ) {
-          if ((econ as any).buyer_prop_types) setBuyerPropTypes(((econ as any).buyer_prop_types as string).split(',').filter(Boolean) as PropType[])
-          if ((econ as any).buyer_price_from) setBuyerPriceFrom(String((econ as any).buyer_price_from))
-          if ((econ as any).buyer_price_to) setBuyerPriceTo(String((econ as any).buyer_price_to))
-          if ((econ as any).buyer_size_from_sf) setBuyerSizeFrom(String((econ as any).buyer_size_from_sf))
-          if ((econ as any).buyer_size_to_sf) setBuyerSizeTo(String((econ as any).buyer_size_to_sf))
-          if ((econ as any).buyer_where) setBuyerWhere((econ as any).buyer_where)
-          if ((econ as any).buyer_funding) setBuyerFunding((econ as any).buyer_funding)
-          if ((econ as any).buyer_1031) setBuyer1031((econ as any).buyer_1031)
-          if ((econ as any).buyer_1031_clock) setBuyer1031Clock((econ as any).buyer_1031_clock)
-          if ((econ as any).buyer_1031_relinquished) setBuyer1031RelinquishedDate((econ as any).buyer_1031_relinquished)
-          if ((econ as any).offer_price) setBuyerOfferPrice(String((econ as any).offer_price))
-          if (econ.asking_price) setBuyerOfferAsking(String(econ.asking_price))
-          if (econ.sqft) setBuyerOfferBuildingSf(String(econ.sqft))
-          if ((econ as any).offer_date) setBuyerOfferDate((econ as any).offer_date)
-          if ((econ as any).offer_status) setBuyerOfferStatus((econ as any).offer_status)
-          setTitleComposed(false)
+          const e = econ as Record<string, unknown>
+          if (typeof e.buyer_prop_types === 'string' && e.buyer_prop_types) {
+            setBuyerPropTypes(e.buyer_prop_types.split(',').filter(Boolean) as PropType[])
+          }
+          if (e.buyer_price_from != null) setBuyerPriceFrom(String(e.buyer_price_from))
+          if (e.buyer_price_to != null) setBuyerPriceTo(String(e.buyer_price_to))
+          if (e.buyer_size_from_sf != null) setBuyerSizeFrom(String(e.buyer_size_from_sf))
+          if (e.buyer_size_to_sf != null) setBuyerSizeTo(String(e.buyer_size_to_sf))
+          if (typeof e.buyer_where === 'string') setBuyerWhere(e.buyer_where)
+          if (e.buyer_funding === 'CASH' || e.buyer_funding === 'FINANCED') setBuyerFunding(e.buyer_funding)
+          if (e.buyer_1031 === 'YES' || e.buyer_1031 === 'NO') setBuyer1031(e.buyer_1031)
+          if (e.buyer_1031_clock === 'NOT_STARTED' || e.buyer_1031_clock === 'STARTED') setBuyer1031Clock(e.buyer_1031_clock)
+          const relinquished = dateOnly(e.buyer_1031_relinquished)
+          if (relinquished) setBuyer1031RelinquishedDate(relinquished)
+          if (e.offer_price != null) setBuyerOfferPrice(String(e.offer_price))
+          if (econ.asking_price != null) setBuyerOfferAsking(String(econ.asking_price))
+          if (econ.sqft != null) setBuyerOfferBuildingSf(String(econ.sqft))
+          const offerDate = dateOnly(e.offer_date)
+          if (offerDate) setBuyerOfferDate(offerDate)
+          if (e.offer_status === 'OFFERED' || e.offer_status === 'COUNTERED' || e.offer_status === 'ACCEPTED' || e.offer_status === 'REJECTED' || e.offer_status === 'DEAD') {
+            setBuyerOfferStatus(e.offer_status)
+          }
+          if (typeof e.offer_addr_display === 'string' && e.offer_addr_display) {
+            setBuyerOfferAddr({
+              ...emptyAddr(),
+              raw: e.offer_addr_display,
+              addrDisplay: e.offer_addr_display,
+              confirmed: false,
+            })
+          }
         }
       }
       // Prefill links
@@ -2349,26 +2484,29 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
   const handleSave = useCallback(async () => {
     if (saving || !allMet) return
     setSaving(true)
+    setSaveError(null)
     try {
-      // 156C.2: If editing, UPDATE with full create-parity persistence
-      if (editId) {
+      // 156C.2: If editing, UPDATE with full create-parity persistence.
+      // persistedDealIdRef covers a create whose deal row saved and whose criteria write then failed.
+      const targetId = editId || persistedDealIdRef.current
+      if (targetId) {
         // Build the same row payload as create (includes addr_zip, status, type, representation_role, etc.)
         const updatePayload = buildDealInsertRow(engagement, title, addr, propType, lacdbUrl, dropboxLink)
         // Preserve existing status rather than resetting to 'active' on every edit
         // (omit status from update so it stays as-is, unless we have a new one)
         const { status: _dropStatus, ...updateWithoutStatus } = updatePayload as Record<string, unknown>
         // Attempt full update (with addr_zip etc.); fall back gracefully if columns missing
-        let updateResult = await supabase.from('deals').update(updateWithoutStatus).eq('id', editId).select('id').single()
+        let updateResult = await supabase.from('deals').update(updateWithoutStatus).eq('id', targetId).select('id').single()
         if (updateResult.error && /addr_state|addr_zip|photo_url|schema cache|column/i.test(updateResult.error.message ?? '')) {
           const fallback = { ...updateWithoutStatus }
           delete fallback.addr_state
           delete fallback.addr_zip
-          updateResult = await supabase.from('deals').update(fallback).eq('id', editId).select('id').single()
+          updateResult = await supabase.from('deals').update(fallback).eq('id', targetId).select('id').single()
         }
         if (updateResult.error) throw updateResult.error
 
         // Persist photo if changed
-        await persistMainImage(editId, mainImageFile)
+        await persistMainImage(targetId, mainImageFile)
 
         // Upsert deal_economics
         const hasSaleData = saleOn && (saleEcon.askingPrice || saleEcon.buildingSf)
@@ -2379,7 +2517,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
           const coBrokerFrac = (parseFloat(comm.coBrokerSplit) || 0) / 100
           const commPct = listRate * coBrokerFrac
           await supabase.from('deal_economics').upsert({
-            deal_id: editId, transaction_type: txType,
+            deal_id: targetId, transaction_type: txType,
             asking_price: parseFloat(saleEcon.askingPrice.replace(/[^0-9.]/g,'')) || null,
             sqft: parseFloat((saleOn ? saleEcon.buildingSf : leaseEcon.availSf).replace(/[^0-9.]/g,'')) || null,
             land_sqft: parseFloat(saleEcon.landSize.replace(/[^0-9.]/g,'')) || null,
@@ -2403,52 +2541,37 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
         }
         if (resolvedClientId) {
           // Remove old client link then re-insert (upsert by deal_id+contact_id)
-          await supabase.from('deal_contacts').delete().eq('deal_id', editId).eq('relationship', 'client')
-          await supabase.from('deal_contacts').insert({ deal_id: editId, contact_id: resolvedClientId, relationship: 'client' })
+          await supabase.from('deal_contacts').delete().eq('deal_id', targetId).eq('relationship', 'client')
+          await supabase.from('deal_contacts').insert({ deal_id: targetId, contact_id: resolvedClientId, relationship: 'client' })
         }
 
-        // 165: BUYER criteria/offer/1031 persist (edit)
+        // 165: BUYER criteria/offer/1031 persist (edit). Errors throw — no silent swallow.
         if (engagement === 'BUYER') {
-          const offerPriceNum = parseFloat(buyerOfferPrice.replace(/[^0-9.]/g,'')) || null
-          const listRate = parseFloat(comm.listingRate) || 0
-          const coBrokerFrac = (parseFloat(comm.coBrokerSplit) || 0) / 100
-          try {
-            await supabase.from('deal_economics').upsert({
-              deal_id: editId,
-              transaction_type: 'buyer',
-              sale_commission_pct: listRate * coBrokerFrac || null,
-              buyer_prop_types: buyerPropTypes.length > 0 ? buyerPropTypes.join(',') : null,
-              buyer_price_from: parseFloat(buyerPriceFrom.replace(/[^0-9.]/g,'')) || null,
-              buyer_price_to: parseFloat(buyerPriceTo.replace(/[^0-9.]/g,'')) || null,
-              buyer_size_from_sf: parseFloat(buyerSizeFrom.replace(/[^0-9.]/g,'')) || null,
-              buyer_size_to_sf: parseFloat(buyerSizeTo.replace(/[^0-9.]/g,'')) || null,
-              buyer_where: buyerWhere || null,
-              buyer_funding: buyerFunding || null,
-              buyer_1031: buyer1031 || null,
-              buyer_1031_clock: buyer1031Clock || null,
-              buyer_1031_relinquished: buyer1031RelinquishedDate || null,
-              asking_price: parseFloat(buyerOfferAsking.replace(/[^0-9.]/g,'')) || null,
-              sqft: parseFloat(buyerOfferBuildingSf.replace(/[^0-9.]/g,'')) || null,
-              offer_price: offerPriceNum,
-              offer_date: buyerOfferDate || null,
-              offer_status: buyerOfferStatus || null,
-            }, { onConflict: 'deal_id' })
-          } catch(e) { console.warn('165 buyer econ edit:', e) }
-          await supabase.from('contract_deadlines').delete().eq('deal_id', editId).eq('deadline_type', '1031')
-          if (buyer1031 === 'YES' && buyer1031Clock === 'STARTED' && buyer1031RelinquishedDate) {
-            const [y, m, d] = buyer1031RelinquishedDate.split('-').map(Number)
-            const base = new Date(y, m - 1, d)
-            const id45 = new Date(base); id45.setDate(id45.getDate() + 45)
-            const cl180 = new Date(base); cl180.setDate(cl180.getDate() + 180)
-            const toISO = (dt: Date) => dt.toISOString().slice(0, 10)
-            await supabase.from('contract_deadlines').insert([
-              { deal_id: editId, label: 'IDENTIFY BY', deadline_date: toISO(id45), deadline_type: '1031', status: 'pending' },
-              { deal_id: editId, label: 'CLOSE BY', deadline_date: toISO(cl180), deadline_type: '1031', status: 'pending' },
-            ])
-          }
+          await writeBuyerEconomics({
+            dealId: targetId,
+            listingRate: comm.listingRate,
+            coBrokerSplit: comm.coBrokerSplit,
+            propTypes: buyerPropTypes,
+            priceFrom: buyerPriceFrom,
+            priceTo: buyerPriceTo,
+            sizeFrom: buyerSizeFrom,
+            sizeTo: buyerSizeTo,
+            where: buyerWhere,
+            funding: buyerFunding,
+            exchange1031: buyer1031,
+            clock: buyer1031Clock,
+            relinquished: buyer1031RelinquishedDate,
+            offerAsking: buyerOfferAsking,
+            offerSf: buyerOfferBuildingSf,
+            offerPrice: buyerOfferPrice,
+            offerDate: buyerOfferDate,
+            offerStatus: buyerOfferStatus,
+            offerAddr: buyerOfferAddr,
+          })
+          await writeBuyer1031Deadlines(targetId, buyer1031, buyer1031Clock, buyer1031RelinquishedDate)
         }
 
-        router.push('/warroom/deal/?id=' + editId)
+        router.push('/warroom/deal/?id=' + targetId)
         return
       }
 
@@ -2469,6 +2592,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       )
       if (dealError || !dealData) throw dealError ?? new Error('No deal returned')
       const newId = dealData.id
+      persistedDealIdRef.current = newId
       await persistMainImage(newId, mainImageFile)
 
       const hasSaleData = saleOn && (saleEcon.askingPrice || saleEcon.buildingSf)
@@ -2493,44 +2617,30 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       if (resolvedClientId) {
         await supabase.from('deal_contacts').insert({ deal_id: newId, contact_id: resolvedClientId, relationship: 'client' })
       }
-      // 165: BUYER criteria/offer/1031 persist
+      // 165: BUYER criteria/offer/1031 persist. TENANT does not enter this block.
       if (engagement === 'BUYER') {
-        const offerPriceNum = parseFloat(buyerOfferPrice.replace(/[^0-9.]/g,'')) || null
-        const listRate = parseFloat(comm.listingRate) || 0
-        const coBrokerFrac = (parseFloat(comm.coBrokerSplit) || 0) / 100
-        try {
-          await supabase.from('deal_economics').insert({
-            deal_id: newId,
-            transaction_type: 'buyer',
-            sale_commission_pct: listRate * coBrokerFrac || null,
-            buyer_prop_types: buyerPropTypes.length > 0 ? buyerPropTypes.join(',') : null,
-            buyer_price_from: parseFloat(buyerPriceFrom.replace(/[^0-9.]/g,'')) || null,
-            buyer_price_to: parseFloat(buyerPriceTo.replace(/[^0-9.]/g,'')) || null,
-            buyer_size_from_sf: parseFloat(buyerSizeFrom.replace(/[^0-9.]/g,'')) || null,
-            buyer_size_to_sf: parseFloat(buyerSizeTo.replace(/[^0-9.]/g,'')) || null,
-            buyer_where: buyerWhere || null,
-            buyer_funding: buyerFunding || null,
-            buyer_1031: buyer1031 || null,
-            buyer_1031_clock: buyer1031Clock || null,
-            buyer_1031_relinquished: buyer1031RelinquishedDate || null,
-            asking_price: parseFloat(buyerOfferAsking.replace(/[^0-9.]/g,'')) || null,
-            sqft: parseFloat(buyerOfferBuildingSf.replace(/[^0-9.]/g,'')) || null,
-            offer_price: offerPriceNum,
-            offer_date: buyerOfferDate || null,
-            offer_status: buyerOfferStatus || null,
-          })
-        } catch(e) { console.warn('165 buyer econ:', e) }
-        if (buyer1031 === 'YES' && buyer1031Clock === 'STARTED' && buyer1031RelinquishedDate) {
-          const [y, m, d] = buyer1031RelinquishedDate.split('-').map(Number)
-          const base = new Date(y, m - 1, d)
-          const id45 = new Date(base); id45.setDate(id45.getDate() + 45)
-          const cl180 = new Date(base); cl180.setDate(cl180.getDate() + 180)
-          const toISO = (dt: Date) => dt.toISOString().slice(0, 10)
-          await supabase.from('contract_deadlines').insert([
-            { deal_id: newId, label: 'IDENTIFY BY', deadline_date: toISO(id45), deadline_type: '1031', status: 'pending' },
-            { deal_id: newId, label: 'CLOSE BY', deadline_date: toISO(cl180), deadline_type: '1031', status: 'pending' },
-          ])
-        }
+        await writeBuyerEconomics({
+          dealId: newId,
+          listingRate: comm.listingRate,
+          coBrokerSplit: comm.coBrokerSplit,
+          propTypes: buyerPropTypes,
+          priceFrom: buyerPriceFrom,
+          priceTo: buyerPriceTo,
+          sizeFrom: buyerSizeFrom,
+          sizeTo: buyerSizeTo,
+          where: buyerWhere,
+          funding: buyerFunding,
+          exchange1031: buyer1031,
+          clock: buyer1031Clock,
+          relinquished: buyer1031RelinquishedDate,
+          offerAsking: buyerOfferAsking,
+          offerSf: buyerOfferBuildingSf,
+          offerPrice: buyerOfferPrice,
+          offerDate: buyerOfferDate,
+          offerStatus: buyerOfferStatus,
+          offerAddr: buyerOfferAddr,
+        })
+        await writeBuyer1031Deadlines(newId, buyer1031, buyer1031Clock, buyer1031RelinquishedDate)
       }
       if (deadlineWhat && deadlineWhen) {
         await supabase.from('contract_deadlines').insert({
@@ -2541,6 +2651,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       router.push('/warroom/deal/?id=' + newId)
     } catch (err) {
       console.error('Save error:', err)
+      setSaveError(saveErrorMessage(err))
       setSaving(false)
     }
   }, [saving, allMet, engagement, title, addr, propType, saleOn, leaseOn, clientId,
@@ -2548,7 +2659,7 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
     saleEcon, leaseEcon, comm, lacdbUrl, dropboxLink, deadlineWhat, deadlineWhen, leaseTermMo, mainImageFile, router, editId,
     buyerPropTypes, buyerPriceFrom, buyerPriceTo, buyerSizeFrom, buyerSizeTo, buyerWhere, buyerFunding,
     buyer1031, buyer1031Clock, buyer1031RelinquishedDate, buyerOfferPrice, buyerOfferAsking,
-    buyerOfferBuildingSf, buyerOfferDate, buyerOfferStatus])
+    buyerOfferBuildingSf, buyerOfferDate, buyerOfferStatus, buyerOfferAddr])
 
   useEffect(() => { saveCallbackRef.current = handleSave }, [handleSave, saveCallbackRef])
 
@@ -2569,6 +2680,16 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
         }}>
           {/* FORM COLUMN */}
           <div style={{ width: 1356, flexShrink: 0, minWidth: 0 }}>
+            {saveError && (
+              <div style={{
+                marginBottom: 14, padding: '12px 16px', borderRadius: 10,
+                border: '1px solid rgba(255,77,77,0.45)',
+                background: 'rgba(255,77,77,0.08)',
+                fontFamily: FONT_MONO, fontSize: 12, color: '#FF4D4D', lineHeight: 1.45,
+              }}>
+                {saveError}
+              </div>
+            )}
             <div style={{
               background: C.bgPanel, border: `1px solid ${C.borderPanel}`, borderRadius: 14,
               overflow: 'hidden',

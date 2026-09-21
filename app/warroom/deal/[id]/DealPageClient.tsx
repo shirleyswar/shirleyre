@@ -103,6 +103,20 @@ function Panel({
   )
 }
 
+function CriteriaRows({ rows }: { rows: { label: string; value: string }[] }) {
+  if (rows.length === 0) return null
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 22px', padding: '0 18px 18px' }}>
+      {rows.map(r => (
+        <div key={r.label} style={{ minWidth: 0 }}>
+          <div style={{ ...STYLE_LABEL, fontSize: 9, marginBottom: 6 }}>{r.label}</div>
+          <div style={{ fontFamily: FONT_DISPLAY, fontSize: 16, fontWeight: 500, color: T.textHi, lineHeight: 1.3, overflowWrap: 'anywhere' }}>{r.value}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function EmptyState({ text }: { text: string }) {
   return (
     <div style={{
@@ -131,6 +145,7 @@ interface DealData {
   addr_city?: string | null
   addr_zip?: string | null
   status: string
+  type?: string | null
   property_type: string | null
   dropbox_link?: string | null
   representation_role?: string | null
@@ -148,6 +163,20 @@ interface DealEcon {
   lease_rate_psf: number | null
   lease_term_years: number | null
   nnn_psf: number | null
+  buyer_prop_types?: string | null
+  buyer_price_from?: number | null
+  buyer_price_to?: number | null
+  buyer_size_from_sf?: number | null
+  buyer_size_to_sf?: number | null
+  buyer_where?: string | null
+  buyer_funding?: string | null
+  buyer_1031?: string | null
+  buyer_1031_clock?: string | null
+  buyer_1031_relinquished?: string | null
+  offer_price?: number | null
+  offer_date?: string | null
+  offer_status?: string | null
+  offer_addr_display?: string | null
 }
 
 interface ContactRow {
@@ -195,6 +224,22 @@ function fmtAcres(n: number | null | undefined): string {
 function fmtPSF(price: number | null | undefined, sf: number | null | undefined): string {
   if (!price || !sf) return ''
   return `$${(price / sf).toFixed(2)}/SF`
+}
+
+function fmtDateOnly(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
+  if (!y || !m || !d) return iso
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${months[m - 1]} ${d} ${y}`
+}
+
+function addCalendarDays(iso: string, days: number): string {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + days)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${months[dt.getMonth()]} ${dt.getDate()} ${dt.getFullYear()}`
 }
 
 function fmtDate(iso: string): string {
@@ -351,16 +396,27 @@ function DealPageClientInner({ id }: { id: string }) {
       try {
         const { data: dealData, error: dealErr } = await supabase
           .from('deals')
-          .select('id,name,address,addr_display,addr_street_name,addr_street_type,addr_direction,addr_number,addr_city,status,property_type,dropbox_link,representation_role')
+          .select('id,name,address,addr_display,addr_street_name,addr_street_type,addr_direction,addr_number,addr_city,status,type,property_type,dropbox_link,representation_role')
           .eq('id', dealId)
           .single()
         if (dealErr || !dealData) { setError(true); setLoading(false); return }
 
-        const { data: econData } = await supabase
+        const baseEconCols = 'transaction_type,asking_price,sqft,land_sqft,sale_commission_pct,lease_commission_pct,lease_rate_psf,lease_term_years,nnn_psf'
+        const buyerEconCols = 'buyer_prop_types,buyer_price_from,buyer_price_to,buyer_size_from_sf,buyer_size_to_sf,buyer_where,buyer_funding,buyer_1031,buyer_1031_clock,buyer_1031_relinquished,offer_price,offer_date,offer_status,offer_addr_display'
+        let econRes = await supabase
           .from('deal_economics')
-          .select('transaction_type,asking_price,sqft,land_sqft,sale_commission_pct,lease_commission_pct,lease_rate_psf,lease_term_years,nnn_psf')
+          .select(`${baseEconCols},${buyerEconCols}`)
           .eq('deal_id', dealId)
           .maybeSingle()
+        if (econRes.error && /column|schema cache/i.test(econRes.error.message ?? '')) {
+          econRes = await supabase
+            .from('deal_economics')
+            .select(baseEconCols)
+            .eq('deal_id', dealId)
+            .maybeSingle()
+        }
+        if (econRes.error) console.error('deal_economics:', econRes.error.message)
+        const econData = econRes.data
 
         const { data: contactData } = await supabase
           .from('deal_contacts')
@@ -497,6 +553,16 @@ function DealPageClientInner({ id }: { id: string }) {
 
   // DP-1: Commission rate chain
   const { listRate, coBroker, estComm, derivation } = calcCommissionChain(econ)
+  const isBuyer = (deal.type ?? '').toLowerCase() === 'buyer'
+    || (deal.representation_role ?? '').toLowerCase() === 'buyer'
+    || txType === 'buyer'
+  // Same formula as the create form: offer × 6% × 50% × 75%. Asking price is the listing base.
+  const buyerEstComm = isBuyer && econ?.offer_price != null
+    ? Math.round(econ.offer_price * (listRate / 100) * coBroker * HOUSE_SPLIT)
+    : null
+  const buyerDerivation = isBuyer && econ?.offer_price != null
+    ? `$${econ.offer_price.toLocaleString()} × ${listRate.toFixed(2)}% × ${Math.round(coBroker * 100)}% × ${Math.round(HOUSE_SPLIT * 100)}%`
+    : null
 
   // Glance strip
   type GlanceCell = { label: string; value: string; glow?: boolean }
@@ -531,8 +597,46 @@ function DealPageClientInner({ id }: { id: string }) {
     ...(showContractSlot ? [{ label: contractLabel, value: contractFigure }] : []),
   ]
 
-  const glanceCells = isLease ? glanceLease : glanceSale
+  const glanceBuyer: GlanceCell[] = [
+    ...(econ?.buyer_price_from != null ? [{ label: 'Price from', value: fmt(econ.buyer_price_from) }] : []),
+    ...(econ?.buyer_price_to != null ? [{ label: 'Price to', value: fmt(econ.buyer_price_to) }] : []),
+    ...(econ?.buyer_where ? [{ label: 'Where', value: econ.buyer_where }] : []),
+    ...(econ?.offer_price != null ? [{ label: 'Offer', value: fmt(econ.offer_price) }] : []),
+    ...(buyerEstComm != null ? [{ label: 'Est. commission if bought', value: `$${buyerEstComm.toLocaleString()}`, glow: true }] : []),
+  ]
+
+  const glanceCells = isBuyer ? glanceBuyer : (isLease ? glanceLease : glanceSale)
   const visibleCells = glanceCells.filter(c => c.value !== '')
+
+  const buyerCriteriaRows: { label: string; value: string }[] = []
+  const buyerOfferRows: { label: string; value: string }[] = []
+  if (isBuyer && econ) {
+    if (econ.buyer_prop_types) buyerCriteriaRows.push({ label: 'Property type', value: econ.buyer_prop_types.split(',').filter(Boolean).join(' · ') })
+    if (econ.buyer_price_from != null) buyerCriteriaRows.push({ label: 'Price from', value: fmt(econ.buyer_price_from) })
+    if (econ.buyer_price_to != null) buyerCriteriaRows.push({ label: 'Price to', value: fmt(econ.buyer_price_to) })
+    if (econ.buyer_size_from_sf != null) buyerCriteriaRows.push({ label: 'Size from', value: fmtSF(econ.buyer_size_from_sf) })
+    if (econ.buyer_size_to_sf != null) buyerCriteriaRows.push({ label: 'Size to', value: fmtSF(econ.buyer_size_to_sf) })
+    if (econ.buyer_where) buyerCriteriaRows.push({ label: 'Where', value: econ.buyer_where })
+    if (econ.buyer_funding) buyerCriteriaRows.push({ label: 'Funding', value: econ.buyer_funding })
+    if (econ.buyer_1031) buyerCriteriaRows.push({ label: '1031 exchange', value: econ.buyer_1031 })
+    if (econ.buyer_1031_clock) {
+      buyerCriteriaRows.push({
+        label: 'The clock',
+        value: econ.buyer_1031_clock === 'NOT_STARTED' ? 'NOT STARTED' : econ.buyer_1031_clock === 'STARTED' ? 'STARTED' : econ.buyer_1031_clock,
+      })
+    }
+    if (econ.buyer_1031_relinquished) buyerCriteriaRows.push({ label: 'Relinquished closed', value: fmtDateOnly(econ.buyer_1031_relinquished) })
+    if (econ.buyer_1031 === 'YES' && econ.buyer_1031_clock === 'STARTED' && econ.buyer_1031_relinquished) {
+      buyerCriteriaRows.push({ label: 'Identify by', value: addCalendarDays(econ.buyer_1031_relinquished, 45) })
+      buyerCriteriaRows.push({ label: 'Close by', value: addCalendarDays(econ.buyer_1031_relinquished, 180) })
+    }
+    if (econ.offer_addr_display) buyerOfferRows.push({ label: 'Address', value: econ.offer_addr_display })
+    if (econ.asking_price != null) buyerOfferRows.push({ label: 'Asking price', value: fmt(econ.asking_price) })
+    if (econ.sqft != null) buyerOfferRows.push({ label: 'Building SF', value: fmtSF(econ.sqft) })
+    if (econ.offer_price != null) buyerOfferRows.push({ label: 'Offer price', value: fmt(econ.offer_price) })
+    if (econ.offer_date) buyerOfferRows.push({ label: 'Offer date', value: fmtDateOnly(econ.offer_date) })
+    if (econ.offer_status) buyerOfferRows.push({ label: 'Status', value: econ.offer_status })
+  }
 
   return (
     <div style={{ background: T.bgBase, minHeight: '100vh', fontFamily: FONT_DISPLAY }}>
@@ -726,6 +830,17 @@ function DealPageClientInner({ id }: { id: string }) {
         {/* ── LEFT COLUMN ─────────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
+          {buyerCriteriaRows.length > 0 && (
+            <Panel label="WHAT HE IS BUYING">
+              <CriteriaRows rows={buyerCriteriaRows} />
+            </Panel>
+          )}
+          {buyerOfferRows.length > 0 && (
+            <Panel label="PROPERTY UNDER OFFER">
+              <CriteriaRows rows={buyerOfferRows} />
+            </Panel>
+          )}
+
           {/* PHOTO */}
           <Panel label="PHOTO">
             <div
@@ -868,18 +983,18 @@ function DealPageClientInner({ id }: { id: string }) {
                     {/* Hairline */}
                     <div style={{ height: 1, background: 'rgba(255,255,255,0.14)', margin: '4px 0' }} />
 
-                    {/* EST. COMMISSION */}
+                    {/* EST. COMMISSION — buyer uses offer × rate × co-broker × 0.75 */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ ...STYLE_LABEL, fontSize: 9 }}>EST. COMMISSION</span>
+                      <span style={{ ...STYLE_LABEL, fontSize: 9 }}>{isBuyer ? 'EST. COMMISSION IF BOUGHT' : 'EST. COMMISSION'}</span>
                       <span style={{ fontFamily: FONT_MONO, fontSize: 18, fontWeight: 700, color: T.moneyIn, fontVariantNumeric: 'tabular-nums' }}>
-                        {estComm != null ? `$${estComm.toLocaleString()}` : '—'}
+                        {(isBuyer ? buyerEstComm : estComm) != null ? `$${((isBuyer ? buyerEstComm : estComm) as number).toLocaleString()}` : '—'}
                       </span>
                     </div>
 
                     {/* Derivation line */}
-                    {derivation && (
+                    {(isBuyer ? buyerDerivation : derivation) && (
                       <div style={{ fontFamily: FONT_MONO, fontSize: 9, color: T.textLow, letterSpacing: '0.06em', lineHeight: 1.4 }}>
-                        {derivation}
+                        {isBuyer ? buyerDerivation : derivation}
                       </div>
                     )}
                   </div>
