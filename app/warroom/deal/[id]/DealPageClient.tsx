@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { formatDealTitle, editNamePrefill, parseListingFilingName, formatListingFilingName } from '@/lib/formatAddress'
+import { formatDealTitle, parseListingFilingName, formatListingFilingName, canonicalizeFilingSlots } from '@/lib/formatAddress'
 import { dealPhotoPublicUrl, uploadDealPhoto } from '@/lib/dealPhoto'
 import { HOUSE_SPLIT } from '@/lib/dealMath'
 import LaunchControl from './LaunchControl'
@@ -487,11 +487,12 @@ function DealPageClientInner({ id }: { id: string }) {
     const trimmed = editName.trim()
     const parsed = parseListingFilingName(trimmed)
     if (parsed) {
-      const filing = formatListingFilingName(parsed.street, parsed.cardinal, parsed.number)
+      const slots = canonicalizeFilingSlots(parsed.street, parsed.cardinal, parsed.number)
+      const filing = formatListingFilingName(slots.street, slots.cardinal, slots.number)
       updates.name = filing
-      updates.addr_street_name = parsed.street || null
-      updates.addr_direction = parsed.cardinal || null
-      updates.addr_number = parsed.number || null
+      updates.addr_street_name = slots.street || null
+      updates.addr_direction = slots.cardinal || null
+      updates.addr_number = slots.number || null
       updates.addr_display = filing
     } else if (trimmed) {
       updates.name = trimmed
@@ -774,7 +775,7 @@ function DealPageClientInner({ id }: { id: string }) {
           <div style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500, letterSpacing: '0.42em', paddingLeft: '0.42em', color: '#FF4D4D' }}>DELETE DEAL</div>
           <div style={{ height: 36 }} />
           <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 500, color: T.textHi, textAlign: 'center', maxWidth: 700 }}>
-            {deal?.addr_display || deal?.name || '—'}
+            {shortAddr || '—'}
           </div>
           <div style={{ height: 10 }} />
           <div style={{ fontFamily: FONT_MONO, fontSize: 11.5, fontWeight: 500, letterSpacing: '0.14em', color: T.textLow }}>

@@ -111,14 +111,14 @@ async function loadHomeData(): Promise<{
   const [tasksRes, deadlinesRes, mmRes, ucRes, allDealsRes] = await Promise.allSettled([
     supabase
       .from('tasks')
-      .select('id, title, due_date, status, deal_id, deals(name, address, addr_display, addr_street_name, addr_number, addr_city)')
+      .select('id, title, due_date, status, deal_id, deals(name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city)')
       .eq('status', 'open')
       .is('deleted_at', null)
       .order('created_at', { ascending: true })
       .limit(200),
     supabase
       .from('contract_deadlines')
-      .select('id, deadline_type, deadline_date, status, deals(name, address, addr_display, addr_street_name, addr_number, addr_city)')
+      .select('id, deadline_type, deadline_date, status, deals(name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city)')
       .in('status', ['pending', 'extended', 'missed'])
       .order('deadline_date', { ascending: true })
       .limit(100),

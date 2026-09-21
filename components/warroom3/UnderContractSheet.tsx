@@ -73,7 +73,7 @@ export default function UnderContractSheet({ open, onClose }: { open: boolean; o
     try {
       const { data, error } = await supabase
         .from('deals')
-        .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, updated_at')
+        .select('id, name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city, updated_at')
         .eq('status', 'under_contract')
         .order('updated_at', { ascending: false })
       if (error) { setLoadError(true); setLoading(false); return }

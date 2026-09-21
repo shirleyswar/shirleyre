@@ -123,7 +123,7 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
         const [dealsRes, portfoliosRes] = await Promise.all([
           supabase
             .from('deals')
-            .select('id, status, name, address, addr_display, addr_street_name, addr_number, addr_city, updated_at, property_type, portfolio_id')
+            .select('id, status, name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city, updated_at, property_type, portfolio_id')
             .limit(300),
           supabase
             .from('portfolio')

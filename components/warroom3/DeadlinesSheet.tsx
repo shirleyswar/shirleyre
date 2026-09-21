@@ -511,7 +511,7 @@ export default function DeadlinesSheet({
       if (dealIds.length > 0) {
         const { data: dealData } = await supabase
           .from('deals')
-          .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city')
+          .select('id, name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city')
           .in('id', dealIds)
         if (dealData) {
           (dealData as any[]).forEach((d: any) => {

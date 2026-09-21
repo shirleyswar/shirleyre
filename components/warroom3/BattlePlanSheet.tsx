@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { formatAddress } from '@/lib/formatAddress'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import ListRow from '@/components/warroom3/ListRow'
 
@@ -64,7 +65,7 @@ interface Task {
   entity_id: string | null  // CODE: task.entity_id FK added — nullable, beside is_life|is_entity
   sort_order: number | null
   created_at: string
-  deals?: { name?: string; address?: string; addr_display?: string | null; addr_street_name?: string | null; addr_number?: string | null; addr_city?: string | null } | null
+  deals?: { name?: string; address?: string; addr_display?: string | null; addr_street_name?: string | null; addr_direction?: string | null; addr_number?: string | null; addr_city?: string | null } | null
   entities?: { name?: string } | null  // joined from entity_id FK
 }
 
@@ -141,7 +142,7 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
       try {
         const { data, error } = await supabase
           .from('tasks')
-          .select('id, title, status, due_date, deal_id, is_life, is_entity, entity_id, sort_order, created_at, deals(name, address, addr_display, addr_street_name, addr_number, addr_city), entities(name)')
+          .select('id, title, status, due_date, deal_id, is_life, is_entity, entity_id, sort_order, created_at, deals(name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city), entities(name)')
           .eq('status', 'open')  // tasks table: 'open' and 'complete' only
           .is('deleted_at', null)
           .order('created_at', { ascending: true })
@@ -323,7 +324,7 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
             {completionBar.title}
           </div>
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11.5, fontWeight:400, color:'#8E8CA0', marginTop:3 }}>
-            Completed · {completionBar.is_life ? 'Life' : (completionBar.deals ? ((completionBar.deals as any).addr_display || (completionBar.deals as any).addr_street_name || (completionBar.deals as any).name || '') : (completionBar.is_entity ? 'Entity' : 'Battle Plan'))}
+            Completed · {completionBar.is_life ? 'Life' : (completionBar.deals ? (formatAddress(completionBar.deals) || (completionBar.deals as any).name || '') : (completionBar.is_entity ? 'Entity' : 'Battle Plan'))}
           </div>
         </div>
         <button

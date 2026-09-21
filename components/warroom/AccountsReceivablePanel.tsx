@@ -105,7 +105,7 @@ export default function AccountsReceivablePanel({ refreshKey }: { refreshKey?: n
     try {
       const { data, error } = await supabase
         .from('ar_items')
-        .select('id, deal_id, invoice_number, deal_type, commission_amount, sr_portion_amount, paid_to_date, deposit_retainage, reimbursable_amount, status, collected_date, created_at, deals(id, name, address, addr_display, addr_street_name, addr_number, addr_city)')
+        .select('id, deal_id, invoice_number, deal_type, commission_amount, sr_portion_amount, paid_to_date, deposit_retainage, reimbursable_amount, status, collected_date, created_at, deals(id, name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city)')
         .order('created_at', { ascending: false })
 
       if (error) {
