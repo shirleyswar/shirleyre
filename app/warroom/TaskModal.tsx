@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { formatAddress } from '@/lib/formatAddress'
 import { isTaskStaged, TaskStagingState } from '@/lib/taskStagingPredicate'
 import {
   DS0, DS2, DS4, DS5, DS6,
@@ -57,6 +58,7 @@ export interface Task {
     address?: string
     addr_display?: string | null
     addr_street_name?: string | null
+    addr_direction?: string | null
     addr_number?: string | null
     addr_city?: string | null
   } | null
@@ -528,13 +530,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
   function dealAddr(): string {
     const d = task.deals
     if (!d) return ''
-    if (d.addr_display) return d.addr_display
-    if (d.addr_street_name) {
-      const parts: string[] = [d.addr_street_name]
-      if (d.addr_city && d.addr_city !== 'Baton Rouge') parts.push('·', d.addr_city)
-      if (d.addr_number) parts.push(d.addr_number)
-      return parts.join(' ')
-    }
+    const formatted = formatAddress(d)
+    if (formatted && formatted !== '—') return formatted
     return d.name ?? ''
   }
 

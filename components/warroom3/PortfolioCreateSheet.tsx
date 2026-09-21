@@ -104,7 +104,7 @@ export default function PortfolioCreateSheet({ open, onClose, onCreated }: Portf
     setLoading(true)
     const { data } = await supabase
       .from('deals')
-      .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, portfolio_id, portfolio:portfolio_id(name)')
+      .select('id, name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city, status, portfolio_id, portfolio:portfolio_id(name)')
       .order('address', { ascending: true })
       .limit(200)
     setDeals((data ?? []) as unknown as Deal[])

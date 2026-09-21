@@ -10,7 +10,7 @@ import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react
 import { useRouter, useSearchParams } from 'next/navigation'
 import PinGate from '@/components/warroom/PinGate'
 import { supabase } from '@/lib/supabase'
-import { formatListingFilingName, spokenFilingDisplay } from '@/lib/formatAddress'
+import { canonicalizeFilingSlots, filingSlotsFromPlaceRoute, formatListingFilingName, parseStreetLine } from '@/lib/formatAddress'
 import { uploadDealPhoto } from '@/lib/dealPhoto'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -378,8 +378,6 @@ function EngagementSegment({ value, onChange }: { value: Engagement; onChange: (
 }
 
 // ── Address ───────────────────────────────────────────────────────────────────
-const DIRECTIONS = ['NE','NW','SE','SW','N','S','E','W']
-
 interface AddrState {
   raw: string; confirmed: boolean
   addrDisplay: string; addrStreetName: string
@@ -393,19 +391,6 @@ function emptyAddr(): AddrState {
     addrDisplay: '', addrStreetName: '', addrDirection: '', addrNumber: '',
     addrCity: 'Baton Rouge', addrState: 'LA', addrZip: '',
   }
-}
-
-function parseStreetTokens(streetLine: string) {
-  const tokens = streetLine.trim().split(/\s+/).filter(Boolean)
-  let addrNumber = ''; let addrDirection = ''
-  const street: string[] = []
-  for (const tok of tokens) {
-    const up = tok.replace(/\.+$/, '').toUpperCase()
-    if (!addrNumber && /^\d+[A-Za-z]?$/.test(tok)) { addrNumber = tok }
-    else if (!addrDirection && DIRECTIONS.includes(up)) { addrDirection = up }
-    else { street.push(tok) }
-  }
-  return { addrNumber, addrDirection, addrStreetName: street.join(' ') }
 }
 
 /** CONFIRM path: street tokens plus city/state/ZIP when the raw string is a full address. */
@@ -431,9 +416,11 @@ function parseAddr(raw: string) {
     }
   }
 
-  const parsed = parseStreetTokens(streetLine)
+  const parsed = parseStreetLine(streetLine)
   return {
-    ...parsed,
+    addrNumber: parsed.number,
+    addrDirection: parsed.cardinal,
+    addrStreetName: parsed.street,
     addrCity,
     addrState,
     addrZip,
@@ -447,8 +434,13 @@ function cleanCardinal(raw: string | null | undefined): string {
   return c
 }
 
+function filingSlotsOf(addr: AddrState) {
+  return canonicalizeFilingSlots(addr.addrStreetName, cleanCardinal(addr.addrDirection), addr.addrNumber)
+}
+
 function listingFilingName(addr: AddrState): string {
-  return formatListingFilingName(addr.addrStreetName, cleanCardinal(addr.addrDirection), addr.addrNumber)
+  const slots = filingSlotsOf(addr)
+  return formatListingFilingName(slots.street, slots.cardinal, slots.number)
     || addr.addrDisplay
     || addr.raw.trim()
 }
@@ -462,7 +454,8 @@ function buildDealInsertRow(
   dropboxLink: string,
 ) {
   const isTitleEngagement = engagement === 'TENANT' || engagement === 'BUYER'
-  const filing = listingFilingName(addr)
+  const slots = filingSlotsOf(addr)
+  const filing = formatListingFilingName(slots.street, slots.cardinal, slots.number) || addr.addrDisplay || addr.raw.trim()
   const dealName = isTitleEngagement ? title.trim() : filing
   const roleMap: Record<Engagement, string | null> = {
     LISTING: 'landlord', TENANT: 'tenant', BUYER: 'buyer', TARGET: null,
@@ -470,9 +463,9 @@ function buildDealInsertRow(
   return {
     name: dealName,
     address: addr.addrDisplay || addr.raw.trim() || null,
-    addr_street_name: addr.addrStreetName || null,
-    addr_direction: cleanCardinal(addr.addrDirection) || null,
-    addr_number: addr.addrNumber || null,
+    addr_street_name: slots.street || null,
+    addr_direction: slots.cardinal || null,
+    addr_number: slots.number || null,
     addr_city: addr.addrCity || 'Baton Rouge',
     addr_state: addr.addrState || 'LA',
     addr_zip: addr.addrZip || null,
@@ -731,28 +724,24 @@ function getACComponentShort(place: google.maps.places.PlaceResult, type: string
   return comp?.short_name ?? ''
 }
 
-/** Same AddrState fill as the old Autocomplete `place_changed` handler. */
+/** Places Details → STREET / CARDINAL / NUMBER. Direction is peeled off the route. */
 function placeResultToAddrState(place: google.maps.places.PlaceResult): AddrState {
-  const streetNum = getACComponent(place, 'street_number')
-  const route = getACComponent(place, 'route')
+  const slots = filingSlotsFromPlaceRoute({
+    routeLong: getACComponent(place, 'route'),
+    routeShort: getACComponentShort(place, 'route'),
+    streetNumber: getACComponent(place, 'street_number'),
+    formattedAddress: place.formatted_address,
+  })
   const city = getACComponent(place, 'locality') || 'Baton Rouge'
   const state = getACComponentShort(place, 'administrative_area_level_1')
   const zip = getACComponent(place, 'postal_code')
-  const routeTokens = route.split(/\s+/)
-  let addrDirection = ''
-  const streetParts: string[] = []
-  for (const tok of routeTokens) {
-    const up = tok.replace(/\.+$/, '').toUpperCase()
-    if (!addrDirection && DIRECTIONS.includes(up)) { addrDirection = up }
-    else { streetParts.push(tok) }
-  }
   return {
-    raw: place.formatted_address ?? route,
+    raw: place.formatted_address ?? slots.street,
     confirmed: true,
     addrDisplay: place.formatted_address ?? '',
-    addrStreetName: streetParts.join(' ') || route,
-    addrDirection,
-    addrNumber: streetNum,
+    addrStreetName: slots.street,
+    addrDirection: slots.cardinal,
+    addrNumber: slots.number,
     addrCity: city || 'Baton Rouge',
     addrState: state || 'LA',
     addrZip: zip || '',
@@ -957,7 +946,8 @@ function AddressBlock({ addr, onChange, optional }: {
   }
 
   if (addr.confirmed) {
-    const shortForm = listingFilingName(addr)
+    const slots = filingSlotsOf(addr)
+    const shortForm = formatListingFilingName(slots.street, slots.cardinal, slots.number) || addr.addrDisplay
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <FieldLabel text={optional ? 'ADDRESS (OPTIONAL)' : 'ADDRESS'} />
@@ -974,15 +964,15 @@ function AddressBlock({ addr, onChange, optional }: {
           <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>STREET</span>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrStreetName || ''}</span>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{slots.street}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>CARDINAL</span>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{cleanCardinal(addr.addrDirection)}</span>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{slots.cardinal}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.textLow, letterSpacing: '0.18em' }}>NUMBER</span>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{addr.addrNumber || ''}</span>
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: C.textMid }}>{slots.number}</span>
             </div>
           </div>
           <button onClick={reopen} style={{
@@ -2314,18 +2304,22 @@ function NewDealFormWithHeader({ onAllMetChange, onSavingChange, saveCallbackRef
       // Prefill title (for tenant/buyer)
       if (deal.name) setTitle(deal.name)
       // Prefill address (including zip — 156C.2)
-      // 158C.1: use spoken filing format for raw so user sees "Cabela's Pkwy. S. 2703", not stored wrong form
-      if (deal.addr_display || deal.addr_street_name) {
-        const cleanDir = cleanCardinal(deal.addr_direction)
-        const spokenRaw = spokenFilingDisplay(deal.addr_street_name, cleanDir, deal.addr_number)
+      // Slots are canonical before the user confirms, so EDIT save cannot
+      // write a direction that is still glued onto STREET.
+      if (deal.addr_display || deal.addr_street_name || deal.addr_number) {
+        let slots = canonicalizeFilingSlots(deal.addr_street_name, deal.addr_direction, deal.addr_number)
+        if (!slots.street && !slots.number && deal.addr_display) {
+          slots = parseStreetLine(String(deal.addr_display).split(',')[0] ?? '')
+        }
+        const spokenRaw = formatListingFilingName(slots.street, slots.cardinal, slots.number)
           || deal.addr_display || deal.addr_street_name || ''
         setAddr({
           raw: spokenRaw,
           confirmed: false,
-          addrDisplay: deal.addr_display || '',
-          addrStreetName: deal.addr_street_name || '',
-          addrDirection: cleanDir,
-          addrNumber: deal.addr_number || '',
+          addrDisplay: spokenRaw || deal.addr_display || '',
+          addrStreetName: slots.street,
+          addrDirection: slots.cardinal,
+          addrNumber: slots.number,
           addrCity: deal.addr_city || 'Baton Rouge',
           addrState: (deal as any).addr_state || 'LA',
           addrZip: (deal as any).addr_zip || '',

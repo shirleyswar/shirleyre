@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation'
 import PinGate from '@/components/warroom/PinGate'
 import TaskModal from '@/app/warroom/TaskModal'
 import { supabase } from '@/lib/supabase'
+import { formatAddress } from '@/lib/formatAddress'
 import {
   DS1, DS2, DS3, DS4, DS5, DS6, DS7, DS8,
   DT1, DT2, DT3, DT4, DT5, DT7, DT8,
@@ -91,6 +92,7 @@ interface Deal {
   address: string | null
   addr_display: string | null
   addr_street_name: string | null
+  addr_direction?: string | null
   addr_number: string | null
   addr_city: string | null
   status: string
@@ -128,14 +130,8 @@ function clientName(d: Deal): string {
   return d.deal_contacts?.[0]?.contacts?.name ?? '—'
 }
 function shortAddr(d: Deal): string {
-  if (d.addr_display) return d.addr_display
-  if (d.addr_street_name) {
-    const parts: string[] = [d.addr_street_name]
-    if (d.addr_city && d.addr_city !== 'Baton Rouge') parts.push('·', d.addr_city)
-    if (d.addr_number) parts.push(d.addr_number)
-    return parts.join(' ')
-  }
-  return d.name
+  const formatted = formatAddress(d)
+  return formatted === '—' ? d.name : formatted
 }
 
 function fmtDate(d: string | null): string {
@@ -1162,7 +1158,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
 
       const { data: dealDetails } = await supabase
         .from('deals')
-        .select('id, name, addr_display, addr_street_name, addr_number, deal_contacts(contacts(name))')
+        .select('id, name, addr_display, addr_street_name, addr_direction, addr_number, deal_contacts(contacts(name))')
         .in('id', dealIds)
       const dmap: Record<string, any> = {}
       ;(dealDetails ?? []).forEach((d: any) => { dmap[d.id] = d })
@@ -1321,7 +1317,7 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
     async function load() {
       const { data } = await supabase
         .from('deals')
-        .select('id, name, address, addr_display, addr_street_name, addr_number, addr_city, status, commission_estimated, deal_contacts(contacts(name))')
+        .select('id, name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city, status, commission_estimated, deal_contacts(contacts(name))')
         .eq('status', 'under_contract')
         .order('created_at', { ascending: true })
         .limit(30)
