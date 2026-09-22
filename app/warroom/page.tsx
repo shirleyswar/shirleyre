@@ -265,13 +265,15 @@ function usePanelBodyScroll(itemCount: number, layoutKey: number) {
 
   return {
     ref,
+    // Same scrollport class as Battle Plan. Carries the thin dark
+    // ::-webkit-scrollbar rules. Leave scrollbar-width / scrollbar-color unset.
+    className: 'wr-home-scroll',
     style: {
       flex: snapPx == null ? 1 : undefined,
       height: snapPx,
       minHeight: 0,
       overflowY: 'auto' as const,
       overflowX: 'hidden' as const,
-      scrollbarWidth: 'thin' as const,
       scrollSnapType: 'y proximity' as const,
     } as React.CSSProperties,
   }
@@ -634,6 +636,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <div
           ref={scrollRef}
+          className="wr-home-scroll"
           style={{ height: '100%', overflowY: 'auto', padding: '4px 0 14px' }}
         >
           {loading ? (
@@ -1308,7 +1311,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
   const mmCount = enriched.length
 
   // WARROOM-169C: all rows render; panel body snaps to whole rows and scrolls.
-  const { ref: listRef, style: listStyle } = usePanelBodyScroll(loading ? 0 : enriched.length, panelHeight ?? 0)
+  const { ref: listRef, className: listClass, style: listStyle } = usePanelBodyScroll(loading ? 0 : enriched.length, panelHeight ?? 0)
 
   const h = panelHeight ? panelHeight : undefined
 
@@ -1337,7 +1340,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
         <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
         <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
       </div>
-      <div ref={listRef} data-wr-panel-scroll="" style={listStyle}>
+      <div ref={listRef} className={listClass} data-wr-panel-scroll="" style={listStyle}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
         ) : enriched.length === 0 ? (
@@ -1471,7 +1474,7 @@ function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChan
   }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // WARROOM-169C: all rows render; panel body snaps to whole rows and scrolls.
-  const { ref: listRef, style: listStyle } = usePanelBodyScroll(loading ? 0 : deals.length, panelHeight ?? 0)
+  const { ref: listRef, className: listClass, style: listStyle } = usePanelBodyScroll(loading ? 0 : deals.length, panelHeight ?? 0)
 
   // Check 36: earliest upcoming closing date for header
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
@@ -1502,7 +1505,7 @@ function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChan
         <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
         <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
       </div>
-      <div ref={listRef} data-wr-panel-scroll="" style={listStyle}>
+      <div ref={listRef} className={listClass} data-wr-panel-scroll="" style={listStyle}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
         ) : deals.length === 0 ? (
@@ -1742,7 +1745,7 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onC
   const allEvents = [...todays, ...tomorrows]
 
   // WARROOM-169C: all rows render; panel body snaps to whole rows and scrolls.
-  const { ref: listRef, style: listStyle } = usePanelBodyScroll(loading ? 0 : allEvents.length, panelHeight ?? 0)
+  const { ref: listRef, className: listClass, style: listStyle } = usePanelBodyScroll(loading ? 0 : allEvents.length, panelHeight ?? 0)
 
   function fmt12(t: string | null): { time: string; ampm: string } {
     if (!t) return { time: '—', ampm: '' }
@@ -1804,7 +1807,7 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onC
         </div>
       </div>
 
-      <div ref={listRef} data-wr-panel-scroll="" style={listStyle}>
+      <div ref={listRef} className={listClass} data-wr-panel-scroll="" style={listStyle}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
         ) : allEvents.length === 0 ? (
@@ -1885,7 +1888,7 @@ function DuePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onCountC
   const pastDueCount = pastDue.length
 
   // WARROOM-169C: all rows render; panel body snaps to whole rows and scrolls.
-  const { ref: listRef, style: listStyle } = usePanelBodyScroll(loading ? 0 : deadlines.length, panelHeight ?? 0)
+  const { ref: listRef, className: listClass, style: listStyle } = usePanelBodyScroll(loading ? 0 : deadlines.length, panelHeight ?? 0)
 
   const h = panelHeight ? panelHeight : undefined
 
@@ -1912,7 +1915,7 @@ function DuePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onCountC
         </div>
       </div>
 
-      <div ref={listRef} data-wr-panel-scroll="" style={listStyle}>
+      <div ref={listRef} className={listClass} data-wr-panel-scroll="" style={listStyle}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
         ) : deadlines.length === 0 ? (

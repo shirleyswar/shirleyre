@@ -164,15 +164,25 @@ html, body {
 }
 
 /* ─── SCROLLBARS ─────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 5px; }
-::-webkit-scrollbar-thumb {
+/* .wr-home-scroll is the shared HOME list scrollport: Battle Plan and the
+   WARROOM-169C panel bodies (Money Movers, Under Contract, Schedule,
+   Deadlines). Same rules, one declaration.
+   Do not set scrollbar-width or scrollbar-color on these elements.
+   Chromium ignores these pseudos when either property is set and paints
+   the bright system thumb instead (WARROOM-169D). */
+::-webkit-scrollbar,
+.wr-home-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track,
+.wr-home-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 5px; }
+::-webkit-scrollbar-thumb,
+.wr-home-scroll::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.18);
   border-radius: 5px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover,
+.wr-home-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); background-clip: content-box; }
 
 /* ─── CARD — Tier 3 surface with subtle violet luminous edge ──── */
 .wr-card {
