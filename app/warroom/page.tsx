@@ -570,13 +570,8 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
   }
 
   function Group({ label, items, overdue }: { label: string; items: Task[]; overdue?: boolean }) {
-    if (items.length === 0) return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 14px 4px 20px', minHeight: 24 }}>
-        <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>{label}</span>
-        <span style={{ ...DT7 as React.CSSProperties, color: C.textLow }}>· 0</span>
-        <div style={{ flex: 1, height: 1, background: C.borderHair }} />
-      </div>
-    )
+    // WARROOM-170: a bucket with no tasks renders nothing — no label, no count, no spacer.
+    if (items.length === 0) return null
     return (
       <div>
         <div style={{
