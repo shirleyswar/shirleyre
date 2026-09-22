@@ -628,12 +628,13 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
   econMap: Record<string, DealEconomics>
   onClose: () => void
   onCloseAndLog: (mmId: string) => void
-  onNoteAdded: (mmId: string, note: string) => void
+  onNoteAdded: (mmId: string, patch: { note: string | null; note_typed_at: string | null; title: string }) => void
   onDeleteMM: (mmId: string) => void
   onDealLinked?: (mmId: string, dealId: string) => void
 }) {
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [titleValue, setTitleValue] = useState(mm.title)
   const [editingTitle, setEditingTitle] = useState(false)
   // MM-1: delete PIN gate state
@@ -718,27 +719,51 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
     return () => clearTimeout(t)
   }, [linkingDeal, dealQuery])
 
-  async function commitStagedChanges() {
-    if (!staged || saving) return
+  async function commitStagedChanges(): Promise<boolean> {
+    if (!staged || saving) return false
     setSaving(true)
-    const updates: Record<string, any> = {}
-    const hasNote = noteText.trim().length > 0
+    setSaveError(null)
+    const updates: Record<string, string> = {}
+    // Empty and whitespace-only stay empty. The placeholder is not the value.
+    const trimmedNote = noteText.trim()
+    const hasNote = trimmedNote.length > 0
     if (hasNote) {
-      updates.note = noteText.trim()
+      updates.note = trimmedNote
       updates.note_typed_at = new Date().toISOString()
     }
-    const titleChanged = titleValue.trim() !== mm.title
-    if (titleChanged) {
-      updates.title = titleValue.trim() || mm.title
+    const nextTitle = titleValue.trim()
+    if (nextTitle.length > 0 && nextTitle !== mm.title) {
+      updates.title = nextTitle
     }
-    if (Object.keys(updates).length > 0) {
-      await supabase.from('money_movers').update(updates).eq('id', mm.id)
+    if (Object.keys(updates).length === 0) {
+      setSaving(false)
+      return true
     }
-    if (hasNote) {
-      onNoteAdded(mm.id, noteText.trim())
+    const { data, error } = await supabase
+      .from('money_movers')
+      .update(updates)
+      .eq('id', mm.id)
+      .select('id, title, note, note_typed_at')
+      .single()
+    if (error || !data) {
+      setSaving(false)
+      setSaveError(error?.message || 'Could not save note.')
+      return false
     }
+    if (hasNote && (data.note ?? '').trim() !== trimmedNote) {
+      setSaving(false)
+      setSaveError('Note did not save.')
+      return false
+    }
+    onNoteAdded(mm.id, {
+      note: data.note ?? null,
+      note_typed_at: data.note_typed_at ?? null,
+      title: data.title,
+    })
     setNoteText('')
+    setTitleValue(data.title)
     setSaving(false)
+    return true
   }
 
   async function handleConfirm() {
@@ -749,10 +774,15 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
 
   async function handleCloseAndLog() {
     if (staged && !saving) {
-      await commitStagedChanges()
+      const ok = await commitStagedChanges()
+      if (!ok) return
     }
     // Write logged_at timestamp so this appears in LOGS tab
-    await supabase.from('money_movers').update({ logged_at: new Date().toISOString() }).eq('id', mm.id)
+    const { error } = await supabase.from('money_movers').update({ logged_at: new Date().toISOString() }).eq('id', mm.id)
+    if (error) {
+      setSaveError(error.message || 'Could not log this money mover.')
+      return
+    }
     onCloseAndLog(mm.id)
   }
 
@@ -1023,7 +1053,7 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
               <textarea
                 ref={composerRef}
                 value={noteText}
-                onChange={e => setNoteText(e.target.value)}
+                onChange={e => { setNoteText(e.target.value); setSaveError(null) }}
                 placeholder="Add a note…"
                 style={{
                   flex: 'none',
@@ -1048,8 +1078,12 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
 
         {/* Footer */}
         <div style={{ height: 72, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 20px', borderTop: '1px solid rgba(255,255,255,0.11)' }}>
-          <div style={{ flex: 1 }}>
-            {mm.note_typed_at && (
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
+            {saveError ? (
+              <span style={{ fontFamily: FONT_MONO, fontSize: 11.5, letterSpacing: '0.04em', color: '#FF4D4D' }}>
+                {saveError}
+              </span>
+            ) : mm.note_typed_at && (
               <span style={{ fontFamily: FONT_MONO, fontSize: 11.5, letterSpacing: '0.14em', color: '#8E8CA0' }}>
                 {fmtFooterTimestamp()}
               </span>
@@ -1124,7 +1158,9 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
   const [selectedMM, setSelectedMM] = useState<(MoneyMoverRow & { _commission: number | null; _dealValue: number | null }) | null>(null)
 
   async function loadData() {
-    // Try with note columns first (D4.2d); if columns don't exist yet degrade gracefully
+    // note + note_typed_at are required for the NOTE column and the modal rail.
+    // A missing-column error falls back so the list still renders before the
+    // migration is applied; the error is logged, not treated as an empty note.
     let mmData: any[] | null = null
     const { data: mmDataFull, error: mmErrFull } = await supabase
       .from('money_movers')
@@ -1134,12 +1170,18 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
     if (!mmErrFull) {
       mmData = mmDataFull
     } else {
-      // Columns not yet migrated — fall back to base columns
-      const { data: mmDataBase } = await supabase
+      console.error('[MONEY MOVERS] note select failed:', mmErrFull)
+      const { data: mmDataBase, error: baseErr } = await supabase
         .from('money_movers')
         .select('id, title, deal_id, commission')
         .order('created_at', { ascending: false })
         .limit(30)
+      if (baseErr) {
+        console.error('[MONEY MOVERS] Supabase error:', baseErr)
+        setMmRows([])
+        onCountChange?.(0)
+        return
+      }
       mmData = mmDataBase
     }
     const rows = (mmData ?? []) as MoneyMoverRow[]
@@ -1278,8 +1320,9 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
           setMmRows(prev => prev.filter(r => r.id !== mmId))
           setSelectedMM(null)
         }}
-        onNoteAdded={(mmId, note) => {
-          setMmRows(prev => prev.map(r => r.id === mmId ? {...r, note, note_typed_at: new Date().toISOString()} : r))
+        onNoteAdded={(mmId, patch) => {
+          setMmRows(prev => prev.map(r => r.id === mmId ? { ...r, note: patch.note, note_typed_at: patch.note_typed_at, title: patch.title } : r))
+          setSelectedMM(prev => prev && prev.id === mmId ? { ...prev, note: patch.note, note_typed_at: patch.note_typed_at, title: patch.title } : prev)
         }}
         onDeleteMM={(mmId) => {
           setMmRows(prev => prev.filter(r => r.id !== mmId))
