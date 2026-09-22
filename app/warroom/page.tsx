@@ -10,7 +10,7 @@
  * All type lives in desktopTypes.ts — no raw fontSize in this file.
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { calcCommission, calcLeaseValue, fmtMoney } from '@/lib/dealMath'
 import Fab from '@/assets/fab/Fab'
 import '@/assets/fab/fab.css'
@@ -200,6 +200,80 @@ function computeAlloc(budget: number, panels: PanelSpec[]): PanelAlloc[] {
     height: allocs[i],
     visibleRows: Math.max(0, Math.floor((allocs[i] - p.header) / p.rowHeight)),
   }))
+}
+
+/**
+ * Whole rows inside a fixed panel box.
+ *
+ * computeAlloc's rowHeight is the budget D4.4 divides. The paint is taller:
+ * a 1px hair between rows, a column header over its +24 term, the panel's
+ * own 1px border, and two-line rows (UNDER CONTRACT, SCHEDULE, DEADLINES)
+ * that grow past minHeight. The panel is overflow:hidden, so the extra
+ * pixels bisect the last row. Board scroll cannot reach that — the rest of
+ * the row is not in the scroll height, it is clipped inside the card.
+ *
+ * The list element is the panel's flex remainder (bounded). This measures it
+ * and drops slots until every painted row, including the terminal row, sits
+ * fully inside the box. Panel height stays the 1080 allocation.
+ */
+function useWholeRowSlots(visibleRows: number, itemCount: number, layoutKey: number) {
+  const requested = visibleRows > 0 ? visibleRows : itemCount
+  const ref = useRef<HTMLDivElement>(null)
+  const [slots, setSlots] = useState(requested)
+  const [fontEpoch, setFontEpoch] = useState(0)
+  const sigRef = useRef(`${requested}:${layoutKey}:${itemCount}:${fontEpoch}`)
+
+  useEffect(() => {
+    const fonts = document.fonts
+    if (!fonts) return
+    let live = true
+    fonts.ready.then(() => { if (live) setFontEpoch(e => e + 1) })
+    return () => { live = false }
+  }, [])
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const sig = `${requested}:${layoutKey}:${itemCount}:${fontEpoch}`
+    if (sigRef.current !== sig) {
+      sigRef.current = sig
+      if (slots !== requested) {
+        setSlots(requested)
+        return
+      }
+    }
+    if (el.clientHeight < 1) return
+    if (slots <= 0 || el.scrollHeight <= el.clientHeight + 1) return
+
+    const rowEls = Array.from(el.querySelectorAll<HTMLElement>('[data-wr-row]'))
+    if (rowEls.length === 0) {
+      setSlots(0)
+      return
+    }
+    const rowH = Math.max(...rowEls.map(r => r.offsetHeight))
+    const hairH = 1
+    const inner = el.clientHeight
+    const term = el.querySelector<HTMLElement>('[data-wr-term]')
+    const termH = term ? term.offsetHeight : 33
+    const dataOnly = rowH > 0 ? Math.floor((inner + hairH) / (rowH + hairH)) : 0
+
+    let next: number
+    if (itemCount <= dataOnly) {
+      next = itemCount
+    } else {
+      let data = Math.max(0, dataOnly - 1)
+      while (data > 0) {
+        const hairs = Math.max(0, data - 1)
+        if (data * rowH + hairs * hairH + termH <= inner + 1) break
+        data--
+      }
+      next = data === 0 && termH > inner + 1 ? 0 : data + 1
+    }
+    if (next >= slots) next = slots - 1
+    if (next < slots) setSlots(Math.max(0, next))
+  }, [slots, requested, itemCount, layoutKey, fontEpoch])
+
+  return { ref, slots }
 }
 
 // ── Live clock ────────────────────────────────────────────────────────────────
@@ -1232,8 +1306,10 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
   const headerTotal = enriched.reduce((s, d) => s + (d._commission ?? 0), 0)
   const mmCount = enriched.length
 
-  // D4.4 item 7: terminal row replaces last visible row
-  const effectiveVisible = visibleRows > 0 ? visibleRows : enriched.length
+  // D4.4 item 7: terminal row replaces last visible row.
+  // slots <= the allocator count, reduced until the list box holds whole rows.
+  const { ref: listRef, slots } = useWholeRowSlots(visibleRows, loading ? 0 : enriched.length, panelHeight ?? 0)
+  const effectiveVisible = slots
   const displayRows = enriched.length > effectiveVisible
     ? enriched.slice(0, Math.max(0, effectiveVisible - 1))
     : enriched
@@ -1266,7 +1342,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
         <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
         <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
       </div>
-      <div style={{ overflow: 'hidden', minHeight: 0 }}>
+      <div ref={listRef} style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
         ) : displayRows.length === 0 && moreCount === 0 ? (
@@ -1276,6 +1352,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
             {displayRows.map((mm, i) => (
               <React.Fragment key={mm.id}>
                 <div
+                  data-wr-row=""
                   onClick={() => setSelectedMM(mm)}
                   onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.045)'}
                   onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = ''}
@@ -1304,7 +1381,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
               </React.Fragment>
             ))}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
+              <div data-wr-term="" style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
             )}
           </>
         )}
@@ -1401,8 +1478,9 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
     load()
   }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // D4.4 item 7: terminal row replaces last visible row
-  const effectiveVisible = visibleRows > 0 ? visibleRows : deals.length
+  // D4.4 item 7: terminal row replaces last visible row.
+  const { ref: listRef, slots } = useWholeRowSlots(visibleRows, loading ? 0 : deals.length, panelHeight ?? 0)
+  const effectiveVisible = slots
   const displayDeals = deals.length > effectiveVisible
     ? deals.slice(0, Math.max(0, effectiveVisible - 1))
     : deals
@@ -1437,7 +1515,7 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
         <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
         <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
       </div>
-      <div style={{ overflow: 'hidden', minHeight: 0 }}>
+      <div ref={listRef} style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
         ) : displayDeals.length === 0 && moreCount === 0 ? (
@@ -1465,6 +1543,7 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
                 <React.Fragment key={d.id}>
                   {/* Check 63: whole row clickable → deal page */}
                   <div
+                    data-wr-row=""
                     onClick={() => router.push('/warroom/deal/?id=' + d.id)}
                     style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: UC_ROW_H, boxSizing: 'border-box', cursor: 'pointer' }}
                   >
@@ -1489,6 +1568,7 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
             {/* D4.4 item 7: terminal row — arrow navigates to /warroom/deals?filter=uc */}
             {moreCount > 0 && (
               <div
+                data-wr-term=""
                 onClick={() => router.push('/warroom/deals?filter=uc')}
                 style={{ ...DS7, color: C.textLow, padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
               >
@@ -1687,8 +1767,9 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange, on
   const tomorrows = events.filter(e => (e.date ?? e.event_date) === d1)
   const allEvents = [...todays, ...tomorrows]
 
-  // D4.4 item 7: terminal row replaces last visible row
-  const effectiveVisible = visibleRows > 0 ? visibleRows : allEvents.length
+  // D4.4 item 7: terminal row replaces last visible row.
+  const { ref: listRef, slots } = useWholeRowSlots(visibleRows, loading ? 0 : allEvents.length, panelHeight ?? 0)
+  const effectiveVisible = slots
   const displayEvents = allEvents.length > effectiveVisible
     ? allEvents.slice(0, Math.max(0, effectiveVisible - 1))
     : allEvents
@@ -1705,7 +1786,9 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange, on
   function EventRow({ e, isNext }: { e: ScheduleEvent; isNext?: boolean }) {
     const { time, ampm } = fmt12(e.time ?? e.start_time ?? null)
     return (
-      <div style={{
+      <div
+        data-wr-row=""
+        style={{
         display: 'flex',
         gap: 8,
         padding: '9px 14px',
@@ -1751,7 +1834,7 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange, on
         </div>
       </div>
 
-      <div style={{ overflow: 'hidden', minHeight: 0 }}>
+      <div ref={listRef} style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
         ) : displayEvents.length === 0 && moreCount === 0 ? (
@@ -1765,7 +1848,7 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange, on
               </React.Fragment>
             ))}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
+              <div data-wr-term="" style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
             )}
           </>
         )}
@@ -1835,7 +1918,8 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
   const pastDueCount = pastDue.length
 
   // Check 14: terminal row IS the last slot — slice to effectiveVisible-1 data rows when overflow
-  const effectiveVisible = visibleRows > 0 ? visibleRows : deadlines.length
+  const { ref: listRef, slots } = useWholeRowSlots(visibleRows, loading ? 0 : deadlines.length, panelHeight ?? 0)
+  const effectiveVisible = slots
   const displayDeadlines = deadlines.length > effectiveVisible
     ? deadlines.slice(0, Math.max(0, effectiveVisible - 1))
     : deadlines
@@ -1866,7 +1950,7 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
         </div>
       </div>
 
-      <div style={{ overflow: 'hidden', minHeight: 0 }}>
+      <div ref={listRef} style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
         ) : displayDeadlines.length === 0 && moreCount === 0 ? (
@@ -1884,7 +1968,9 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
               return (
                 <React.Fragment key={d.id}>
                   {/* Check 37: title first, property beneath, kind label right-aligned */}
-                  <div style={{
+                  <div
+                    data-wr-row=""
+                    style={{
                     display: 'flex',
                     gap: 8,
                     padding: '9px 14px',
@@ -1920,7 +2006,7 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
             })}
             {/* Check 14: terminal IS the last slot */}
             {moreCount > 0 && (
-              <div style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE DEADLINES</div>
+              <div data-wr-term="" style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE DEADLINES</div>
             )}
           </>
         )}
@@ -2256,8 +2342,13 @@ export default function WarRoomPage() {
     return { A: Math.round(A), B: Math.round(B), C: Math.round(C) }
   })()
 
-  // D4.4a: debounced viewport-height listener — snaps on settle (~150ms), never per-frame
-  useEffect(() => {
+  // D4.4a: viewport height drives scroll vs no-scroll.
+  // Static export hydrates the useState fallback (1080) — window is absent on the
+  // server — and a resize listener never fires on load, so a shorter window kept
+  // boardScrolls false and clipped the 1080 board with overflow:hidden.
+  // Measure on mount (before paint) and again 150ms after resize settles.
+  useLayoutEffect(() => {
+    setViewportH(window.innerHeight)
     let timer: ReturnType<typeof setTimeout>
     function onResize() {
       clearTimeout(timer)
@@ -2318,8 +2409,12 @@ export default function WarRoomPage() {
 
   // D4.4a.3: content area scrolls as one object below 1080; chrome (identity + rail) stays fixed.
   // Board always laid out at 1080 budget — same panel heights and row counts on every machine.
-  // At >=1080: content overflow hidden (no scroll). Below 1080: content overflowY auto (one scroller).
+  // At >=1080: scrollport overflow hidden (no scroll). Below 1080: scrollport overflowY auto.
+  // The 968px board lives INSIDE the scrollport. minHeight on the scrollport itself
+  // cannot shrink below 968, and the parent is overflow:hidden, so the parent clips
+  // the scroller and the scroller's own overflow stays 0 — no scrollbar, mid-row cut.
   const boardScrolls = viewportH < 1080
+  const BOARD_H = 1080 - 112
 
   return (
     <div style={{
@@ -2340,16 +2435,24 @@ export default function WarRoomPage() {
         {/* ── Identity band — 112px, fixed (never scrolls) ── */}
         <IdentityBand />
 
-        {/* ── Content area — D4.4a: one scroll object when viewport < 1080; hidden when >= 1080 ── */}
+        {/* ── Scrollport — fills the space under the identity band. Scrolls only below 1080. ── */}
+        <div
+          data-wr-scrollport=""
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowX: 'hidden',
+            overflowY: boardScrolls ? 'auto' : 'hidden',
+          }}
+        >
+        {/* ── Board — 1080 content budget (968 = 1080 − identity). Taller viewports stretch it; shorter ones scroll it. ── */}
         <div style={{
-          flex: 1,
+          height: boardScrolls ? BOARD_H : '100%',
           display: 'flex',
           flexDirection: 'column',
           padding: '18px 24px 20px',
           gap: 18,
-          // D4.4a: board always 1080 layout; below 1080 this single div scrolls
-          minHeight: boardScrolls ? (1080 - 112) : undefined,
-          overflow: boardScrolls ? 'auto' : 'hidden',
+          boxSizing: 'border-box',
         }}>
 
           {/* ── NEXT 48 — 236px fixed ── */}
@@ -2419,6 +2522,7 @@ export default function WarRoomPage() {
             </div>
 
           </div>
+        </div>
         </div>
       </div>
 
