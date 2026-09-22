@@ -139,7 +139,7 @@ async function sha256(text: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('')
 }
 
-const PIN_HASH_EXPECTED = (async () => sha256('1887'))()
+const PIN_HASH_EXPECTED = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
 
 function ReopenGate({ dealId, label, onClose, onSuccess }: ReopenGateProps) {
   const [digits, setDigits] = useState<string[]>([])
@@ -159,8 +159,7 @@ function ReopenGate({ dealId, label, onClose, onSuccess }: ReopenGateProps) {
     if (next.length === 4) {
       const pin = next.join('')
       const hash = await sha256(pin)
-      const expected = await PIN_HASH_EXPECTED
-      if (hash === expected) {
+      if (hash === PIN_HASH_EXPECTED) {
         setSubmitting(true)
         await supabase.from('deals').update({ status: 'active' }).eq('id', dealId)
         onSuccess()

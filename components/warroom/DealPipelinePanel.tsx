@@ -636,7 +636,7 @@ function getKillOptions(deal: Deal): KillAction[] {
 }
 
 // ─── Editable Deal Row (v2) ──────────────────────────────────────────────────
-const DELETE_PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e' // SHA-256 of "1887"
+const DELETE_PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
 
 async function sha256(text: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
