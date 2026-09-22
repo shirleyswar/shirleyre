@@ -5,7 +5,8 @@
  * D9 items 1–6 · 8.20.26 2145
  * Builds against SHIRLEYCRE_DESKTOP_SPEC 8.20.26 2145.md
  *
- * Layout: 100vh, chrome fixed (rail+identity band); content area scrolls as ONE object below 1080 (D4.4a).
+ * Layout: 100vh, chrome fixed (rail+identity band); board NEVER scrolls.
+ * Overflow lives inside each list panel (whole-row snap + panel-body scroll).
  * Type: DS1–DS8 (Space Grotesk), DT1–DT8 (Mono labels), DM0–DM2 (Mono figures).
  * All type lives in desktopTypes.ts — no raw fontSize in this file.
  */
@@ -203,25 +204,20 @@ function computeAlloc(budget: number, panels: PanelSpec[]): PanelAlloc[] {
 }
 
 /**
- * Whole rows inside a fixed panel box.
+ * Panel-local scroll with whole-row snap.
  *
- * computeAlloc's rowHeight is the budget D4.4 divides. The paint is taller:
- * a 1px hair between rows, a column header over its +24 term, the panel's
- * own 1px border, and two-line rows (UNDER CONTRACT, SCHEDULE, DEADLINES)
- * that grow past minHeight. The panel is overflow:hidden, so the extra
- * pixels bisect the last row. Board scroll cannot reach that — the rest of
- * the row is not in the scroll height, it is clipped inside the card.
+ * HOME board never scrolls (WARROOM-169C). Each list panel owns overflow:
+ * all rows render; the body is the scrollport; the visible fold is snapped
+ * to whole painted rows so titles are never mid-cut at the panel edge.
  *
- * The list element is the panel's flex remainder (bounded). This measures it
- * and drops slots until every painted row, including the terminal row, sits
- * fully inside the box. Panel height stays the 1080 allocation.
+ * Available height is measured from the panel parent (siblings = header /
+ * column chrome), not from the list's own clientHeight — that would loop
+ * once we set the snapped height.
  */
-function useWholeRowSlots(visibleRows: number, itemCount: number, layoutKey: number) {
-  const requested = visibleRows > 0 ? visibleRows : itemCount
+function usePanelBodyScroll(itemCount: number, layoutKey: number) {
   const ref = useRef<HTMLDivElement>(null)
-  const [slots, setSlots] = useState(requested)
+  const [snapPx, setSnapPx] = useState<number | undefined>(undefined)
   const [fontEpoch, setFontEpoch] = useState(0)
-  const sigRef = useRef(`${requested}:${layoutKey}:${itemCount}:${fontEpoch}`)
 
   useEffect(() => {
     const fonts = document.fonts
@@ -234,46 +230,51 @@ function useWholeRowSlots(visibleRows: number, itemCount: number, layoutKey: num
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
-    const sig = `${requested}:${layoutKey}:${itemCount}:${fontEpoch}`
-    if (sigRef.current !== sig) {
-      sigRef.current = sig
-      if (slots !== requested) {
-        setSlots(requested)
-        return
-      }
+    const panel = el.parentElement
+    if (!panel) return
+
+    let used = 0
+    for (const child of Array.from(panel.children)) {
+      if (child === el) continue
+      used += (child as HTMLElement).offsetHeight
     }
-    if (el.clientHeight < 1) return
-    if (slots <= 0 || el.scrollHeight <= el.clientHeight + 1) return
+    const available = panel.clientHeight - used
+    if (available < 1) {
+      if (snapPx !== undefined) setSnapPx(undefined)
+      return
+    }
 
     const rowEls = Array.from(el.querySelectorAll<HTMLElement>('[data-wr-row]'))
     if (rowEls.length === 0) {
-      setSlots(0)
+      if (snapPx !== undefined) setSnapPx(undefined)
       return
     }
+
     const rowH = Math.max(...rowEls.map(r => r.offsetHeight))
     const hairH = 1
-    const inner = el.clientHeight
-    const term = el.querySelector<HTMLElement>('[data-wr-term]')
-    const termH = term ? term.offsetHeight : 33
-    const dataOnly = rowH > 0 ? Math.floor((inner + hairH) / (rowH + hairH)) : 0
+    if (rowH < 1) return
 
-    let next: number
-    if (itemCount <= dataOnly) {
-      next = itemCount
-    } else {
-      let data = Math.max(0, dataOnly - 1)
-      while (data > 0) {
-        const hairs = Math.max(0, data - 1)
-        if (data * rowH + hairs * hairH + termH <= inner + 1) break
-        data--
-      }
-      next = data === 0 && termH > inner + 1 ? 0 : data + 1
-    }
-    if (next >= slots) next = slots - 1
-    if (next < slots) setSlots(Math.max(0, next))
-  }, [slots, requested, itemCount, layoutKey, fontEpoch])
+    const fit = Math.max(1, Math.floor((available + hairH) / (rowH + hairH)))
+    const snap = Math.min(available, fit * rowH + Math.max(0, fit - 1) * hairH)
+    // Snap whenever content overflows the fold, or when leftover pixels would
+    // otherwise expose a partial row at the panel edge.
+    const contentH = el.scrollHeight
+    const next = contentH > snap + 1 || snap < available - 1 ? snap : undefined
+    if (next !== snapPx) setSnapPx(next)
+  }, [itemCount, layoutKey, fontEpoch, snapPx])
 
-  return { ref, slots }
+  return {
+    ref,
+    style: {
+      flex: snapPx == null ? 1 : undefined,
+      height: snapPx,
+      minHeight: 0,
+      overflowY: 'auto' as const,
+      overflowX: 'hidden' as const,
+      scrollbarWidth: 'thin' as const,
+      scrollSnapType: 'y proximity' as const,
+    } as React.CSSProperties,
+  }
 }
 
 // ── Live clock ────────────────────────────────────────────────────────────────
@@ -1224,7 +1225,7 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
   )
 }
 
-function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight, onCreateFill }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number; onCreateFill?: () => void }) {
+function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange, panelHeight, onCreateFill }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number; onCreateFill?: () => void }) {
   const [mmRows, setMmRows] = useState<MoneyMoverRow[]>([])
   const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
   const [dealMap, setDealMap] = useState<Record<string, any>>({})
@@ -1306,14 +1307,8 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
   const headerTotal = enriched.reduce((s, d) => s + (d._commission ?? 0), 0)
   const mmCount = enriched.length
 
-  // D4.4 item 7: terminal row replaces last visible row.
-  // slots <= the allocator count, reduced until the list box holds whole rows.
-  const { ref: listRef, slots } = useWholeRowSlots(visibleRows, loading ? 0 : enriched.length, panelHeight ?? 0)
-  const effectiveVisible = slots
-  const displayRows = enriched.length > effectiveVisible
-    ? enriched.slice(0, Math.max(0, effectiveVisible - 1))
-    : enriched
-  const moreCount = enriched.length - displayRows.length
+  // WARROOM-169C: all rows render; panel body snaps to whole rows and scrolls.
+  const { ref: listRef, style: listStyle } = usePanelBodyScroll(loading ? 0 : enriched.length, panelHeight ?? 0)
 
   const h = panelHeight ? panelHeight : undefined
 
@@ -1342,21 +1337,21 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
         <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
         <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
       </div>
-      <div ref={listRef} style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+      <div ref={listRef} data-wr-panel-scroll="" style={listStyle}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
-        ) : displayRows.length === 0 && moreCount === 0 ? (
+        ) : enriched.length === 0 ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>No money movers.</div>
         ) : (
           <>
-            {displayRows.map((mm, i) => (
+            {enriched.map((mm, i) => (
               <React.Fragment key={mm.id}>
                 <div
                   data-wr-row=""
                   onClick={() => setSelectedMM(mm)}
                   onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.045)'}
                   onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = ''}
-                  style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box', cursor: 'pointer', scrollSnapAlign: 'start' }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1377,12 +1372,9 @@ function MoneyMoversPanel({ refreshKey, visibleRows, onCountChange, panelHeight,
                     )
                   })()}
                 </div>
-                {i < displayRows.length - 1 && <Hair />}
+                {i < enriched.length - 1 && <Hair />}
               </React.Fragment>
             ))}
-            {moreCount > 0 && (
-              <div data-wr-term="" style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
-            )}
           </>
         )}
       </div>
@@ -1427,7 +1419,7 @@ interface DealWithClosing extends Deal {
   _closingDate?: string | null
 }
 
-function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeight }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number }) {
+function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChange, panelHeight }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number }) {
   const [deals, setDeals] = useState<DealWithClosing[]>([])
   const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
   const [loading, setLoading] = useState(true)
@@ -1478,13 +1470,8 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
     load()
   }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // D4.4 item 7: terminal row replaces last visible row.
-  const { ref: listRef, slots } = useWholeRowSlots(visibleRows, loading ? 0 : deals.length, panelHeight ?? 0)
-  const effectiveVisible = slots
-  const displayDeals = deals.length > effectiveVisible
-    ? deals.slice(0, Math.max(0, effectiveVisible - 1))
-    : deals
-  const moreCount = deals.length - displayDeals.length
+  // WARROOM-169C: all rows render; panel body snaps to whole rows and scrolls.
+  const { ref: listRef, style: listStyle } = usePanelBodyScroll(loading ? 0 : deals.length, panelHeight ?? 0)
 
   // Check 36: earliest upcoming closing date for header
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
@@ -1515,14 +1502,14 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
         <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
         <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
       </div>
-      <div ref={listRef} style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+      <div ref={listRef} data-wr-panel-scroll="" style={listStyle}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
-        ) : displayDeals.length === 0 && moreCount === 0 ? (
+        ) : deals.length === 0 ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>No deals under contract.</div>
         ) : (
           <>
-            {displayDeals.map((d, i) => {
+            {deals.map((d, i) => {
               // Check 49: null name → blank
               const name = d.deal_contacts?.[0]?.contacts?.name ?? ''
               // Check 35: closing date subline
@@ -1545,7 +1532,7 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
                   <div
                     data-wr-row=""
                     onClick={() => router.push('/warroom/deal/?id=' + d.id)}
-                    style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: UC_ROW_H, boxSizing: 'border-box', cursor: 'pointer' }}
+                    style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: UC_ROW_H, boxSizing: 'border-box', cursor: 'pointer', scrollSnapAlign: 'start' }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1561,23 +1548,10 @@ function UnderContractPanel({ refreshKey, visibleRows, onCountChange, panelHeigh
                       {fmtMoney(commission)}
                     </div>
                   </div>
-                  {i < displayDeals.length - 1 && <Hair />}
+                  {i < deals.length - 1 && <Hair />}
                 </React.Fragment>
               )
             })}
-            {/* D4.4 item 7: terminal row — arrow navigates to /warroom/deals?filter=uc */}
-            {moreCount > 0 && (
-              <div
-                data-wr-term=""
-                onClick={() => router.push('/warroom/deals?filter=uc')}
-                style={{ ...DS7, color: C.textLow, padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                + {moreCount} MORE
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-              </div>
-            )}
           </>
         )}
       </div>
@@ -1736,7 +1710,7 @@ function HeroNext48({ refreshKey, onHeroDeadlineId }: { refreshKey: number; onHe
 const SCHED_HEADER = 55  // Check 28: 41→55 for FAB
 const SCHED_ROW_H  = 36
 
-function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreateFill }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void }) {
+function SchedulePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onCountChange, onCreateFill }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void }) {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -1767,13 +1741,8 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange, on
   const tomorrows = events.filter(e => (e.date ?? e.event_date) === d1)
   const allEvents = [...todays, ...tomorrows]
 
-  // D4.4 item 7: terminal row replaces last visible row.
-  const { ref: listRef, slots } = useWholeRowSlots(visibleRows, loading ? 0 : allEvents.length, panelHeight ?? 0)
-  const effectiveVisible = slots
-  const displayEvents = allEvents.length > effectiveVisible
-    ? allEvents.slice(0, Math.max(0, effectiveVisible - 1))
-    : allEvents
-  const moreCount = allEvents.length - displayEvents.length
+  // WARROOM-169C: all rows render; panel body snaps to whole rows and scrolls.
+  const { ref: listRef, style: listStyle } = usePanelBodyScroll(loading ? 0 : allEvents.length, panelHeight ?? 0)
 
   function fmt12(t: string | null): { time: string; ampm: string } {
     if (!t) return { time: '—', ampm: '' }
@@ -1795,6 +1764,7 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange, on
         minHeight: SCHED_ROW_H,
         boxSizing: 'border-box',
         borderLeft: isNext ? `3px solid ${C.brand}` : '3px solid transparent',
+        scrollSnapAlign: 'start',
       }}>
         {/* Time gutter */}
         <div style={{ flexShrink: 0, width: 44 }}>
@@ -1834,22 +1804,19 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows, onCountChange, on
         </div>
       </div>
 
-      <div ref={listRef} style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+      <div ref={listRef} data-wr-panel-scroll="" style={listStyle}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
-        ) : displayEvents.length === 0 && moreCount === 0 ? (
+        ) : allEvents.length === 0 ? (
           <div style={{ ...DT4, color: C.textLow, padding: '20px 14px', textAlign: 'center', fontFamily: FONT_MONO }}>NOTHING SCHEDULED</div>
         ) : (
           <>
-            {displayEvents.map((e, i) => (
+            {allEvents.map((e, i) => (
               <React.Fragment key={e.id}>
                 <EventRow e={e} isNext={i === 0} />
-                {i < displayEvents.length - 1 && <Hair />}
+                {i < allEvents.length - 1 && <Hair />}
               </React.Fragment>
             ))}
-            {moreCount > 0 && (
-              <div data-wr-term="" style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE</div>
-            )}
           </>
         )}
       </div>
@@ -1873,7 +1840,7 @@ interface DeadlineRow {
   deals?: { name: string; address: string | null; addr_display: string | null; addr_street_name: string | null; addr_number: string | null; addr_city: string | null } | null
 }
 
-function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreateFill, heroDeadlineId }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void; heroDeadlineId?: string | null }) {
+function DuePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onCountChange, onCreateFill, heroDeadlineId }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void; heroDeadlineId?: string | null }) {
   const [deadlines, setDeadlines] = useState<DeadlineRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -1917,13 +1884,8 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
   const pastDue = deadlines.filter(d => d.due_date < todayStr)
   const pastDueCount = pastDue.length
 
-  // Check 14: terminal row IS the last slot — slice to effectiveVisible-1 data rows when overflow
-  const { ref: listRef, slots } = useWholeRowSlots(visibleRows, loading ? 0 : deadlines.length, panelHeight ?? 0)
-  const effectiveVisible = slots
-  const displayDeadlines = deadlines.length > effectiveVisible
-    ? deadlines.slice(0, Math.max(0, effectiveVisible - 1))
-    : deadlines
-  const moreCount = deadlines.length - displayDeadlines.length
+  // WARROOM-169C: all rows render; panel body snaps to whole rows and scrolls.
+  const { ref: listRef, style: listStyle } = usePanelBodyScroll(loading ? 0 : deadlines.length, panelHeight ?? 0)
 
   const h = panelHeight ? panelHeight : undefined
 
@@ -1950,14 +1912,14 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
         </div>
       </div>
 
-      <div ref={listRef} style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+      <div ref={listRef} data-wr-panel-scroll="" style={listStyle}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
-        ) : displayDeadlines.length === 0 && moreCount === 0 ? (
+        ) : deadlines.length === 0 ? (
           <div style={{ ...DT4, color: C.textLow, padding: '20px 14px', textAlign: 'center', fontFamily: FONT_MONO }}>NO DEADLINES</div>
         ) : (
           <>
-            {displayDeadlines.map((d, i) => {
+            {deadlines.map((d, i) => {
               const days = daysBetween(d.due_date)
               const isPast = days < 0
               const absDays = Math.abs(days)
@@ -1979,6 +1941,7 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
                     background: !isHero && isFirstFuture && !isPast ? `rgba(255,163,58,0.05)` : 'transparent',
                     borderLeft: isHero ? '3px solid transparent' : isPast ? `3px solid ${C.late}` : isFirstFuture ? `3px solid ${C.hot}` : '3px solid transparent',
                     alignItems: 'flex-start',
+                    scrollSnapAlign: 'start',
                   }}>
                     {/* Days gutter */}
                     <div style={{ flexShrink: 0, width: 84 }}>
@@ -2000,14 +1963,10 @@ function DuePanel({ refreshKey, panelHeight, visibleRows, onCountChange, onCreat
                     {/* Check 37: kind right-aligned */}
                     <div style={{ ...DT7 as React.CSSProperties, color: C.textLow, flexShrink: 0, textAlign: 'right', minWidth: 60 }}>{(d.kind || '').toUpperCase()}</div>
                   </div>
-                  {i < displayDeadlines.length - 1 && <Hair />}
+                  {i < deadlines.length - 1 && <Hair />}
                 </React.Fragment>
               )
             })}
-            {/* Check 14: terminal IS the last slot */}
-            {moreCount > 0 && (
-              <div data-wr-term="" style={{ ...DS7, color: C.textLow, padding: '8px 14px' }}>+ {moreCount} MORE DEADLINES</div>
-            )}
           </>
         )}
 
@@ -2285,14 +2244,11 @@ export default function WarRoomPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerW, setContainerW] = useState(0)
 
-  // D4.4: Column B / C refs (width used by layout; height NOT fed into allocator — D4.4a fixed budget)
+  // D4.4: Column B / C refs — elastic height allocation from measured column (not fixed 1080)
   const colBRef = useRef<HTMLDivElement>(null)
   const colCRef = useRef<HTMLDivElement>(null)
-
-  // D4.4a: viewport height — drives scroll vs no-scroll; snaps on settle, never transitions
-  const [viewportH, setViewportH] = useState<number>(
-    typeof window !== 'undefined' ? window.innerHeight : 1080
-  )
+  const [colBHeight, setColBHeight] = useState(0)
+  const [colCHeight, setColCHeight] = useState(0)
 
   // Check 30: real record counts from panels (lifted up for elastic allocator)
   const [mmRowCount, setMmRowCount] = useState(5)
@@ -2342,45 +2298,46 @@ export default function WarRoomPage() {
     return { A: Math.round(A), B: Math.round(B), C: Math.round(C) }
   })()
 
-  // D4.4a: viewport height drives scroll vs no-scroll.
-  // Static export hydrates the useState fallback (1080) — window is absent on the
-  // server — and a resize listener never fires on load, so a shorter window kept
-  // boardScrolls false and clipped the 1080 board with overflow:hidden.
-  // Measure on mount (before paint) and again 150ms after resize settles.
-  useLayoutEffect(() => {
-    setViewportH(window.innerHeight)
-    let timer: ReturnType<typeof setTimeout>
-    function onResize() {
-      clearTimeout(timer)
-      timer = setTimeout(() => setViewportH(window.innerHeight), 150)
-    }
-    window.addEventListener('resize', onResize)
-    return () => { window.removeEventListener('resize', onResize); clearTimeout(timer) }
-  }, [])
+  // D4.4: measure column heights — panels allocate from the live viewport, not a fixed 1080 board.
+  useEffect(() => {
+    if (!colBRef.current) return
+    const ro = new ResizeObserver(([entry]) => {
+      setColBHeight(entry.contentRect.height)
+    })
+    ro.observe(colBRef.current)
+    return () => ro.disconnect()
+  }, [unlocked])
 
-  // D4.4a: fixed 1080 budget — same row counts and panel heights on every machine.
-  // chrome: identity 112 + rail 96 (horizontal) — vertical consumed: identity 112.
-  // content padding: 18 top + 20 bottom = 38. NEXT48 height 60 + gap 18 = 78.
-  // columns height at 1080: 1080 - 112 - 38 - 78 = 852.
-  // col B budget: 852 (MM + UC fill the column).
-  // col C budget: 852 - RECV_HEIGHT(130) - 2*gap(36) = 686.
-  const COL_BUDGET_1080 = 852
-  const COL_C_BUDGET_1080 = COL_BUDGET_1080 - RECV_HEIGHT - 2 * 18  // 686
+  useEffect(() => {
+    if (!colCRef.current) return
+    const ro = new ResizeObserver(([entry]) => {
+      setColCHeight(entry.contentRect.height)
+    })
+    ro.observe(colCRef.current)
+    return () => ro.disconnect()
+  }, [unlocked])
 
-  // D4.4: Compute column B allocations (MM + UC) — always from 1080 budget
+  // D4.4: Compute column B allocations (MM + UC) from measured column height
   // Check 52: MM_HEADER is now 55 (has FAB). +24 for the ADDRESS/VALUE/COMM column header row.
   const colBPanels: PanelSpec[] = [
     { header: MM_HEADER + 24, rowHeight: MM_ROW_H, rowCount: mmRowCount },
     { header: UC_HEADER + 24, rowHeight: UC_ROW_H, rowCount: ucRowCount },
   ]
-  const colBAllocs = computeAlloc(COL_BUDGET_1080, colBPanels)
+  const colBAllocs = colBHeight > 0 ? computeAlloc(colBHeight, colBPanels) : [
+    { height: 300, visibleRows: 5 },
+    { height: 250, visibleRows: 4 },
+  ]
 
-  // D4.4: Compute column C allocations (SCHEDULE + DUE, RECEIVABLES is flex:none) — always from 1080 budget
+  // D4.4: Compute column C allocations (SCHEDULE + DUE, RECEIVABLES is flex:none)
   const colCPanels: PanelSpec[] = [
     { header: SCHED_HEADER, rowHeight: SCHED_ROW_H, rowCount: schedRowCount },
     { header: DUE_HEADER, rowHeight: DUE_ROW_H, rowCount: dueRowCount },
   ]
-  const colCAllocs = computeAlloc(COL_C_BUDGET_1080, colCPanels)
+  const colCBudget = colCHeight > 0 ? colCHeight - RECV_HEIGHT - 2 * 18 : 400
+  const colCAllocs = colCBudget > 0 ? computeAlloc(colCBudget, colCPanels) : [
+    { height: 200, visibleRows: 4 },
+    { height: 200, visibleRows: 4 },
+  ]
 
   // Create mode: open TaskModal with an empty-ish task for creation
   const createTask: Task = {
@@ -2407,15 +2364,8 @@ export default function WarRoomPage() {
     )
   }
 
-  // D4.4a.3: content area scrolls as one object below 1080; chrome (identity + rail) stays fixed.
-  // Board always laid out at 1080 budget — same panel heights and row counts on every machine.
-  // At >=1080: scrollport overflow hidden (no scroll). Below 1080: scrollport overflowY auto.
-  // The 968px board lives INSIDE the scrollport. minHeight on the scrollport itself
-  // cannot shrink below 968, and the parent is overflow:hidden, so the parent clips
-  // the scroller and the scroller's own overflow stays 0 — no scrollbar, mid-row cut.
-  const boardScrolls = viewportH < 1080
-  const BOARD_H = 1080 - 112
-
+  // WARROOM-169C: homepage does not scroll. Identity + panel grid stay fixed in the
+  // viewport. Overflow is owned by each panel list body (snap + overflow-y:auto).
   return (
     <div style={{
       height: '100vh',
@@ -2429,33 +2379,28 @@ export default function WarRoomPage() {
       {/* ── Left rail — 96px, own plane ── */}
       <LeftRail active="HOME" />
 
-      {/* ── Main area — identity band (fixed) + scrollable content area ── */}
+      {/* ── Main area — identity band + fixed board (no page scroll) ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
 
         {/* ── Identity band — 112px, fixed (never scrolls) ── */}
         <IdentityBand />
 
-        {/* ── Scrollport — fills the space under the identity band. Scrolls only below 1080. ── */}
+        {/* ── Board — fills under the identity band; overflow:hidden (never a scrollport) ── */}
         <div
-          data-wr-scrollport=""
+          data-wr-board=""
           style={{
             flex: 1,
             minHeight: 0,
-            overflowX: 'hidden',
-            overflowY: boardScrolls ? 'auto' : 'hidden',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '18px 24px 20px',
+            gap: 18,
+            boxSizing: 'border-box',
           }}
         >
-        {/* ── Board — 1080 content budget (968 = 1080 − identity). Taller viewports stretch it; shorter ones scroll it. ── */}
-        <div style={{
-          height: boardScrolls ? BOARD_H : '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '18px 24px 20px',
-          gap: 18,
-          boxSizing: 'border-box',
-        }}>
 
-          {/* ── NEXT 48 — 236px fixed ── */}
+          {/* ── NEXT 48 — 60px strip ── */}
           <HeroNext48 refreshKey={refreshKey} onHeroDeadlineId={setHeroDeadlineId} />
 
           {/* ── Three-column row — Check 5: widths computed via ResizeObserver ── */}
@@ -2522,7 +2467,6 @@ export default function WarRoomPage() {
             </div>
 
           </div>
-        </div>
         </div>
       </div>
 
