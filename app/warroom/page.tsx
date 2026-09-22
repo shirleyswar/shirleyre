@@ -453,6 +453,11 @@ const G = {
 }
 
 // ── BATTLE PLAN ───────────────────────────────────────────────────────────────
+// D4.1 publishes no gap between buckets. §5.11.3's 20px is the mobile sheet
+// header margin and includes the first header, which this panel must not copy.
+// 16px is clear air before every group that is not the first visible one.
+const BP_GROUP_BREAK = 16
+
 function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKey: number; onSelectTask?: (t: Task) => void; onCreateTask?: () => void }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -569,11 +574,14 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
     )
   }
 
-  function Group({ label, items, overdue }: { label: string; items: Task[]; overdue?: boolean }) {
+  function Group({ label, items, overdue, breakBefore }: { label: string; items: Task[]; overdue?: boolean; breakBefore?: boolean }) {
     // WARROOM-170: a bucket with no tasks renders nothing — no label, no count, no spacer.
     if (items.length === 0) return null
     return (
-      <div>
+      <div data-bp-group={label}>
+        {/* WARROOM-170C: air sits on the group, above the sticky header, so a
+            stuck header still meets the scrollport at top: 0. */}
+        {breakBefore && <div aria-hidden="true" data-bp-group-break="" style={{ height: BP_GROUP_BREAK }} />}
         <div style={{
           position: 'sticky',
           top: 0,
@@ -639,9 +647,9 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
           ) : (
             <>
               <Group label="OVERDUE" items={groups.overdue} overdue />
-              <Group label="TODAY" items={groups.today} />
-              <Group label="LATER" items={groups.later} />
-              <Group label="NO DUE DATE" items={groups.noDate} />
+              <Group label="TODAY" items={groups.today} breakBefore={groups.overdue.length > 0} />
+              <Group label="LATER" items={groups.later} breakBefore={groups.overdue.length + groups.today.length > 0} />
+              <Group label="NO DUE DATE" items={groups.noDate} breakBefore={groups.overdue.length + groups.today.length + groups.later.length > 0} />
             </>
           )}
         </div>
