@@ -1,0 +1,38 @@
+{
+  "id": "lacdb-600d975e",
+  "detail_level": "summary",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "600d975e",
+    "url": "https://lacdb.resimplifi.com/listings/600d975e-shovelready-site-near-dow-shintech-iberville-parish",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+  },
+  "title": "Shovel-Ready Site Near Dow & Shintech (Iberville Parish)",
+  "status": "active",
+  "transaction_type": "lease",
+  "property_types": [],
+  "address": {
+    "street": "25035 LA-1",
+    "city": "Plaquemine",
+    "state": "LA",
+    "postal_code": "70764"
+  },
+  "price": {
+    "label": "$10 - $13 SF/year",
+    "currency": "USD"
+  },
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20600d975e",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20600d975e"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+}

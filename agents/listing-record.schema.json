@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shirleyre.pages.dev/agents/listing-record.schema.json",
+  "title": "Matthew Shirley active listing record (DRAFT, not deployed)",
+  "type": "object",
+  "required": ["id", "source", "title", "status", "transaction_type", "property_types", "address", "broker_contact", "last_updated"],
+  "properties": {
+    "id": {"type": "string", "description": "Stable feed id, e.g. 'lacdb-d2e5861f' (LACDB short listing id / tid)"},
+    "source": {"type": "object", "properties": {
+      "system": {"const": "LACDB"},
+      "listing_id": {"type": "string", "description": "LACDB 8-char Listing ID (tid)"},
+      "listing_uuid": {"type": ["string", "null"]},
+      "url": {"type": "string", "format": "uri"},
+      "retrieved_at": {"type": "string", "format": "date-time"},
+      "attribution": {"type": "string", "description": "LACDB Rules Sec. 9 notice, e.g. 'Based on information from the LACDB for the period YYYY-MM-DD through YYYY-MM-DD.'"}
+    }, "required": ["system", "listing_id", "url"]},
+    "title": {"type": "string"},
+    "status": {"enum": ["active", "pending", "under_contract", "sold", "leased", "off_market", "unknown"]},
+    "transaction_type": {"enum": ["sale", "lease", "sale_or_lease"]},
+    "property_types": {"type": "array", "items": {"type": "string"}, "description": "LACDB use: Land, Office, Industrial, Retail, Hospitality, Other..."},
+    "property_subtypes": {"type": "array", "items": {"type": "string"}},
+    "address": {"type": "object", "properties": {
+      "street": {"type": ["string", "null"]},
+      "street2": {"type": ["string", "null"]},
+      "city": {"type": ["string", "null"]},
+      "state": {"type": ["string", "null"]},
+      "postal_code": {"type": ["string", "null"]},
+      "parish": {"type": ["string", "null"]},
+      "country": {"type": ["string", "null"]}
+    }},
+    "geo": {"type": ["object", "null"], "properties": {"lat": {"type": "number"}, "lng": {"type": "number"}}},
+    "parcel": {"type": ["object", "null"], "properties": {
+      "apn": {"type": ["string", "null"]},
+      "additional_apns": {"type": "array", "items": {"type": "string"}},
+      "tax_id": {"type": ["string", "null"]}
+    }},
+    "price": {"type": ["object", "null"], "properties": {
+      "amount": {"type": ["number", "null"], "description": "As entered on LACDB"},
+      "unit": {"enum": ["total", "per_sf", "per_acre", "per_sf_year", "per_month", "per_unit", null]},
+      "total_min": {"type": ["number", "null"]},
+      "total_max": {"type": ["number", "null"]},
+      "label": {"type": ["string", "null"], "description": "LACDB display label, e.g. '$10.41/SF'"},
+      "currency": {"const": "USD"},
+      "sale_terms": {"type": ["string", "null"]},
+      "cap_rate_pct": {"type": ["number", "null"]}
+    }},
+    "lease_spaces": {"type": "array", "items": {"type": "object", "properties": {
+      "space_id": {"type": "string"},
+      "rate_min": {"type": ["number", "null"]},
+      "rate_max": {"type": ["number", "null"]},
+      "rate_unit": {"type": ["string", "null"], "description": "LACDB rateType, e.g. sfYear, month"},
+      "lease_structure": {"type": ["string", "null"], "description": "e.g. NNN (Triple Net), Modified Gross, Full Service"},
+      "available_sf_min": {"type": ["number", "null"]},
+      "available_sf_max": {"type": ["number", "null"]},
+      "acres": {"type": ["number", "null"]},
+      "sublease": {"type": ["boolean", "null"]},
+      "status": {"type": ["string", "null"]}
+    }}},
+    "size": {"type": "object", "properties": {
+      "building_sf": {"type": ["number", "null"]},
+      "lot_acres_min": {"type": ["number", "null"]},
+      "lot_acres_max": {"type": ["number", "null"]},
+      "lot_sf_min": {"type": ["number", "null"]},
+      "lot_sf_max": {"type": ["number", "null"]},
+      "frontage_ft": {"type": ["number", "null"]}
+    }},
+    "zoning": {"type": ["object", "null"], "properties": {
+      "code": {"type": ["string", "null"]},
+      "description": {"type": ["string", "null"]},
+      "standardized_code": {"type": ["string", "null"]}
+    }},
+    "features": {"type": "object", "description": "Structured facts present on LACDB (null when not entered)", "properties": {
+      "is_vacant": {"type": ["boolean", "null"]},
+      "land_splits_available": {"type": ["boolean", "null"]},
+      "utilities": {"type": ["object", "null"], "properties": {"power": {"type": ["boolean","null"]}, "water": {"type": ["boolean","null"]}, "sewer": {"type": ["boolean","null"]}, "natural_gas": {"type": ["boolean","null"]}, "fiber": {"type": ["boolean","null"]}}},
+      "topography": {"type": ["string", "null"]},
+      "building_class": {"type": ["string", "null"]},
+      "year_built": {"type": ["integer", "null"]},
+      "tenancy": {"type": ["string", "null"]},
+      "tenant": {"type": ["string", "null"]},
+      "parking_type": {"type": ["string", "null"]},
+      "dock_doors": {"type": ["integer", "null"]},
+      "drive_in_doors": {"type": ["integer", "null"]},
+      "clear_height_ft": {"type": ["number", "null"]},
+      "nearest_interstate": {"type": ["string", "null"]},
+      "nearest_highway": {"type": ["string", "null"]},
+      "nearest_airport": {"type": ["string", "null"]},
+      "highlights": {"type": "array", "items": {"type": "string"}}
+    }},
+    "description_text": {"type": ["string", "null"], "description": "Public remarks, HTML stripped"},
+    "media": {"type": "object", "properties": {
+      "photos": {"type": "array", "items": {"type": "string", "format": "uri"}},
+      "static_map": {"type": ["string", "null"], "format": "uri"}
+    }},
+    "documents": {"type": "array", "description": "Flyers, Offering Memorandum (OM), surveys, site plans", "items": {"type": "object", "properties": {
+      "title": {"type": "string"}, "url": {"type": "string", "format": "uri"}, "kind": {"enum": ["flyer", "offering_memorandum", "survey", "site_plan", "demographics", "traffic", "brochure_link", "other"]}
+    }}},
+    "dates": {"type": "object", "properties": {
+      "listed": {"type": ["string", "null"], "format": "date"},
+      "available": {"type": ["string", "null"], "format": "date"},
+      "expires": {"type": ["string", "null"], "format": "date"},
+      "source_modified": {"type": ["string", "null"], "format": "date-time"}
+    }},
+    "disclosures": {"type": "object", "properties": {
+      "agent_ownership_interest": {"type": ["boolean", "null"], "description": "LACDB 'agentOwnershipInterest' flag (licensee has ownership interest)"}
+    }},
+    "co_brokers": {"type": "array", "description": "Other listing agents shown on LACDB", "items": {"type": "object", "properties": {"name": {"type": "string"}, "company": {"type": "string"}}}},
+    "related_listing_ids": {"type": "array", "items": {"type": "string"}, "description": "Other LACDB records for the same site (sale vs lease, split vs whole)"},
+    "broker_contact": {"type": "object", "properties": {
+      "name": {"const": "Matthew Shirley"},
+      "title": {"const": "Associate Broker"},
+      "company": {"const": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)"},
+      "phone": {"const": "225.907.5214"},
+      "email": {"const": "matthew@sr-cre.com"}
+    }},
+    "actions": {"type": "object", "properties": {
+      "request_tour": {"type": "string"},
+      "request_om": {"type": "string"}
+    }},
+    "last_updated": {"type": "string", "format": "date-time", "description": "When this feed record was generated"}
+  }
+}

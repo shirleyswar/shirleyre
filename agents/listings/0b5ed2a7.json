@@ -1,0 +1,38 @@
+{
+  "id": "lacdb-0b5ed2a7",
+  "detail_level": "summary",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "0b5ed2a7",
+    "url": "https://lacdb.resimplifi.com/listings/0b5ed2a7-177-acres-c1-no-flood-buildready",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+  },
+  "title": "1.77 Acres - C1 - No Flood - Build-Ready",
+  "status": "active",
+  "transaction_type": "sale",
+  "property_types": [],
+  "address": {
+    "street": "460 Community College Dr",
+    "city": "Baton Rouge",
+    "state": "LA",
+    "postal_code": "70806"
+  },
+  "price": {
+    "label": "$875,000",
+    "currency": "USD"
+  },
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%200b5ed2a7",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%200b5ed2a7"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+}
