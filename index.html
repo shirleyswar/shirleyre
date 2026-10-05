@@ -23,6 +23,8 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; font-weight: 400; overflow-x: hidden; }
+  /* First screen: identity, six nav cards, War Room, footer — one desktop viewport. */
+  .home-fit { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: space-between; gap: clamp(6px, 1.2vh, 18px); }
   #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
   .glow-top { position: fixed; top: -30vh; left: 50%; transform: translateX(-50%); width: 80vw; height: 70vh; background: radial-gradient(ellipse, rgba(232,160,32,0.07) 0%, transparent 65%); pointer-events: none; z-index: 0; }
   .glow-left { position: fixed; top: 20vh; left: -20vw; width: 60vw; height: 60vh; background: radial-gradient(ellipse, rgba(10,60,50,0.25) 0%, transparent 65%); pointer-events: none; z-index: 0; }
@@ -35,9 +37,9 @@
   .nav-links a:hover { color: var(--gold2); }
   .nav-cta { font-family: 'Syne Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--bg); background: var(--gold); padding: 10px 22px; text-decoration: none; border-radius: 100px; transition: all 0.2s; }
   .nav-cta:hover { background: var(--gold2); transform: translateY(-1px); }
-  .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 120px 40px 0; position: relative; z-index: 1; overflow: visible; }
-  .hero-icon-wrap { position: relative; display: inline-flex; flex-direction: column; align-items: center; margin-bottom: 28px; margin-top: -40px; cursor: pointer; }
-  .hero-icon { width: 140px; height: 140px; animation: float 4s ease-in-out infinite; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s ease; }
+  .hero { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; padding: clamp(28px, 3.2vh, 44px) 40px 0; position: relative; overflow: visible; }
+  .hero-icon-wrap { position: relative; display: inline-flex; flex-direction: column; align-items: center; margin-bottom: clamp(6px, 1vh, 14px); margin-top: 0; cursor: pointer; }
+  .hero-icon { width: clamp(68px, 11vh, 124px); height: clamp(68px, 11vh, 124px); animation: float 4s ease-in-out infinite; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s ease; }
   @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-14px); } }
   .hero-icon svg { width: 100%; height: 100%; filter: drop-shadow(0 0 32px rgba(232,160,32,0.7)); transition: filter 0.25s ease; }
   .hero-icon-wrap:hover .hero-icon { transform: translateY(-8px) scale(1.22); animation-play-state: paused; }
@@ -45,13 +47,13 @@
   .hero-tooltip { position: absolute; bottom: -52px; left: 50%; transform: translateX(-50%); font-family: 'Syne Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: #d946ef; font-size: 15px; letter-spacing: 0.12em; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s ease; text-shadow: 0 0 1px #000, 0 0 2px #000, 0 0 16px rgba(217,70,239,1), 0 0 40px rgba(217,70,239,0.7); }
   .hero-icon-wrap:hover .hero-tooltip { opacity: 1; animation: wiggle 0.18s linear infinite; }
   @keyframes wiggle { 0%, 100% { transform: translateX(-50%); } 25% { transform: translateX(calc(-50% + 5px)); } 75% { transform: translateX(calc(-50% - 5px)); } }
-  .hero-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(36px, 6vw, 72px); letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 10px; animation: fadeUp 0.9s ease forwards 0.2s; opacity: 0; }
+  .hero-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(30px, min(5.6vw, 5.6vh), 64px); letter-spacing: -0.03em; line-height: 1.05; margin-bottom: clamp(2px, 0.5vh, 8px); animation: fadeUp 0.9s ease forwards 0.2s; opacity: 0; }
   .hero-name-line { display: block; background: linear-gradient(90deg, #c97010, var(--gold), var(--gold3), var(--gold), #c97010); background-size: 400% 100%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; padding-bottom: 0.18em; display: inline-block; width: 100%; animation: waveShift 8s ease-in-out infinite; }
   @keyframes waveShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-  .hero-tagline { font-family: 'Syne Mono', monospace; font-size: clamp(11px, 1.2vw, 14px); letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 28px; opacity: 0; animation: fadeUp 0.9s ease forwards 0.5s; }
-  .hero-sub { font-size: clamp(15px, 1.3vw, 17px); color: var(--muted); max-width: 600px; line-height: 1.9; margin-bottom: 20px; padding-bottom: 0.3em; opacity: 0; animation: fadeUp 0.9s ease forwards 0.7s; }
+  .hero-tagline { font-family: 'Syne Mono', monospace; font-size: clamp(11px, 1.35vh, 14px); letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: clamp(6px, 1.1vh, 14px); opacity: 0; animation: fadeUp 0.9s ease forwards 0.5s; }
+  .hero-sub { font-size: clamp(13px, 1.7vh, 16px); color: var(--muted); max-width: 640px; line-height: 1.45; margin-bottom: clamp(4px, 0.7vh, 10px); padding-bottom: 0; opacity: 0; animation: fadeUp 0.9s ease forwards 0.7s; }
   .hero-sub strong { color: var(--text); font-weight: 500; }
-  .hero-firm { font-family: 'Syne Mono', monospace; font-size: clamp(10px, 1vw, 12px); letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 8px; opacity: 0; animation: fadeUp 0.9s ease forwards 1.0s; }
+  .hero-firm { font-family: 'Syne Mono', monospace; font-size: clamp(10px, 1.25vh, 12px); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: clamp(2px, 0.4vh, 6px); max-width: 1080px; opacity: 0; animation: fadeUp 0.9s ease forwards 1.0s; }
   .hero-pill { display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 100px; padding: 10px 20px 10px 10px; font-size: 13px; color: var(--text); text-decoration: none; transition: all 0.2s; opacity: 0; animation: fadeUp 0.9s ease forwards 0.9s; }
   .hero-pill:hover { background: rgba(232,160,32,0.08); border-color: rgba(232,160,32,0.4); }
   .hero-pill-badge { background: var(--gold); color: var(--bg); font-family: 'Syne Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; font-weight: 600; }
@@ -107,20 +109,20 @@
   .form-group textarea { resize: vertical; min-height: 110px; }
   .form-submit { background: var(--gold); color: var(--bg); border: none; border-radius: 100px; padding: 14px 32px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; align-self: flex-start; margin-top: 4px; }
   .form-submit:hover { background: var(--gold2); transform: translateY(-1px); }
-  footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 32px 60px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+  footer { position: relative; border-top: 1px solid var(--border); padding: clamp(10px, 1.5vh, 22px) 40px; display: flex; flex-direction: column; align-items: center; gap: clamp(2px, 0.4vh, 6px); text-align: center; }
   .footer-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: -0.02em; background: linear-gradient(90deg, var(--gold), var(--gold2), var(--gold)); background-size: 200% 100%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: logoShift 6s ease infinite; }
   .footer-tagline { font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--muted); line-height: 1.6; }
   .footer-tagline a { color: var(--gold); text-decoration: none; transition: color 0.2s; }
   .footer-tagline a:hover { color: var(--gold2); }
   .footer-copy { font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: rgba(122,138,143,0.5); }
   /* ── FEATURE CARDS ── */
-  .features-wrap { position: relative; z-index: 1; padding: 0px 60px 80px; max-width: 1200px; margin: 0 auto; }
-  .features-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .features-wrap { position: relative; padding: clamp(2px, 0.6vh, 8px) clamp(24px, 4vw, 60px) 0; max-width: 1200px; margin: 0 auto; width: 100%; }
+  .features-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(8px, 1.1vh, 12px); }
   .feat-card {
     background: var(--card);
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 14px;
-    padding: 40px 24px 44px;
+    padding: clamp(12px, 1.8vh, 26px) 20px clamp(12px, 1.6vh, 22px);
     transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
     cursor: pointer;
     position: relative;
@@ -172,32 +174,45 @@
   }
   .feat-card:hover::before { opacity: 1; }
   .feat-icon {
-    width: 48px;
-    height: 48px;
+    width: clamp(36px, 4.8vh, 48px);
+    height: clamp(36px, 4.8vh, 48px);
     color: var(--gold);
-    margin-bottom: 20px;
+    margin-bottom: clamp(6px, 0.9vh, 12px);
     transition: color 0.3s, transform 0.3s;
     position: relative;
     z-index: 1;
   }
   .feat-icon svg { width: 100%; height: 100%; }
   .feat-card:hover .feat-icon { color: var(--gold2); transform: scale(1.08); }
-  .feat-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 19px; color: var(--text); margin-bottom: 0; letter-spacing: -0.02em; line-height: 1.5; display: block; position: relative; z-index: 1; }
-  .feat-arrow { font-family: 'Syne Mono', monospace; font-size: 13px; color: var(--gold); margin-top: 16px; opacity: 0; transform: translateX(-6px); transition: all 0.25s; position: relative; z-index: 1; }
+  .feat-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: clamp(15px, 1.9vh, 19px); color: var(--text); margin-bottom: 0; letter-spacing: -0.02em; line-height: 1.25; display: block; position: relative; z-index: 1; }
+  .feat-arrow { font-family: 'Syne Mono', monospace; font-size: 13px; color: var(--gold); margin-top: clamp(4px, 0.6vh, 10px); opacity: 0; transform: translateX(-6px); transition: all 0.25s; position: relative; z-index: 1; }
+  .warroom-entry { margin-top: clamp(8px, 1.3vh, 18px); text-align: center; }
+  .warroom-btn { font-family: 'Syne Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; padding: clamp(8px, 1.15vh, 14px) 32px; border-radius: 8px; cursor: pointer; background: rgba(201,147,58,0.07); border: 1px solid rgba(201,147,58,0.22); color: rgba(201,147,58,0.6); transition: all 0.2s; }
+  .warroom-btn:hover { background: rgba(201,147,58,0.13); color: rgba(201,147,58,0.9); border-color: rgba(201,147,58,0.4); }
   .feat-card:hover .feat-arrow { opacity: 1; transform: translateX(0); }
   @media (max-width: 900px) {
-    .features-wrap { padding: 48px 24px; }
+    .features-wrap { padding: 4px 16px 0; }
     .features-grid { grid-template-columns: 1fr; }
+    .feat-card { padding: 20px 18px 18px; }
+    .feat-icon { width: 40px; height: 40px; margin-bottom: 8px; }
+    .feat-title { font-size: 17px; }
   }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
   .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
   .reveal.visible { opacity: 1; transform: translateY(0); }
   @media (max-width: 900px) {
     nav { padding: 20px 24px; } nav.scrolled { padding: 16px 24px; } .nav-links, .nav-cta { display: none; }
-    section { padding: 64px 24px; } .hero { padding: 100px 24px 60px; }
+    section { padding: 64px 24px; }
+    .home-fit { min-height: 0; justify-content: flex-start; gap: 10px; }
+    .hero { padding: 28px 20px 0; }
+    .hero-icon { width: 96px; height: 96px; }
+    .hero-name { font-size: clamp(32px, 10vw, 48px); }
+    .hero-tagline { font-size: 11px; letter-spacing: 0.16em; margin-bottom: 10px; }
+    .hero-sub { font-size: 15px; line-height: 1.5; margin-bottom: 8px; }
+    .hero-firm { font-size: 10px; letter-spacing: 0.08em; }
     .about-grid, .contact-grid { grid-template-columns: 1fr; gap: 40px; }
     .listings-grid, .portfolio-grid { grid-template-columns: 1fr; }
-    footer { flex-direction: column; gap: 16px; text-align: center; padding: 28px 24px; }
+    footer { flex-direction: column; gap: 6px; text-align: center; padding: 16px 20px; }
     .pulse-band { padding: 48px 24px; }
   }
 
@@ -235,6 +250,7 @@
 <div class="glow-top"></div>
 <div class="glow-left"></div>
 
+<div class="home-fit">
 <div class="hero">
   <div class="hero-icon-wrap">
     <div class="hero-icon">
@@ -383,17 +399,16 @@
   </div>
 
   <!-- WAR ROOM ACCESS BUTTON -->
-  <div style="margin-top:24px;text-align:center;">
-    <button id="warroom-btn" onclick="openWarRoomPin()" style="
-      font-family:'Syne Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;
-      padding:14px 32px;border-radius:8px;cursor:pointer;
-      background:rgba(201,147,58,0.07);border:1px solid rgba(201,147,58,0.22);
-      color:rgba(201,147,58,0.6);transition:all 0.2s;
-    " onmouseover="this.style.background='rgba(201,147,58,0.13)';this.style.color='rgba(201,147,58,0.9)';this.style.borderColor='rgba(201,147,58,0.4)';"
-       onmouseout="this.style.background='rgba(201,147,58,0.07)';this.style.color='rgba(201,147,58,0.6)';this.style.borderColor='rgba(201,147,58,0.22)';">
-      War Room
-    </button>
+  <div class="warroom-entry">
+    <button id="warroom-btn" class="warroom-btn" type="button" onclick="openWarRoomPin()">War Room</button>
   </div>
+</div>
+
+<footer>
+  <div class="footer-logo">Matthew Shirley</div>
+  <p class="footer-tagline">Associate Broker · <a href="https://saurage-rotenberg.com" target="_blank">Saurage Rotenberg Commercial Real Estate</a> · Baton Rouge, Louisiana · Independent project, not affiliated with any other platform.</p>
+  <p class="footer-copy">© 2026 shirleyre.com</p>
+</footer>
 </div>
 
 <!-- WAR ROOM PIN GATE (inline, on homepage) -->
@@ -495,12 +510,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 </script>
-
-<footer>
-  <div class="footer-logo">Matthew Shirley</div>
-  <p class="footer-tagline">Associate Broker · <a href="https://saurage-rotenberg.com" target="_blank">Saurage Rotenberg Commercial Real Estate</a> · Baton Rouge, Louisiana · Independent project, not affiliated with any other platform.</p>
-  <p class="footer-copy">© 2026 shirleyre.com</p>
-</footer>
 
 <script>
   const canvas = document.getElementById('stars');
