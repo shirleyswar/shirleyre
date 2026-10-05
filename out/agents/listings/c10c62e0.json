@@ -1,0 +1,146 @@
+{
+  "id": "lacdb-c10c62e0",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "c10c62e0",
+    "listing_uuid": "c10c62e0-89ff-417a-abfe-47ed5a2cd69c",
+    "url": "https://lacdb.resimplifi.com/listings/c10c62e0-261-acres-c1-no-flood-build-ready",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period 2025-10-10 through 2026-10-05."
+  },
+  "title": "2.61 Acres - C1 - No Flood - Build Ready",
+  "status": "active",
+  "transaction_type": "sale",
+  "property_types": [
+    "Land"
+  ],
+  "property_subtypes": [],
+  "address": {
+    "street": "5235 Government St",
+    "street2": "460 Community College Dr.",
+    "city": "Baton Rouge",
+    "state": "LA",
+    "postal_code": "70816",
+    "parish": "East Baton Rouge Parish",
+    "country": "USA"
+  },
+  "geo": {
+    "lat": 30.4448986,
+    "lng": -91.1362208
+  },
+  "parcel": {
+    "apn": "738158",
+    "additional_apns": [],
+    "tax_id": null
+  },
+  "price": {
+    "amount": 1672000,
+    "unit": "total",
+    "total_min": 1672000,
+    "total_max": 1672000,
+    "label": "$1.7M",
+    "currency": "USD",
+    "sale_terms": "Cash to Seller",
+    "cap_rate_pct": null
+  },
+  "lease_spaces": [],
+  "size": {
+    "building_sf": null,
+    "lot_acres_min": 2.61,
+    "lot_acres_max": 2.61,
+    "lot_sf_min": 113691.6,
+    "lot_sf_max": 113691.6,
+    "frontage_ft": null
+  },
+  "zoning": {
+    "code": null,
+    "description": "Light Commercial",
+    "standardized_code": "C1"
+  },
+  "features": {
+    "is_vacant": true,
+    "land_splits_available": null,
+    "utilities": null,
+    "topography": null,
+    "building_class": null,
+    "year_built": null,
+    "tenancy": null,
+    "tenant": null,
+    "parking_type": null,
+    "dock_doors": null,
+    "drive_in_doors": null,
+    "clear_height_ft": null,
+    "nearest_interstate": null,
+    "nearest_highway": null,
+    "nearest_airport": null,
+    "highlights": []
+  },
+  "description_text": "2.61 Acres - Ready to Build\nZoned C1 \nAll Utilities On-Site\nCity Water/Sewer, Entergy, BR Water, Fiber\n$14.72/ft. \nNo Wetlands, No Flood",
+  "media": {
+    "photos": [
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-00dd1117.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-27912663.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-6fc5c973.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-657f24f0.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-da3cb6cc.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-9bb77d67.webp"
+    ],
+    "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/staticmapsatellite-39329687.png"
+  },
+  "documents": [
+    {
+      "title": "Survey_2.61 Acres",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/survey261-acres-7805ba0b.pdf",
+      "kind": "survey"
+    },
+    {
+      "title": "Survey_Final",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/surveyfinal-baf689b9.pdf",
+      "kind": "survey"
+    },
+    {
+      "title": "Traffic_Count_Map",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/trafficcountmap-0f5743a9.pdf",
+      "kind": "traffic"
+    },
+    {
+      "title": "Traffic_Count_Map__Close_Up",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/trafficcountmapcloseup-7cf50b49.pdf",
+      "kind": "traffic"
+    },
+    {
+      "title": "Drive_Time_Map_5_10_15_Minutes",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/drivetimemap51015minutes-786e13b5.pdf",
+      "kind": "other"
+    },
+    {
+      "title": "Demographic_and_Income_Profile",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/demographicandincomeprofile-d8241bd7.pdf",
+      "kind": "demographics"
+    }
+  ],
+  "dates": {
+    "listed": "2025-10-10",
+    "available": "2025-10-09",
+    "expires": null,
+    "source_modified": "2026-08-11T16:25:57.085Z"
+  },
+  "disclosures": {
+    "agent_ownership_interest": null
+  },
+  "co_brokers": [],
+  "related_listing_ids": [],
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20c10c62e0",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20c10c62e0"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "detail_level": "full"
+}
