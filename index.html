@@ -25,6 +25,11 @@
   body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; font-weight: 400; overflow-x: hidden; }
   /* First screen: identity, six nav cards, War Room, footer — one desktop viewport. */
   .home-fit { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: space-between; gap: clamp(6px, 1.2vh, 18px); }
+  /* Tall enough that the fitted column is the whole page — a wheel must not slide it. */
+  @media (min-width: 901px) and (min-height: 680px) {
+    html, body { height: 100%; overflow: hidden; }
+    .home-fit { height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; min-height: 0; }
+  }
   #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
   .glow-top { position: fixed; top: -30vh; left: 50%; transform: translateX(-50%); width: 80vw; height: 70vh; background: radial-gradient(ellipse, rgba(232,160,32,0.07) 0%, transparent 65%); pointer-events: none; z-index: 0; }
   .glow-left { position: fixed; top: 20vh; left: -20vw; width: 60vw; height: 60vh; background: radial-gradient(ellipse, rgba(10,60,50,0.25) 0%, transparent 65%); pointer-events: none; z-index: 0; }
