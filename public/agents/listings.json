@@ -1,0 +1,1715 @@
+{
+  "generated_at": "2026-10-05T12:30:00Z",
+  "source": {
+    "system": "LACDB",
+    "broker_id": "f7d76849",
+    "broker_name": "Matthew Shirley",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "attribution": "Based on information from the LACDB for the period 2025-10-08 through 2026-10-05.",
+    "note": "Staging feed from a one-time public pull of Matthew Shirley's listings only. Co-listings with other firms excluded (see excluded_listing_ids). detail_level=full for records with full field maps; detail_level=summary for card-level stubs. Not an official LACDB API. Refresh is manual until written permission.",
+    "excluded_listing_ids": [
+      "1228a65b",
+      "2471e47a",
+      "3da3426b",
+      "8b786eb4"
+    ],
+    "excluded_reason": "Co-listed with other firms (NAI Faulk & Foster Monroe portfolios; Elifin Choctaw) — held out per Matthew GO until confirmation he submitted them."
+  },
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "count": 19,
+  "counts": {
+    "full": 9,
+    "summary": 10
+  },
+  "listings": [
+    {
+      "id": "lacdb-30f8f0a3",
+      "detail_level": "summary",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "30f8f0a3",
+        "url": "https://lacdb.resimplifi.com/listings/30f8f0a3-048-acres-c2-vacant-land",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+      },
+      "title": "+/- 0.48 Acres C2 - Vacant Land",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [],
+      "address": {
+        "street": "Between N 13th and N 14th St",
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70802"
+      },
+      "price": {
+        "label": "$78,000",
+        "currency": "USD"
+      },
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%2030f8f0a3",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%2030f8f0a3"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+    },
+    {
+      "id": "lacdb-5d4a0303",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "5d4a0303",
+        "listing_uuid": "5d4a0303-b623-45be-b6fc-fb33c8d8c036",
+        "url": "https://lacdb.resimplifi.com/listings/5d4a0303-084-acres-lit-hard-corner-c1-no-flood-buildready",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period 2025-09-30 through 2026-10-05."
+      },
+      "title": "0.84 Acres  Lit Hard Corner - C1 - No Flood - Build-Ready",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [
+        "Land"
+      ],
+      "property_subtypes": [],
+      "address": {
+        "street": "5229 Government St",
+        "street2": null,
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70806",
+        "parish": "East Baton Rouge Parish",
+        "country": "USA"
+      },
+      "geo": {
+        "lat": 30.4447345,
+        "lng": -91.1364017
+      },
+      "parcel": {
+        "apn": "811718",
+        "additional_apns": [],
+        "tax_id": null
+      },
+      "price": {
+        "amount": 797000,
+        "unit": "total",
+        "total_min": 797000,
+        "total_max": 797000,
+        "label": "$797K",
+        "currency": "USD",
+        "sale_terms": "Cash to Seller",
+        "cap_rate_pct": null
+      },
+      "lease_spaces": [],
+      "size": {
+        "building_sf": null,
+        "lot_acres_min": 0.84,
+        "lot_acres_max": 0.84,
+        "lot_sf_min": 36590.4,
+        "lot_sf_max": 36590.4,
+        "frontage_ft": 160
+      },
+      "zoning": {
+        "code": "C1",
+        "description": "Light Commercial",
+        "standardized_code": "C1"
+      },
+      "features": {
+        "is_vacant": true,
+        "land_splits_available": null,
+        "utilities": {
+          "power": true,
+          "water": true,
+          "sewer": true,
+          "natural_gas": true,
+          "fiber": null
+        },
+        "topography": null,
+        "building_class": null,
+        "year_built": null,
+        "tenancy": null,
+        "tenant": null,
+        "parking_type": null,
+        "dock_doors": null,
+        "drive_in_doors": null,
+        "clear_height_ft": null,
+        "nearest_interstate": null,
+        "nearest_highway": null,
+        "nearest_airport": null,
+        "highlights": []
+      },
+      "description_text": "Lit Hard Corner - 0.84 Acre Tract Available For Sale\n$797,000 ($21.75/ft)\n160' of Government St. frontage\nZoned C1\nNot in Flood.  No fill/detention required.  No wetlands\nAll utilities on Site\nAbility to Add Additional 1.77 Acre Adjacent Parcel to the North to Create 2.61 Acres Total Contiguous (Price at $14.72/ft)\nSee 2.61 Acre Combined Listing in the \"Links\" Section",
+      "media": {
+        "photos": [
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-a4ea9792.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-0445577f.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-576d2873.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-0da56427.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-eb77d342.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-ea140056.webp"
+        ],
+        "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/staticmapsatellite-699032ef.png"
+      },
+      "documents": [
+        {
+          "title": "Flyer_5229 Government St (Sale)",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/flyer5229-government-st-sale-54bb4fa1.pdf",
+          "kind": "flyer"
+        },
+        {
+          "title": "Survey_0.84 Acres",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/survey084-acres-be117b20.pdf",
+          "kind": "survey"
+        },
+        {
+          "title": "Survey_2.61 Acres",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/survey261-acres-3f11a767.pdf",
+          "kind": "survey"
+        },
+        {
+          "title": "Traffic_Count_Map",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/trafficcountmap-cfd81940.pdf",
+          "kind": "traffic"
+        },
+        {
+          "title": "Traffic_Count_Map__Close_Up",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/trafficcountmapcloseup-9445f3d4.pdf",
+          "kind": "traffic"
+        },
+        {
+          "title": "Drive_Time_Map_5_10_15_Minutes",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/drivetimemap51015minutes-b0dd1586.pdf",
+          "kind": "other"
+        },
+        {
+          "title": "Demographic_and_Income_Profile",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/demographicandincomeprofile-c2c2e100.pdf",
+          "kind": "demographics"
+        },
+        {
+          "title": "2.61 Acre Combined Tract: Listing",
+          "url": "https://lacdb.resimplifi.com/listings/c10c62e0-261-acres-c1-no-flood-build-ready",
+          "kind": "brochure_link"
+        }
+      ],
+      "dates": {
+        "listed": "2025-09-30",
+        "available": "2025-09-30",
+        "expires": "2026-12-16",
+        "source_modified": "2026-05-07T15:52:34.502Z"
+      },
+      "disclosures": {
+        "agent_ownership_interest": null
+      },
+      "co_brokers": [],
+      "related_listing_ids": [],
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%205d4a0303",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%205d4a0303"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "detail_level": "full"
+    },
+    {
+      "id": "lacdb-0b5ed2a7",
+      "detail_level": "summary",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "0b5ed2a7",
+        "url": "https://lacdb.resimplifi.com/listings/0b5ed2a7-177-acres-c1-no-flood-buildready",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+      },
+      "title": "1.77 Acres - C1 - No Flood - Build-Ready",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [],
+      "address": {
+        "street": "460 Community College Dr",
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70806"
+      },
+      "price": {
+        "label": "$875,000",
+        "currency": "USD"
+      },
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%200b5ed2a7",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%200b5ed2a7"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+    },
+    {
+      "id": "lacdb-d2e5861f",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "d2e5861f",
+        "listing_uuid": "d2e5861f-5a6d-466e-85ed-74e00a9c53ae",
+        "url": "https://lacdb.resimplifi.com/listings/d2e5861f-1293-acres-cw3-dual-access-cleared-buildready",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period 2025-10-08 through 2026-10-05."
+      },
+      "title": "12.93 Acres – CW3 – Dual Access, Cleared & Build-Ready",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [
+        "Land"
+      ],
+      "property_subtypes": [
+        "Industrial"
+      ],
+      "address": {
+        "street": "1400 -1500 Wooddale Blvd",
+        "street2": null,
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70806",
+        "parish": "East Baton Rouge Parish",
+        "country": "USA"
+      },
+      "geo": {
+        "lat": 30.4610052,
+        "lng": -91.1115517
+      },
+      "parcel": {
+        "apn": "308-5841-4",
+        "additional_apns": [],
+        "tax_id": null
+      },
+      "price": {
+        "amount": 2957000,
+        "unit": "total",
+        "total_min": 2957000,
+        "total_max": 2957000,
+        "label": "$3M",
+        "currency": "USD",
+        "sale_terms": null,
+        "cap_rate_pct": null
+      },
+      "lease_spaces": [],
+      "size": {
+        "building_sf": null,
+        "lot_acres_min": 12.933,
+        "lot_acres_max": 12.933,
+        "lot_sf_min": 563361.48,
+        "lot_sf_max": 563361.48,
+        "frontage_ft": null
+      },
+      "zoning": {
+        "code": "CW3",
+        "description": "Commercial Warehousing 3",
+        "standardized_code": "CW3"
+      },
+      "features": {
+        "is_vacant": true,
+        "land_splits_available": null,
+        "utilities": {
+          "power": true,
+          "water": true,
+          "sewer": true,
+          "natural_gas": true,
+          "fiber": true
+        },
+        "topography": "Level",
+        "building_class": null,
+        "year_built": null,
+        "tenancy": null,
+        "tenant": null,
+        "parking_type": null,
+        "dock_doors": null,
+        "drive_in_doors": null,
+        "clear_height_ft": null,
+        "nearest_interstate": "I-12, I-110, I-10",
+        "nearest_highway": "Airline Hwy.",
+        "nearest_airport": "BTR",
+        "highlights": []
+      },
+      "description_text": "12.93 Acres – CW3 – Dual Access, Cleared & Build-Ready\nSee Conceptual Site Plans Attached\nDual Access – Property Spans from Lobdell Blvd. to Wooddale Blvd.\nCleared & Unencumbered Tract with Maximum Usable Land\nZoned CW3 – Commercial Warehousing Three\nAll Utilities On Site\nNo Wetlands – No Flood Zone\n587' Frontage on Lobdell Blvd.\n287' Frontage on Wooddale Blvd.\nHighly Visible Location in Central Baton Rouge Corridor\n$5.25 per Square Foot",
+      "media": {
+        "photos": [
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-3dd63858.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-d9d2aba9.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-93fa54fd.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-a658f3a3.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-645d52c7.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-efe17eda.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-8cc03ae4.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-9a83549c.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-3b4b26be.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-9bab2141.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-eff74666.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-3133c2d9.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-8b5add2b.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-c8dd58fc.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-b4e531b2.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-f3c1cfc2.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-62e8231a.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-d93dc933.webp"
+        ],
+        "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/staticmapsatellite-a5e90d6e.png"
+      },
+      "documents": [
+        {
+          "title": "Flyer_1400-1500 Wooddale Blvd.",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d2e5861f/flyer1400-1500-wooddale-blvd-16e2dea1.pdf",
+          "kind": "flyer"
+        },
+        {
+          "title": "Concept Plan - 150k Distribution",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d2e5861f/concept-plan-150k-distribution-51d338ac.pdf",
+          "kind": "site_plan"
+        },
+        {
+          "title": "Concept Plan - 7 Building",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d2e5861f/concept-plan-7-building-8e105ac8.pdf",
+          "kind": "site_plan"
+        },
+        {
+          "title": "Concept Plan - 4 Building",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d2e5861f/concept-plan-4-building-36c1d6af.pdf",
+          "kind": "site_plan"
+        },
+        {
+          "title": "Survey_Resub_Landsource",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d2e5861f/surveyresublandsource-e86fbab4.pdf",
+          "kind": "survey"
+        }
+      ],
+      "dates": {
+        "listed": "2025-10-08",
+        "available": "2025-10-07",
+        "expires": null,
+        "source_modified": "2026-08-18T19:20:32.121Z"
+      },
+      "disclosures": {
+        "agent_ownership_interest": true
+      },
+      "co_brokers": [],
+      "related_listing_ids": [],
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20d2e5861f",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20d2e5861f"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "detail_level": "full"
+    },
+    {
+      "id": "lacdb-d36904f1",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "d36904f1",
+        "listing_uuid": "d36904f1-b03b-4014-a5f9-73548818abdf",
+        "url": "https://lacdb.resimplifi.com/listings/d36904f1-12025-industriplex-blvd",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period 2026-09-07 through 2026-10-05."
+      },
+      "title": "12025 Industriplex Blvd",
+      "status": "active",
+      "transaction_type": "lease",
+      "property_types": [
+        "Industrial"
+      ],
+      "property_subtypes": [],
+      "address": {
+        "street": "12025 Industriplex Blvd",
+        "street2": null,
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70809",
+        "parish": "East Baton Rouge Parish",
+        "country": "USA"
+      },
+      "geo": {
+        "lat": 30.3846993,
+        "lng": -91.0472243
+      },
+      "parcel": {
+        "apn": "036-0780-1",
+        "additional_apns": [],
+        "tax_id": null
+      },
+      "price": {
+        "amount": null,
+        "unit": "total",
+        "total_min": null,
+        "total_max": null,
+        "label": null,
+        "currency": "USD",
+        "sale_terms": null,
+        "cap_rate_pct": null
+      },
+      "lease_spaces": [
+        {
+          "space_id": "23081cd4",
+          "rate_min": 11,
+          "rate_max": 13,
+          "rate_unit": "sfYear",
+          "lease_structure": null,
+          "available_sf_min": 12000,
+          "available_sf_max": 12000,
+          "acres": null,
+          "sublease": false,
+          "status": "available"
+        }
+      ],
+      "size": {
+        "building_sf": 12000,
+        "lot_acres_min": 0.6991,
+        "lot_acres_max": 0.6991,
+        "lot_sf_min": 30452.8,
+        "lot_sf_max": 30452.8,
+        "frontage_ft": null
+      },
+      "zoning": {
+        "code": "M1 (St. George Equivalent)",
+        "description": "Light Industrial",
+        "standardized_code": null
+      },
+      "features": {
+        "is_vacant": null,
+        "land_splits_available": null,
+        "utilities": null,
+        "topography": null,
+        "building_class": null,
+        "year_built": null,
+        "tenancy": "Single Tenant",
+        "tenant": null,
+        "parking_type": null,
+        "dock_doors": null,
+        "drive_in_doors": [
+          {
+            "available": true,
+            "min": 5,
+            "max": 5
+          }
+        ],
+        "clear_height_ft": null,
+        "nearest_interstate": null,
+        "nearest_highway": null,
+        "nearest_airport": null,
+        "highlights": []
+      },
+      "description_text": "12,000 SqFt Office Warehouse in Industriplex\nOffice: ± 3,000 SqFt\nClimate-Controlled Warhouse: ± 1,450 SqFt\nWarehouse: ± 7,550 SqFt\nCustomization Opportunity | Or As-Is | Landlord embarking of large remodel. - perfect timing for Tenant to enter the fold and be involved with construction decisions\nLease rate range $11–$13/SF depending on Tenant needs and/or Tenant participation in construction\nAdditional $1,250/month collected for Property Tax & Insurance ($1.25/ft).\nFlexible Landlord — quick response times\nWork Details\nFull office remodel\nUpdated bathrooms\nOverhead door repairs\nBreakroom upgrade\nExterior metal R-panel reskin\nUpdate mansard roof\nFaçade improvements\nRemove crape myrtles in front of building\nOwner/Agent",
+      "media": {
+        "photos": [
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/12025-industriplex-blvd-d8fc14a4.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/12025-industriplex-blvd-04eaa408.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/12025-industriplex-blvd-56f52c25.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/12025-industriplex-blvd-682bd62a.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/12025-industriplex-blvd-3887dac9.webp"
+        ],
+        "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/staticmapsatellite-c66bd3ab.png"
+      },
+      "documents": [
+        {
+          "title": "Flyer_12025 Industriplex Blvd (Minimized)",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d36904f1/flyer12025-industriplex-blvd-minimized-229373a7.pdf",
+          "kind": "flyer"
+        },
+        {
+          "title": "12025 Industriplex Blvd",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d36904f1/12025-industriplex-blvd-a3b0ef5a.pdf",
+          "kind": "other"
+        }
+      ],
+      "dates": {
+        "listed": "2026-09-07",
+        "available": "2027-01-01",
+        "expires": "2027-04-14",
+        "source_modified": "2026-09-11T20:13:01.153Z"
+      },
+      "disclosures": {
+        "agent_ownership_interest": null
+      },
+      "co_brokers": [],
+      "related_listing_ids": [],
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20d36904f1",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20d36904f1"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "detail_level": "full"
+    },
+    {
+      "id": "lacdb-c10c62e0",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "c10c62e0",
+        "listing_uuid": "c10c62e0-89ff-417a-abfe-47ed5a2cd69c",
+        "url": "https://lacdb.resimplifi.com/listings/c10c62e0-261-acres-c1-no-flood-build-ready",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period 2025-10-10 through 2026-10-05."
+      },
+      "title": "2.61 Acres - C1 - No Flood - Build Ready",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [
+        "Land"
+      ],
+      "property_subtypes": [],
+      "address": {
+        "street": "5235 Government St",
+        "street2": "460 Community College Dr.",
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70816",
+        "parish": "East Baton Rouge Parish",
+        "country": "USA"
+      },
+      "geo": {
+        "lat": 30.4448986,
+        "lng": -91.1362208
+      },
+      "parcel": {
+        "apn": "738158",
+        "additional_apns": [],
+        "tax_id": null
+      },
+      "price": {
+        "amount": 1672000,
+        "unit": "total",
+        "total_min": 1672000,
+        "total_max": 1672000,
+        "label": "$1.7M",
+        "currency": "USD",
+        "sale_terms": "Cash to Seller",
+        "cap_rate_pct": null
+      },
+      "lease_spaces": [],
+      "size": {
+        "building_sf": null,
+        "lot_acres_min": 2.61,
+        "lot_acres_max": 2.61,
+        "lot_sf_min": 113691.6,
+        "lot_sf_max": 113691.6,
+        "frontage_ft": null
+      },
+      "zoning": {
+        "code": null,
+        "description": "Light Commercial",
+        "standardized_code": "C1"
+      },
+      "features": {
+        "is_vacant": true,
+        "land_splits_available": null,
+        "utilities": null,
+        "topography": null,
+        "building_class": null,
+        "year_built": null,
+        "tenancy": null,
+        "tenant": null,
+        "parking_type": null,
+        "dock_doors": null,
+        "drive_in_doors": null,
+        "clear_height_ft": null,
+        "nearest_interstate": null,
+        "nearest_highway": null,
+        "nearest_airport": null,
+        "highlights": []
+      },
+      "description_text": "2.61 Acres - Ready to Build\nZoned C1 \nAll Utilities On-Site\nCity Water/Sewer, Entergy, BR Water, Fiber\n$14.72/ft. \nNo Wetlands, No Flood",
+      "media": {
+        "photos": [
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-00dd1117.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-27912663.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-6fc5c973.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-657f24f0.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-da3cb6cc.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-9bb77d67.webp"
+        ],
+        "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/staticmapsatellite-39329687.png"
+      },
+      "documents": [
+        {
+          "title": "Survey_2.61 Acres",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/survey261-acres-7805ba0b.pdf",
+          "kind": "survey"
+        },
+        {
+          "title": "Survey_Final",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/surveyfinal-baf689b9.pdf",
+          "kind": "survey"
+        },
+        {
+          "title": "Traffic_Count_Map",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/trafficcountmap-0f5743a9.pdf",
+          "kind": "traffic"
+        },
+        {
+          "title": "Traffic_Count_Map__Close_Up",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/trafficcountmapcloseup-7cf50b49.pdf",
+          "kind": "traffic"
+        },
+        {
+          "title": "Drive_Time_Map_5_10_15_Minutes",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/drivetimemap51015minutes-786e13b5.pdf",
+          "kind": "other"
+        },
+        {
+          "title": "Demographic_and_Income_Profile",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/c10c62e0/demographicandincomeprofile-d8241bd7.pdf",
+          "kind": "demographics"
+        }
+      ],
+      "dates": {
+        "listed": "2025-10-10",
+        "available": "2025-10-09",
+        "expires": null,
+        "source_modified": "2026-08-11T16:25:57.085Z"
+      },
+      "disclosures": {
+        "agent_ownership_interest": null
+      },
+      "co_brokers": [],
+      "related_listing_ids": [],
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20c10c62e0",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20c10c62e0"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "detail_level": "full"
+    },
+    {
+      "id": "lacdb-7b1ff984",
+      "detail_level": "summary",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "7b1ff984",
+        "url": "https://lacdb.resimplifi.com/listings/7b1ff984-bts-on-083-acres",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+      },
+      "title": "BTS on 0.83 Acres",
+      "status": "active",
+      "transaction_type": "lease",
+      "property_types": [],
+      "address": {
+        "street": "5229 Government St",
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70816"
+      },
+      "price": {
+        "label": "$1 SF/year",
+        "currency": "USD"
+      },
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%207b1ff984",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%207b1ff984"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+    },
+    {
+      "id": "lacdb-7eb337d8",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "7eb337d8",
+        "listing_uuid": "7eb337d8-3f9c-4c7b-8f41-86cd681c9592",
+        "url": "https://lacdb.resimplifi.com/listings/7eb337d8-best-value-mid-city-office-great-parking-full-service-",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period 2025-11-05 through 2026-10-05."
+      },
+      "title": "Best Value Mid City Office | Great Parking, Full Service !",
+      "status": "active",
+      "transaction_type": "lease",
+      "property_types": [
+        "Office"
+      ],
+      "property_subtypes": [],
+      "address": {
+        "street": "619 Jefferson Hwy",
+        "street2": null,
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70806",
+        "parish": "East Baton Rouge Parish",
+        "country": "USA"
+      },
+      "geo": {
+        "lat": 30.4433512,
+        "lng": -91.1300801
+      },
+      "parcel": {
+        "apn": "855251",
+        "additional_apns": [],
+        "tax_id": null
+      },
+      "price": {
+        "amount": null,
+        "unit": "total",
+        "total_min": null,
+        "total_max": null,
+        "label": null,
+        "currency": "USD",
+        "sale_terms": null,
+        "cap_rate_pct": null
+      },
+      "lease_spaces": [
+        {
+          "space_id": "2332f11c",
+          "rate_min": 13.59,
+          "rate_max": 13.59,
+          "rate_unit": "sfYear",
+          "lease_structure": null,
+          "available_sf_min": 1766,
+          "available_sf_max": 1766,
+          "acres": null,
+          "sublease": false,
+          "status": "available"
+        },
+        {
+          "space_id": "115070a2",
+          "rate_min": 14.4,
+          "rate_max": 14.4,
+          "rate_unit": "sfYear",
+          "lease_structure": null,
+          "available_sf_min": 1667,
+          "available_sf_max": 1667,
+          "acres": null,
+          "sublease": false,
+          "status": "leased"
+        }
+      ],
+      "size": {
+        "building_sf": null,
+        "lot_acres_min": null,
+        "lot_acres_max": null,
+        "lot_sf_min": null,
+        "lot_sf_max": null,
+        "frontage_ft": null
+      },
+      "zoning": {
+        "code": "B1",
+        "description": "Transition",
+        "standardized_code": null
+      },
+      "features": {
+        "is_vacant": null,
+        "land_splits_available": null,
+        "utilities": null,
+        "topography": null,
+        "building_class": null,
+        "year_built": null,
+        "tenancy": null,
+        "tenant": null,
+        "parking_type": null,
+        "dock_doors": null,
+        "drive_in_doors": null,
+        "clear_height_ft": null,
+        "nearest_interstate": null,
+        "nearest_highway": null,
+        "nearest_airport": null,
+        "highlights": []
+      },
+      "description_text": "Available immediately | Mid City office with generous parking and flexible lease terms — Jefferson Hwy at Government St.\nFull Service Lease - Rent Includes All Utilities & Janitorial\nOnly additional Tenant expense is Phone/Internet & GL Insurance\n1 Suite Available: 2H - 1,766 SF 2nd Floor @ $2,000/mo.\nExceptional value for Mid City when factoring parking, curb appeal & terms\nReserved covered parking in rear + visitor parking out front\nQuiet, established tenant mix with strong curb appeal\nLocal, responsive landlord with quality track record\nAvailable immediately\nLocal, high-quality Landlord",
+      "media": {
+        "photos": [
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-82f3c55e.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-788bdb0c.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-e5a90e06.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-1a26ddd3.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-69379cdc.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-1a3d0069.webp"
+        ],
+        "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/staticmapsatellite-5fdecbd0.png"
+      },
+      "documents": [
+        {
+          "title": "Flyer_619 Jefferson Hwy_Ste 2H (Minimized)",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/7eb337d8/flyer619-jefferson-hwyste-2h-minimized-7fb05929.pdf",
+          "kind": "flyer"
+        }
+      ],
+      "dates": {
+        "listed": "2025-11-05",
+        "available": "2025-11-05",
+        "expires": "2027-05-05",
+        "source_modified": "2026-09-16T20:38:24.344Z"
+      },
+      "disclosures": {
+        "agent_ownership_interest": null
+      },
+      "co_brokers": [],
+      "related_listing_ids": [],
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%207eb337d8",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%207eb337d8"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "detail_level": "full"
+    },
+    {
+      "id": "lacdb-5296eedb",
+      "detail_level": "summary",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "5296eedb",
+        "url": "https://lacdb.resimplifi.com/listings/5296eedb-buildready-20-acres-on-hwy-51",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+      },
+      "title": "Build-Ready 2.0 Acres on Hwy 51",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [],
+      "address": {
+        "street": "North Morrison Blvd",
+        "city": "Hammond",
+        "state": "LA",
+        "postal_code": "70401"
+      },
+      "price": {
+        "label": "$1,267,455",
+        "currency": "USD"
+      },
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%205296eedb",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%205296eedb"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+    },
+    {
+      "id": "lacdb-b6e3c879",
+      "detail_level": "summary",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "b6e3c879",
+        "url": "https://lacdb.resimplifi.com/listings/b6e3c879-industrial-site-near-dow-shintech-iberville-parish",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+      },
+      "title": "Industrial Site Near Dow & Shintech (Iberville Parish)",
+      "status": "active",
+      "transaction_type": "lease",
+      "property_types": [],
+      "address": {
+        "street": "25035 LA-1",
+        "city": "Plaquemine",
+        "state": "LA",
+        "postal_code": "70764"
+      },
+      "price": {
+        "label": "$10 - $13 Month",
+        "currency": "USD"
+      },
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20b6e3c879",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20b6e3c879"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+    },
+    {
+      "id": "lacdb-138d8815",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "138d8815",
+        "listing_uuid": "138d8815-c302-4ac7-bd8d-6519a3a6048c",
+        "url": "https://lacdb.resimplifi.com/listings/138d8815-leased-office-acredit-tenant",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period 2026-02-24 through 2026-10-05."
+      },
+      "title": "Leased Office A-Credit Tenant",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [
+        "Office"
+      ],
+      "property_subtypes": [],
+      "address": {
+        "street": "1301 Hudson Ln",
+        "street2": null,
+        "city": "Monroe",
+        "state": "LA",
+        "postal_code": "71201",
+        "parish": "Ouachita Parish",
+        "country": "USA"
+      },
+      "geo": {
+        "lat": 32.5166653,
+        "lng": -92.1123221
+      },
+      "parcel": {
+        "apn": "74296",
+        "additional_apns": [],
+        "tax_id": null
+      },
+      "price": {
+        "amount": 3095000,
+        "unit": "total",
+        "total_min": 3095000,
+        "total_max": 3095000,
+        "label": "$3.1M",
+        "currency": "USD",
+        "sale_terms": null,
+        "cap_rate_pct": null
+      },
+      "lease_spaces": [],
+      "size": {
+        "building_sf": 26238,
+        "lot_acres_min": 1.879,
+        "lot_acres_max": 1.879,
+        "lot_sf_min": 81849.24,
+        "lot_sf_max": 81849.24,
+        "frontage_ft": null
+      },
+      "zoning": {
+        "code": "B-3",
+        "description": "General Business And Commercial",
+        "standardized_code": "B-3"
+      },
+      "features": {
+        "is_vacant": null,
+        "land_splits_available": null,
+        "utilities": null,
+        "topography": null,
+        "building_class": "A",
+        "year_built": 1999,
+        "tenancy": "Single Tenant",
+        "tenant": "A-Credit",
+        "parking_type": "Surface",
+        "dock_doors": null,
+        "drive_in_doors": null,
+        "clear_height_ft": null,
+        "nearest_interstate": null,
+        "nearest_highway": null,
+        "nearest_airport": null,
+        "highlights": []
+      },
+      "description_text": "Leased Office A-Credit Tenant with Modified Net lease.\nOffice - 26,238 sqft\n2026 NOI at $248,483.74\nCAP Rate: 8.02%\nContact Agent for Confidentiality Agreement to access all Lease Documents & Expense Information\nDo not disturb Tenant",
+      "media": {
+        "photos": [
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-2a60c11f.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-ceb3dab8.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-c4f186e6.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-31a497c1.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-e95b17bb.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-96ebb191.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-6e173bd7.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-ce4b253f.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-6c0c3143.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-275338d7.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-647d3780.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-c777dec8.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-1087244a.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-c005b1e2.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-1a559586.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-d29d8cf5.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-094ecc26.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-3b884fcc.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-cc57e855.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-31dda565.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-52a6c649.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-7037f9e4.webp"
+        ],
+        "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/staticmapsatellite-1cf2d561.png"
+      },
+      "documents": [
+        {
+          "title": "Flyer_1301 Hudson Ln_(Minimized) SR & ELR",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/138d8815/flyer1301-hudson-lnminimized-sr-elr-a79d071c.pdf",
+          "kind": "flyer"
+        }
+      ],
+      "dates": {
+        "listed": "2026-02-24",
+        "available": null,
+        "expires": null,
+        "source_modified": "2026-06-03T20:06:16.605Z"
+      },
+      "disclosures": {
+        "agent_ownership_interest": null
+      },
+      "co_brokers": [
+        {
+          "name": "Edward Rotenberg, SIOR",
+          "company": "Saurage Rotenberg Commercial Real Estate, LLC"
+        }
+      ],
+      "related_listing_ids": [],
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20138d8815",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20138d8815"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "detail_level": "full"
+    },
+    {
+      "id": "lacdb-e0963f9a",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "e0963f9a",
+        "listing_uuid": "e0963f9a-8235-4325-9f0d-f1d4a40ce237",
+        "url": "https://lacdb.resimplifi.com/listings/e0963f9a-reduced-motivated-05-acre-tract-w-100-frontage",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period 2026-03-25 through 2026-10-05."
+      },
+      "title": "REDUCED - Motivated ≈ 0.5 Acre Tract w. 100' Frontage",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [
+        "Land"
+      ],
+      "property_subtypes": [
+        "Residential Development",
+        "Retail"
+      ],
+      "address": {
+        "street": "4109 Government St",
+        "street2": null,
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70806",
+        "parish": "East Baton Rouge Parish",
+        "country": "USA"
+      },
+      "geo": {
+        "lat": 30.4447758,
+        "lng": -91.1468543
+      },
+      "parcel": {
+        "apn": "1343300",
+        "additional_apns": [],
+        "tax_id": null
+      },
+      "price": {
+        "amount": 339000,
+        "unit": "total",
+        "total_min": 339000,
+        "total_max": 339000,
+        "label": "$339K",
+        "currency": "USD",
+        "sale_terms": null,
+        "cap_rate_pct": null
+      },
+      "lease_spaces": [],
+      "size": {
+        "building_sf": null,
+        "lot_acres_min": 0.49,
+        "lot_acres_max": 0.49,
+        "lot_sf_min": 21344.4,
+        "lot_sf_max": 21344.4,
+        "frontage_ft": null
+      },
+      "zoning": {
+        "code": "ISPUD",
+        "description": "Infill Small Planned Unit Development",
+        "standardized_code": null
+      },
+      "features": {
+        "is_vacant": true,
+        "land_splits_available": null,
+        "utilities": {
+          "power": true,
+          "water": true,
+          "sewer": true,
+          "natural_gas": true,
+          "fiber": true
+        },
+        "topography": null,
+        "building_class": null,
+        "year_built": null,
+        "tenancy": null,
+        "tenant": null,
+        "parking_type": null,
+        "dock_doors": null,
+        "drive_in_doors": null,
+        "clear_height_ft": null,
+        "nearest_interstate": null,
+        "nearest_highway": null,
+        "nearest_airport": null,
+        "highlights": []
+      },
+      "description_text": "Hard Corner - 0.49 Acre Lot\n≈ 100' of Government St. frontage\nLit corner\nLocated directly across from Calandro's Supermarket & Curbside Burger\nActive Government St. pocket\nList Price: $15.88/SF\nReady to Build - All utilities on-site\nCurrently Zoned: Majority of site is zoned ISPUD with a small strip zoned LC1 in the rear\nContact agent to discuss zoning in more detail - Note: the current ISPUD classification has expired. Development will require either a). rezoning based on planned use or b) updated ISPUD. Either option is achievable without major assumptions.\nFlood Zone X = not in flood zone\nBillboard is not located on the site",
+      "media": {
+        "photos": [
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/-05-acre-tract-w-100-frontage-312af8de.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/-05-acre-tract-w-100-frontage-88ee2451.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/-05-acre-tract-w-100-frontage-544071ed.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/-05-acre-tract-w-100-frontage-e8e430ad.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/-05-acre-tract-w-100-frontage-a1422dea.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/-05-acre-tract-w-100-frontage-8ef0cc84.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/-05-acre-tract-w-100-frontage-444a53db.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/vacant-land-for-sale-f4e5b978.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/-05-acre-tract-w-100-frontage-99fe4942.webp"
+        ],
+        "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/staticmapsatellite-e54a5b98.png"
+      },
+      "documents": [
+        {
+          "title": "Flyer_4109 Government St (MInimized)",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/e0963f9a/flyer4109-government-st-minimized-d7461bdf.pdf",
+          "kind": "flyer"
+        },
+        {
+          "title": "Survey",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/e0963f9a/survey-edc723ec.pdf",
+          "kind": "survey"
+        }
+      ],
+      "dates": {
+        "listed": "2026-03-25",
+        "available": "2026-03-25",
+        "expires": "2027-04-12",
+        "source_modified": "2026-08-21T17:48:03.030Z"
+      },
+      "disclosures": {
+        "agent_ownership_interest": null
+      },
+      "co_brokers": [],
+      "related_listing_ids": [],
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20e0963f9a",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20e0963f9a"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "detail_level": "full"
+    },
+    {
+      "id": "lacdb-9a59f849",
+      "detail_level": "summary",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "9a59f849",
+        "url": "https://lacdb.resimplifi.com/listings/9a59f849-retail-for-lease",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+      },
+      "title": "Retail For Lease",
+      "status": "active",
+      "transaction_type": "lease",
+      "property_types": [],
+      "address": {
+        "street": "North Morrison Blvd",
+        "city": "Hammond",
+        "state": "LA",
+        "postal_code": "70401"
+      },
+      "price": {
+        "label": "$12 - $22 SF/year",
+        "currency": "USD"
+      },
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%209a59f849",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%209a59f849"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+    },
+    {
+      "id": "lacdb-fa9c3a67",
+      "detail_level": "summary",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "fa9c3a67",
+        "url": "https://lacdb.resimplifi.com/listings/fa9c3a67-shovelready-site-near-dow-shintech-iberville-parish",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+      },
+      "title": "Shovel-Ready Site Near DOW & Shintech (Iberville Parish)",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [],
+      "address": {
+        "street": "25035 LA-1",
+        "city": "Plaquemine",
+        "state": "LA",
+        "postal_code": "70764"
+      },
+      "price": {
+        "label": "$2,439,360",
+        "currency": "USD"
+      },
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20fa9c3a67",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20fa9c3a67"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+    },
+    {
+      "id": "lacdb-600d975e",
+      "detail_level": "summary",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "600d975e",
+        "url": "https://lacdb.resimplifi.com/listings/600d975e-shovelready-site-near-dow-shintech-iberville-parish",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+      },
+      "title": "Shovel-Ready Site Near Dow & Shintech (Iberville Parish)",
+      "status": "active",
+      "transaction_type": "lease",
+      "property_types": [],
+      "address": {
+        "street": "25035 LA-1",
+        "city": "Plaquemine",
+        "state": "LA",
+        "postal_code": "70764"
+      },
+      "price": {
+        "label": "$10 - $13 SF/year",
+        "currency": "USD"
+      },
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20600d975e",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20600d975e"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+    },
+    {
+      "id": "lacdb-fe0c270f",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "fe0c270f",
+        "listing_uuid": "fe0c270f-5f09-4f94-aabb-38439c2de6f1",
+        "url": "https://lacdb.resimplifi.com/listings/fe0c270f-the-annex",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period 2026-01-27 through 2026-10-05."
+      },
+      "title": "The Annex",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [
+        "Office"
+      ],
+      "property_subtypes": [],
+      "address": {
+        "street": "328 Desiard St",
+        "street2": null,
+        "city": "Monroe",
+        "state": "LA",
+        "postal_code": "71201",
+        "parish": "Ouachita Parish",
+        "country": "USA"
+      },
+      "geo": {
+        "lat": 32.502683,
+        "lng": -92.1153704
+      },
+      "parcel": {
+        "apn": "83932",
+        "additional_apns": [],
+        "tax_id": null
+      },
+      "price": {
+        "amount": 2000000,
+        "unit": "total",
+        "total_min": 2000000,
+        "total_max": 2000000,
+        "label": "$2M",
+        "currency": "USD",
+        "sale_terms": "Cash to Seller",
+        "cap_rate_pct": null
+      },
+      "lease_spaces": [],
+      "size": {
+        "building_sf": 24464,
+        "lot_acres_min": 0.491,
+        "lot_acres_max": 0.491,
+        "lot_sf_min": 21387.96,
+        "lot_sf_max": 21387.96,
+        "frontage_ft": null
+      },
+      "zoning": {
+        "code": "CBD",
+        "description": "Central Business District",
+        "standardized_code": null
+      },
+      "features": {
+        "is_vacant": null,
+        "land_splits_available": null,
+        "utilities": null,
+        "topography": null,
+        "building_class": null,
+        "year_built": 1930,
+        "tenancy": null,
+        "tenant": null,
+        "parking_type": null,
+        "dock_doors": null,
+        "drive_in_doors": null,
+        "clear_height_ft": null,
+        "nearest_interstate": null,
+        "nearest_highway": null,
+        "nearest_airport": null,
+        "highlights": []
+      },
+      "description_text": "Sprinklered - Class A - Corporate HQ Office\n32 Parking Spaces on Additional 21,120 SF paved & secured parking lot included\nImmediate Occupancy Available\n3 Phase Electrical Service w Back Up Generator\nOne (1) Passenger Elevator\nWell Maintained – All Infrastructure Regularly Serviced & Logged\nUtilities On\nBuilding Size: 24,464 SF\n3 Stories\nYear Built: 1930\nRenovations in 2004 & 2014\nFlood Zone \"X\" (No Flood)\nZoned CBD (Central Business District)\nPlease contact agent for more details and to schedule a tour.",
+      "media": {
+        "photos": [
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-3bcf55c2.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-10c6d73f.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-7a045873.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-2ddfeb89.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-7e3ab50e.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-37e0c39e.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-334bf407.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-2c8913d3.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-25ea839a.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-f1082d0d.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-0f4f5d49.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-e6c6029c.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-eeebaef5.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-6f9598ea.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-fa91f504.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-a4a55801.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-04cc0fdd.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-d74bc0b8.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-b955e7cd.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-90d42465.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-47169fb0.webp"
+        ],
+        "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/staticmapsatellite-f7e42d4b.png"
+      },
+      "documents": [
+        {
+          "title": "Flyer_328_Desiard_St._(Minimized)",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/fe0c270f/flyer328desiardstminimized-5d7ffe4c.pdf",
+          "kind": "flyer"
+        },
+        {
+          "title": "First Floor Annex 328 Desiard",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/fe0c270f/first-floor-annex-328-desiard-d69e2eb2.pdf",
+          "kind": "other"
+        },
+        {
+          "title": "Second Floor Annex 328 Desiard",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/fe0c270f/second-floor-annex-328-desiard-f069c74d.pdf",
+          "kind": "other"
+        },
+        {
+          "title": "Third Floor Annex 328 Desiard",
+          "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/fe0c270f/third-floor-annex-328-desiard-0a59a46b.pdf",
+          "kind": "other"
+        }
+      ],
+      "dates": {
+        "listed": "2026-01-27",
+        "available": "2026-02-01",
+        "expires": "2027-02-27",
+        "source_modified": "2026-08-26T15:02:52.355Z"
+      },
+      "disclosures": {
+        "agent_ownership_interest": null
+      },
+      "co_brokers": [],
+      "related_listing_ids": [],
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20fe0c270f",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20fe0c270f"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "detail_level": "full"
+    },
+    {
+      "id": "lacdb-11940dde",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "11940dde",
+        "listing_uuid": "11940dde-f2b1-45bb-984a-f55e176603f4",
+        "url": "https://lacdb.resimplifi.com/listings/11940dde-tract-a2a41b",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period 2026-06-18 through 2026-10-05."
+      },
+      "title": "Tract A-2-A-4-1-B",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [
+        "Land"
+      ],
+      "property_subtypes": [],
+      "address": {
+        "street": "Tract A-2-A-4-1-B",
+        "street2": null,
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70810",
+        "parish": "East Baton Rouge Parish",
+        "country": "USA"
+      },
+      "geo": {
+        "lat": 30.34983136291431,
+        "lng": -91.08766087182768
+      },
+      "parcel": {
+        "apn": "308-3488-0",
+        "additional_apns": [],
+        "tax_id": null
+      },
+      "price": {
+        "amount": 10.41,
+        "unit": "per_sf",
+        "total_min": 453460,
+        "total_max": 2947487,
+        "label": "$10.4/SF",
+        "currency": "USD",
+        "sale_terms": null,
+        "cap_rate_pct": null
+      },
+      "lease_spaces": [],
+      "size": {
+        "building_sf": null,
+        "lot_acres_min": 1,
+        "lot_acres_max": 6.5,
+        "lot_sf_min": 43560,
+        "lot_sf_max": 283140,
+        "frontage_ft": null
+      },
+      "zoning": {
+        "code": "C2",
+        "description": "Heavy Commercial",
+        "standardized_code": "C2"
+      },
+      "features": {
+        "is_vacant": true,
+        "land_splits_available": true,
+        "utilities": null,
+        "topography": null,
+        "building_class": null,
+        "year_built": null,
+        "tenancy": null,
+        "tenant": null,
+        "parking_type": null,
+        "dock_doors": null,
+        "drive_in_doors": null,
+        "clear_height_ft": null,
+        "nearest_interstate": null,
+        "nearest_highway": null,
+        "nearest_airport": null,
+        "highlights": []
+      },
+      "description_text": "Zoned MX-3 - City of St. George has Finalized the New Zoning Districts.\nLeft Turn In Access via Burbank available.\n9.0 Acre Total Site with Approx. 6.50 Useable Site-Ready Acres.\n$10.41/ft on 6.50 Useable Acres --- Land split available. Pricing dependent on size/orientation of desired area.\nDetention, Wetlands, Site Grading, Utility work all complete.\nLocated in the City of St. George Billboard not included in the sales price.",
+      "media": {
+        "photos": [
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/tract-a2a41b-c98b9de7.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/tract-a2a41b-f2852690.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/tract-a2a41b-466c0d08.webp",
+          "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/tract-a2a41b-f27da16c.webp"
+        ],
+        "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/staticmapsatellite-8301c448.png"
+      },
+      "documents": [],
+      "dates": {
+        "listed": "2026-06-18",
+        "available": "2026-06-18",
+        "expires": "2027-01-12",
+        "source_modified": "2026-07-14T18:46:19.543Z"
+      },
+      "disclosures": {
+        "agent_ownership_interest": null
+      },
+      "co_brokers": [],
+      "related_listing_ids": [],
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%2011940dde",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%2011940dde"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "detail_level": "full"
+    },
+    {
+      "id": "lacdb-fca1102d",
+      "detail_level": "summary",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "fca1102d",
+        "url": "https://lacdb.resimplifi.com/listings/fca1102d-zoned-mx3-finalized-siteready-65-useable-acres",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+      },
+      "title": "Zoned MX-3 *Finalized* Site-Ready 6.5 Useable Acres",
+      "status": "active",
+      "transaction_type": "sale",
+      "property_types": [],
+      "address": {
+        "street": "Tract A-2-A-4-1-B",
+        "city": "Baton Rouge",
+        "state": "LA",
+        "postal_code": "70810"
+      },
+      "price": {
+        "label": "$2,950,000",
+        "currency": "USD"
+      },
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20fca1102d",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20fca1102d"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+    },
+    {
+      "id": "lacdb-118b7fa2",
+      "detail_level": "summary",
+      "source": {
+        "system": "LACDB",
+        "listing_id": "118b7fa2",
+        "url": "https://lacdb.resimplifi.com/listings/118b7fa2-interstate-12-frontage-visibility",
+        "retrieved_at": "2026-10-05T12:30:00Z",
+        "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+      },
+      "title": "Interstate 12 Frontage / Visibility",
+      "status": "pending",
+      "transaction_type": "sale",
+      "property_types": [],
+      "address": {
+        "street": "Interstate 12 Service Road",
+        "city": "Hammond",
+        "state": "LA",
+        "postal_code": "70403"
+      },
+      "price": {
+        "label": "$2,300,000",
+        "currency": "USD"
+      },
+      "broker_contact": {
+        "name": "Matthew Shirley",
+        "title": "Associate Broker",
+        "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+        "phone": "225.907.5214",
+        "email": "matthew@sr-cre.com"
+      },
+      "actions": {
+        "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20118b7fa2",
+        "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20118b7fa2"
+      },
+      "last_updated": "2026-10-05T12:30:00Z",
+      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+    }
+  ]
+}

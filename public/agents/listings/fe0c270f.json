@@ -1,0 +1,151 @@
+{
+  "id": "lacdb-fe0c270f",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "fe0c270f",
+    "listing_uuid": "fe0c270f-5f09-4f94-aabb-38439c2de6f1",
+    "url": "https://lacdb.resimplifi.com/listings/fe0c270f-the-annex",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period 2026-01-27 through 2026-10-05."
+  },
+  "title": "The Annex",
+  "status": "active",
+  "transaction_type": "sale",
+  "property_types": [
+    "Office"
+  ],
+  "property_subtypes": [],
+  "address": {
+    "street": "328 Desiard St",
+    "street2": null,
+    "city": "Monroe",
+    "state": "LA",
+    "postal_code": "71201",
+    "parish": "Ouachita Parish",
+    "country": "USA"
+  },
+  "geo": {
+    "lat": 32.502683,
+    "lng": -92.1153704
+  },
+  "parcel": {
+    "apn": "83932",
+    "additional_apns": [],
+    "tax_id": null
+  },
+  "price": {
+    "amount": 2000000,
+    "unit": "total",
+    "total_min": 2000000,
+    "total_max": 2000000,
+    "label": "$2M",
+    "currency": "USD",
+    "sale_terms": "Cash to Seller",
+    "cap_rate_pct": null
+  },
+  "lease_spaces": [],
+  "size": {
+    "building_sf": 24464,
+    "lot_acres_min": 0.491,
+    "lot_acres_max": 0.491,
+    "lot_sf_min": 21387.96,
+    "lot_sf_max": 21387.96,
+    "frontage_ft": null
+  },
+  "zoning": {
+    "code": "CBD",
+    "description": "Central Business District",
+    "standardized_code": null
+  },
+  "features": {
+    "is_vacant": null,
+    "land_splits_available": null,
+    "utilities": null,
+    "topography": null,
+    "building_class": null,
+    "year_built": 1930,
+    "tenancy": null,
+    "tenant": null,
+    "parking_type": null,
+    "dock_doors": null,
+    "drive_in_doors": null,
+    "clear_height_ft": null,
+    "nearest_interstate": null,
+    "nearest_highway": null,
+    "nearest_airport": null,
+    "highlights": []
+  },
+  "description_text": "Sprinklered - Class A - Corporate HQ Office\n32 Parking Spaces on Additional 21,120 SF paved & secured parking lot included\nImmediate Occupancy Available\n3 Phase Electrical Service w Back Up Generator\nOne (1) Passenger Elevator\nWell Maintained – All Infrastructure Regularly Serviced & Logged\nUtilities On\nBuilding Size: 24,464 SF\n3 Stories\nYear Built: 1930\nRenovations in 2004 & 2014\nFlood Zone \"X\" (No Flood)\nZoned CBD (Central Business District)\nPlease contact agent for more details and to schedule a tour.",
+  "media": {
+    "photos": [
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-3bcf55c2.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-10c6d73f.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-7a045873.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-2ddfeb89.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-7e3ab50e.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-37e0c39e.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-334bf407.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-2c8913d3.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-25ea839a.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-f1082d0d.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-0f4f5d49.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-e6c6029c.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-eeebaef5.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-6f9598ea.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-fa91f504.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-a4a55801.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-04cc0fdd.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-d74bc0b8.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-b955e7cd.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-90d42465.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-47169fb0.webp"
+    ],
+    "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/staticmapsatellite-f7e42d4b.png"
+  },
+  "documents": [
+    {
+      "title": "Flyer_328_Desiard_St._(Minimized)",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/fe0c270f/flyer328desiardstminimized-5d7ffe4c.pdf",
+      "kind": "flyer"
+    },
+    {
+      "title": "First Floor Annex 328 Desiard",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/fe0c270f/first-floor-annex-328-desiard-d69e2eb2.pdf",
+      "kind": "other"
+    },
+    {
+      "title": "Second Floor Annex 328 Desiard",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/fe0c270f/second-floor-annex-328-desiard-f069c74d.pdf",
+      "kind": "other"
+    },
+    {
+      "title": "Third Floor Annex 328 Desiard",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/fe0c270f/third-floor-annex-328-desiard-0a59a46b.pdf",
+      "kind": "other"
+    }
+  ],
+  "dates": {
+    "listed": "2026-01-27",
+    "available": "2026-02-01",
+    "expires": "2027-02-27",
+    "source_modified": "2026-08-26T15:02:52.355Z"
+  },
+  "disclosures": {
+    "agent_ownership_interest": null
+  },
+  "co_brokers": [],
+  "related_listing_ids": [],
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20fe0c270f",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20fe0c270f"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "detail_level": "full"
+}

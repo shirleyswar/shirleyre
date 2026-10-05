@@ -1,0 +1,17 @@
+# Matthew Shirley — agent listing feed (staging)
+
+> Machine-readable active commercial listings for Matthew Shirley, Associate Broker at Saurage Rotenberg Commercial Real Estate, LLC (SRCRE).
+
+## Feeds
+- /agents/listings.json — full feed (JSON)
+- /agents/listings/{id}.json — one listing (8-character Louisiana Commercial Database (LACDB) id)
+- /agents/listing-record.schema.json — JSON Schema
+- /agents/how-to.md — how agents should read the feed and request a tour or Offering Memorandum (OM)
+
+## Contact
+Matthew Shirley · Associate Broker · SRCRE
+Phone: 225.907.5214
+Email: matthew@sr-cre.com
+
+## Attribution
+Based on information from the LACDB. This staging feed is a one-time export of Matthew's own listings; it is not an official LACDB API.

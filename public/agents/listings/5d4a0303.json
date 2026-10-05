@@ -1,0 +1,162 @@
+{
+  "id": "lacdb-5d4a0303",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "5d4a0303",
+    "listing_uuid": "5d4a0303-b623-45be-b6fc-fb33c8d8c036",
+    "url": "https://lacdb.resimplifi.com/listings/5d4a0303-084-acres-lit-hard-corner-c1-no-flood-buildready",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period 2025-09-30 through 2026-10-05."
+  },
+  "title": "0.84 Acres  Lit Hard Corner - C1 - No Flood - Build-Ready",
+  "status": "active",
+  "transaction_type": "sale",
+  "property_types": [
+    "Land"
+  ],
+  "property_subtypes": [],
+  "address": {
+    "street": "5229 Government St",
+    "street2": null,
+    "city": "Baton Rouge",
+    "state": "LA",
+    "postal_code": "70806",
+    "parish": "East Baton Rouge Parish",
+    "country": "USA"
+  },
+  "geo": {
+    "lat": 30.4447345,
+    "lng": -91.1364017
+  },
+  "parcel": {
+    "apn": "811718",
+    "additional_apns": [],
+    "tax_id": null
+  },
+  "price": {
+    "amount": 797000,
+    "unit": "total",
+    "total_min": 797000,
+    "total_max": 797000,
+    "label": "$797K",
+    "currency": "USD",
+    "sale_terms": "Cash to Seller",
+    "cap_rate_pct": null
+  },
+  "lease_spaces": [],
+  "size": {
+    "building_sf": null,
+    "lot_acres_min": 0.84,
+    "lot_acres_max": 0.84,
+    "lot_sf_min": 36590.4,
+    "lot_sf_max": 36590.4,
+    "frontage_ft": 160
+  },
+  "zoning": {
+    "code": "C1",
+    "description": "Light Commercial",
+    "standardized_code": "C1"
+  },
+  "features": {
+    "is_vacant": true,
+    "land_splits_available": null,
+    "utilities": {
+      "power": true,
+      "water": true,
+      "sewer": true,
+      "natural_gas": true,
+      "fiber": null
+    },
+    "topography": null,
+    "building_class": null,
+    "year_built": null,
+    "tenancy": null,
+    "tenant": null,
+    "parking_type": null,
+    "dock_doors": null,
+    "drive_in_doors": null,
+    "clear_height_ft": null,
+    "nearest_interstate": null,
+    "nearest_highway": null,
+    "nearest_airport": null,
+    "highlights": []
+  },
+  "description_text": "Lit Hard Corner - 0.84 Acre Tract Available For Sale\n$797,000 ($21.75/ft)\n160' of Government St. frontage\nZoned C1\nNot in Flood.  No fill/detention required.  No wetlands\nAll utilities on Site\nAbility to Add Additional 1.77 Acre Adjacent Parcel to the North to Create 2.61 Acres Total Contiguous (Price at $14.72/ft)\nSee 2.61 Acre Combined Listing in the \"Links\" Section",
+  "media": {
+    "photos": [
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-a4ea9792.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-0445577f.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-576d2873.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-0da56427.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-eb77d342.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/5235-government-st-ea140056.webp"
+    ],
+    "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/5d4a0303/staticmapsatellite-699032ef.png"
+  },
+  "documents": [
+    {
+      "title": "Flyer_5229 Government St (Sale)",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/flyer5229-government-st-sale-54bb4fa1.pdf",
+      "kind": "flyer"
+    },
+    {
+      "title": "Survey_0.84 Acres",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/survey084-acres-be117b20.pdf",
+      "kind": "survey"
+    },
+    {
+      "title": "Survey_2.61 Acres",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/survey261-acres-3f11a767.pdf",
+      "kind": "survey"
+    },
+    {
+      "title": "Traffic_Count_Map",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/trafficcountmap-cfd81940.pdf",
+      "kind": "traffic"
+    },
+    {
+      "title": "Traffic_Count_Map__Close_Up",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/trafficcountmapcloseup-9445f3d4.pdf",
+      "kind": "traffic"
+    },
+    {
+      "title": "Drive_Time_Map_5_10_15_Minutes",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/drivetimemap51015minutes-b0dd1586.pdf",
+      "kind": "other"
+    },
+    {
+      "title": "Demographic_and_Income_Profile",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/5d4a0303/demographicandincomeprofile-c2c2e100.pdf",
+      "kind": "demographics"
+    },
+    {
+      "title": "2.61 Acre Combined Tract: Listing",
+      "url": "https://lacdb.resimplifi.com/listings/c10c62e0-261-acres-c1-no-flood-build-ready",
+      "kind": "brochure_link"
+    }
+  ],
+  "dates": {
+    "listed": "2025-09-30",
+    "available": "2025-09-30",
+    "expires": "2026-12-16",
+    "source_modified": "2026-05-07T15:52:34.502Z"
+  },
+  "disclosures": {
+    "agent_ownership_interest": null
+  },
+  "co_brokers": [],
+  "related_listing_ids": [],
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%205d4a0303",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%205d4a0303"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "detail_level": "full"
+}

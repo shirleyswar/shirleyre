@@ -1,0 +1,38 @@
+{
+  "id": "lacdb-118b7fa2",
+  "detail_level": "summary",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "118b7fa2",
+    "url": "https://lacdb.resimplifi.com/listings/118b7fa2-interstate-12-frontage-visibility",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+  },
+  "title": "Interstate 12 Frontage / Visibility",
+  "status": "pending",
+  "transaction_type": "sale",
+  "property_types": [],
+  "address": {
+    "street": "Interstate 12 Service Road",
+    "city": "Hammond",
+    "state": "LA",
+    "postal_code": "70403"
+  },
+  "price": {
+    "label": "$2,300,000",
+    "currency": "USD"
+  },
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20118b7fa2",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20118b7fa2"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+}

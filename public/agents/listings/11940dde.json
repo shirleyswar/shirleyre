@@ -1,0 +1,113 @@
+{
+  "id": "lacdb-11940dde",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "11940dde",
+    "listing_uuid": "11940dde-f2b1-45bb-984a-f55e176603f4",
+    "url": "https://lacdb.resimplifi.com/listings/11940dde-tract-a2a41b",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period 2026-06-18 through 2026-10-05."
+  },
+  "title": "Tract A-2-A-4-1-B",
+  "status": "active",
+  "transaction_type": "sale",
+  "property_types": [
+    "Land"
+  ],
+  "property_subtypes": [],
+  "address": {
+    "street": "Tract A-2-A-4-1-B",
+    "street2": null,
+    "city": "Baton Rouge",
+    "state": "LA",
+    "postal_code": "70810",
+    "parish": "East Baton Rouge Parish",
+    "country": "USA"
+  },
+  "geo": {
+    "lat": 30.34983136291431,
+    "lng": -91.08766087182768
+  },
+  "parcel": {
+    "apn": "308-3488-0",
+    "additional_apns": [],
+    "tax_id": null
+  },
+  "price": {
+    "amount": 10.41,
+    "unit": "per_sf",
+    "total_min": 453460,
+    "total_max": 2947487,
+    "label": "$10.4/SF",
+    "currency": "USD",
+    "sale_terms": null,
+    "cap_rate_pct": null
+  },
+  "lease_spaces": [],
+  "size": {
+    "building_sf": null,
+    "lot_acres_min": 1,
+    "lot_acres_max": 6.5,
+    "lot_sf_min": 43560,
+    "lot_sf_max": 283140,
+    "frontage_ft": null
+  },
+  "zoning": {
+    "code": "C2",
+    "description": "Heavy Commercial",
+    "standardized_code": "C2"
+  },
+  "features": {
+    "is_vacant": true,
+    "land_splits_available": true,
+    "utilities": null,
+    "topography": null,
+    "building_class": null,
+    "year_built": null,
+    "tenancy": null,
+    "tenant": null,
+    "parking_type": null,
+    "dock_doors": null,
+    "drive_in_doors": null,
+    "clear_height_ft": null,
+    "nearest_interstate": null,
+    "nearest_highway": null,
+    "nearest_airport": null,
+    "highlights": []
+  },
+  "description_text": "Zoned MX-3 - City of St. George has Finalized the New Zoning Districts.\nLeft Turn In Access via Burbank available.\n9.0 Acre Total Site with Approx. 6.50 Useable Site-Ready Acres.\n$10.41/ft on 6.50 Useable Acres --- Land split available. Pricing dependent on size/orientation of desired area.\nDetention, Wetlands, Site Grading, Utility work all complete.\nLocated in the City of St. George Billboard not included in the sales price.",
+  "media": {
+    "photos": [
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/tract-a2a41b-c98b9de7.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/tract-a2a41b-f2852690.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/tract-a2a41b-466c0d08.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/tract-a2a41b-f27da16c.webp"
+    ],
+    "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/staticmapsatellite-8301c448.png"
+  },
+  "documents": [],
+  "dates": {
+    "listed": "2026-06-18",
+    "available": "2026-06-18",
+    "expires": "2027-01-12",
+    "source_modified": "2026-07-14T18:46:19.543Z"
+  },
+  "disclosures": {
+    "agent_ownership_interest": null
+  },
+  "co_brokers": [],
+  "related_listing_ids": [],
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%2011940dde",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%2011940dde"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "detail_level": "full"
+}
