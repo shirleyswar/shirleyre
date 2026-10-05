@@ -1,0 +1,38 @@
+{
+  "id": "lacdb-7b1ff984",
+  "detail_level": "summary",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "7b1ff984",
+    "url": "https://lacdb.resimplifi.com/listings/7b1ff984-bts-on-083-acres",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period through 2026-10-05."
+  },
+  "title": "BTS on 0.83 Acres",
+  "status": "active",
+  "transaction_type": "lease",
+  "property_types": [],
+  "address": {
+    "street": "5229 Government St",
+    "city": "Baton Rouge",
+    "state": "LA",
+    "postal_code": "70816"
+  },
+  "price": {
+    "label": "$1 SF/year",
+    "currency": "USD"
+  },
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%207b1ff984",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%207b1ff984"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+}

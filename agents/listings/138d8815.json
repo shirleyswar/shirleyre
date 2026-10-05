@@ -1,0 +1,142 @@
+{
+  "id": "lacdb-138d8815",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "138d8815",
+    "listing_uuid": "138d8815-c302-4ac7-bd8d-6519a3a6048c",
+    "url": "https://lacdb.resimplifi.com/listings/138d8815-leased-office-acredit-tenant",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period 2026-02-24 through 2026-10-05."
+  },
+  "title": "Leased Office A-Credit Tenant",
+  "status": "active",
+  "transaction_type": "sale",
+  "property_types": [
+    "Office"
+  ],
+  "property_subtypes": [],
+  "address": {
+    "street": "1301 Hudson Ln",
+    "street2": null,
+    "city": "Monroe",
+    "state": "LA",
+    "postal_code": "71201",
+    "parish": "Ouachita Parish",
+    "country": "USA"
+  },
+  "geo": {
+    "lat": 32.5166653,
+    "lng": -92.1123221
+  },
+  "parcel": {
+    "apn": "74296",
+    "additional_apns": [],
+    "tax_id": null
+  },
+  "price": {
+    "amount": 3095000,
+    "unit": "total",
+    "total_min": 3095000,
+    "total_max": 3095000,
+    "label": "$3.1M",
+    "currency": "USD",
+    "sale_terms": null,
+    "cap_rate_pct": null
+  },
+  "lease_spaces": [],
+  "size": {
+    "building_sf": 26238,
+    "lot_acres_min": 1.879,
+    "lot_acres_max": 1.879,
+    "lot_sf_min": 81849.24,
+    "lot_sf_max": 81849.24,
+    "frontage_ft": null
+  },
+  "zoning": {
+    "code": "B-3",
+    "description": "General Business And Commercial",
+    "standardized_code": "B-3"
+  },
+  "features": {
+    "is_vacant": null,
+    "land_splits_available": null,
+    "utilities": null,
+    "topography": null,
+    "building_class": "A",
+    "year_built": 1999,
+    "tenancy": "Single Tenant",
+    "tenant": "A-Credit",
+    "parking_type": "Surface",
+    "dock_doors": null,
+    "drive_in_doors": null,
+    "clear_height_ft": null,
+    "nearest_interstate": null,
+    "nearest_highway": null,
+    "nearest_airport": null,
+    "highlights": []
+  },
+  "description_text": "Leased Office A-Credit Tenant with Modified Net lease.\nOffice - 26,238 sqft\n2026 NOI at $248,483.74\nCAP Rate: 8.02%\nContact Agent for Confidentiality Agreement to access all Lease Documents & Expense Information\nDo not disturb Tenant",
+  "media": {
+    "photos": [
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-2a60c11f.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-ceb3dab8.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-c4f186e6.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-31a497c1.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-e95b17bb.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-96ebb191.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-6e173bd7.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-ce4b253f.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-6c0c3143.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-275338d7.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-647d3780.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-c777dec8.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-1087244a.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-c005b1e2.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-1a559586.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-d29d8cf5.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-094ecc26.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-3b884fcc.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-cc57e855.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-31dda565.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-52a6c649.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/leased-office-acredit-tenant-wmodified-net-lease-7037f9e4.webp"
+    ],
+    "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/staticmapsatellite-1cf2d561.png"
+  },
+  "documents": [
+    {
+      "title": "Flyer_1301 Hudson Ln_(Minimized) SR & ELR",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/138d8815/flyer1301-hudson-lnminimized-sr-elr-a79d071c.pdf",
+      "kind": "flyer"
+    }
+  ],
+  "dates": {
+    "listed": "2026-02-24",
+    "available": null,
+    "expires": null,
+    "source_modified": "2026-06-03T20:06:16.605Z"
+  },
+  "disclosures": {
+    "agent_ownership_interest": null
+  },
+  "co_brokers": [
+    {
+      "name": "Edward Rotenberg, SIOR",
+      "company": "Saurage Rotenberg Commercial Real Estate, LLC"
+    }
+  ],
+  "related_listing_ids": [],
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20138d8815",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20138d8815"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "detail_level": "full"
+}

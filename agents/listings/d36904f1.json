@@ -1,0 +1,144 @@
+{
+  "id": "lacdb-d36904f1",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "d36904f1",
+    "listing_uuid": "d36904f1-b03b-4014-a5f9-73548818abdf",
+    "url": "https://lacdb.resimplifi.com/listings/d36904f1-12025-industriplex-blvd",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period 2026-09-07 through 2026-10-05."
+  },
+  "title": "12025 Industriplex Blvd",
+  "status": "active",
+  "transaction_type": "lease",
+  "property_types": [
+    "Industrial"
+  ],
+  "property_subtypes": [],
+  "address": {
+    "street": "12025 Industriplex Blvd",
+    "street2": null,
+    "city": "Baton Rouge",
+    "state": "LA",
+    "postal_code": "70809",
+    "parish": "East Baton Rouge Parish",
+    "country": "USA"
+  },
+  "geo": {
+    "lat": 30.3846993,
+    "lng": -91.0472243
+  },
+  "parcel": {
+    "apn": "036-0780-1",
+    "additional_apns": [],
+    "tax_id": null
+  },
+  "price": {
+    "amount": null,
+    "unit": "total",
+    "total_min": null,
+    "total_max": null,
+    "label": null,
+    "currency": "USD",
+    "sale_terms": null,
+    "cap_rate_pct": null
+  },
+  "lease_spaces": [
+    {
+      "space_id": "23081cd4",
+      "rate_min": 11,
+      "rate_max": 13,
+      "rate_unit": "sfYear",
+      "lease_structure": null,
+      "available_sf_min": 12000,
+      "available_sf_max": 12000,
+      "acres": null,
+      "sublease": false,
+      "status": "available"
+    }
+  ],
+  "size": {
+    "building_sf": 12000,
+    "lot_acres_min": 0.6991,
+    "lot_acres_max": 0.6991,
+    "lot_sf_min": 30452.8,
+    "lot_sf_max": 30452.8,
+    "frontage_ft": null
+  },
+  "zoning": {
+    "code": "M1 (St. George Equivalent)",
+    "description": "Light Industrial",
+    "standardized_code": null
+  },
+  "features": {
+    "is_vacant": null,
+    "land_splits_available": null,
+    "utilities": null,
+    "topography": null,
+    "building_class": null,
+    "year_built": null,
+    "tenancy": "Single Tenant",
+    "tenant": null,
+    "parking_type": null,
+    "dock_doors": null,
+    "drive_in_doors": [
+      {
+        "available": true,
+        "min": 5,
+        "max": 5
+      }
+    ],
+    "clear_height_ft": null,
+    "nearest_interstate": null,
+    "nearest_highway": null,
+    "nearest_airport": null,
+    "highlights": []
+  },
+  "description_text": "12,000 SqFt Office Warehouse in Industriplex\nOffice: ± 3,000 SqFt\nClimate-Controlled Warhouse: ± 1,450 SqFt\nWarehouse: ± 7,550 SqFt\nCustomization Opportunity | Or As-Is | Landlord embarking of large remodel. - perfect timing for Tenant to enter the fold and be involved with construction decisions\nLease rate range $11–$13/SF depending on Tenant needs and/or Tenant participation in construction\nAdditional $1,250/month collected for Property Tax & Insurance ($1.25/ft).\nFlexible Landlord — quick response times\nWork Details\nFull office remodel\nUpdated bathrooms\nOverhead door repairs\nBreakroom upgrade\nExterior metal R-panel reskin\nUpdate mansard roof\nFaçade improvements\nRemove crape myrtles in front of building\nOwner/Agent",
+  "media": {
+    "photos": [
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/12025-industriplex-blvd-d8fc14a4.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/12025-industriplex-blvd-04eaa408.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/12025-industriplex-blvd-56f52c25.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/12025-industriplex-blvd-682bd62a.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/12025-industriplex-blvd-3887dac9.webp"
+    ],
+    "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d36904f1/staticmapsatellite-c66bd3ab.png"
+  },
+  "documents": [
+    {
+      "title": "Flyer_12025 Industriplex Blvd (Minimized)",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d36904f1/flyer12025-industriplex-blvd-minimized-229373a7.pdf",
+      "kind": "flyer"
+    },
+    {
+      "title": "12025 Industriplex Blvd",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d36904f1/12025-industriplex-blvd-a3b0ef5a.pdf",
+      "kind": "other"
+    }
+  ],
+  "dates": {
+    "listed": "2026-09-07",
+    "available": "2027-01-01",
+    "expires": "2027-04-14",
+    "source_modified": "2026-09-11T20:13:01.153Z"
+  },
+  "disclosures": {
+    "agent_ownership_interest": null
+  },
+  "co_brokers": [],
+  "related_listing_ids": [],
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20d36904f1",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20d36904f1"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "detail_level": "full"
+}

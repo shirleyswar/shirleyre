@@ -1,0 +1,146 @@
+{
+  "id": "lacdb-7eb337d8",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "7eb337d8",
+    "listing_uuid": "7eb337d8-3f9c-4c7b-8f41-86cd681c9592",
+    "url": "https://lacdb.resimplifi.com/listings/7eb337d8-best-value-mid-city-office-great-parking-full-service-",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period 2025-11-05 through 2026-10-05."
+  },
+  "title": "Best Value Mid City Office | Great Parking, Full Service !",
+  "status": "active",
+  "transaction_type": "lease",
+  "property_types": [
+    "Office"
+  ],
+  "property_subtypes": [],
+  "address": {
+    "street": "619 Jefferson Hwy",
+    "street2": null,
+    "city": "Baton Rouge",
+    "state": "LA",
+    "postal_code": "70806",
+    "parish": "East Baton Rouge Parish",
+    "country": "USA"
+  },
+  "geo": {
+    "lat": 30.4433512,
+    "lng": -91.1300801
+  },
+  "parcel": {
+    "apn": "855251",
+    "additional_apns": [],
+    "tax_id": null
+  },
+  "price": {
+    "amount": null,
+    "unit": "total",
+    "total_min": null,
+    "total_max": null,
+    "label": null,
+    "currency": "USD",
+    "sale_terms": null,
+    "cap_rate_pct": null
+  },
+  "lease_spaces": [
+    {
+      "space_id": "2332f11c",
+      "rate_min": 13.59,
+      "rate_max": 13.59,
+      "rate_unit": "sfYear",
+      "lease_structure": null,
+      "available_sf_min": 1766,
+      "available_sf_max": 1766,
+      "acres": null,
+      "sublease": false,
+      "status": "available"
+    },
+    {
+      "space_id": "115070a2",
+      "rate_min": 14.4,
+      "rate_max": 14.4,
+      "rate_unit": "sfYear",
+      "lease_structure": null,
+      "available_sf_min": 1667,
+      "available_sf_max": 1667,
+      "acres": null,
+      "sublease": false,
+      "status": "leased"
+    }
+  ],
+  "size": {
+    "building_sf": null,
+    "lot_acres_min": null,
+    "lot_acres_max": null,
+    "lot_sf_min": null,
+    "lot_sf_max": null,
+    "frontage_ft": null
+  },
+  "zoning": {
+    "code": "B1",
+    "description": "Transition",
+    "standardized_code": null
+  },
+  "features": {
+    "is_vacant": null,
+    "land_splits_available": null,
+    "utilities": null,
+    "topography": null,
+    "building_class": null,
+    "year_built": null,
+    "tenancy": null,
+    "tenant": null,
+    "parking_type": null,
+    "dock_doors": null,
+    "drive_in_doors": null,
+    "clear_height_ft": null,
+    "nearest_interstate": null,
+    "nearest_highway": null,
+    "nearest_airport": null,
+    "highlights": []
+  },
+  "description_text": "Available immediately | Mid City office with generous parking and flexible lease terms — Jefferson Hwy at Government St.\nFull Service Lease - Rent Includes All Utilities & Janitorial\nOnly additional Tenant expense is Phone/Internet & GL Insurance\n1 Suite Available: 2H - 1,766 SF 2nd Floor @ $2,000/mo.\nExceptional value for Mid City when factoring parking, curb appeal & terms\nReserved covered parking in rear + visitor parking out front\nQuiet, established tenant mix with strong curb appeal\nLocal, responsive landlord with quality track record\nAvailable immediately\nLocal, high-quality Landlord",
+  "media": {
+    "photos": [
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-82f3c55e.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-788bdb0c.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-e5a90e06.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-1a26ddd3.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-69379cdc.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-1a3d0069.webp"
+    ],
+    "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/staticmapsatellite-5fdecbd0.png"
+  },
+  "documents": [
+    {
+      "title": "Flyer_619 Jefferson Hwy_Ste 2H (Minimized)",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/7eb337d8/flyer619-jefferson-hwyste-2h-minimized-7fb05929.pdf",
+      "kind": "flyer"
+    }
+  ],
+  "dates": {
+    "listed": "2025-11-05",
+    "available": "2025-11-05",
+    "expires": "2027-05-05",
+    "source_modified": "2026-09-16T20:38:24.344Z"
+  },
+  "disclosures": {
+    "agent_ownership_interest": null
+  },
+  "co_brokers": [],
+  "related_listing_ids": [],
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%207eb337d8",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%207eb337d8"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "detail_level": "full"
+}

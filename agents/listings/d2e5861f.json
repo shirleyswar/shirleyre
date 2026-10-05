@@ -1,0 +1,161 @@
+{
+  "id": "lacdb-d2e5861f",
+  "source": {
+    "system": "LACDB",
+    "listing_id": "d2e5861f",
+    "listing_uuid": "d2e5861f-5a6d-466e-85ed-74e00a9c53ae",
+    "url": "https://lacdb.resimplifi.com/listings/d2e5861f-1293-acres-cw3-dual-access-cleared-buildready",
+    "retrieved_at": "2026-10-05T12:30:00Z",
+    "attribution": "Based on information from the LACDB for the period 2025-10-08 through 2026-10-05."
+  },
+  "title": "12.93 Acres – CW3 – Dual Access, Cleared & Build-Ready",
+  "status": "active",
+  "transaction_type": "sale",
+  "property_types": [
+    "Land"
+  ],
+  "property_subtypes": [
+    "Industrial"
+  ],
+  "address": {
+    "street": "1400 -1500 Wooddale Blvd",
+    "street2": null,
+    "city": "Baton Rouge",
+    "state": "LA",
+    "postal_code": "70806",
+    "parish": "East Baton Rouge Parish",
+    "country": "USA"
+  },
+  "geo": {
+    "lat": 30.4610052,
+    "lng": -91.1115517
+  },
+  "parcel": {
+    "apn": "308-5841-4",
+    "additional_apns": [],
+    "tax_id": null
+  },
+  "price": {
+    "amount": 2957000,
+    "unit": "total",
+    "total_min": 2957000,
+    "total_max": 2957000,
+    "label": "$3M",
+    "currency": "USD",
+    "sale_terms": null,
+    "cap_rate_pct": null
+  },
+  "lease_spaces": [],
+  "size": {
+    "building_sf": null,
+    "lot_acres_min": 12.933,
+    "lot_acres_max": 12.933,
+    "lot_sf_min": 563361.48,
+    "lot_sf_max": 563361.48,
+    "frontage_ft": null
+  },
+  "zoning": {
+    "code": "CW3",
+    "description": "Commercial Warehousing 3",
+    "standardized_code": "CW3"
+  },
+  "features": {
+    "is_vacant": true,
+    "land_splits_available": null,
+    "utilities": {
+      "power": true,
+      "water": true,
+      "sewer": true,
+      "natural_gas": true,
+      "fiber": true
+    },
+    "topography": "Level",
+    "building_class": null,
+    "year_built": null,
+    "tenancy": null,
+    "tenant": null,
+    "parking_type": null,
+    "dock_doors": null,
+    "drive_in_doors": null,
+    "clear_height_ft": null,
+    "nearest_interstate": "I-12, I-110, I-10",
+    "nearest_highway": "Airline Hwy.",
+    "nearest_airport": "BTR",
+    "highlights": []
+  },
+  "description_text": "12.93 Acres – CW3 – Dual Access, Cleared & Build-Ready\nSee Conceptual Site Plans Attached\nDual Access – Property Spans from Lobdell Blvd. to Wooddale Blvd.\nCleared & Unencumbered Tract with Maximum Usable Land\nZoned CW3 – Commercial Warehousing Three\nAll Utilities On Site\nNo Wetlands – No Flood Zone\n587' Frontage on Lobdell Blvd.\n287' Frontage on Wooddale Blvd.\nHighly Visible Location in Central Baton Rouge Corridor\n$5.25 per Square Foot",
+  "media": {
+    "photos": [
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-3dd63858.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-d9d2aba9.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-93fa54fd.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-a658f3a3.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-645d52c7.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-efe17eda.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-8cc03ae4.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-9a83549c.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-3b4b26be.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-9bab2141.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-eff74666.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-3133c2d9.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-8b5add2b.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-c8dd58fc.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-b4e531b2.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-f3c1cfc2.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-62e8231a.webp",
+      "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-d93dc933.webp"
+    ],
+    "static_map": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/staticmapsatellite-a5e90d6e.png"
+  },
+  "documents": [
+    {
+      "title": "Flyer_1400-1500 Wooddale Blvd.",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d2e5861f/flyer1400-1500-wooddale-blvd-16e2dea1.pdf",
+      "kind": "flyer"
+    },
+    {
+      "title": "Concept Plan - 150k Distribution",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d2e5861f/concept-plan-150k-distribution-51d338ac.pdf",
+      "kind": "site_plan"
+    },
+    {
+      "title": "Concept Plan - 7 Building",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d2e5861f/concept-plan-7-building-8e105ac8.pdf",
+      "kind": "site_plan"
+    },
+    {
+      "title": "Concept Plan - 4 Building",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d2e5861f/concept-plan-4-building-36c1d6af.pdf",
+      "kind": "site_plan"
+    },
+    {
+      "title": "Survey_Resub_Landsource",
+      "url": "https://storage.googleapis.com/resimplifi-associate/lacdb/files/d2e5861f/surveyresublandsource-e86fbab4.pdf",
+      "kind": "survey"
+    }
+  ],
+  "dates": {
+    "listed": "2025-10-08",
+    "available": "2025-10-07",
+    "expires": null,
+    "source_modified": "2026-08-18T19:20:32.121Z"
+  },
+  "disclosures": {
+    "agent_ownership_interest": true
+  },
+  "co_brokers": [],
+  "related_listing_ids": [],
+  "broker_contact": {
+    "name": "Matthew Shirley",
+    "title": "Associate Broker",
+    "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
+    "phone": "225.907.5214",
+    "email": "matthew@sr-cre.com"
+  },
+  "actions": {
+    "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20d2e5861f",
+    "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20d2e5861f"
+  },
+  "last_updated": "2026-10-05T12:30:00Z",
+  "detail_level": "full"
+}
