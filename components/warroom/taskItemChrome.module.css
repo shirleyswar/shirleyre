@@ -89,14 +89,15 @@
   display: block;
 }
 
-/* Deal-page EDIT pill (PR #23): 44px hit, 38px silver tube, Space Grotesk caps. */
+/* Deal-page EDIT pill after PR #25: 44px hit, 39px silver tube,
+   Montserrat Medium 24px to match the OFFICE plate lettering. */
 .editHit {
   appearance: none;
   -webkit-appearance: none;
   background: transparent;
   border: none;
   margin: 0;
-  padding: 3px 0;
+  padding: 2.5px 0;
   height: 44px;
   min-width: 44px;
   display: inline-flex;
@@ -107,20 +108,20 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.editHit span {
+.editHit > span {
   box-sizing: border-box;
-  height: 38px;
+  height: 39px;
   min-width: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 18px;
+  padding: 0 15px;
   border-radius: 999px;
   background: transparent;
-  font-family: 'Space Grotesk', system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: 0.08em;
+  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+  font-weight: 500;
+  font-size: 24px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1;
   white-space: nowrap;
@@ -131,8 +132,13 @@
   transition: border-color 0.18s ease, box-shadow 0.18s ease, text-shadow 0.18s ease, color 0.18s ease;
 }
 
-.editHit:hover span,
-.editHit:focus-visible span {
+.editLabel {
+  transform: translateY(1px);
+  margin-right: -0.04em;
+}
+
+.editHit:hover > span,
+.editHit:focus-visible > span {
   border-color: rgba(255, 255, 255, 0.92);
   color: #FFFFFF;
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.32), 0 0 18px rgba(214, 218, 232, 0.24);
@@ -145,7 +151,7 @@
   background: transparent;
   border: none;
   margin: 0;
-  padding: 3px 0;
+  padding: 2.5px 0;
   height: 44px;
   display: inline-flex;
   align-items: center;
@@ -159,9 +165,10 @@
   cursor: default;
 }
 
-.confirmFace {
+.confirmOff,
+.confirmOn {
   box-sizing: border-box;
-  height: 38px;
+  height: 39px;
   min-width: 112px;
   display: inline-flex;
   align-items: center;

@@ -1124,7 +1124,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               onClick={mode === 'read' ? enterEdit : cancelEdit}
               aria-label={mode === 'read' ? 'Edit' : 'Cancel'}
             >
-              <span>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span>
+              <span><span className={chrome.editLabel}>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span></span>
             </button>
           )}
 

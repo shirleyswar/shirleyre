@@ -481,7 +481,7 @@ export default function TaskDetailSheet({
           }
         }}
       >
-        <span>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span>
+        <span><span className={chrome.editLabel}>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span></span>
       </button>
 
       <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
