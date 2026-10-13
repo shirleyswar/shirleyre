@@ -483,6 +483,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
   const thumbTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [thumbVisible, setThumbVisible] = useState(false)
   const [fadeVisible, setFadeVisible] = useState(false)
+  const [staleOpen, setStaleOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -522,7 +523,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
     setFadeVisible(el.scrollTop + el.clientHeight < el.scrollHeight - 4)
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [loading])
+  }, [loading, staleOpen, tasks.length])
 
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 
@@ -532,6 +533,15 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
     later:    tasks.filter(t => t.due_date && t.due_date > todayStr),
     noDate:   tasks.filter(t => !t.due_date),
   }
+
+  // More than 60 days late is a review pile, not the working list.
+  // Fresh overdue stays in date order, most recent first, so current work leads.
+  const STALE_AFTER_DAYS = 60
+  const freshOverdue = groups.overdue
+    .filter(t => t.due_date != null && -daysBetween(t.due_date) <= STALE_AFTER_DAYS)
+    .sort((a, b) => (b.due_date ?? '').localeCompare(a.due_date ?? ''))
+  const staleOverdue = groups.overdue
+    .filter(t => t.due_date != null && -daysBetween(t.due_date) > STALE_AFTER_DAYS)
 
   const lateCount = groups.overdue.length
   const totalCount = tasks.length
@@ -662,10 +672,42 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
             <div style={{ ...DS6, color: C.textLow, padding: '20px 0', textAlign: 'center' }}>Loading…</div>
           ) : (
             <>
-              <Group label="OVERDUE" items={groups.overdue} overdue />
-              <Group label="TODAY" items={groups.today} breakBefore={groups.overdue.length > 0} />
-              <Group label="LATER" items={groups.later} breakBefore={groups.overdue.length + groups.today.length > 0} />
-              <Group label="NO DUE DATE" items={groups.noDate} breakBefore={groups.overdue.length + groups.today.length + groups.later.length > 0} />
+              <Group label="OVERDUE" items={freshOverdue} overdue />
+              {staleOverdue.length > 0 && (
+                <div>
+                  {freshOverdue.length > 0 && <Hair />}
+                  <button
+                    type="button"
+                    aria-expanded={staleOpen}
+                    onClick={() => setStaleOpen(open => !open)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '10px 14px 10px 20px',
+                      background: 'transparent',
+                      border: 'none',
+                      borderLeft: '3px solid transparent',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      color: C.textLow,
+                    }}
+                  >
+                    <span style={{ ...DS6, color: C.textLow }}>{staleOverdue.length} stale — review</span>
+                    <span style={{ ...DT7 as React.CSSProperties, color: C.textLow, marginLeft: 'auto' }}>{staleOpen ? '–' : '+'}</span>
+                  </button>
+                  {staleOpen && staleOverdue.map(t => (
+                    <React.Fragment key={t.id}>
+                      <Hair />
+                      <TaskRow t={t} overdue />
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+              <Group label="TODAY" items={groups.today} breakBefore={freshOverdue.length + staleOverdue.length > 0} />
+              <Group label="LATER" items={groups.later} breakBefore={freshOverdue.length + staleOverdue.length + groups.today.length > 0} />
+              <Group label="NO DUE DATE" items={groups.noDate} breakBefore={freshOverdue.length + staleOverdue.length + groups.today.length + groups.later.length > 0} />
             </>
           )}
         </div>
@@ -707,13 +749,14 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
 // rowHeight = 44px
 const MM_HEADER = 55
 const MM_ROW_H  = 44
+const MM_TOTAL_H = 36
 
 // VALUE / COMM are fixed so a long figure cannot run into the next column.
-// Widths are the measured DM1 tabular width of the widest live figures
-// ($2,439,360 = 91px, $600,000 = 73px) plus a few pixels of slack.
+// Widths are the measured DM1 tabular width of a 10-glyph figure
+// ($7,506,360 / $1,163,598 ≈ 91px, and COMM is 700 on the total) plus slack.
 // The 16px track gap is the gutter. NOTE, when it has text, is the track that shrinks.
-const MONEY_VALUE_W = 96
-const MONEY_COMM_W = 80
+const MONEY_VALUE_W = 104
+const MONEY_COMM_W = 104
 const MONEY_GUTTER = 16
 
 function moneyTracks(includeNote: boolean): string {
@@ -1363,8 +1406,10 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
   })
 
   const headerTotal = enriched.reduce((s, d) => s + (d._commission ?? 0), 0)
+  const valueTotal = enriched.reduce((s, d) => s + (d._dealValue ?? 0), 0)
   const mmCount = enriched.length
   const showNote = enriched.some(mm => liveMoneyNote(mm) !== '')
+  const showTotal = !loading && enriched.length > 0
 
   // WARROOM-169C: all rows render; panel body snaps to whole rows and scrolls.
   const { ref: listRef, className: listClass, style: listStyle } = usePanelBodyScroll(loading ? 0 : enriched.length, panelHeight ?? 0)
@@ -1435,6 +1480,25 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
           </>
         )}
       </div>
+      {showTotal && (
+        <div style={{
+          ...moneyGrid(showNote),
+          flexShrink: 0,
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 1,
+          padding: '8px 14px',
+          minHeight: MM_TOTAL_H,
+          boxSizing: 'border-box',
+          borderTop: `1px solid ${C.borderPanel}`,
+          background: C.bgPanel,
+        }}>
+          <span style={{ ...DT8, color: C.textLow }}>TOTAL</span>
+          {showNote && <span />}
+          <span style={{ ...DM1, ...MONEY_FIGURE, color: C.textHi }}>{fmtDollars(valueTotal)}</span>
+          <span style={{ ...DM1, ...MONEY_FIGURE, color: C.moneyIn, fontWeight: 700 }}>{fmtDollars(headerTotal)}</span>
+        </div>
+      )}
     </Panel>
     {selectedMM && (
       <MoneyMoverModal
@@ -1999,7 +2063,7 @@ interface DeadlineRow {
   deals?: { name: string; address: string | null; addr_display: string | null; addr_street_name: string | null; addr_number: string | null; addr_city: string | null } | null
 }
 
-function DuePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onCountChange, onCreateFill, heroDeadlineId }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void; heroDeadlineId?: string | null }) {
+function DuePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onCountChange, onCreateFill, heroDeadlineId: _heroDeadlineId }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void; heroDeadlineId?: string | null }) {
   const [deadlines, setDeadlines] = useState<DeadlineRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -2081,14 +2145,13 @@ function DuePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onCountC
             {deadlines.map((d, i) => {
               const days = daysBetween(d.due_date)
               const isPast = days < 0
+              const isSoon = days >= 0 && days <= 14
               const absDays = Math.abs(days)
-              const isUrgent = !isPast && days <= 7
-              const isFirstFuture = !isPast && (i === 0 || deadlines.slice(0, i).every(x => daysBetween(x.due_date) < 0))
-              const isHero = heroDeadlineId != null && d.id === heroDeadlineId
+              const tone = isPast ? C.late : isSoon ? C.hot : null
 
               return (
                 <React.Fragment key={d.id}>
-                  {/* Check 37: title first, property beneath, kind label right-aligned */}
+                  {/* Stripe and label share one rule: red past due, amber within 14 days, neither otherwise. */}
                   <div
                     data-wr-row=""
                     style={{
@@ -2099,12 +2162,10 @@ function DuePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onCountC
                     padding: '9px 14px',
                     minHeight: DUE_ROW_H,
                     boxSizing: 'border-box',
-                    background: !isHero && isFirstFuture && !isPast ? `rgba(255,163,58,0.05)` : 'transparent',
-                    borderLeft: isHero ? '3px solid transparent' : isPast ? `3px solid ${C.late}` : isFirstFuture ? `3px solid ${C.hot}` : '3px solid transparent',
+                    borderLeft: tone ? `3px solid ${tone}` : '3px solid transparent',
                     scrollSnapAlign: 'start',
                   }}>
-                    {/* Date tag sizes to its text. Title takes the rest and ellipsizes. */}
-                    <div style={{ ...DT7 as React.CSSProperties, color: isPast ? C.late : isUrgent ? C.hot : C.textMid, whiteSpace: 'nowrap' }}>
+                    <div style={{ ...DT7 as React.CSSProperties, color: tone ?? C.textMid, whiteSpace: 'nowrap' }}>
                       {isPast ? `${absDays}D LATE` : days === 0 ? 'TODAY' : `${days}D · ${fmtDate(d.due_date).toUpperCase()}`}
                     </div>
                     <div style={{ minWidth: 0 }}>
@@ -2471,18 +2532,20 @@ export default function WarRoomPage() {
     return () => ro.disconnect()
   }, [unlocked])
 
-  // D4.4: Compute column B allocations (MM + UC) from measured column height
-  // Check 52: MM_HEADER is now 55 (has FAB). +24 for the ADDRESS/VALUE/COMM column header row.
+  // Column B: Money Movers, Receivables (fixed), Under Contract.
+  // Receivables sits under Money Movers so it is on screen at 1280×800.
+  // +24 is the VALUE/COMM header. MM_TOTAL_H is the sticky total row.
   const colBPanels: PanelSpec[] = [
-    { header: MM_HEADER + 24, rowHeight: MM_ROW_H, rowCount: mmRowCount },
+    { header: MM_HEADER + 24 + MM_TOTAL_H, rowHeight: MM_ROW_H, rowCount: mmRowCount },
     { header: UC_HEADER + 24, rowHeight: UC_ROW_H, rowCount: ucRowCount },
   ]
-  const colBAllocs = colBHeight > 0 ? computeAlloc(colBHeight, colBPanels) : [
+  const colBBudget = colBHeight > 0 ? colBHeight - RECV_HEIGHT - 2 * 18 : 400
+  const colBAllocs = colBBudget > 0 ? computeAlloc(colBBudget, colBPanels) : [
     { height: 300, visibleRows: 5 },
     { height: 250, visibleRows: 4 },
   ]
 
-  // D4.4: Compute column C allocations (SCHEDULE + DUE, RECEIVABLES is flex:none)
+  // Column C: Schedule + Deadlines. Receivables no longer takes the bottom.
   const colCPanels: PanelSpec[] = [
     {
       header: SCHED_HEADER,
@@ -2492,8 +2555,7 @@ export default function WarRoomPage() {
     },
     { header: DUE_HEADER, rowHeight: DUE_ROW_H, rowCount: dueRowCount },
   ]
-  const colCBudget = colCHeight > 0 ? colCHeight - RECV_HEIGHT - 2 * 18 : 400
-  const colCAllocs = colCBudget > 0 ? computeAlloc(colCBudget, colCPanels) : [
+  const colCAllocs = colCHeight > 0 ? computeAlloc(colCHeight, colCPanels) : [
     { height: 200, visibleRows: 4 },
     { height: 200, visibleRows: 4 },
   ]
@@ -2594,6 +2656,7 @@ export default function WarRoomPage() {
                 panelHeight={colBAllocs[0].height}
                 onCreateFill={() => setFillMode('money_mover')}
               />
+              <ReceivablesCard refreshKey={refreshKey} />
               <UnderContractPanel
                 refreshKey={refreshKey}
                 visibleRows={colBAllocs[1].visibleRows}
@@ -2622,7 +2685,6 @@ export default function WarRoomPage() {
                 onCreateFill={() => setFillMode('deadline')}
                 heroDeadlineId={heroDeadlineId}
               />
-              <ReceivablesCard refreshKey={refreshKey} />
             </div>
 
           </div>
