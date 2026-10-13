@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk, JetBrains_Mono } from 'next/font/google'
+import { Space_Grotesk, JetBrains_Mono, Montserrat } from 'next/font/google'
 import '../styles/globals.css'
 
 // ─── Spec §3.1 — Space Grotesk (sentence case body) ─────────────────────────
@@ -15,6 +15,15 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['400', '500', '700'],
   variable: '--font-jetbrains-mono',
+  display: 'swap',
+})
+
+// Deal header DELETE / EDIT only. The property plates are drawn in a rounded
+// geometric sans; Montserrat Medium is the measured match to that letterform.
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['500'],
+  variable: '--font-montserrat',
   display: 'swap',
 })
 
@@ -39,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} ${montserrat.variable}`}>
       <head>
         {/* Inline tags removed — root layout metadata export handles public-site icons.
             Segment-level metadata in /warroom and /warroom3 layouts override apple-touch-icon

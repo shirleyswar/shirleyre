@@ -86,10 +86,12 @@ const LEASE_PLATE = '/assets/plates/lease-h180.png'
 const TX_PLATE_H = 44
 const PROPERTY_PLATE_H = 39
 
-// Header actions. Same capsule height, radius and geometric caps as the
-// type plates, drawn quieter because they are actions. Hit target is 44px;
-// the visible tube is 38px so it sits on the type-plate ink, not the
-// transparent padding in the h180 files.
+// Header actions. Visible tube matches the OFFICE capsule (39px). Hit target
+// stays 44px. OFFICE's letter core, measured on plate-office-v7 at this mount,
+// is 16.8px tall with ~19px from the ink to the outer tube. Montserrat Medium
+// at 24px has a 0.70 cap ratio, so the caps match; 15px of padding sits inside
+// the 1.5px border and lands the ink on that same gap. The 1px shift puts the
+// cap center on the tube centerline — the em box centers high of the caps.
 const ACTION_PILL_CSS = `
 .wr-action-pill {
   appearance: none;
@@ -97,7 +99,7 @@ const ACTION_PILL_CSS = `
   background: transparent;
   border: none;
   margin: 0;
-  padding: 3px 0;
+  padding: 2.5px 0;
   height: 44px;
   min-width: 44px;
   display: inline-flex;
@@ -108,20 +110,20 @@ const ACTION_PILL_CSS = `
   -webkit-tap-highlight-color: transparent;
 }
 .wr-action-pill:disabled { cursor: default; }
-.wr-action-pill span {
+.wr-action-pill__face {
   box-sizing: border-box;
-  height: 38px;
+  height: ${PROPERTY_PLATE_H}px;
   min-width: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 18px;
+  padding: 0 15px;
   border-radius: 999px;
   background: transparent;
-  font-family: ${FONT_DISPLAY};
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: 0.08em;
+  font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+  font-weight: 500;
+  font-size: 24px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1;
   white-space: nowrap;
@@ -131,13 +133,17 @@ const ACTION_PILL_CSS = `
   box-shadow: 0 0 8px var(--glow);
   transition: border-color .18s ease, box-shadow .18s ease, text-shadow .18s ease, color .18s ease;
 }
-.wr-action-pill--delete span {
+.wr-action-pill__label {
+  transform: translateY(1px);
+  margin-right: -0.04em;
+}
+.wr-action-pill--delete .wr-action-pill__face {
   --pill: rgba(255, 77, 94, 0.62);
   --ink: #F4F1F2;
   --glow: rgba(255, 77, 94, 0.28);
 }
-.wr-action-pill--delete:hover:not(:disabled) span,
-.wr-action-pill--delete:focus-visible span {
+.wr-action-pill--delete:hover:not(:disabled) .wr-action-pill__face,
+.wr-action-pill--delete:focus-visible .wr-action-pill__face {
   --pill: #FF4D5E;
   --ink: #FFFFFF;
   --glow: rgba(255, 77, 94, 0.72);
@@ -146,13 +152,13 @@ const ACTION_PILL_CSS = `
   box-shadow: 0 0 6px rgba(255, 77, 94, 0.65), 0 0 18px rgba(255, 77, 94, 0.42);
   text-shadow: 0 0 6px rgba(255, 77, 94, 0.9), 0 0 16px rgba(255, 77, 94, 0.5);
 }
-.wr-action-pill--edit span {
+.wr-action-pill--edit .wr-action-pill__face {
   --pill: rgba(226, 228, 236, 0.55);
   --ink: rgba(244, 244, 248, 0.92);
   --glow: rgba(255, 255, 255, 0.14);
 }
-.wr-action-pill--edit:hover:not(:disabled) span,
-.wr-action-pill--edit:focus-visible span {
+.wr-action-pill--edit:hover:not(:disabled) .wr-action-pill__face,
+.wr-action-pill--edit:focus-visible .wr-action-pill__face {
   --pill: rgba(255, 255, 255, 0.92);
   --ink: #FFFFFF;
   --glow: rgba(255, 255, 255, 0.5);
@@ -162,8 +168,23 @@ const ACTION_PILL_CSS = `
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.55);
 }
 .wr-deal-header { flex-wrap: nowrap; }
+.wr-deal-pills {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.wr-deal-chip {
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
 @media (max-width: 900px) {
   .wr-deal-header { flex-wrap: wrap; row-gap: 12px; }
+  .wr-deal-pills { flex-basis: 100%; margin-left: 0; justify-content: flex-start; }
 }
 `
 
@@ -189,7 +210,7 @@ function ActionPill({
       aria-label={tone === 'delete' ? 'Delete deal' : 'Edit deal'}
       style={style}
     >
-      <span>{label}</span>
+      <span className="wr-action-pill__face"><span className="wr-action-pill__label">{label}</span></span>
     </button>
   )
 }
@@ -789,17 +810,20 @@ function DealPageClientInner({ id }: { id: string }) {
             </div>
           </div>
 
-          <div style={{ flex: 1 }} />
-
-          {/* HOT pill */}
+          {/* Status, type plates, DELETE, EDIT — one 20px gap, one centerline. */}
+          <div className="wr-deal-pills">
           {isHot && (
-            <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 9px', borderRadius: 5, background: T.hot, color: '#0A0A0F', flexShrink: 0 }}>
-              HOT
+            <span className="wr-deal-chip">
+              <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1, display: 'inline-flex', alignItems: 'center', padding: '4px 9px', borderRadius: 5, background: T.hot, color: '#0A0A0F' }}>
+                HOT
+              </span>
             </span>
           )}
           {!isHot && deal.status && (
-            <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 9px', borderRadius: 5, background: 'transparent', border: `1px solid ${T.border}`, color: T.textMid, flexShrink: 0 }}>
-              {deal.status.replace(/_/g, ' ')}
+            <span className="wr-deal-chip">
+              <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1, display: 'inline-flex', alignItems: 'center', padding: '4px 9px', borderRadius: 5, background: 'transparent', border: `1px solid ${T.border}`, color: T.textMid }}>
+                {deal.status.replace(/_/g, ' ')}
+              </span>
             </span>
           )}
 
@@ -826,10 +850,10 @@ function DealPageClientInner({ id }: { id: string }) {
             </div>
           )}
 
-          {/* DELETE and EDIT — hidden on closed deals. REOPEN below is its own control.
-              Grouped so the pair stays together and the gap between them stays clear when the row wraps. */}
+          {/* DELETE and EDIT — hidden on closed deals. REOPEN is its own control.
+              Same 20px gap as the rest of the row; kept as a pair so EDIT does not wrap alone. */}
           {deal?.status !== 'closed' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 28, flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
               <ActionPill tone="delete" label="DELETE" onClick={() => setDeleteMode(true)} />
 
               {editMode ? (
@@ -865,6 +889,7 @@ function DealPageClientInner({ id }: { id: string }) {
               }}
             >REOPEN</button>
           )}
+          </div>
         </div>
       </div>
 
