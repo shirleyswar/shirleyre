@@ -14,6 +14,7 @@ import {
   DS0, DS2, DS4, DS5, DS6,
   DT0, DT3, DT4, DT5, DT7, DM2,
 } from '@/components/warroom/desktopTypes'
+import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
 
 // ── Tokens — same as page.tsx C object ───────────────────────────────────────
 const C = {
@@ -451,7 +452,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
     if (rpcErr) {
       setSaving(false)
       setError(rpcErr.message || 'Could not complete — try again')
-      return
+      return false
     }
     const { error: updateErr } = await supabase
       .from('tasks')
@@ -460,7 +461,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
     if (updateErr) {
       setSaving(false)
       setError('Staged changes saved — could not mark complete.')
-      return
+      return false
     }
     onCompleted(task)
   }
@@ -634,29 +635,11 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
           {/* READ mode (non-create, non-fill) → DONE caption + checkmark. EDIT/create/fill → empty. */}
           {/* Check 40/41: no DONE in create mode (task not saved yet) */}
           {mode === 'read' && !isCreate && fill === 'task' && (
-            <button
+            <MarkCompleteButton
               onClick={handleDone}
               disabled={saving}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: 'transparent',
-                border: 'none',
-                cursor: saving ? 'not-allowed' : 'pointer',
-                padding: 0,
-                flexShrink: 0,
-              }}
-            >
-              {/* DONE caption removed 49a — checkmark stands alone */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/assets/check/check-h140.png"
-                alt="Done"
-                width={56}
-                height={56}
-                style={{ width: 56, height: 56, display: 'block' }}
-              />
-            </button>
+              hitSize={56}
+            />
           )}
 
           {/* × ESC — always last in right zone, never moves. */}
