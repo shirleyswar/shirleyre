@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
-import { calcCommission, calcLeaseValue, fmtMoney } from '@/lib/dealMath'
+import { calcCommission, calcLeaseValue, fmtMoney, HOUSE_SPLIT } from '@/lib/dealMath'
 import Fab from '@/assets/fab/Fab'
 import '@/assets/fab/fab.css'
 import { useRouter } from 'next/navigation'
@@ -72,7 +72,9 @@ interface DealEconomics {
   lease_rate_psf?: number | null
   lease_term_years?: number | null
   lease_commission_pct?: number | null
-  // Check 48: commission rate model fields
+  offer_price?: number | null
+  // Check 48: commission rate model fields — not columns on deal_economics yet.
+  // Selecting them fails the whole read (Under Contract was a dash wall).
   listing_rate?: number | null
   co_broker_on?: boolean | null
   co_broker_split?: number | null
@@ -101,6 +103,8 @@ interface Deal {
   commission_estimated: number | null
   commission: number | null
   is_money_mover?: boolean | null
+  type?: string | null
+  representation_role?: string | null
   deal_contacts: Array<{ contacts: { name: string } | null }>
 }
 
@@ -126,6 +130,12 @@ interface ArItem {
 function fmt$(n: number | null | undefined): string {
   if (n == null) return '—'
   return '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
+/** Full dollars, or '' when the figure was never entered. No em dash. */
+function fmtDollars(n: number | null | undefined): string {
+  if (n == null || Number.isNaN(n)) return ''
+  return '$' + Math.abs(Math.round(n)).toLocaleString('en-US')
 }
 
 function clientName(d: Deal): string {
@@ -161,6 +171,8 @@ interface PanelSpec {
   header: number
   rowHeight: number
   rowCount: number
+  /** Absolute panel floor, in px. Used when an empty state needs more than one row. */
+  minHeight?: number
 }
 
 interface PanelAlloc {
@@ -172,7 +184,10 @@ function computeAlloc(budget: number, panels: PanelSpec[]): PanelAlloc[] {
   const GAP = 18
   const totalBudget = budget - (panels.length - 1) * GAP
   const demands = panels.map(p => p.header + p.rowCount * p.rowHeight)
-  const floors = panels.map(p => p.header + (p.rowCount === 0 ? 1 : 2) * p.rowHeight)
+  const floors = panels.map(p => Math.max(
+    p.minHeight ?? 0,
+    p.header + (p.rowCount === 0 ? 1 : 2) * p.rowHeight,
+  ))
   // Check 30: effective demand must be at least the floor for each panel
   const effectiveDemands = demands.map((d, i) => Math.max(d, floors[i]))
   const totalDemand = effectiveDemands.reduce((a, b) => a + b, 0)
@@ -692,6 +707,47 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
 // rowHeight = 44px
 const MM_HEADER = 55
 const MM_ROW_H  = 44
+
+// VALUE / COMM are fixed so a long figure cannot run into the next column.
+// Widths are the measured DM1 tabular width of the widest live figures
+// ($2,439,360 = 91px, $600,000 = 73px) plus a few pixels of slack.
+// The 16px track gap is the gutter. NOTE, when it has text, is the track that shrinks.
+const MONEY_VALUE_W = 96
+const MONEY_COMM_W = 80
+const MONEY_GUTTER = 16
+
+function moneyTracks(includeNote: boolean): string {
+  const figures = `${MONEY_VALUE_W}px ${MONEY_COMM_W}px`
+  return includeNote
+    ? `minmax(0,1fr) minmax(0,140px) ${figures}`
+    : `minmax(0,1fr) ${figures}`
+}
+
+function moneyGrid(includeNote: boolean): React.CSSProperties {
+  return {
+    display: 'grid',
+    gridTemplateColumns: moneyTracks(includeNote),
+    columnGap: MONEY_GUTTER,
+    alignItems: 'center',
+  }
+}
+
+/** Fixed figure cell. minWidth 0 keeps a long amount from stretching the track into the next column. */
+const MONEY_FIGURE: React.CSSProperties = {
+  minWidth: 0,
+  textAlign: 'right',
+  fontVariantNumeric: 'tabular-nums',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+}
+
+function liveMoneyNote(mm: { note?: string | null; note_typed_at?: string | null }): string {
+  if (!mm.note) return ''
+  if (!mm.note_typed_at) return ''
+  const age = Date.now() - new Date(mm.note_typed_at).getTime()
+  if (Number.isNaN(age) || age > 7 * 86400000) return ''
+  return mm.note
+}
 
 // Item 4: MoneyMovers now reads from money_movers table (not deals.is_money_mover).
 interface MoneyMoverRow {
@@ -1308,6 +1364,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
 
   const headerTotal = enriched.reduce((s, d) => s + (d._commission ?? 0), 0)
   const mmCount = enriched.length
+  const showNote = enriched.some(mm => liveMoneyNote(mm) !== '')
 
   // WARROOM-169C: all rows render; panel body snaps to whole rows and scrolls.
   const { ref: listRef, className: listClass, style: listStyle } = usePanelBodyScroll(loading ? 0 : enriched.length, panelHeight ?? 0)
@@ -1327,17 +1384,17 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
         fab={<Fab label="Add money mover" aria-label="Add money mover" onClick={() => onCreateFill?.()} />}
       />
 
-      {/* Column header */}
+      {/* Column header — same tracks as the rows, so labels sit on the figures. */}
       <div style={{
-        display: 'flex',
+        ...moneyGrid(showNote),
         padding: '7px 14px',
         borderBottom: `1px solid ${C.borderPanel}`,
         flexShrink: 0,
       }}>
-        <span style={{ ...DT8, color: C.textLow, flex: 1 }}>ITEM</span>
-        <span style={{ ...DT8, color: C.textLow, width: 210 }}>NOTE</span>
-        <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
-        <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
+        <span style={{ ...DT8, color: C.textLow }}>ITEM</span>
+        {showNote && <span style={{ ...DT8, color: C.textLow }}>NOTE</span>}
+        <span style={{ ...DT8, color: C.textLow, textAlign: 'right' }}>VALUE</span>
+        <span style={{ ...DT8, color: C.textLow, textAlign: 'right' }}>COMM</span>
       </div>
       <div ref={listRef} className={listClass} data-wr-panel-scroll="" style={listStyle}>
         {loading ? (
@@ -1353,26 +1410,24 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
                   onClick={() => setSelectedMM(mm)}
                   onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.045)'}
                   onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = ''}
-                  style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box', cursor: 'pointer', scrollSnapAlign: 'start' }}
+                  style={{ ...moneyGrid(showNote), padding: '9px 14px', minHeight: MM_ROW_H, boxSizing: 'border-box', cursor: 'pointer', scrollSnapAlign: 'start' }}
                 >
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {mm.title}
                     </div>
                   </div>
-                  {(() => {
-                    const noteExpired = mm.note_typed_at ? (Date.now() - new Date(mm.note_typed_at).getTime()) > 7 * 86400000 : true
-                    const noteText = (!noteExpired && mm.note) ? mm.note : ''
-                    const valStr = mm._dealValue != null ? ('$' + Math.abs(mm._dealValue).toLocaleString('en-US', { maximumFractionDigits: 0 })) : ''
-                    const commStr = mm._commission != null ? ('$' + Math.abs(mm._commission).toLocaleString('en-US', { maximumFractionDigits: 0 })) : ''
-                    return (
-                      <>
-                        <div style={{ width: 210, flexShrink: 0, ...DS6, color: C.textMid, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{noteText}</div>
-                        <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>{valStr}</div>
-                        <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>{commStr}</div>
-                      </>
-                    )
-                  })()}
+                  {showNote && (
+                    <div style={{ ...DS6, color: C.textMid, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {liveMoneyNote(mm)}
+                    </div>
+                  )}
+                  <div style={{ ...DM1, ...MONEY_FIGURE, color: C.textHi }}>
+                    {fmtDollars(mm._dealValue)}
+                  </div>
+                  <div style={{ ...DM1, ...MONEY_FIGURE, color: C.moneyIn }}>
+                    {fmtDollars(mm._commission)}
+                  </div>
                 </div>
                 {i < enriched.length - 1 && <Hair />}
               </React.Fragment>
@@ -1421,6 +1476,39 @@ interface DealWithClosing extends Deal {
   _closingDate?: string | null
 }
 
+/**
+ * Price and commission from deal_economics — the row the deal page reads.
+ * Sale price is asking_price. Lease price is asking_price, or the rent roll
+ * when asking price was never entered. Commission uses the stored rate.
+ * A sale with a price and no stored rate falls back to the deal page's
+ * 6% × 50% × 75% chain. Buyer deals use offer price the same way.
+ */
+function resolveDealFigures(
+  deal: { type?: string | null; representation_role?: string | null },
+  econ: DealEconomics | null,
+): { value: number | null; commission: number | null } {
+  if (!econ) return { value: null, commission: null }
+  const tx = (econ.transaction_type ?? '').toLowerCase()
+  const dealType = (deal.type ?? '').toLowerCase()
+  const role = (deal.representation_role ?? '').toLowerCase()
+  const isBuyer = tx === 'buyer' || dealType === 'buyer' || role === 'buyer'
+  if (isBuyer) {
+    const basis = econ.offer_price ?? econ.asking_price ?? null
+    const commission = basis != null ? Math.round(basis * 0.06 * 0.5 * HOUSE_SPLIT) : null
+    return { value: basis, commission }
+  }
+  if (tx === 'lease') {
+    const leaseValue = calcLeaseValue(econ.sqft ?? null, econ.lease_rate_psf ?? null, econ.lease_term_years ?? null)
+    return { value: econ.asking_price ?? leaseValue, commission: calcCommission(econ) }
+  }
+  const value = econ.asking_price ?? null
+  let commission = calcCommission(econ)
+  if (commission == null && value != null) {
+    commission = Math.round(value * 0.06 * 0.5 * HOUSE_SPLIT)
+  }
+  return { value, commission }
+}
+
 function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChange, panelHeight }: { refreshKey: number; visibleRows: number; onCountChange?: (n: number) => void; panelHeight?: number }) {
   const [deals, setDeals] = useState<DealWithClosing[]>([])
   const [econMap, setEconMap] = useState<Record<string, DealEconomics>>({})
@@ -1431,7 +1519,7 @@ function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChan
     async function load() {
       const { data } = await supabase
         .from('deals')
-        .select('id, name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city, status, commission_estimated, deal_contacts(contacts(name))')
+        .select('id, name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city, status, commission_estimated, type, representation_role, deal_contacts(contacts(name))')
         .eq('status', 'under_contract')
         .order('created_at', { ascending: true })
         .limit(30)
@@ -1454,13 +1542,22 @@ function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChan
         })
         withClosing = rows.map(d => ({ ...d, _closingDate: closingMap[d.id] ?? null }))
 
-        // Check 35: fetch deal_economics for VALUE and COMMISSION columns
-        const { data: econData } = await supabase
+        // Same economics columns the deal page reads. listing_rate / co_broker_*
+        // are not columns; selecting them used to fail this read and blank every figure.
+        const econCols = 'deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct, offer_price'
+        let econRes: { data: any[] | null; error: { message?: string } | null } = await supabase
           .from('deal_economics')
-          .select('deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct, listing_rate, co_broker_on, co_broker_split')
+          .select(econCols)
           .in('deal_id', ids)
+        if (econRes.error && /column|schema cache/i.test(econRes.error.message ?? '')) {
+          econRes = await supabase
+            .from('deal_economics')
+            .select('deal_id, transaction_type, asking_price, sale_commission_pct, sqft, lease_rate_psf, lease_term_years, lease_commission_pct')
+            .in('deal_id', ids)
+        }
+        if (econRes.error) console.error('[UNDER CONTRACT] deal_economics:', econRes.error.message)
         const map: Record<string, DealEconomics> = {}
-        ;(econData ?? []).forEach((e: any) => { map[e.deal_id] = e as DealEconomics })
+        ;((econRes.data ?? []) as any[]).forEach((e) => { map[e.deal_id] = e as DealEconomics })
         setEconMap(map)
       }
 
@@ -1486,6 +1583,11 @@ function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChan
     ? `CLOSES ${fmtDate(nextClosing).toUpperCase()}`
     : String(deals.length)
 
+  const figures = deals.map(d => resolveDealFigures(d, econMap[d.id] ?? null))
+  const anyMoney = figures.some(f => f.value != null || f.commission != null)
+  // Hide VALUE and COMM when every row is empty — a dash wall is not a column.
+  const showMoneyCols = loading || anyMoney
+
   const ucH = panelHeight ? panelHeight : undefined
 
   return (
@@ -1498,11 +1600,10 @@ function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChan
         statusColor={C.textLow}
         totalCount={nextClosing ? headerRight : undefined}
       />
-      {/* Check 35: column headers */}
-      <div style={{ display: 'flex', padding: '7px 14px', borderBottom: `1px solid ${C.borderPanel}`, flexShrink: 0 }}>
-        <span style={{ ...DT8, color: C.textLow, flex: 1 }}>ADDRESS</span>
-        <span style={{ ...DT8, color: C.textLow, width: 78, textAlign: 'right' }}>VALUE</span>
-        <span style={{ ...DT8, color: C.textLow, width: 70, textAlign: 'right' }}>COMM</span>
+      <div style={{ ...moneyGrid(false), gridTemplateColumns: showMoneyCols ? moneyTracks(false) : 'minmax(0,1fr)', padding: '7px 14px', borderBottom: `1px solid ${C.borderPanel}`, flexShrink: 0 }}>
+        <span style={{ ...DT8, color: C.textLow }}>ADDRESS</span>
+        {showMoneyCols && <span style={{ ...DT8, color: C.textLow, textAlign: 'right' }}>VALUE</span>}
+        {showMoneyCols && <span style={{ ...DT8, color: C.textLow, textAlign: 'right' }}>COMM</span>}
       </div>
       <div ref={listRef} className={listClass} data-wr-panel-scroll="" style={listStyle}>
         {loading ? (
@@ -1517,38 +1618,65 @@ function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChan
               // Check 35: closing date subline
               const closingStr = d._closingDate ? `closes ${fmtDate(d._closingDate)}` : null
               const subline = name || closingStr ? [name, closingStr].filter(Boolean).join(' · ') : ''
-              // Check 35: economics columns
-              const econ = econMap[d.id] ?? null
-              const commission = calcCommission(econ)
-              let dealValue: number | null = null
-              if (econ) {
-                if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price) {
-                  dealValue = econ.asking_price
-                } else if (econ.transaction_type === 'lease') {
-                  dealValue = calcLeaseValue(econ.sqft ?? null, econ.lease_rate_psf ?? null, econ.lease_term_years ?? null)
-                }
-              }
+              const { value: dealValue, commission } = figures[i]
+              const valueStr = fmtDollars(dealValue)
+              const commStr = fmtDollars(commission)
+              const missingBoth = dealValue == null && commission == null
               return (
                 <React.Fragment key={d.id}>
                   {/* Check 63: whole row clickable → deal page */}
                   <div
                     data-wr-row=""
                     onClick={() => router.push('/warroom/deal/?id=' + d.id)}
-                    style={{ display: 'flex', alignItems: 'center', padding: '9px 14px', minHeight: UC_ROW_H, boxSizing: 'border-box', cursor: 'pointer', scrollSnapAlign: 'start' }}
+                    style={{
+                      ...moneyGrid(false),
+                      gridTemplateColumns: showMoneyCols ? moneyTracks(false) : 'minmax(0,1fr)',
+                      padding: '9px 14px',
+                      minHeight: UC_ROW_H,
+                      boxSizing: 'border-box',
+                      cursor: 'pointer',
+                      scrollSnapAlign: 'start',
+                    }}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {shortAddr(d)}
                       </div>
-                      {subline && <div style={{ ...DS7, color: C.textLow }}>{subline}</div>}
+                      {subline && <div style={{ ...DS7, color: C.textLow, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subline}</div>}
                     </div>
-                    {/* Check 35: VALUE and COMMISSION columns (Check 62: LANDED pill removed) */}
-                    <div style={{ ...DM1, color: C.textHi, width: 78, textAlign: 'right', flexShrink: 0 }}>
-                      {fmtMoney(dealValue)}
-                    </div>
-                    <div style={{ ...DM1, color: C.moneyIn, width: 70, textAlign: 'right', flexShrink: 0 }}>
-                      {fmtMoney(commission)}
-                    </div>
+                    {showMoneyCols && (
+                      dealValue == null ? (
+                        missingBoth ? (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); router.push('/warroom/deal/?id=' + d.id) }}
+                            style={{
+                              ...DS7,
+                              color: C.textLow,
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              cursor: 'pointer',
+                              textDecoration: 'underline',
+                              textUnderlineOffset: 2,
+                              textAlign: 'right',
+                              justifySelf: 'end',
+                            }}
+                          >
+                            Add value
+                          </button>
+                        ) : <div />
+                      ) : (
+                        <div style={{ ...DM1, ...MONEY_FIGURE, color: C.textHi }}>
+                          {valueStr}
+                        </div>
+                      )
+                    )}
+                    {showMoneyCols && (
+                      <div style={{ ...DM1, ...MONEY_FIGURE, color: C.moneyIn }}>
+                        {commStr}
+                      </div>
+                    )}
                   </div>
                   {i < deals.length - 1 && <Hair />}
                 </React.Fragment>
@@ -1575,15 +1703,29 @@ type HeroItem = {
   href: string | null
 }
 
-function fmtHeroGutter(dateStr: string, timeStr: string | null): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const dt = new Date(y, m - 1, d)
-  const day = ['SUN','MON','TUE','WED','THU','FRI','SAT'][dt.getDay()]
-  if (!timeStr) return `${day} ${d} · —`
+function heroClock(timeStr: string | null): string {
+  if (!timeStr) return ''
   const [h, min] = timeStr.split(':').map(Number)
+  if (Number.isNaN(h)) return ''
   const h12 = h % 12 || 12
-  const ampm = h >= 12 ? 'P' : 'A'
-  return `${day} ${d} · ${h12}:${String(min).padStart(2,'0')}${ampm}`
+  return `${h12}:${String(min ?? 0).padStart(2, '0')}${h >= 12 ? 'P' : 'A'}`
+}
+
+/** Lateness or due date for the NEXT UP banner. Never a placeholder dash. */
+function heroWhenLabel(dateStr: string, timeStr: string | null): string {
+  const days = daysBetween(dateStr)
+  const when = fmtDate(dateStr).toUpperCase()
+  const clock = heroClock(timeStr)
+  if (days < 0) return `${Math.abs(days)}D LATE`
+  if (days === 0) return clock ? `TODAY · ${clock}` : 'TODAY'
+  return clock ? `${days}D · ${when} · ${clock}` : `${days}D · ${when}`
+}
+
+function heroWhenColor(dateStr: string): string {
+  const days = daysBetween(dateStr)
+  if (days < 0) return C.late
+  if (days <= 7) return C.hot
+  return C.textMid
 }
 
 function HeroNext48({ refreshKey, onHeroDeadlineId }: { refreshKey: number; onHeroDeadlineId?: (id: string | null) => void }) {
@@ -1675,18 +1817,21 @@ function HeroNext48({ refreshKey, onHeroDeadlineId }: { refreshKey: number; onHe
       {/* Spine */}
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: spineColor, borderRadius: '14px 0 0 14px' }} />
 
-      {/* Gutter — 104px */}
-      <div style={{ width: 104, flexShrink: 0, fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, color: hero ? hero.spineColor : C.muted, whiteSpace: 'nowrap', position: 'relative', zIndex: 1 }}>
-        {!loading && hero ? fmtHeroGutter(hero.date, hero.time) : ''}
-      </div>
-
-      {/* Center */}
-      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
+      {/* NEXT UP · lateness or due date · title — address. No placeholder dash. */}
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
         {loading ? null : hero ? (
-          <>
-            <div style={{ fontFamily: FONT_DISP, fontSize: 21, fontWeight: 500, color: C.textHi, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.15 }}>{hero.title}</div>
-            {hero.property && <div style={{ fontSize: 15, fontWeight: 400, color: C.textLow, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>{hero.property}</div>}
-          </>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0, maxWidth: '100%' }}>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, letterSpacing: '0.12em', color: C.textMid, flexShrink: 0 }}>NEXT UP</span>
+            <span style={{ color: C.textLow, flexShrink: 0 }}>·</span>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', color: heroWhenColor(hero.date), flexShrink: 0, whiteSpace: 'nowrap' }}>
+              {heroWhenLabel(hero.date, hero.time)}
+            </span>
+            <span style={{ color: C.textLow, flexShrink: 0 }}>·</span>
+            <span style={{ fontFamily: FONT_DISP, fontSize: 18, fontWeight: 500, color: C.textHi, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+              {hero.title}
+              {hero.property ? <span style={{ fontWeight: 400, color: C.textLow }}>{` — ${hero.property}`}</span> : null}
+            </span>
+          </div>
         ) : (
           <div style={{ fontFamily: FONT_DISP, fontSize: 21, fontWeight: 500, color: C.textLow, letterSpacing: '-0.01em' }}>NOTHING IN THE NEXT 48</div>
         )}
@@ -1711,6 +1856,8 @@ function HeroNext48({ refreshKey, onHeroDeadlineId }: { refreshKey: number; onHe
 // rowHeight = 36px (time gutter row)
 const SCHED_HEADER = 55  // Check 28: 41→55 for FAB
 const SCHED_ROW_H  = 36
+// Empty schedule used to collapse to one 36px row and clip "Nothing scheduled".
+const SCHED_EMPTY_MIN = 168
 
 function SchedulePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onCountChange, onCreateFill }: { refreshKey: number; panelHeight?: number; visibleRows: number; onCountChange?: (n: number) => void; onCreateFill?: () => void }) {
   const [events, setEvents] = useState<ScheduleEvent[]>([])
@@ -1806,11 +1953,21 @@ function SchedulePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onC
         </div>
       </div>
 
-      <div ref={listRef} className={listClass} data-wr-panel-scroll="" style={listStyle}>
+      <div ref={listRef} className={listClass} data-wr-panel-scroll="" style={{ ...listStyle, display: 'flex', flexDirection: 'column' }}>
         {loading ? (
           <div style={{ ...DS6, color: C.textLow, padding: '12px 14px' }}>Loading…</div>
         ) : allEvents.length === 0 ? (
-          <div style={{ ...DT4, color: C.textLow, padding: '20px 14px', textAlign: 'center', fontFamily: FONT_MONO }}>NOTHING SCHEDULED</div>
+          <div style={{
+            flex: 1,
+            minHeight: 72,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px 18px',
+            textAlign: 'center',
+            ...DT4,
+            color: C.textLow,
+          }}>Nothing scheduled</div>
         ) : (
           <>
             {allEvents.map((e, i) => (
@@ -1935,35 +2092,30 @@ function DuePanel({ refreshKey, panelHeight, visibleRows: _visibleRows, onCountC
                   <div
                     data-wr-row=""
                     style={{
-                    display: 'flex',
-                    gap: 8,
+                    display: 'grid',
+                    gridTemplateColumns: 'max-content minmax(0, 1fr) max-content',
+                    columnGap: 10,
+                    alignItems: 'start',
                     padding: '9px 14px',
                     minHeight: DUE_ROW_H,
                     boxSizing: 'border-box',
                     background: !isHero && isFirstFuture && !isPast ? `rgba(255,163,58,0.05)` : 'transparent',
                     borderLeft: isHero ? '3px solid transparent' : isPast ? `3px solid ${C.late}` : isFirstFuture ? `3px solid ${C.hot}` : '3px solid transparent',
-                    alignItems: 'flex-start',
                     scrollSnapAlign: 'start',
                   }}>
-                    {/* Days gutter */}
-                    <div style={{ flexShrink: 0, width: 84 }}>
-                      {isPast ? (
-                        <div style={{ ...DT7 as React.CSSProperties, color: C.late, whiteSpace: 'nowrap' }}>
-                          {absDays}D LATE
-                        </div>
-                      ) : (
-                        <div style={{ ...DT7 as React.CSSProperties, color: isUrgent ? C.hot : C.textMid, whiteSpace: 'nowrap' }}>
-                          {days === 0 ? 'TODAY' : `${days}D · ${fmtDate(d.due_date)}`}
+                    {/* Date tag sizes to its text. Title takes the rest and ellipsizes. */}
+                    <div style={{ ...DT7 as React.CSSProperties, color: isPast ? C.late : isUrgent ? C.hot : C.textMid, whiteSpace: 'nowrap' }}>
+                      {isPast ? `${absDays}D LATE` : days === 0 ? 'TODAY' : `${days}D · ${fmtDate(d.due_date).toUpperCase()}`}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</div>
+                      {d.deals && (
+                        <div style={{ ...DS7, color: C.textLow, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {d.deals.addr_display ?? d.deals.addr_street_name ?? d.deals.name}
                         </div>
                       )}
                     </div>
-                    {/* Content: title + property line */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</div>
-                      {d.deals && <div style={{ ...DS7, color: C.textLow }}>{d.deals.addr_display ?? d.deals.addr_street_name ?? d.deals.name}</div>}
-                    </div>
-                    {/* Check 37: kind right-aligned */}
-                    <div style={{ ...DT7 as React.CSSProperties, color: C.textLow, flexShrink: 0, textAlign: 'right', minWidth: 60 }}>{(d.kind || '').toUpperCase()}</div>
+                    <div style={{ ...DT7 as React.CSSProperties, color: C.textLow, whiteSpace: 'nowrap', textAlign: 'right' }}>{(d.kind || '').toUpperCase()}</div>
                   </div>
                   {i < deadlines.length - 1 && <Hair />}
                 </React.Fragment>
@@ -2332,7 +2484,12 @@ export default function WarRoomPage() {
 
   // D4.4: Compute column C allocations (SCHEDULE + DUE, RECEIVABLES is flex:none)
   const colCPanels: PanelSpec[] = [
-    { header: SCHED_HEADER, rowHeight: SCHED_ROW_H, rowCount: schedRowCount },
+    {
+      header: SCHED_HEADER,
+      rowHeight: SCHED_ROW_H,
+      rowCount: schedRowCount,
+      minHeight: schedRowCount === 0 ? SCHED_EMPTY_MIN : undefined,
+    },
     { header: DUE_HEADER, rowHeight: DUE_ROW_H, rowCount: dueRowCount },
   ]
   const colCBudget = colCHeight > 0 ? colCHeight - RECV_HEIGHT - 2 * 18 : 400
