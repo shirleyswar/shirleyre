@@ -57,6 +57,15 @@
   display: block;
 }
 
+/* Single-line composer that grows with the text. Shift+Enter keeps a newline. */
+.noteGrow {
+  min-height: 44px;
+  max-height: 160px;
+  padding: 10px 16px;
+  line-height: 1.4;
+  overflow-y: auto;
+}
+
 .field:focus,
 .textarea:focus {
   border-color: #8B5CF6;

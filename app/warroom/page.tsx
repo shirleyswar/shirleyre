@@ -2695,7 +2695,7 @@ export default function WarRoomPage() {
       {(drawerTask || createMode || fillMode) && (
         <TaskModal
           task={(drawerTask ?? createTask) as any}
-          onClose={() => { setDrawerTask(null); setCreateMode(false); setFillMode(null) }}
+          onClose={() => { setDrawerTask(null); setCreateMode(false); setFillMode(null); setRefreshKey(k => k + 1) }}
           onCompleted={() => { setDrawerTask(null); setCreateMode(false); setFillMode(null); setRefreshKey(k => k + 1) }}
           onSaved={() => { setDrawerTask(null); setCreateMode(false); setFillMode(null); setRefreshKey(k => k + 1) }}
           isCreate={createMode && !drawerTask}
