@@ -30,7 +30,7 @@ const styleT1: React.CSSProperties = {
 interface BottomSheetProps {
   open: boolean
   onClose: () => void
-  label: string           // T1 header label — UPPERCASE
+  label: React.ReactNode  // T1 header label — UPPERCASE string, or a small node for a two-tone kicker
   count?: number          // optional count after hairline
   children: React.ReactNode
   // 'list' = top:78px (default), 'short' = top:112px, 'full' = top:34px
@@ -52,6 +52,8 @@ interface BottomSheetProps {
   // Footer content rendered flex:none after the scroll body — fixes iOS position:fixed mispositioning
   // (D11.3 ruling: header flex:none, body flex:1 overflow-y:auto, footer flex:none — no position:fixed)
   footer?: React.ReactNode
+  // Task item sheet: header is a label and an action, with no stretching rule between them.
+  noHairline?: boolean
 }
 
 export default function BottomSheet({
@@ -69,6 +71,7 @@ export default function BottomSheet({
   noHandle,
   scrollPaddingBottom = 104,
   footer,
+  noHairline = false,
 }: BottomSheetProps) {
   const prefersReduced = useReducedMotion()
   const sheetTop = size === 'full' ? 34 : size === 'short' ? 112 : 78
@@ -206,8 +209,10 @@ export default function BottomSheet({
               ...(headerHeight ? { height: headerHeight, paddingTop: 0, paddingBottom: 0 } : {}),
             }}>
               <span style={{ ...styleT1, ...labelStyle }}>{label}</span>
-              {/* Hairline */}
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.11)' }} />
+              {/* Hairline — omitted when the header is a single kicker plus one action. */}
+              {noHairline
+                ? <div style={{ flex: 1 }} />
+                : <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.11)' }} />}
               {/* Right side: headerAction takes priority; else count; else close button */}
               {headerAction ?? (count !== undefined ? (
                 <span style={{
