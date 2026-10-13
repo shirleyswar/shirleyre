@@ -452,8 +452,10 @@ export default function TaskDetailSheet({
   // This eliminates the iOS visual-viewport mispositioning bug.
   const footerEl = (
     <div style={{
-      padding: 16,
-      paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+      boxSizing: 'border-box',
+      height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+      padding: '0 16px',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       display: 'flex',
       alignItems: 'center',
       gap: 16,
@@ -481,7 +483,7 @@ export default function TaskDetailSheet({
           }
         }}
       >
-        <span><span className={chrome.editLabel}>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span></span>
+        <span>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span>
       </button>
 
       <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
@@ -503,7 +505,7 @@ export default function TaskDetailSheet({
   const statusWord = mode === 'edit'
     ? 'EDIT'
     : eyebrowText.replace(/^●\s*/, '')
-  const statusColor = mode !== 'edit' && overdue ? T.late : T.textLow
+  const statusColor = mode !== 'edit' && overdue ? T.late : '#B8B8C0'
 
   return (
     <>
@@ -511,13 +513,13 @@ export default function TaskDetailSheet({
         open={open}
         onClose={handleDismiss}
         label={<>BATTLE PLAN · <span style={{ color: statusColor }}>{statusWord}</span></>}
-        labelStyle={{ color: T.textLow, letterSpacing: '0.14em' }}
+        labelStyle={{ color: '#B8B8C0', fontSize: 13, fontWeight: 600, letterSpacing: '0.12em' }}
         headerHeight={56}
         noHairline
         noHandle
         size="full"
         headerAction={headerAction}
-        scrollPaddingBottom={24}
+        scrollPaddingBottom={16}
         footer={footerEl}
       >
         {/* §18.7 Error banner */}
@@ -555,14 +557,14 @@ export default function TaskDetailSheet({
               {/* 1. Title — D3, not a field. Status kicker lives in the header. */}
               <div style={{
                 ...styleD3,
-                marginBottom: 16,
+                marginBottom: 12,
                 textWrap: 'pretty',
               } as React.CSSProperties}>
                 {task.title}
               </div>
 
               {/* 3. LIST */}
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 12 }}>
                 <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
                 <div className={chrome.fieldStatic}>
                   <span style={{ ...styleT3, color: listName === '—' ? T.textLow : T.textHi }}>
@@ -575,7 +577,7 @@ export default function TaskDetailSheet({
               {/* 4. DEAL card */}
               {task.deal_id && (
                 <div style={{
-                  background: T.bgRaise, borderRadius: 8, padding: '8px 16px', marginBottom: 16,
+                  background: T.bgRaise, borderRadius: 8, padding: '8px 16px', marginBottom: 12,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   border: `1px solid ${T.borderDefault}`,
                   gap: 8,
@@ -596,7 +598,7 @@ export default function TaskDetailSheet({
               )}
 
               {/* 5. DUE section — date sits beside the label. Red only for overdue. */}
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
                   <span style={LABEL}>DUE</span>
                   {stagedDate && currentDue && stagedDate !== currentDue && (
@@ -647,7 +649,7 @@ export default function TaskDetailSheet({
               </div>
 
               {/* 6. NOTES section */}
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <span style={LABEL}>NOTES</span>
                   <span style={LABEL}>{notes.length}</span>
@@ -673,7 +675,7 @@ export default function TaskDetailSheet({
               </div>
 
               {/* 6b. ADD A NOTE composer — in read state (ruling 8.18.26: composer moves here so checkmark + CONFIRM can carry note) */}
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 8 }}>
                 <div style={{ ...LABEL, marginBottom: 8 }}>ADD A NOTE</div>
                 <textarea
                   className={chrome.textarea}
@@ -712,7 +714,7 @@ export default function TaskDetailSheet({
                   padding: 0,
                   borderBottom: `1px solid ${T.borderDefault}`,
                   paddingBottom: 8,
-                  marginBottom: 16,
+                  marginBottom: 12,
                   lineHeight: 1.3,
                   boxSizing: 'border-box',
                   overflow: 'hidden',
@@ -726,7 +728,7 @@ export default function TaskDetailSheet({
                 value={noteText}
                 onChange={e => setNoteText(e.target.value)}
                 placeholder="Type a note…"
-                style={{ fontSize: 16, marginBottom: 16 }}
+                style={{ fontSize: 16, marginBottom: 12 }}
                 rows={3}
               />
 
@@ -734,7 +736,7 @@ export default function TaskDetailSheet({
               <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
               <div style={{
                 display: 'flex', padding: 4, borderRadius: 8, gap: 4,
-                background: T.bgRaise, border: `1px solid ${T.borderDefault}`, marginBottom: 16,
+                background: T.bgRaise, border: `1px solid ${T.borderDefault}`, marginBottom: 12,
               }}>
                 {(['life', 'entity'] as const).map(seg => (
                   <button
