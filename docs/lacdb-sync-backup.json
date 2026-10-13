@@ -1,0 +1,1128 @@
+{
+  "taken_at": "2026-10-13T18:34:33.966Z",
+  "feed_generated_at": "2026-10-05T12:30:00Z",
+  "note": "Pre-image of deals the one-time LACDB sync will update. Restore a deal by PATCH of these columns. Delete rows listed in created after a successful apply. Off-LACDB rows were not written.",
+  "applied": true,
+  "updates": [
+    {
+      "deal": {
+        "id": "0c66a6fe-0bf8-4808-a051-644008b51a8d",
+        "name": "Daniel Laborde",
+        "address": "5219 Government St, Baton Rouge, LA 70806, USA",
+        "type": "active_listing",
+        "status": "under_contract",
+        "tier": "filed",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": "lacdb:5d4a0303-084-acres-lit-hard-corner-c1-no-flood-buildready",
+        "notes": null,
+        "created_at": "2026-03-28T13:47:09.028708+00:00",
+        "updated_at": "2026-08-21T04:32:05.811968+00:00",
+        "dropbox_link": "https://www.dropbox.com/scl/fo/ixwmmcp16674fvrukpgpd/AOyXjV3l9mPtpQhF4uP1MKw?rlkey=ucghat0algd5f9jffcxid19qa&dl=0",
+        "parent_deal_id": null,
+        "rating": null,
+        "addr_number": "5219",
+        "addr_street_name": "Government",
+        "addr_street_type": "St.",
+        "addr_direction": null,
+        "addr_city": "Baton Rouge",
+        "addr_display": "Government St. 5219",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": true,
+        "portfolio_id": null,
+        "representation_role": "landlord",
+        "reporting_cadence_days": 7,
+        "property_type": "LAND",
+        "representation_role_prior": null,
+        "lacdb_url": null,
+        "addr_state": null,
+        "addr_zip": null,
+        "photo_url": null
+      },
+      "deal_economics": [
+        {
+          "id": "74cd0e32-dc28-4d8c-a2f4-c06c19d4162c",
+          "deal_id": "0c66a6fe-0bf8-4808-a051-644008b51a8d",
+          "property_type": "Vacant Land",
+          "property_type_custom": null,
+          "transaction_type": "sale",
+          "sqft": 36590,
+          "asking_price": 797000,
+          "sale_commission_pct": 3,
+          "lease_rate_psf": null,
+          "lease_type": "NNN",
+          "lease_term_years": null,
+          "lease_commission_pct": 3,
+          "created_at": "2026-03-29T23:01:10.955406+00:00",
+          "updated_at": "2026-03-31T04:29:17.963+00:00",
+          "nnn_psf": null,
+          "land_sqft": null,
+          "laydown_sqft": null,
+          "buyer_prop_types": null,
+          "buyer_price_from": null,
+          "buyer_price_to": null,
+          "buyer_size_from_sf": null,
+          "buyer_size_to_sf": null,
+          "buyer_where": null,
+          "buyer_funding": null,
+          "buyer_1031": null,
+          "buyer_1031_clock": null,
+          "buyer_1031_relinquished": null,
+          "offer_price": null,
+          "offer_date": null,
+          "offer_status": null,
+          "offer_addr_display": null
+        }
+      ],
+      "contract_deadlines": [
+        {
+          "id": "9d714cee-80a3-413a-a423-a27386e1469f",
+          "deal_id": "0c66a6fe-0bf8-4808-a051-644008b51a8d",
+          "label": "Effective Date",
+          "deadline_date": "2026-03-10",
+          "deadline_type": "custom",
+          "status": "satisfied",
+          "notes": "Agreement execution date per Section 16",
+          "created_at": "2026-03-30T01:16:46.828+00:00",
+          "updated_at": "2026-04-16T01:35:08.672+00:00"
+        },
+        {
+          "id": "61be9a4a-6b78-4dd5-99ca-422d5708f186",
+          "deal_id": "0c66a6fe-0bf8-4808-a051-644008b51a8d",
+          "label": "Seller Property Info Delivery",
+          "deadline_date": "2026-03-13",
+          "deadline_type": "custom",
+          "status": "satisfied",
+          "notes": "3 business days after Effective Date - if in Seller's possession and immediately available per Section 6",
+          "created_at": "2026-03-30T01:16:46.828+00:00",
+          "updated_at": "2026-04-16T01:35:10.009+00:00"
+        },
+        {
+          "id": "2bc0090a-4940-42ee-9419-7cf880d7a9cb",
+          "deal_id": "0c66a6fe-0bf8-4808-a051-644008b51a8d",
+          "label": "Title Commitment Delivery Deadline",
+          "deadline_date": "2026-03-25",
+          "deadline_type": "title",
+          "status": "satisfied",
+          "notes": "15 days after Effective Date - Seller to direct Title Company to furnish commitment per Section 5",
+          "created_at": "2026-03-30T01:16:46.828+00:00",
+          "updated_at": "2026-04-16T01:35:13.258+00:00"
+        },
+        {
+          "id": "96f4401c-79f4-4ee8-816c-d735050a037a",
+          "deal_id": "0c66a6fe-0bf8-4808-a051-644008b51a8d",
+          "label": "Feasibility Review Period Expiration",
+          "deadline_date": "2026-07-08",
+          "deadline_type": "inspection",
+          "status": "satisfied",
+          "notes": "120 days after Effective Date. May be extended by Purchaser for up to two successive 30-day periods with written notice and additional $1,000 Extension Deposit per period per Section 5",
+          "created_at": "2026-03-31T20:31:19.416+00:00",
+          "updated_at": "2026-07-07T13:26:12.392+00:00"
+        },
+        {
+          "id": "6d43f6fa-7bde-45dc-a6b6-1a08f97339c1",
+          "deal_id": "0c66a6fe-0bf8-4808-a051-644008b51a8d",
+          "label": "Feasibility Review Extension Expiration",
+          "deadline_date": "2026-08-07",
+          "deadline_type": "inspection",
+          "status": "pending",
+          "notes": null,
+          "created_at": "2026-07-07T13:27:11.028553+00:00",
+          "updated_at": "2026-07-07T13:27:11.028553+00:00"
+        },
+        {
+          "id": "4955fa7d-611b-4e21-b3d2-c7b29e346ff6",
+          "deal_id": "0c66a6fe-0bf8-4808-a051-644008b51a8d",
+          "label": "Closing Deadline (1: 30-day extension remains)",
+          "deadline_date": "2026-09-07",
+          "deadline_type": "closing",
+          "status": "pending",
+          "notes": null,
+          "created_at": "2026-07-07T13:28:06.023567+00:00",
+          "updated_at": "2026-07-07T13:28:06.023567+00:00"
+        }
+      ]
+    },
+    {
+      "deal": {
+        "id": "61db1b58-f0a4-4835-9020-5c1509a59bfe",
+        "name": "Anthony Kimble",
+        "address": "460 Community College Dr, Baton Rouge, LA 70806, USA",
+        "type": "active_listing",
+        "status": "pipeline",
+        "tier": "tracked",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": "lacdb:0b5ed2a7-177-acres-c1-no-flood-buildready",
+        "notes": null,
+        "created_at": "2026-03-30T19:15:30.363827+00:00",
+        "updated_at": "2026-09-22T03:12:45.931147+00:00",
+        "dropbox_link": null,
+        "parent_deal_id": null,
+        "rating": 3,
+        "addr_number": "460",
+        "addr_street_name": "Community College",
+        "addr_street_type": "Dr.",
+        "addr_direction": null,
+        "addr_city": "Baton Rouge",
+        "addr_display": "Community College Dr. 460",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": true,
+        "portfolio_id": null,
+        "representation_role": "seller",
+        "reporting_cadence_days": 7,
+        "property_type": "LAND",
+        "representation_role_prior": null,
+        "lacdb_url": null,
+        "addr_state": null,
+        "addr_zip": null,
+        "photo_url": null
+      },
+      "deal_economics": [
+        {
+          "id": "079fc6f3-e87c-4a78-b9d6-e3cd5f7bc9a6",
+          "deal_id": "61db1b58-f0a4-4835-9020-5c1509a59bfe",
+          "property_type": "Vacant Land",
+          "property_type_custom": null,
+          "transaction_type": "sale",
+          "sqft": 77101,
+          "asking_price": 875000,
+          "sale_commission_pct": 3,
+          "lease_rate_psf": null,
+          "lease_type": "NNN",
+          "lease_term_years": null,
+          "lease_commission_pct": 3,
+          "created_at": "2026-03-30T19:20:18.14711+00:00",
+          "updated_at": "2026-03-30T19:20:17.741+00:00",
+          "nnn_psf": null,
+          "land_sqft": null,
+          "laydown_sqft": null,
+          "buyer_prop_types": null,
+          "buyer_price_from": null,
+          "buyer_price_to": null,
+          "buyer_size_from_sf": null,
+          "buyer_size_to_sf": null,
+          "buyer_where": null,
+          "buyer_funding": null,
+          "buyer_1031": null,
+          "buyer_1031_clock": null,
+          "buyer_1031_relinquished": null,
+          "offer_price": null,
+          "offer_date": null,
+          "offer_status": null,
+          "offer_addr_display": null
+        }
+      ],
+      "contract_deadlines": []
+    },
+    {
+      "deal": {
+        "id": "db8daa4c-ed80-4d22-b8f2-5b93e8103248",
+        "name": "UPals",
+        "address": "1400 Wooddale Blvd, Baton Rouge, LA 70806, USA",
+        "type": "active_listing",
+        "status": "active",
+        "tier": "tracked",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": "lacdb:d2e5861f-1293-acres-cw3-dual-access-cleared-buildready",
+        "notes": null,
+        "created_at": "2026-03-29T23:35:44.777472+00:00",
+        "updated_at": "2026-08-18T20:30:01.665796+00:00",
+        "dropbox_link": "https://www.dropbox.com/scl/fo/nn7w10vxp4jbrxp2bodxh/AMhcX_wGbcdkMUtBavEGcXw?rlkey=fvit471icpdwzr3568ilk3q8z&st=0wdynj1t&dl=0",
+        "parent_deal_id": null,
+        "rating": null,
+        "addr_number": "1400",
+        "addr_street_name": "Wooddale",
+        "addr_street_type": "Blvd.",
+        "addr_direction": null,
+        "addr_city": "Baton Rouge",
+        "addr_display": "Wooddale Blvd. 1400",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": false,
+        "portfolio_id": null,
+        "representation_role": "seller",
+        "reporting_cadence_days": 7,
+        "property_type": "LAND",
+        "representation_role_prior": null,
+        "lacdb_url": null,
+        "addr_state": null,
+        "addr_zip": null,
+        "photo_url": null
+      },
+      "deal_economics": [
+        {
+          "id": "02d04403-326d-49ca-9262-19770cf444ce",
+          "deal_id": "db8daa4c-ed80-4d22-b8f2-5b93e8103248",
+          "property_type": "Vacant Land",
+          "property_type_custom": null,
+          "transaction_type": "sale",
+          "sqft": 563361,
+          "asking_price": 3200000,
+          "sale_commission_pct": 5,
+          "lease_rate_psf": null,
+          "lease_type": "NNN",
+          "lease_term_years": null,
+          "lease_commission_pct": 3,
+          "created_at": "2026-03-30T19:13:18.969799+00:00",
+          "updated_at": "2026-04-16T12:35:42.253+00:00",
+          "nnn_psf": null,
+          "land_sqft": null,
+          "laydown_sqft": null,
+          "buyer_prop_types": null,
+          "buyer_price_from": null,
+          "buyer_price_to": null,
+          "buyer_size_from_sf": null,
+          "buyer_size_to_sf": null,
+          "buyer_where": null,
+          "buyer_funding": null,
+          "buyer_1031": null,
+          "buyer_1031_clock": null,
+          "buyer_1031_relinquished": null,
+          "offer_price": null,
+          "offer_date": null,
+          "offer_status": null,
+          "offer_addr_display": null
+        }
+      ],
+      "contract_deadlines": []
+    },
+    {
+      "deal": {
+        "id": "39c9c4ed-636b-4dfa-abfa-62abc5e6e002",
+        "name": "Industriplex Blvd. 12025",
+        "address": "12025 Industriplex Blvd.",
+        "type": "listing",
+        "status": "under_contract",
+        "tier": "tracked",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": null,
+        "notes": null,
+        "created_at": "2026-09-09T18:48:08.349403+00:00",
+        "updated_at": "2026-09-09T19:59:54.513704+00:00",
+        "dropbox_link": "https://www.dropbox.com/scl/fo/po4utjfjeg904kx2p3gib/ADvHuM1YThyxA-c-9CMdJn0?rlkey=1gs8d4fuajlyi8q0mbgknajwr&dl=0",
+        "parent_deal_id": null,
+        "rating": null,
+        "addr_number": "12025",
+        "addr_street_name": "Industriplex Blvd.",
+        "addr_street_type": null,
+        "addr_direction": null,
+        "addr_city": "Baton Rouge",
+        "addr_display": "Industriplex Blvd., , 12025",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": false,
+        "portfolio_id": null,
+        "representation_role": "landlord",
+        "reporting_cadence_days": 7,
+        "property_type": "INDUSTRIAL",
+        "representation_role_prior": null,
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/d36904f1-12025-industriplex-blvd",
+        "addr_state": "LA",
+        "addr_zip": "70809",
+        "photo_url": "https://mtkyyaorvensylrfbhxv.supabase.co/storage/v1/object/public/deal-photos/39c9c4ed-636b-4dfa-abfa-62abc5e6e002/main"
+      },
+      "deal_economics": [
+        {
+          "id": "646598a6-8e71-458e-b16d-c904dc15189a",
+          "deal_id": "39c9c4ed-636b-4dfa-abfa-62abc5e6e002",
+          "property_type": null,
+          "property_type_custom": null,
+          "transaction_type": "lease",
+          "sqft": 12000,
+          "asking_price": null,
+          "sale_commission_pct": null,
+          "lease_rate_psf": 12,
+          "lease_type": null,
+          "lease_term_years": 5,
+          "lease_commission_pct": 3,
+          "created_at": "2026-09-09T18:48:10.720765+00:00",
+          "updated_at": "2026-09-09T18:48:10.720765+00:00",
+          "nnn_psf": 1.25,
+          "land_sqft": null,
+          "laydown_sqft": null,
+          "buyer_prop_types": null,
+          "buyer_price_from": null,
+          "buyer_price_to": null,
+          "buyer_size_from_sf": null,
+          "buyer_size_to_sf": null,
+          "buyer_where": null,
+          "buyer_funding": null,
+          "buyer_1031": null,
+          "buyer_1031_clock": null,
+          "buyer_1031_relinquished": null,
+          "offer_price": null,
+          "offer_date": null,
+          "offer_status": null,
+          "offer_addr_display": null
+        }
+      ],
+      "contract_deadlines": []
+    },
+    {
+      "deal": {
+        "id": "11ef36ce-6d75-4af2-ba0e-84f390411372",
+        "name": "Hank Saurage",
+        "address": "25035 LA-1, Plaquemine, LA 70764, USA",
+        "type": "active_listing",
+        "status": "pipeline",
+        "tier": "tracked",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": "lacdb:fa9c3a67-shovelready-site-near-dow-shintech-iberville-parish",
+        "notes": null,
+        "created_at": "2026-04-08T20:31:14.458022+00:00",
+        "updated_at": "2026-08-21T04:32:05.811968+00:00",
+        "dropbox_link": null,
+        "parent_deal_id": null,
+        "rating": null,
+        "addr_number": "25035",
+        "addr_street_name": "LA-1",
+        "addr_street_type": null,
+        "addr_direction": null,
+        "addr_city": "Plaquemine",
+        "addr_display": "LA-1 25035",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": true,
+        "portfolio_id": null,
+        "representation_role": "landlord",
+        "reporting_cadence_days": 7,
+        "property_type": "LAND",
+        "representation_role_prior": null,
+        "lacdb_url": null,
+        "addr_state": null,
+        "addr_zip": null,
+        "photo_url": null
+      },
+      "deal_economics": [
+        {
+          "id": "4715b2f4-1966-4947-a0cd-c284a6b16d68",
+          "deal_id": "11ef36ce-6d75-4af2-ba0e-84f390411372",
+          "property_type": "Vacant Land",
+          "property_type_custom": null,
+          "transaction_type": "sale",
+          "sqft": 511830,
+          "asking_price": 2439360,
+          "sale_commission_pct": 1.5,
+          "lease_rate_psf": null,
+          "lease_type": "NNN",
+          "lease_term_years": null,
+          "lease_commission_pct": 3,
+          "created_at": "2026-04-08T20:32:05.312407+00:00",
+          "updated_at": "2026-04-08T20:32:04.334+00:00",
+          "nnn_psf": null,
+          "land_sqft": null,
+          "laydown_sqft": null,
+          "buyer_prop_types": null,
+          "buyer_price_from": null,
+          "buyer_price_to": null,
+          "buyer_size_from_sf": null,
+          "buyer_size_to_sf": null,
+          "buyer_where": null,
+          "buyer_funding": null,
+          "buyer_1031": null,
+          "buyer_1031_clock": null,
+          "buyer_1031_relinquished": null,
+          "offer_price": null,
+          "offer_date": null,
+          "offer_status": null,
+          "offer_addr_display": null
+        }
+      ],
+      "contract_deadlines": []
+    },
+    {
+      "deal": {
+        "id": "55f3d812-7dfc-4c36-9d8b-d26d9f9ba687",
+        "name": "Charles Cooper",
+        "address": "1301 Hudson Ln, Monroe, LA 71201, USA",
+        "type": "active_listing",
+        "status": "active",
+        "tier": "filed",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": null,
+        "notes": null,
+        "created_at": "2026-03-29T23:34:29.4072+00:00",
+        "updated_at": "2026-08-18T20:30:01.665796+00:00",
+        "dropbox_link": "https://www.dropbox.com/scl/fo/2w42n07zt064ofyovl90s/ABXcU7H-HELvUGq3sWtkMBY?rlkey=zv6qvoptvnc05s6ftabht7lqr&st=028zf09c&dl=0",
+        "parent_deal_id": null,
+        "rating": null,
+        "addr_number": "1301",
+        "addr_street_name": "Hudson",
+        "addr_street_type": "Ln.",
+        "addr_direction": null,
+        "addr_city": "Monroe",
+        "addr_display": "Hudson Ln. 1301",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": false,
+        "portfolio_id": null,
+        "representation_role": "seller",
+        "reporting_cadence_days": 7,
+        "property_type": "OFFICE",
+        "representation_role_prior": null,
+        "lacdb_url": null,
+        "addr_state": null,
+        "addr_zip": null,
+        "photo_url": null
+      },
+      "deal_economics": [
+        {
+          "id": "730bc90f-67fb-4999-b17d-1cff5a4237a5",
+          "deal_id": "55f3d812-7dfc-4c36-9d8b-d26d9f9ba687",
+          "property_type": "Office",
+          "property_type_custom": null,
+          "transaction_type": "sale",
+          "sqft": 26238,
+          "asking_price": 3095000,
+          "sale_commission_pct": 1.5,
+          "lease_rate_psf": null,
+          "lease_type": "NNN",
+          "lease_term_years": null,
+          "lease_commission_pct": 3,
+          "created_at": "2026-03-30T19:41:26.457393+00:00",
+          "updated_at": "2026-05-27T19:52:16.344+00:00",
+          "nnn_psf": null,
+          "land_sqft": null,
+          "laydown_sqft": null,
+          "buyer_prop_types": null,
+          "buyer_price_from": null,
+          "buyer_price_to": null,
+          "buyer_size_from_sf": null,
+          "buyer_size_to_sf": null,
+          "buyer_where": null,
+          "buyer_funding": null,
+          "buyer_1031": null,
+          "buyer_1031_clock": null,
+          "buyer_1031_relinquished": null,
+          "offer_price": null,
+          "offer_date": null,
+          "offer_status": null,
+          "offer_addr_display": null
+        }
+      ],
+      "contract_deadlines": []
+    },
+    {
+      "deal": {
+        "id": "fba86488-a0cf-43c7-bd9c-bd2514e12ec2",
+        "name": "Food Bank",
+        "address": "VL - Government St. 4109",
+        "type": "active_listing",
+        "status": "active",
+        "tier": "tracked",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": "lacdb:e0963f9a-8235-4325-9f0d-f1d4a40ce237",
+        "notes": null,
+        "created_at": "2026-03-25T19:36:22.195498+00:00",
+        "updated_at": "2026-08-18T20:30:01.665796+00:00",
+        "dropbox_link": "https://www.dropbox.com/scl/fo/syollo5qlxew91vc6jmjn/APkG0ou4CYTOc_Y7MxPXQZE?rlkey=edlxzgxiaufpkscj33nl20s3b&st=xc0z93rx&dl=0",
+        "parent_deal_id": null,
+        "rating": 1,
+        "addr_number": "4109",
+        "addr_street_name": "Government",
+        "addr_street_type": "St.",
+        "addr_direction": null,
+        "addr_city": "VL",
+        "addr_display": "Government St. 4109",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": false,
+        "portfolio_id": null,
+        "representation_role": "seller",
+        "reporting_cadence_days": 7,
+        "property_type": "LAND",
+        "representation_role_prior": null,
+        "lacdb_url": null,
+        "addr_state": null,
+        "addr_zip": null,
+        "photo_url": null
+      },
+      "deal_economics": [],
+      "contract_deadlines": []
+    },
+    {
+      "deal": {
+        "id": "37c6e8a3-6b4d-4b92-bfec-85dac4149e26",
+        "name": "The Annex",
+        "address": "328 DeSiard St.",
+        "type": "active_listing",
+        "status": "pipeline",
+        "tier": "tracked",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": null,
+        "notes": null,
+        "created_at": "2026-08-13T19:08:52.272189+00:00",
+        "updated_at": "2026-08-18T20:30:01.665796+00:00",
+        "dropbox_link": null,
+        "parent_deal_id": null,
+        "rating": null,
+        "addr_number": "328",
+        "addr_street_name": "DeSiard",
+        "addr_street_type": "St.",
+        "addr_direction": null,
+        "addr_city": "Monroe",
+        "addr_display": "DeSiard St. 328 · Monroe",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": false,
+        "portfolio_id": null,
+        "representation_role": "seller",
+        "reporting_cadence_days": 7,
+        "property_type": "OFFICE",
+        "representation_role_prior": null,
+        "lacdb_url": null,
+        "addr_state": null,
+        "addr_zip": null,
+        "photo_url": null
+      },
+      "deal_economics": [],
+      "contract_deadlines": []
+    },
+    {
+      "deal": {
+        "id": "c0a0f5bb-96cc-4bca-8df8-c5f09e960209",
+        "name": "Windy Gladney",
+        "address": "VL - Burbank",
+        "type": "active_listing",
+        "status": "active",
+        "tier": "tracked",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": "lacdb:fca1102d-siteready-65-useable-acres",
+        "notes": null,
+        "created_at": "2026-04-16T20:47:28.759394+00:00",
+        "updated_at": "2026-08-18T20:30:01.665796+00:00",
+        "dropbox_link": null,
+        "parent_deal_id": null,
+        "rating": null,
+        "addr_number": null,
+        "addr_street_name": "Burbank",
+        "addr_street_type": null,
+        "addr_direction": null,
+        "addr_city": "VL",
+        "addr_display": "Burbank",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": false,
+        "portfolio_id": null,
+        "representation_role": "seller",
+        "reporting_cadence_days": 7,
+        "property_type": "LAND",
+        "representation_role_prior": null,
+        "lacdb_url": null,
+        "addr_state": null,
+        "addr_zip": null,
+        "photo_url": null
+      },
+      "deal_economics": [
+        {
+          "id": "46a47f85-ff93-4dfa-990f-263173e72ec2",
+          "deal_id": "c0a0f5bb-96cc-4bca-8df8-c5f09e960209",
+          "property_type": "Vacant Land",
+          "property_type_custom": null,
+          "transaction_type": "sale",
+          "sqft": 283140,
+          "asking_price": 2950000,
+          "sale_commission_pct": 1.5,
+          "lease_rate_psf": null,
+          "lease_type": "NNN",
+          "lease_term_years": null,
+          "lease_commission_pct": 3,
+          "created_at": "2026-04-16T20:51:40.105302+00:00",
+          "updated_at": "2026-04-16T20:51:39.926+00:00",
+          "nnn_psf": null,
+          "land_sqft": null,
+          "laydown_sqft": null,
+          "buyer_prop_types": null,
+          "buyer_price_from": null,
+          "buyer_price_to": null,
+          "buyer_size_from_sf": null,
+          "buyer_size_to_sf": null,
+          "buyer_where": null,
+          "buyer_funding": null,
+          "buyer_1031": null,
+          "buyer_1031_clock": null,
+          "buyer_1031_relinquished": null,
+          "offer_price": null,
+          "offer_date": null,
+          "offer_status": null,
+          "offer_addr_display": null
+        }
+      ],
+      "contract_deadlines": []
+    }
+  ],
+  "creates_planned": [
+    {
+      "name": "Between N 13th and N 14th St",
+      "tid": "30f8f0a3",
+      "tids": [
+        "30f8f0a3"
+      ],
+      "deal": {
+        "name": "Between N 13th and N 14th St",
+        "address": "Between N 13th and N 14th St",
+        "addr_display": "Between N 13th and N 14th St",
+        "addr_city": "Baton Rouge",
+        "addr_state": "LA",
+        "addr_zip": "70802",
+        "status": "active",
+        "type": "listing",
+        "representation_role": "landlord",
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/30f8f0a3-048-acres-c2-vacant-land",
+        "deal_source": "lacdb:30f8f0a3"
+      },
+      "econ": {
+        "transaction_type": "sale",
+        "asking_price": 78000
+      }
+    },
+    {
+      "name": "Government St. 5235",
+      "tid": "c10c62e0",
+      "tids": [
+        "c10c62e0"
+      ],
+      "deal": {
+        "name": "Government St. 5235",
+        "address": "Government St. 5235",
+        "addr_display": "Government St. 5235",
+        "addr_number": "5235",
+        "addr_street_name": "Government",
+        "addr_street_type": "St.",
+        "addr_city": "Baton Rouge",
+        "addr_state": "LA",
+        "addr_zip": "70816",
+        "property_type": "LAND",
+        "status": "active",
+        "type": "listing",
+        "representation_role": "landlord",
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/c10c62e0-261-acres-c1-no-flood-build-ready",
+        "photo_url": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-00dd1117.webp",
+        "acreage": 2.61,
+        "deal_source": "lacdb:c10c62e0"
+      },
+      "econ": {
+        "transaction_type": "sale",
+        "asking_price": 1672000,
+        "sqft": 113692,
+        "land_sqft": 113692,
+        "property_type": "LAND"
+      }
+    },
+    {
+      "name": "North Morrison Blvd",
+      "tid": "5296eedb",
+      "tids": [
+        "5296eedb",
+        "9a59f849"
+      ],
+      "deal": {
+        "name": "North Morrison Blvd",
+        "address": "North Morrison Blvd",
+        "addr_display": "North Morrison Blvd",
+        "addr_city": "Hammond",
+        "addr_state": "LA",
+        "addr_zip": "70401",
+        "status": "active",
+        "type": "listing",
+        "representation_role": "landlord",
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/5296eedb-buildready-20-acres-on-hwy-51",
+        "deal_source": "lacdb:5296eedb"
+      },
+      "econ": {
+        "transaction_type": "sale",
+        "asking_price": 1267455
+      }
+    }
+  ],
+  "created": [
+    {
+      "id": "bc0aa2a5-b877-4215-a63e-82a7232b999f",
+      "economics_id": "a5a5c395-7871-4eae-ad57-f4cbaf1a28bb",
+      "name": "Between N 13th and N 14th St",
+      "tid": "30f8f0a3",
+      "tids": [
+        "30f8f0a3"
+      ]
+    },
+    {
+      "id": "741d5ad8-91e8-409f-95ba-088a9e451fa3",
+      "economics_id": "9f99c007-cfbd-4abd-b23c-577747bc5ff1",
+      "name": "Government St. 5235",
+      "tid": "c10c62e0",
+      "tids": [
+        "c10c62e0"
+      ]
+    },
+    {
+      "id": "cdc472c5-de58-476d-84c7-616856599b13",
+      "economics_id": "d968f045-88bd-404a-9960-701f63f53729",
+      "name": "North Morrison Blvd",
+      "tid": "5296eedb",
+      "tids": [
+        "5296eedb",
+        "9a59f849"
+      ]
+    }
+  ],
+  "skipped_review": [
+    "7eb337d8"
+  ],
+  "off_lacdb_untouched": [
+    {
+      "id": "d30740cf-40bf-4dbd-bd88-93ccb170f073",
+      "name": "Debbie Guerin",
+      "status": "under_contract",
+      "tid": "d18319c8"
+    },
+    {
+      "id": "74224ba5-87ec-4571-b580-7c3b82b3b610",
+      "name": "Frey Family",
+      "status": "closed",
+      "tid": "0a0efbcb"
+    },
+    {
+      "id": "7fda9c4c-a8e7-4cae-8c39-c503aec0c762",
+      "name": "Cabela's Pkwy. S. 2703",
+      "status": "hot",
+      "tid": "9565431c"
+    },
+    {
+      "id": "e0297b68-1024-4457-8cb6-a9701a4a963f",
+      "name": "Wade Iverstine",
+      "status": "closed",
+      "tid": "6a828b08"
+    },
+    {
+      "id": "458c189a-1483-416a-bbfc-5ba56ec620ee",
+      "name": "Blue Cross / Blue Shield",
+      "status": "pending_payment",
+      "tid": "68ecb195"
+    },
+    {
+      "id": "7b51de98-caf9-4b54-8491-1740321d78bb",
+      "name": "William Evans",
+      "status": "active",
+      "tid": "79383c2a"
+    },
+    {
+      "id": "f65a02cd-6a89-49e6-a5a1-f607074c9909",
+      "name": "Choctaw Dr. S. 13327",
+      "status": "active",
+      "tid": "3f70d51f"
+    }
+  ],
+  "applied_at": "2026-10-13T18:34:37.064Z",
+  "written": [
+    {
+      "action": "UPDATE",
+      "id": "0c66a6fe-0bf8-4808-a051-644008b51a8d",
+      "name": "Daniel Laborde",
+      "tids": [
+        "5d4a0303",
+        "7b1ff984"
+      ],
+      "deal": {
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/5d4a0303-084-acres-lit-hard-corner-c1-no-flood-buildready",
+        "acreage": 0.84,
+        "addr_number": "5229",
+        "addr_display": "Government St. 5229",
+        "address": "5229 Government St, Baton Rouge, LA 70806, USA",
+        "addr_state": "LA"
+      },
+      "economics": {
+        "land_sqft": 36590
+      }
+    },
+    {
+      "action": "UPDATE",
+      "id": "61db1b58-f0a4-4835-9020-5c1509a59bfe",
+      "name": "Anthony Kimble",
+      "tids": [
+        "0b5ed2a7"
+      ],
+      "deal": {
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/0b5ed2a7-177-acres-c1-no-flood-buildready",
+        "addr_state": "LA",
+        "addr_zip": "70806"
+      },
+      "economics": {}
+    },
+    {
+      "action": "UPDATE",
+      "id": "db8daa4c-ed80-4d22-b8f2-5b93e8103248",
+      "name": "UPals",
+      "tids": [
+        "d2e5861f"
+      ],
+      "deal": {
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/d2e5861f-1293-acres-cw3-dual-access-cleared-buildready",
+        "photo_url": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/d2e5861f/1293-acres-cw3-dual-access-cleared-buildready-3dd63858.webp",
+        "acreage": 12.933,
+        "addr_state": "LA",
+        "addr_zip": "70806"
+      },
+      "economics": {
+        "asking_price": 2957000,
+        "land_sqft": 563361
+      }
+    },
+    {
+      "action": "UPDATE",
+      "id": "39c9c4ed-636b-4dfa-abfa-62abc5e6e002",
+      "name": "Industriplex Blvd. 12025",
+      "tids": [
+        "d36904f1"
+      ],
+      "deal": {
+        "acreage": 0.6991,
+        "addr_display": "Industriplex Blvd. 12025"
+      },
+      "economics": {
+        "land_sqft": 30453
+      }
+    },
+    {
+      "action": "UPDATE",
+      "id": "11ef36ce-6d75-4af2-ba0e-84f390411372",
+      "name": "Hank Saurage",
+      "tids": [
+        "b6e3c879",
+        "fa9c3a67",
+        "600d975e"
+      ],
+      "deal": {
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/fa9c3a67-shovelready-site-near-dow-shintech-iberville-parish",
+        "addr_state": "LA",
+        "addr_zip": "70764"
+      },
+      "economics": {}
+    },
+    {
+      "action": "UPDATE",
+      "id": "55f3d812-7dfc-4c36-9d8b-d26d9f9ba687",
+      "name": "Charles Cooper",
+      "tids": [
+        "138d8815"
+      ],
+      "deal": {
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/138d8815-leased-office-acredit-tenant",
+        "photo_url": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/138d8815/1301-hudson-ln-c4f186e6.webp",
+        "acreage": 1.879,
+        "addr_state": "LA",
+        "addr_zip": "71201"
+      },
+      "economics": {
+        "land_sqft": 81849
+      }
+    },
+    {
+      "action": "UPDATE",
+      "id": "fba86488-a0cf-43c7-bd9c-bd2514e12ec2",
+      "name": "Food Bank",
+      "tids": [
+        "e0963f9a"
+      ],
+      "deal": {
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/e0963f9a-reduced-motivated-05-acre-tract-w-100-frontage",
+        "photo_url": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/e0963f9a/-05-acre-tract-w-100-frontage-312af8de.webp",
+        "acreage": 0.49,
+        "addr_state": "LA",
+        "addr_zip": "70806"
+      },
+      "economics": {
+        "asking_price": 339000,
+        "sqft": 21344,
+        "land_sqft": 21344,
+        "transaction_type": "sale",
+        "sale_commission_pct": null,
+        "lease_commission_pct": null
+      }
+    },
+    {
+      "action": "UPDATE",
+      "id": "37c6e8a3-6b4d-4b92-bfec-85dac4149e26",
+      "name": "The Annex",
+      "tids": [
+        "fe0c270f"
+      ],
+      "deal": {
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/fe0c270f-the-annex",
+        "photo_url": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/fe0c270f/the-annex-courtyard-3bcf55c2.webp",
+        "acreage": 0.491,
+        "addr_state": "LA",
+        "addr_zip": "71201"
+      },
+      "economics": {
+        "asking_price": 2000000,
+        "sqft": 24464,
+        "land_sqft": 21388,
+        "transaction_type": "sale",
+        "sale_commission_pct": null,
+        "lease_commission_pct": null
+      }
+    },
+    {
+      "action": "UPDATE",
+      "id": "c0a0f5bb-96cc-4bca-8df8-c5f09e960209",
+      "name": "Windy Gladney",
+      "tids": [
+        "11940dde",
+        "fca1102d"
+      ],
+      "deal": {
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/fca1102d-zoned-mx3-finalized-siteready-65-useable-acres",
+        "photo_url": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/11940dde/tract-a2a41b-c98b9de7.webp",
+        "addr_state": "LA",
+        "addr_zip": "70810"
+      },
+      "economics": {}
+    },
+    {
+      "action": "CREATE",
+      "id": "bc0aa2a5-b877-4215-a63e-82a7232b999f",
+      "name": "Between N 13th and N 14th St",
+      "tids": [
+        "30f8f0a3"
+      ],
+      "deal": {
+        "name": "Between N 13th and N 14th St",
+        "address": "Between N 13th and N 14th St",
+        "addr_display": "Between N 13th and N 14th St",
+        "addr_city": "Baton Rouge",
+        "addr_state": "LA",
+        "addr_zip": "70802",
+        "status": "active",
+        "type": "listing",
+        "representation_role": "landlord",
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/30f8f0a3-048-acres-c2-vacant-land",
+        "deal_source": "lacdb:30f8f0a3"
+      },
+      "economics": {
+        "transaction_type": "sale",
+        "asking_price": 78000,
+        "sale_commission_pct": null,
+        "lease_commission_pct": null
+      }
+    },
+    {
+      "action": "CREATE",
+      "id": "741d5ad8-91e8-409f-95ba-088a9e451fa3",
+      "name": "Government St. 5235",
+      "tids": [
+        "c10c62e0"
+      ],
+      "deal": {
+        "name": "Government St. 5235",
+        "address": "Government St. 5235",
+        "addr_display": "Government St. 5235",
+        "addr_number": "5235",
+        "addr_street_name": "Government",
+        "addr_street_type": "St.",
+        "addr_city": "Baton Rouge",
+        "addr_state": "LA",
+        "addr_zip": "70816",
+        "property_type": "LAND",
+        "status": "active",
+        "type": "listing",
+        "representation_role": "landlord",
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/c10c62e0-261-acres-c1-no-flood-build-ready",
+        "photo_url": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/c10c62e0/261-acres-c1-no-flood-build-ready-00dd1117.webp",
+        "acreage": 2.61,
+        "deal_source": "lacdb:c10c62e0"
+      },
+      "economics": {
+        "transaction_type": "sale",
+        "asking_price": 1672000,
+        "sqft": 113692,
+        "land_sqft": 113692,
+        "property_type": "LAND",
+        "sale_commission_pct": null,
+        "lease_commission_pct": null
+      }
+    },
+    {
+      "action": "CREATE",
+      "id": "cdc472c5-de58-476d-84c7-616856599b13",
+      "name": "North Morrison Blvd",
+      "tids": [
+        "5296eedb",
+        "9a59f849"
+      ],
+      "deal": {
+        "name": "North Morrison Blvd",
+        "address": "North Morrison Blvd",
+        "addr_display": "North Morrison Blvd",
+        "addr_city": "Hammond",
+        "addr_state": "LA",
+        "addr_zip": "70401",
+        "status": "active",
+        "type": "listing",
+        "representation_role": "landlord",
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/5296eedb-buildready-20-acres-on-hwy-51",
+        "deal_source": "lacdb:5296eedb"
+      },
+      "economics": {
+        "transaction_type": "sale",
+        "asking_price": 1267455,
+        "sale_commission_pct": null,
+        "lease_commission_pct": null
+      }
+    }
+  ]
+}

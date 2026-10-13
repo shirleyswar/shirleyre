@@ -6,8 +6,10 @@
  * PR 16 (WARROOM-171) staged that file as a one-time export. No generator
  * script is in this repo or on the listing-feed branches — refresh is manual.
  *
- * Default is --dry-run. This file never inserts, updates, or deletes.
- * --apply is refused on purpose. Reads, when they happen, are HTTP GET only.
+ * Default is --dry-run. Reads are HTTP GET.
+ * --apply is a one-time write of the CREATE and UPDATE plan. It does not
+ * schedule a pull, and it does not touch REVIEW or Off-LACDB rows.
+ * It writes a JSON pre-image of the update targets before any PATCH or POST.
  *
  * Match order:
  *   1. LACDB id already stored on the deal (deal_source "lacdb:<id>" or lacdb_url)
@@ -18,13 +20,39 @@
  * are never part of a payload.
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const DEFAULT_FEED = resolve(ROOT, 'public/agents/listings.json')
 const DEFAULT_OUT = resolve(ROOT, 'docs/lacdb-sync-dry-run.md')
+const DEFAULT_BACKUP = resolve(ROOT, 'docs/lacdb-sync-backup.json')
+const DEFAULT_APPLIED = resolve(ROOT, 'docs/lacdb-sync-applied.md')
+const STORE_BACKUP = '/cursor/stores/self/lacdb-sync-backup.json'
+
+const EXPECT_CREATE_TIDS = ['30f8f0a3', 'c10c62e0', '5296eedb']
+const EXPECT_UPDATE_NAMES = [
+  'Daniel Laborde', 'Anthony Kimble', 'UPals', 'Industriplex Blvd. 12025',
+  'Hank Saurage', 'Charles Cooper', 'Food Bank', 'The Annex', 'Windy Gladney',
+]
+const SKIP_REVIEW_TID = '7eb337d8'
+
+const UPDATE_DEAL_ALLOW = new Set([
+  'lacdb_url', 'photo_url', 'acreage', 'addr_number', 'addr_display', 'address',
+  'addr_state', 'addr_zip', 'addr_city', 'addr_street_name', 'addr_street_type', 'addr_direction',
+])
+const UPDATE_ECON_ALLOW = new Set([
+  'asking_price', 'sqft', 'land_sqft', 'lease_rate_psf', 'transaction_type', 'property_type',
+])
+const CREATE_DEAL_ALLOW = new Set([
+  ...UPDATE_DEAL_ALLOW,
+  'name', 'status', 'type', 'representation_role', 'deal_source', 'property_type',
+])
+const DENY_ALWAYS = new Set([
+  'notes', 'commission_rate', 'commission_estimated', 'commission_collected',
+  'sale_commission_pct', 'lease_commission_pct', 'dropbox_link', 'rating',
+])
 
 const LISTING_TYPES = new Set([
   'listing', 'active_listing', 'potential_listing', 'landlord', 'seller', 'landlord_rep',
@@ -73,7 +101,10 @@ const PROTECTED = [
 ]
 
 function parseArgs(argv) {
-  const out = { dryRun: true, apply: false, feed: DEFAULT_FEED, out: DEFAULT_OUT, selfTestOnly: false }
+  const out = {
+    dryRun: true, apply: false, feed: DEFAULT_FEED, out: DEFAULT_OUT,
+    backup: DEFAULT_BACKUP, applied: DEFAULT_APPLIED, selfTestOnly: false,
+  }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--dry-run') out.dryRun = true
@@ -81,6 +112,7 @@ function parseArgs(argv) {
     else if (a === '--self-test') out.selfTestOnly = true
     else if (a === '--feed') out.feed = resolve(argv[++i])
     else if (a === '--out') out.out = resolve(argv[++i])
+    else if (a === '--backup') out.backup = resolve(argv[++i])
     else if (a === '--help') out.help = true
     else throw new Error(`Unknown argument: ${a}`)
   }
@@ -1058,7 +1090,7 @@ function render(feed, plan, meta) {
   lines.push('node scripts/lacdb-sync.mjs --apply')
   lines.push('```')
   lines.push('')
-  lines.push('`--apply` exits without sending a write. `--dry-run` is the default.')
+  lines.push('`--dry-run` is the default. `--apply` writes the CREATE and UPDATE plan once, after saving a JSON pre-image. It does not schedule a pull.')
   lines.push('')
   return lines.join('\n')
 }
@@ -1110,18 +1142,357 @@ function selfTest() {
   if (tidFromText('lacdb:e0963f9a-8235-4325-9f0d-f1d4a40ce237') !== 'e0963f9a') throw new Error('tid uuid')
   if (tidFromText('https://lacdb.resimplifi.com/listings/d36904f1-12025-industriplex-blvd') !== 'd36904f1') throw new Error('tid url')
   if (tidFromText('Duty')) throw new Error('user label parsed as tid')
+  assertAllow({ lacdb_url: 'https://example.test' }, UPDATE_DEAL_ALLOW, 'deal')
+  let denied = false
+  try { assertAllow({ notes: 'x' }, UPDATE_DEAL_ALLOW, 'deal') } catch { denied = true }
+  if (!denied) throw new Error('notes were allowed onto an update')
+  const stripped = omitEmpty({ a: 1, b: null, c: '' })
+  if (stripped.b !== undefined || stripped.c !== undefined || stripped.a !== 1) throw new Error('omitEmpty')
+}
+
+function omitEmpty(obj) {
+  const out = {}
+  for (const [k, v] of Object.entries(obj)) {
+    if (v == null || v === '') continue
+    out[k] = v
+  }
+  return out
+}
+
+function assertAllow(patch, allow, label) {
+  for (const key of Object.keys(patch)) {
+    if (DENY_ALWAYS.has(key) || !allow.has(key)) {
+      throw new Error(`${label} field ${key} is not allowed`)
+    }
+  }
+}
+
+function patchFromDiffs(diffs, table, allow) {
+  const patch = {}
+  for (const d of diffs) {
+    const [tbl, col] = d.field.split('.')
+    if (tbl !== table) continue
+    if (d.to == null || d.to === '') continue
+    patch[col] = d.to
+  }
+  assertAllow(patch, allow, table)
+  return patch
+}
+
+function sameValue(actual, expected) {
+  if ((actual == null || actual === '') && (expected == null || expected === '')) return true
+  const actualText = String(actual)
+  const expectedText = String(expected)
+  if (/^-?\d+(\.\d+)?$/.test(actualText) && /^-?\d+(\.\d+)?$/.test(expectedText)) {
+    return Math.abs(Number(actualText) - Number(expectedText)) < 0.001
+  }
+  return actualText === expectedText
+}
+
+function authHeaders(key, extra) {
+  return {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    Accept: 'application/json',
+    ...extra,
+  }
+}
+
+async function restGet(baseUrl, key, path) {
+  const res = await fetch(baseUrl + path, { method: 'GET', headers: authHeaders(key) })
+  const text = await res.text()
+  if (!res.ok) throw new Error(`GET ${path} ${res.status}: ${text.slice(0, 300)}`)
+  return JSON.parse(text)
+}
+
+async function restWrite(baseUrl, key, method, path, body) {
+  if (method !== 'POST' && method !== 'PATCH') throw new Error(`refusing ${method}`)
+  const okPath = path.startsWith('/rest/v1/deals') || path.startsWith('/rest/v1/deal_economics')
+  if (!okPath) throw new Error(`refusing path ${path}`)
+  const res = await fetch(baseUrl + path, {
+    method,
+    headers: authHeaders(key, {
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    }),
+    body: JSON.stringify(body),
+  })
+  const text = await res.text()
+  if (!res.ok) throw new Error(`${method} ${path} ${res.status}: ${text.slice(0, 400)}`)
+  const data = text ? JSON.parse(text) : null
+  return Array.isArray(data) ? data[0] : data
+}
+
+function saveBackup(paths, backup) {
+  const text = JSON.stringify(backup, null, 2)
+  if (text.includes('sb_publishable_') || text.includes('service_role')) {
+    throw new Error('Backup contained a key. Not writing it.')
+  }
+  const repoPath = paths[0]
+  mkdirSync(dirname(repoPath), { recursive: true })
+  writeFileSync(repoPath, text)
+  for (const path of paths.slice(1)) {
+    try {
+      mkdirSync(dirname(path), { recursive: true })
+      writeFileSync(path, text)
+    } catch (err) {
+      console.error(`backup copy skipped at ${path}: ${err.message}`)
+    }
+  }
+}
+
+function approvedPlan(plan) {
+  const createTids = plan.creates.map(c => c.proposal.primary.tid).sort()
+  const expect = [...EXPECT_CREATE_TIDS].sort()
+  if (createTids.join() !== expect.join()) {
+    throw new Error(`CREATE set is ${createTids.join(', ')}; approved set is ${expect.join(', ')}`)
+  }
+  const names = plan.updates.map(u => u.deal.name).sort()
+  const expectNames = [...EXPECT_UPDATE_NAMES].sort()
+  if (names.join('|') !== expectNames.join('|')) {
+    throw new Error(`UPDATE names are ${names.join(', ')}; approved set differs`)
+  }
+  const reviewTids = plan.reviews.map(r => r.mapped.tid)
+  if (reviewTids.length !== 1 || reviewTids[0] !== SKIP_REVIEW_TID) {
+    throw new Error(`REVIEW set is ${reviewTids.join(', ')}; only ${SKIP_REVIEW_TID} may be skipped`)
+  }
+  const reviewIds = new Set(plan.reviews.flatMap(r => r.found.deals.map(d => d.id)))
+  for (const bucket of plan.updates) {
+    if (reviewIds.has(bucket.deal.id)) throw new Error(`Jefferson deal ${bucket.deal.id} is in the update set`)
+  }
+  const offIds = new Set(plan.off.map(d => d.id))
+  for (const bucket of plan.updates) {
+    if (offIds.has(bucket.deal.id)) throw new Error(`Off-LACDB deal ${bucket.deal.name} is in the update set`)
+  }
+  const laborde = plan.updates.find(u => u.deal.name === 'Daniel Laborde')
+  const number = laborde.diffs.find(d => d.field === 'deals.addr_number')
+  if (!number || number.to !== '5229') throw new Error('Laborde address update is not 5229')
+  return { reviewIds, offIds }
+}
+
+function buildWrites(plan) {
+  const updates = plan.updates.map(bucket => {
+    const dealPatch = patchFromDiffs(bucket.diffs, 'deals', UPDATE_DEAL_ALLOW)
+    const econPatch = patchFromDiffs(bucket.diffs, 'deal_economics', UPDATE_ECON_ALLOW)
+    if ('name' in dealPatch || 'status' in dealPatch || 'type' in dealPatch) {
+      throw new Error(`update for ${bucket.deal.name} includes a protected column`)
+    }
+    return {
+      id: bucket.deal.id,
+      name: bucket.deal.name,
+      tids: bucket.group.map(m => m.tid),
+      dealPatch,
+      econPatch,
+    }
+  })
+  const creates = plan.creates.map(item => {
+    const deal = omitEmpty(item.payload.row)
+    const econ = omitEmpty(item.payload.econ)
+    assertAllow(deal, CREATE_DEAL_ALLOW, 'create deal')
+    assertAllow(econ, UPDATE_ECON_ALLOW, 'create economics')
+    if (deal.status !== 'active' || deal.type !== 'listing') {
+      throw new Error(`create ${deal.name} is not an active listing`)
+    }
+    return {
+      name: deal.name,
+      tid: item.proposal.primary.tid,
+      tids: item.group.map(m => m.tid),
+      deal,
+      econ,
+    }
+  })
+  return { updates, creates }
+}
+
+async function applyPlan(cfg, plan, paths) {
+  approvedPlan(plan)
+  const writes = buildWrites(plan)
+  const ids = writes.updates.map(u => u.id)
+  const idFilter = ids.join(',')
+  const beforeDeals = await restGet(cfg.url, cfg.key, `/rest/v1/deals?id=in.(${idFilter})&select=*`)
+  const beforeEcon = await restGet(cfg.url, cfg.key, `/rest/v1/deal_economics?deal_id=in.(${idFilter})&select=*`)
+  const beforeDeadlines = await restGet(cfg.url, cfg.key, `/rest/v1/contract_deadlines?deal_id=in.(${idFilter})&select=*`)
+  if (beforeDeals.length !== ids.length) {
+    throw new Error(`snapshot loaded ${beforeDeals.length} deals, expected ${ids.length}`)
+  }
+  const offIds = plan.off.map(d => d.id).join(',')
+  const offBefore = await restGet(cfg.url, cfg.key, `/rest/v1/deals?id=in.(${offIds})&select=id,name,status,updated_at,address,addr_display`)
+  const backup = {
+    taken_at: new Date().toISOString(),
+    feed_generated_at: '2026-10-05T12:30:00Z',
+    note: 'Pre-image of deals the one-time LACDB sync will update. Restore a deal by PATCH of these columns. Delete rows listed in created after a successful apply. Off-LACDB rows were not written.',
+    applied: false,
+    updates: ids.map(id => ({
+      deal: beforeDeals.find(d => d.id === id),
+      deal_economics: beforeEcon.filter(e => e.deal_id === id),
+      contract_deadlines: beforeDeadlines.filter(d => d.deal_id === id),
+    })),
+    creates_planned: writes.creates.map(c => ({ name: c.name, tid: c.tid, tids: c.tids, deal: c.deal, econ: c.econ })),
+    created: [],
+    skipped_review: [SKIP_REVIEW_TID],
+    off_lacdb_untouched: plan.off.map(d => ({
+      id: d.id, name: d.name, status: d.status, tid: d._tid,
+    })),
+  }
+  saveBackup(paths, backup)
+
+  const written = []
+  for (const op of writes.updates) {
+    const dealRow = Object.keys(op.dealPatch).length
+      ? await restWrite(cfg.url, cfg.key, 'PATCH', `/rest/v1/deals?id=eq.${op.id}`, op.dealPatch)
+      : null
+    let econAction = 'none'
+    let econWritten = op.econPatch
+    if (Object.keys(op.econPatch).length) {
+      const existing = beforeEcon.filter(e => e.deal_id === op.id)
+      if (existing.length) {
+        await restWrite(cfg.url, cfg.key, 'PATCH', `/rest/v1/deal_economics?deal_id=eq.${op.id}`, op.econPatch)
+        econAction = 'patch'
+      } else {
+        // Nulls keep the column default (3%) from inventing a commission on a new row.
+        econWritten = { ...op.econPatch, sale_commission_pct: null, lease_commission_pct: null }
+        await restWrite(cfg.url, cfg.key, 'POST', '/rest/v1/deal_economics', { deal_id: op.id, ...econWritten })
+        econAction = 'insert'
+      }
+    }
+    const check = await restGet(cfg.url, cfg.key, `/rest/v1/deals?id=eq.${op.id}&select=id,name,status,type,representation_role,notes,dropbox_link,addr_number,addr_display,address,addr_state,addr_zip,lacdb_url,photo_url,acreage`)
+    const econCheck = await restGet(cfg.url, cfg.key, `/rest/v1/deal_economics?deal_id=eq.${op.id}&select=deal_id,asking_price,sqft,land_sqft,lease_rate_psf,transaction_type,sale_commission_pct,lease_commission_pct`)
+    const row = check[0]
+    const before = beforeDeals.find(d => d.id === op.id)
+    if (row.name !== before.name || row.status !== before.status || row.type !== before.type || row.representation_role !== before.representation_role) {
+      throw new Error(`${op.name}: protected deal column changed`)
+    }
+    if ((row.notes || '') !== (before.notes || '') || (row.dropbox_link || '') !== (before.dropbox_link || '')) {
+      throw new Error(`${op.name}: notes or dropbox changed`)
+    }
+    for (const [col, value] of Object.entries(op.dealPatch)) {
+      if (!sameValue(row[col], value)) throw new Error(`${op.name}: ${col} is ${row[col]}, expected ${value}`)
+    }
+    const econ = econCheck[0] || {}
+    const beforeE = beforeEcon.find(e => e.deal_id === op.id) || {}
+    if (Object.keys(op.econPatch).length) {
+      if (beforeE.sale_commission_pct != null && !sameValue(econ.sale_commission_pct, beforeE.sale_commission_pct)) {
+        throw new Error(`${op.name}: sale commission changed`)
+      }
+      if (beforeE.lease_commission_pct != null && !sameValue(econ.lease_commission_pct, beforeE.lease_commission_pct)) {
+        throw new Error(`${op.name}: lease commission changed`)
+      }
+      for (const [col, value] of Object.entries(op.econPatch)) {
+        if (!sameValue(econ[col], value)) throw new Error(`${op.name}: economics ${col} is ${econ[col]}, expected ${value}`)
+      }
+    }
+    written.push({
+      action: 'UPDATE',
+      id: op.id,
+      name: op.name,
+      tids: op.tids,
+      deal: op.dealPatch,
+      economics: econWritten,
+      economics_action: econAction,
+      returned_id: dealRow?.id || op.id,
+    })
+    console.log(`updated ${op.name}`)
+  }
+
+  for (const op of writes.creates) {
+    const created = await restWrite(cfg.url, cfg.key, 'POST', '/rest/v1/deals', op.deal)
+    if (!created?.id) throw new Error(`create ${op.name} returned no id`)
+    let econId = null
+    const econWritten = Object.keys(op.econ).length
+      ? { ...op.econ, sale_commission_pct: null, lease_commission_pct: null }
+      : op.econ
+    if (Object.keys(econWritten).length) {
+      const econRow = await restWrite(cfg.url, cfg.key, 'POST', '/rest/v1/deal_economics', { deal_id: created.id, ...econWritten })
+      econId = econRow?.id || null
+    }
+    backup.created.push({ id: created.id, economics_id: econId, name: op.name, tid: op.tid, tids: op.tids })
+    saveBackup(paths, backup)
+    const check = await restGet(cfg.url, cfg.key, `/rest/v1/deals?id=eq.${created.id}&select=id,name,address,addr_display,status,type,lacdb_url,deal_source,property_type`)
+    const row = check[0]
+    if (row.name !== op.deal.name || row.deal_source !== op.deal.deal_source) {
+      throw new Error(`create ${op.name} did not persist`)
+    }
+    written.push({
+      action: 'CREATE',
+      id: created.id,
+      name: op.name,
+      tids: op.tids,
+      deal: op.deal,
+      economics: econWritten,
+      economics_id: econId,
+    })
+    console.log(`created ${op.name} ${created.id}`)
+  }
+
+  const afterDeadlines = await restGet(cfg.url, cfg.key, `/rest/v1/contract_deadlines?deal_id=in.(${idFilter})&select=id`)
+  const beforeDeadlineIds = beforeDeadlines.map(d => d.id).sort().join()
+  const afterDeadlineIds = afterDeadlines.map(d => d.id).sort().join()
+  if (beforeDeadlineIds !== afterDeadlineIds) throw new Error('contract deadlines on updated deals changed')
+
+  const offAfter = await restGet(cfg.url, cfg.key, `/rest/v1/deals?id=in.(${offIds})&select=id,name,status,updated_at,address,addr_display`)
+  for (const before of offBefore) {
+    const after = offAfter.find(d => d.id === before.id)
+    if (!after || after.updated_at !== before.updated_at || after.status !== before.status || after.address !== before.address) {
+      throw new Error(`Off-LACDB row ${before.name} changed`)
+    }
+  }
+
+  backup.applied = true
+  backup.applied_at = new Date().toISOString()
+  backup.written = written.map(w => ({
+    action: w.action, id: w.id, name: w.name, tids: w.tids,
+    deal: w.deal, economics: w.economics,
+  }))
+  saveBackup(paths, backup)
+  return { written, off: plan.off, backup }
+}
+
+function renderApplied(result) {
+  const lines = []
+  lines.push('# LACDB sync applied')
+  lines.push('')
+  lines.push(`Applied at ${result.backup.applied_at}. One-time write from public/agents/listings.json (generated 2026-10-05T12:30:00Z). No schedule was added.`)
+  lines.push('')
+  lines.push('619 Jefferson (7eb337d8) was skipped. The 7 Off-LACDB deals were not modified.')
+  lines.push('')
+  lines.push('## Written')
+  lines.push('')
+  for (const row of result.backup.written) {
+    lines.push(`### ${row.action} · ${row.name}`)
+    lines.push('')
+    lines.push(`Deal id \`${row.id}\`. Listings ${row.tids.join(', ')}.`)
+    lines.push('')
+    lines.push('`deals`:')
+    lines.push('')
+    lines.push('```json')
+    lines.push(JSON.stringify(row.deal, null, 2))
+    lines.push('```')
+    lines.push('')
+    lines.push('`deal_economics`:')
+    lines.push('')
+    lines.push('```json')
+    lines.push(JSON.stringify(row.economics, null, 2))
+    lines.push('```')
+    lines.push('')
+  }
+  lines.push('## Off LACDB (unchanged)')
+  lines.push('')
+  for (const deal of result.off) {
+    lines.push(`- ${deal.name} · ${deal.addr_display || deal.address || '—'} · ${deal.status} · ${deal._tid}`)
+  }
+  lines.push('')
+  lines.push('## Skipped')
+  lines.push('')
+  lines.push('- 7eb337d8 619 Jefferson Hwy. Two suite deals were not updated.')
+  lines.push('')
+  return lines.join('\n')
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (args.help) {
     console.log('Usage: node scripts/lacdb-sync.mjs [--dry-run] [--feed path] [--out path]')
-    console.log('       node scripts/lacdb-sync.mjs --apply   # refused, no write')
-    return
-  }
-  if (args.apply) {
-    console.error('Refusing --apply. This script is dry-run only and does not write to Supabase.')
-    process.exitCode = 2
+    console.log('       node scripts/lacdb-sync.mjs --apply')
     return
   }
   selfTest()
@@ -1162,6 +1533,26 @@ async function main() {
   }
 
   const plan = buildPlan(feed, deals, econs, deadlineCounts)
+  if (args.apply) {
+    if (!cfg) throw new Error('No Supabase client configured')
+    if (existsSync(args.backup)) {
+      const prev = JSON.parse(readFileSync(args.backup, 'utf8'))
+      if (prev.applied) throw new Error('This snapshot was already applied. Refusing a second write.')
+      throw new Error('A pre-image backup already exists and is not marked applied. Refusing to overwrite it.')
+    }
+    const result = await applyPlan(cfg, plan, [args.backup, STORE_BACKUP])
+    const appliedMd = renderApplied(result)
+    if (appliedMd.includes('sb_publishable_') || appliedMd.includes('service_role')) {
+      throw new Error('Applied report contained a key')
+    }
+    writeFileSync(args.applied, appliedMd)
+    console.log(`CREATE deals: ${result.backup.created.length}`)
+    console.log(`UPDATE deals: ${result.backup.written.filter(w => w.action === 'UPDATE').length}`)
+    console.log(`Off LACDB listed, unchanged: ${result.off.length}`)
+    console.log(`Backup: ${args.backup}`)
+    console.log(`Wrote ${args.applied}`)
+    return
+  }
   const markdown = render(feed, plan, {
     runAt: new Date().toISOString(),
     feedPath: args.feed.replace(ROOT + '/', ''),
