@@ -4,7 +4,8 @@
  * D5.2 · build(48l) · from frame 49a · spec D5.2 + D5.2.1a · 8.24.26 1645
  *
  * Four tabs: LISTINGS / TENANTS / BUYERS / TARGETS
- * LISTINGS: 9-column dense sortable table, 5 filter segments, portfolio rollup rows.
+ * LISTINGS: stage tabs (Pipeline through Closed, then In Service) plus TYPE,
+ * sortable columns, LACDB icon for active listings, deadline date and label.
  * TENANTS / BUYERS / TARGETS: placeholder.
  *
  * Chrome (rail, band, tab row, filter row, col headers) does NOT scroll.
@@ -25,7 +26,8 @@ import {
   DM1,
 } from '@/components/warroom/desktopTypes'
 import Fab from '@/assets/fab/Fab'
-import LacdbFlag from '@/components/warroom/LacdbFlag'
+import { LACDB_ACTIVE } from '@/lib/lacdbCatalog'
+import { lacdbFlagFor } from '@/lib/lacdbFlag'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -51,6 +53,7 @@ const C = {
   brandStrong: '#7C3AED',
   moneyIn:     '#34D399',
   hot:         '#FFA23A',
+  late:        '#FF4D4D',
   border:      'rgba(255,255,255,0.14)',
   borderPanel: 'rgba(255,255,255,0.11)',
   borderHair:  'rgba(255,255,255,0.10)',
@@ -61,20 +64,20 @@ const FONT_DISP = "'Space Grotesk', system-ui, sans-serif"
 
 // ── Column widths (from 49a frame) ────────────────────────────────────────────
 const COL = {
-  client:   210,
-  deadline: 150,
-  lacdb:     64,
-  task:      56,
+  client:   188,
+  deadline: 176,
+  lacdb:     56,
+  task:      48,
   rank:      92,
-  value:    140,
-  comm:     150,
-  dbx:       64,
+  value:    124,
+  comm:     124,
+  dbx:       52,
 } as const
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TabKey    = 'listings' | 'tenants' | 'buyers' | 'targets'
-type FilterKey = 'all' | 'hot' | 'uc' | 'money' | 'type'  // 'money' is dead code (DI-2)
-type SortKey   = 'address' | 'client' | 'deadline' | 'lacdb' | 'task' | 'rank' | 'value' | 'comm' | 'dbx'
+type StageKey  = 'all' | 'pipeline' | 'review' | 'active' | 'hot' | 'under_contract' | 'closed' | 'in_service'
+type SortKey   = 'address' | 'client' | 'deadline' | 'rank' | 'value' | 'comm'
 type SortDir   = 'asc' | 'desc'
 
 interface DealRow {
@@ -116,16 +119,18 @@ interface DeadlineRow {
   deal_id: string
   deadline_date: string
   deadline_type: string | null
+  label: string | null
 }
 
 interface EnrichedDeal extends DealRow {
-  _shortAddr:    string
-  _client:       string
-  _deadlineDays: number | null
-  _deadlineDate: string | null
-  _value:        number | null
-  _commission:   number | null
-  _isMoneyMover: boolean
+  _shortAddr:      string
+  _client:         string
+  _deadlineDays:   number | null
+  _deadlineDate:   string | null
+  _deadlineLabel:  string
+  _value:          number | null
+  _commission:     number | null
+  _isMoneyMover:   boolean
 }
 
 interface PortfolioRollup {
@@ -156,48 +161,121 @@ function daysBetween(today: string, dateStr: string): number {
   return Math.round((new Date(y, m - 1, d).getTime() - new Date(ty, tm - 1, td).getTime()) / 86400000)
 }
 
-function fmtDeadline(days: number, dateStr: string): string {
+function fmtDeadlineWhen(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)
-  const dt  = new Date(y, m - 1, d)
-  const mon = dt.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
-  return `${days}D · ${mon} ${d}`
+  const mon = new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
+  return `${mon} ${d}`
+}
+
+const STAGES: StageKey[] = ['all', 'pipeline', 'review', 'active', 'hot', 'under_contract', 'closed', 'in_service']
+
+function isStageKey(value: string | null): value is StageKey {
+  return !!value && (STAGES as string[]).includes(value)
+}
+
+/** Stored status → stage. HOT is the status itself, never a rating. */
+function stageOf(status: string | null): StageKey | 'other' {
+  switch ((status ?? '').toLowerCase()) {
+    case 'pipeline': return 'pipeline'
+    case 'review':
+    case 'in_review': return 'review'
+    case 'active':
+    case 'active_listing': return 'active'
+    case 'hot': return 'hot'
+    case 'under_contract': return 'under_contract'
+    case 'closed': return 'closed'
+    case 'in_service': return 'in_service'
+    default: return 'other'
+  }
+}
+
+function stageLabel(status: string | null): string {
+  switch (stageOf(status)) {
+    case 'pipeline': return 'PIPELINE'
+    case 'review': return 'REVIEW'
+    case 'active': return 'ACTIVE'
+    case 'hot': return 'HOT'
+    case 'under_contract': return 'UNDER CONTRACT'
+    case 'closed': return 'CLOSED'
+    case 'in_service': return 'IN SERVICE'
+    default: {
+      if (!status) return ''
+      if (status.toLowerCase() === 'pending_payment') return 'PENDING'
+      return status.replace(/_/g, ' ').toUpperCase()
+    }
+  }
+}
+
+function stageTone(status: string | null): { color: string; background: string; border: string } {
+  switch (stageOf(status)) {
+    case 'pipeline':
+      return { color: '#93C5FD', background: 'transparent', border: '1px solid rgba(147,197,253,0.72)' }
+    case 'review':
+      return { color: '#FBBF24', background: 'transparent', border: '1px solid rgba(251,191,36,0.78)' }
+    case 'active':
+      return { color: '#C4B5FD', background: 'transparent', border: '1px solid rgba(196,181,253,0.85)' }
+    case 'hot':
+      return { color: '#0A0A0F', background: C.hot, border: '1px solid transparent' }
+    case 'under_contract':
+      return { color: '#5EEAD4', background: 'transparent', border: '1px solid rgba(94,234,212,0.8)' }
+    case 'closed':
+      return { color: C.textLow, background: 'transparent', border: '1px solid rgba(255,255,255,0.18)' }
+    case 'in_service':
+      return { color: '#6F6D80', background: 'transparent', border: '1px solid rgba(255,255,255,0.14)' }
+    default:
+      return { color: C.textMid, background: 'transparent', border: '1px solid rgba(255,255,255,0.20)' }
+  }
+}
+
+function StagePill({ status }: { status: string | null }) {
+  const label = stageLabel(status)
+  if (!label) return null
+  const tone = stageTone(status)
+  const wide = stageOf(status) === 'under_contract'
+  return (
+    <span data-stage={stageOf(status)} style={{
+      fontFamily: FONT_MONO,
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: wide ? '0.05em' : '0.08em',
+      lineHeight: 1,
+      color: tone.color,
+      background: tone.background,
+      border: tone.border,
+      borderRadius: 4,
+      padding: tone.background === 'transparent' ? '3px 6px' : '4px 7px',
+      flexShrink: 0,
+      whiteSpace: 'nowrap',
+    }}>{label}</span>
+  )
+}
+
+function shortDeadlineLabel(type: string | null, label: string | null): string {
+  const kind = (type ?? '').toLowerCase()
+  if (kind === 'closing') return 'CLOSING'
+  if (kind === 'inspection') return 'INSPECTION'
+  if (kind === 'due_diligence' || kind === 'diligence') return 'DILIGENCE'
+  const raw = (label ?? '').replace(/\(.*?\)/g, ' ').replace(/\s+/g, ' ').trim()
+  const low = raw.toLowerCase()
+  if (!raw) return kind && kind !== 'custom' ? kind.replace(/_/g, ' ').toUpperCase() : ''
+  if (low.includes('clos')) return 'CLOSING'
+  if (low.includes('counter')) return 'COUNTER'
+  if (low.includes('feasib')) return 'FEASIBILITY'
+  if (low.includes('inspect')) return 'INSPECTION'
+  if (low.includes('lease')) return 'LEASE'
+  const words = raw.split(' ').slice(0, 2).join(' ')
+  return (words.length > 16 ? words.slice(0, 14).trim() : words).toUpperCase()
+}
+
+function deadlineInk(days: number | null): string {
+  if (days == null) return C.textMid
+  if (days < 0) return C.late
+  if (days <= 14) return C.hot
+  return C.textMid
 }
 
 function clientFromDeal(deal: DealRow): string {
   return deal.deal_contacts?.[0]?.contacts?.name ?? deal.name ?? '—'
-}
-
-function getStatusLabel(status: string | null): string {
-  if (!status) return ''
-  switch (status.toLowerCase()) {
-    case 'hot':            return 'HOT'
-    case 'under_contract': return 'UC'
-    case 'pipeline':       return 'PIPELINE'
-    case 'active':         return 'ACTIVE'
-    case 'active_listing': return 'ACTIVE'
-    case 'in_review':
-    case 'review':         return 'REVIEW'
-    case 'in_service':     return 'IN SERVICE'
-    case 'pending_payment':return 'PENDING'
-    case 'closed':         return 'CLOSED'
-    default: return status.replace(/_/g, ' ').toUpperCase()
-  }
-}
-
-function pillStyle(status: string | null): React.CSSProperties {
-  const s = status?.toLowerCase() ?? ''
-  if (s === 'hot') return {
-    fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.10em',
-    color: '#0A0A0F', background: C.hot, borderRadius: 4, padding: '4px 7px', flexShrink: 0,
-  }
-  if (s === 'under_contract') return {
-    fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.10em',
-    color: C.brandLift, border: `1px solid rgba(139,92,246,0.55)`, borderRadius: 4, padding: '3px 7px', flexShrink: 0,
-  }
-  return {
-    fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.10em',
-    color: C.textMid, border: `1px solid rgba(255,255,255,0.20)`, borderRadius: 4, padding: '3px 7px', flexShrink: 0,
-  }
 }
 
 // ── Clock ─────────────────────────────────────────────────────────────────────
@@ -221,13 +299,13 @@ function useClock() {
 function IdentityBand() {
   const { dateStr, timeStr } = useClock()
   return (
-    <div style={{
+    <div className="wr-deals-band" style={{
       height: 112, flexShrink: 0, display: 'flex', alignItems: 'center',
       padding: '0 30px', gap: 26, borderBottom: `1px solid ${C.border}`, background: C.bgBase,
     }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/icons/mark-256.png" alt="" width={64} height={64} style={{ display: 'block', flexShrink: 0 }} />
-      <div style={{ flexShrink: 0, marginTop: -10, marginLeft: -3.5, display: 'flex', alignItems: 'center' }}>
+      <img className="wr-deals-mark" src="/icons/mark-256.png" alt="" width={64} height={64} style={{ display: 'block', flexShrink: 0 }} />
+      <div className="wr-deals-word" style={{ flexShrink: 0, marginTop: -10, marginLeft: -3.5, display: 'flex', alignItems: 'center' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/assets/wordmark/shirleycre-h176.png" alt="SHIRLEYCRE" height={88} style={{ height: 88, width: 'auto', display: 'block' }} />
       </div>
@@ -235,15 +313,15 @@ function IdentityBand() {
       <span style={{ ...DT1, letterSpacing: '0.19em', color: C.textMid, marginTop: 4, flexShrink: 0 }}>WAR ROOM</span>
       <div style={{ flex: 1 }} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/assets/links/lacdb-h104.png" alt="LACDB"
+      <img className="wr-deals-plate" src="/assets/links/lacdb-h104.png" alt="LACDB"
         style={{ height: 52, width: 158, display: 'block', flexShrink: 0, cursor: 'pointer' }}
         onClick={() => window.open('https://www.lacdb.com', '_blank', 'noopener,noreferrer')} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/assets/links/crexi-h104.png" alt="CREXI"
+      <img className="wr-deals-plate" src="/assets/links/crexi-h104.png" alt="CREXI"
         style={{ height: 52, width: 158, display: 'block', flexShrink: 0, cursor: 'pointer' }}
         onClick={() => window.open('https://www.crexi.com', '_blank', 'noopener,noreferrer')} />
-      <span style={{ ...DT2, color: C.brandLift, flexShrink: 0 }}>{dateStr} · {timeStr}</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+      <span className="wr-deals-clock" style={{ ...DT2, color: C.brandLift, flexShrink: 0 }}>{dateStr} · {timeStr}</span>
+      <div className="wr-deals-clock" style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.moneyIn }} />
         <span style={{ ...DT3, color: C.moneyIn }}>LIVE</span>
       </div>
@@ -360,7 +438,7 @@ function LeftRail({ active }: { active: RailSlot }) {
   }
 
   return (
-    <div style={{
+    <div className="wr-deals-rail" style={{
       width: 96, flexShrink: 0, height: '100%', background: C.bgRail,
       borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column',
       alignItems: 'center', paddingTop: 8, boxSizing: 'border-box',
@@ -388,13 +466,11 @@ function StarRating({ dealId, rating, onChange }: {
 
   async function handleClick(n: number, e: React.MouseEvent) {
     e.stopPropagation()
+    const prev = rating
     const next = current === n ? null : n
     onChange(dealId, next)
-    if (next === null) {
-      await supabase.from('deals').update({ rating: null }).eq('id', dealId)
-    } else {
-      await supabase.from('deals').update({ rating: next }).eq('id', dealId)
-    }
+    const { error } = await supabase.from('deals').update({ rating: next }).eq('id', dealId)
+    if (error) onChange(dealId, prev)
   }
 
   return (
@@ -404,10 +480,10 @@ function StarRating({ dealId, rating, onChange }: {
         {[1,2,3,4,5].map(n => {
           const filled = n <= display
           return (
-            <svg key={n} width="13" height="13" viewBox="0 0 24 24"
+            <svg key={n} width="14" height="14" viewBox="0 0 24 24"
               onMouseEnter={() => setHover(n)}
               onClick={(e) => handleClick(n, e)}
-              style={{ cursor: 'pointer', flexShrink: 0 }}
+              style={{ cursor: 'pointer', flexShrink: 0, padding: 1 }}
             >
               {filled
                 ? <path d="M12 2.5l2.9 6.2 6.6.8-4.8 4.7 1.2 6.8L12 17.6 6.1 21l1.2-6.8L2.5 9.5l6.6-.8L12 2.5Z" fill={C.textHi} />
@@ -424,18 +500,28 @@ function StarRating({ dealId, rating, onChange }: {
 }
 
 // ── LACDB cell ────────────────────────────────────────────────────────────────
-function LacdbCell({ url, dealId, onNavigate }: { url: string | null; dealId: string; onNavigate: (id: string) => void }) {
-  if (url) return (
-    <a href={url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-      style={{ display:'flex', alignItems:'center', justifyContent:'center', width:28, height:28, borderRadius:7, background:'rgba(139,92,246,0.14)', textDecoration:'none' }}>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={C.brandLift} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M8 16 16 8M10 8h6v6"/>
-      </svg>
-    </a>
-  )
+const PLUS_BTN: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  width: 28, height: 28, borderRadius: 7,
+  border: '1px dashed rgba(255,255,255,0.22)', background: 'none', cursor: 'pointer',
+}
+
+function LacdbCell({ deal, onNavigate }: { deal: EnrichedDeal; onNavigate: (id: string) => void }) {
+  const mark = lacdbFlagFor(deal, LACDB_ACTIVE)
+  if (mark?.kind === 'active' && mark.href) {
+    return (
+      <a href={mark.href} target="_blank" rel="noopener noreferrer" data-lacdb="active"
+        aria-label="Open LACDB listing" onClick={e => e.stopPropagation()}
+        style={{ display:'flex', alignItems:'center', justifyContent:'center', width:28, height:28, borderRadius:7, background:'rgba(139,92,246,0.14)', textDecoration:'none' }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={C.brandLift} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M8 16 16 8M10 8h6v6"/>
+        </svg>
+      </a>
+    )
+  }
   return (
-    <button onClick={e => { e.stopPropagation(); onNavigate(dealId) }}
-      style={{ display:'flex', alignItems:'center', justifyContent:'center', width:28, height:28, borderRadius:7, border:'1px dashed rgba(255,255,255,0.22)', background:'none', cursor:'pointer' }}>
+    <button className="wr-row-plus" aria-label="Add LACDB link"
+      onClick={e => { e.stopPropagation(); onNavigate(deal.id) }} style={PLUS_BTN}>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.textLow} strokeWidth="2" strokeLinecap="round">
         <path d="M12 5v14M5 12h14"/>
       </svg>
@@ -482,6 +568,13 @@ function TypeDropdown({ open, types, activeType, onSelect, onClose }: {
       background:'#1E1D26', border:`1px solid ${C.border}`, borderRadius:8,
       overflow:'hidden', zIndex:200, minWidth:160,
     }}>
+      <button onClick={() => onSelect('')} style={{
+        display:'block', width:'100%', textAlign:'left', padding:'10px 14px',
+        border:'none', cursor:'pointer',
+        background: !activeType ? 'rgba(139,92,246,0.18)' : 'transparent',
+        color: !activeType ? C.brandLift : C.textMid,
+        ...DT5,
+      }}>ALL TYPES</button>
       {types.length === 0 && <div style={{ ...DT8, color:C.textLow, padding:'10px 14px' }}>NO TYPES</div>}
       {types.map(t => {
         const display = t === 'INDUSTRIAL' ? 'INDST' : t === 'MULTIFAMILY' ? 'MULTI' : t
@@ -524,7 +617,7 @@ function CH({ label, sk, activeSk, sortDir, onClick, style }: {
 function GroupHeader({ label, count }: { label: string; count: number }) {
   return (
     <div style={{
-      position:'sticky', top:0, zIndex:10,
+      position:'sticky', top:36, zIndex:10,
       display:'flex', alignItems:'center', height:30,
       padding:'0 14px 0 44px', gap:10,
       background:C.bgPanel, borderBottom:`1px solid ${C.borderPanel}`,
@@ -555,26 +648,21 @@ function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
   onTaskOpen: (d: EnrichedDeal) => void;
   onNavigate: (id: string) => void;
 }) {
-  const isHot = deal.status?.toLowerCase() === 'hot' || (deal.rating ?? 0) >= 4
-  const isUC  = deal.status?.toLowerCase() === 'under_contract'
-  const deadlineUrgent = deal._deadlineDays !== null && deal._deadlineDays <= 7
-  const label = getStatusLabel(deal.status)
   const rating = ratings[deal.id] ?? null
+  const deadlineText = deal._deadlineDate
+    ? [fmtDeadlineWhen(deal._deadlineDate), deal._deadlineLabel].filter(Boolean).join(' · ')
+    : ''
 
   return (
-    <div onClick={() => onNavigate(deal.id)}
+    <div className="wr-deal-row" data-deal-id={deal.id} onClick={() => onNavigate(deal.id)}
       style={{ position:'relative', display:'flex', alignItems:'center', height:46, borderBottom:`1px solid ${C.borderHair}`, boxSizing:'border-box', cursor:'pointer' }}>
-      {/* Left spine */}
-      {isUC && <div style={{ position:'absolute', left:0, top:9, bottom:9, width:3, background:C.brand }} />}
-      {isHot && !isUC && <div style={{ position:'absolute', left:0, top:9, bottom:9, width:3, background:C.hot }} />}
 
-      {/* Address */}
-      <div style={{ flex:1, minWidth:0, padding:'0 14px 0 44px', display:'flex', alignItems:'center', gap:11, boxSizing:'border-box', overflow:'hidden' }}>
-        <span style={{ ...DS3, color:C.textHi, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+      {/* Address, then the stage pill */}
+      <div style={{ flex:1, minWidth:0, padding:'0 14px 0 44px', display:'flex', alignItems:'center', gap:8, boxSizing:'border-box', overflow:'hidden' }}>
+        <span style={{ ...DS3, color:C.textHi, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0 }}>
           {deal._shortAddr}
         </span>
-        {label && <span style={pillStyle(deal.status)}>{label}</span>}
-        <LacdbFlag deal={deal} size="row" />
+        <StagePill status={deal.status} />
       </div>
 
       {/* Client */}
@@ -583,22 +671,21 @@ function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
       </div>
 
       {/* Next deadline */}
-      <div style={{ width:COL.deadline, flexShrink:0, padding:'0 14px', boxSizing:'border-box' }}>
-        {/* DI-5: no dash in deadline cell when empty */}
-        {deal._deadlineDays !== null && deal._deadlineDate
-          ? <span style={{ ...DT7, color: deadlineUrgent ? C.hot : C.textMid, whiteSpace:'nowrap' }}>{fmtDeadline(deal._deadlineDays, deal._deadlineDate)}</span>
+      <div style={{ width:COL.deadline, flexShrink:0, padding:'0 14px', boxSizing:'border-box', overflow:'hidden' }}>
+        {deadlineText
+          ? <span title={deal._deadlineLabel || deadlineText} style={{ ...DT7, letterSpacing:'0.04em', color: deadlineInk(deal._deadlineDays), whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', display:'block' }}>{deadlineText}</span>
           : null
         }
       </div>
 
-      {/* LACDB */}
+      {/* LACDB — icon when the listing is in the active feed; otherwise a hover plus */}
       <div style={{ width:COL.lacdb, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
-        <LacdbCell url={deal.lacdb_url} dealId={deal.id} onNavigate={onNavigate} />
+        <LacdbCell deal={deal} onNavigate={onNavigate} />
       </div>
 
-      {/* Add Task */}
+      {/* Add Task — hover on pointer devices, always on touch */}
       <div style={{ width:COL.task, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
-        <button onClick={e => { e.stopPropagation(); onTaskOpen(deal) }}
+        <button className="wr-row-plus" aria-label="Add task" onClick={e => { e.stopPropagation(); onTaskOpen(deal) }}
           style={{ display:'flex', alignItems:'center', justifyContent:'center', width:28, height:28, borderRadius:7, border:`1px solid rgba(255,255,255,0.20)`, background:'none', cursor:'pointer' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.textMid} strokeWidth="2" strokeLinecap="round">
             <path d="M12 5v14M5 12h14"/>
@@ -692,7 +779,12 @@ function DealsPage() {
   const searchParams = useSearchParams()
 
   const tab      = (searchParams.get('tab')      ?? 'listings') as TabKey
-  const filter   = (searchParams.get('filter')   ?? 'all')      as FilterKey
+  const legacyFilter = searchParams.get('filter')
+  const stage: StageKey = isStageKey(searchParams.get('stage'))
+    ? (searchParams.get('stage') as StageKey)
+    : legacyFilter === 'hot' ? 'hot'
+    : legacyFilter === 'uc' ? 'under_contract'
+    : 'all'
   const typeValue = searchParams.get('type_val') ?? null
 
   const [allDeals,     setAllDeals]     = useState<EnrichedDeal[]>([])
@@ -707,24 +799,20 @@ function DealsPage() {
   const [sortKey, setSortKey] = useState<SortKey>('address')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
-  // Entry-state sort — money arrives sorted by COMM▼
-  useEffect(() => {
-    if (filter === 'money') { setSortKey('comm'); setSortDir('desc') }
-    else { setSortKey('address'); setSortDir('asc') }
-  }, [filter])
-
   // ── Nav helpers ───────────────────────────────────────────────────────────
-  function setTab(t: TabKey) {
-    // Switching tabs resets filter to ALL
-    router.replace(`/warroom/deals?tab=${t}&filter=all`)
-  }
-  function setFilter(f: FilterKey, tv?: string) {
+  function writeQuery(next: { stage?: StageKey; type?: string | null; tab?: TabKey }) {
     const p = new URLSearchParams(Array.from(searchParams.entries()))
-    p.set('tab', tab); p.set('filter', f)
+    p.set('tab', next.tab ?? tab)
+    p.set('stage', next.stage ?? stage)
+    p.delete('filter')
+    const tv = next.type === undefined ? typeValue : next.type
     if (tv) p.set('type_val', tv); else p.delete('type_val')
     router.replace(`/warroom/deals?${p.toString()}`)
     setTypeDropOpen(false)
   }
+  function setTab(t: TabKey) { writeQuery({ tab: t, stage: 'all', type: null }) }
+  function setStage(s: StageKey) { writeQuery({ stage: s }) }
+  function setType(tv: string | null) { writeQuery({ type: tv }) }
   function handleSort(k: SortKey) {
     if (k === sortKey) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortKey(k); setSortDir('asc') }
@@ -747,7 +835,7 @@ function DealsPage() {
         ),
 
         supabase.from('contract_deadlines')
-          .select('deal_id, deadline_date, deadline_type')
+          .select('deal_id, deadline_date, deadline_type, label')
           .in('status', ['pending', 'extended'])
           .order('deadline_date'),
 
@@ -760,12 +848,17 @@ function DealsPage() {
       const econMap: Record<string, DealEcon> = {}
       for (const e of (econRes.data ?? []) as DealEcon[]) econMap[e.deal_id] = e
 
-      const deadlineMap: Record<string, DeadlineRow> = {}
+      const deadlineBuckets: Record<string, DeadlineRow[]> = {}
       for (const dl of (deadlinesRes.data ?? []) as DeadlineRow[]) {
-        if (!dl.deadline_date || dl.deadline_date < today) continue
-        if (!deadlineMap[dl.deal_id] || dl.deadline_date < deadlineMap[dl.deal_id].deadline_date) {
-          deadlineMap[dl.deal_id] = dl
-        }
+        if (!dl.deadline_date) continue
+        if (!deadlineBuckets[dl.deal_id]) deadlineBuckets[dl.deal_id] = []
+        deadlineBuckets[dl.deal_id].push(dl)
+      }
+      const deadlineMap: Record<string, DeadlineRow> = {}
+      for (const [dealId, rows] of Object.entries(deadlineBuckets)) {
+        const upcoming = rows.filter(r => r.deadline_date >= today).sort((a, b) => a.deadline_date.localeCompare(b.deadline_date))
+        const overdue = rows.filter(r => r.deadline_date < today).sort((a, b) => b.deadline_date.localeCompare(a.deadline_date))
+        deadlineMap[dealId] = upcoming[0] ?? overdue[0]
       }
 
       const mmSet = new Set<string>()
@@ -801,13 +894,14 @@ function DealsPage() {
 
         return {
           ...deal,
-          _shortAddr:    formatDealTitle(deal),
-          _client:       clientFromDeal(deal),
-          _deadlineDays: deadlineDays,
-          _deadlineDate: dl?.deadline_date ?? null,
-          _value:        value,
-          _commission:   commission,
-          _isMoneyMover: mmSet.has(deal.id) || !!deal.is_money_mover,
+          _shortAddr:     formatDealTitle(deal),
+          _client:        clientFromDeal(deal),
+          _deadlineDays:  deadlineDays,
+          _deadlineDate:  dl?.deadline_date ?? null,
+          _deadlineLabel: dl ? shortDeadlineLabel(dl.deadline_type, dl.label) : '',
+          _value:         value,
+          _commission:    commission,
+          _isMoneyMover:  mmSet.has(deal.id) || !!deal.is_money_mover,
         }
       })
 
@@ -854,31 +948,35 @@ function DealsPage() {
   }
 
   // ── Filter ────────────────────────────────────────────────────────────────
-  function matchesFilter(d: EnrichedDeal): boolean {
-    switch (filter) {
-      case 'all':   return true
-      case 'hot':   return (d.rating ?? 0) >= 4 || d.status?.toLowerCase() === 'hot'
-      case 'uc':    return d.status?.toLowerCase() === 'under_contract'
-      case 'money': return d._isMoneyMover
-      case 'type':  return typeValue ? (d.property_type?.toUpperCase() === typeValue.toUpperCase()) : true
-      default:      return true
-    }
+  function matchesType(d: EnrichedDeal): boolean {
+    if (!typeValue) return true
+    return d.property_type?.toUpperCase() === typeValue.toUpperCase()
+  }
+  function matchesStage(d: EnrichedDeal): boolean {
+    if (!matchesType(d)) return false
+    if (stage === 'all') return true
+    return stageOf(d.status) === stage
+  }
+
+  function cmpNullLast(av: number | null, bv: number | null): number {
+    if (av == null && bv == null) return 0
+    if (av == null) return 1
+    if (bv == null) return -1
+    return sortDir === 'asc' ? av - bv : bv - av
   }
 
   // ── Sort ──────────────────────────────────────────────────────────────────
   function sortDeals(rows: EnrichedDeal[]): EnrichedDeal[] {
     return [...rows].sort((a, b) => {
-      let cmp = 0
       switch (sortKey) {
-        case 'address':  cmp = a._shortAddr.localeCompare(b._shortAddr); break
-        case 'client':   cmp = a._client.localeCompare(b._client); break
-        case 'deadline': cmp = (a._deadlineDays ?? 9999) - (b._deadlineDays ?? 9999); break
-        case 'value':    cmp = (a._value ?? -1) - (b._value ?? -1); break
-        case 'comm':     cmp = (a._commission ?? -1) - (b._commission ?? -1); break
-        case 'rank':     cmp = (a.rating ?? 0) - (b.rating ?? 0); break
-        default:         cmp = a._shortAddr.localeCompare(b._shortAddr)
+        case 'address':  return sortDir === 'asc' ? a._shortAddr.localeCompare(b._shortAddr) : b._shortAddr.localeCompare(a._shortAddr)
+        case 'client':   return sortDir === 'asc' ? a._client.localeCompare(b._client) : b._client.localeCompare(a._client)
+        case 'deadline': return cmpNullLast(a._deadlineDays, b._deadlineDays)
+        case 'value':    return cmpNullLast(a._value, b._value)
+        case 'comm':     return cmpNullLast(a._commission, b._commission)
+        case 'rank':     return cmpNullLast(a.rating && a.rating > 0 ? a.rating : null, b.rating && b.rating > 0 ? b.rating : null)
+        default:         return a._shortAddr.localeCompare(b._shortAddr)
       }
-      return sortDir === 'asc' ? cmp : -cmp
     })
   }
 
@@ -900,18 +998,26 @@ function DealsPage() {
   }
 
   // Derived rows
-  const filteredDeals      = allDeals.filter(d => d.portfolio_id == null && matchesFilter(d))
+  const typedDeals = allDeals.filter(matchesType)
+  const stageCounts: Record<StageKey, number> = {
+    all: typedDeals.length,
+    pipeline: 0, review: 0, active: 0, hot: 0, under_contract: 0, closed: 0, in_service: 0,
+  }
+  for (const d of typedDeals) {
+    const key = stageOf(d.status)
+    if (key !== 'other') stageCounts[key] += 1
+  }
+  const matchedDeals = typedDeals.filter(d => stage === 'all' || stageOf(d.status) === stage)
+  const totalValue = matchedDeals.reduce<number | null>((acc, d) => d._value != null ? (acc ?? 0) + d._value : acc, null)
+  const totalComm  = matchedDeals.reduce<number | null>((acc, d) => d._commission != null ? (acc ?? 0) + d._commission : acc, null)
+
+  const filteredDeals      = matchedDeals.filter(d => d.portfolio_id == null)
   const filteredPortfolios = portfolios.filter(p => {
-    if (filter === 'all') return true
     const members = allDeals.filter(d => d.portfolio_id === p.portfolioId)
-    return members.some(d => matchesFilter(d))
+    return members.some(d => matchesStage(d))
   })
   const sortedDeals      = sortDeals(filteredDeals)
   const sortedPortfolios = sortPortfolios(filteredPortfolios)
-
-  // Counts
-  const portfolioMemberCount = allDeals.filter(d => d.portfolio_id != null).length
-  const regularDealCount     = allDeals.length - portfolioMemberCount
 
   // Stub task
   const stubTask: Task = {
@@ -928,9 +1034,21 @@ function DealsPage() {
   }
 
   // Filter label for empty state
-  const filterLabel = filter === 'type' && typeValue
-    ? typeValue.toUpperCase()
-    : filter === 'all' ? 'NONE' : filter.toUpperCase()
+  const stageNames: Record<StageKey, string> = {
+    all: 'ALL', pipeline: 'PIPELINE', review: 'REVIEW', active: 'ACTIVE',
+    hot: 'HOT', under_contract: 'UNDER CONTRACT', closed: 'CLOSED', in_service: 'IN SERVICE',
+  }
+  const filterLabel = [stage === 'all' ? '' : stageNames[stage], typeValue?.toUpperCase() ?? ''].filter(Boolean).join(' · ') || 'NONE'
+
+  const PIPELINE_TABS: { key: StageKey; label: string }[] = [
+    { key: 'all', label: 'ALL' },
+    { key: 'pipeline', label: 'PIPELINE' },
+    { key: 'review', label: 'REVIEW' },
+    { key: 'active', label: 'ACTIVE' },
+    { key: 'hot', label: 'HOT' },
+    { key: 'under_contract', label: 'UNDER CONTRACT' },
+    { key: 'closed', label: 'CLOSED' },
+  ]
 
   const TABS: { key: TabKey; label: string; count: number }[] = [
     { key: 'listings', label: 'LISTINGS', count: tabCounts.listings },
@@ -939,15 +1057,62 @@ function DealsPage() {
     { key: 'targets',  label: 'TARGETS',  count: tabCounts.targets  },
   ]
 
-  // DI-2: MONEY filter segment removed — result: ALL · HOT · UC · TYPE ▾
-  const FILTERS: { key: FilterKey; label: string }[] = [
-    { key: 'all',   label: 'ALL' },
-    { key: 'hot',   label: 'HOT' },
-    { key: 'uc',    label: 'UC'  },
-  ]
+  function stageTab(key: StageKey, label: string, muted = false) {
+    const isActive = stage === key
+    const tone = key === 'hot' ? C.hot
+      : key === 'pipeline' ? '#93C5FD'
+      : key === 'review' ? '#FBBF24'
+      : key === 'active' ? '#C4B5FD'
+      : key === 'under_contract' ? '#5EEAD4'
+      : key === 'closed' ? C.textLow
+      : C.textMid
+    return (
+      <button key={key} onClick={() => setStage(key)} style={{
+        display:'flex', alignItems:'center', justifyContent:'center', gap:7,
+        position:'relative', background:'none', border:'none', cursor:'pointer',
+        padding:'0 12px', height:'100%', flexShrink:0,
+      }}>
+        <span style={{
+          fontFamily:FONT_MONO, fontSize:12, lineHeight:1, letterSpacing:'0.08em',
+          fontWeight: isActive ? 700 : 600,
+          color: muted ? '#6F6D80' : isActive ? C.textHi : tone,
+        }}>{label}</span>
+        <span style={{
+          fontFamily:FONT_MONO, fontSize:11, fontWeight:500, lineHeight:1,
+          color: muted ? '#6F6D80' : C.textLow,
+        }}>{stageCounts[key]}</span>
+        {isActive && <div style={{ position:'absolute', left:8, right:8, bottom:0, height:2, background: muted ? '#6F6D80' : C.brandStrong }} />}
+      </button>
+    )
+  }
+
+  const typeLabel = typeValue
+    ? (typeValue === 'INDUSTRIAL' ? 'INDST' : typeValue === 'MULTIFAMILY' ? 'MULTI' : typeValue)
+    : 'TYPE'
 
   return (
     <div style={{ display:'flex', width:'100vw', maxWidth:'100vw', height:'100vh', background:C.bgBase, color:C.textHi, fontFamily:FONT_DISP, overflow:'hidden' }}>
+      <style>{`
+        .wr-stage-scroll { scrollbar-width: thin; }
+        .wr-row-plus { opacity: 1; }
+        @media (hover: hover) and (pointer: fine) {
+          .wr-row-plus { opacity: 0; pointer-events: none; }
+          .wr-deal-row:hover .wr-row-plus,
+          .wr-deal-row:focus-within .wr-row-plus { opacity: 1; pointer-events: auto; }
+        }
+        @media (max-width: 1023px) {
+          .wr-deals-rail { display: none !important; }
+          .wr-row-plus { opacity: 1 !important; pointer-events: auto !important; }
+          .wr-deals-plate, .wr-deals-clock { display: none !important; }
+          .wr-engage-row { height: 56px !important; padding: 0 12px !important; }
+          .wr-engage-scroll { gap: 10px !important; }
+          .wr-engage-scroll button span:first-child { font-size: 12px !important; letter-spacing: 0.08em !important; }
+          .wr-deals-band { height: 64px !important; padding: 0 16px !important; gap: 12px !important; }
+          .wr-deals-mark { width: 36px !important; height: 36px !important; }
+          .wr-deals-word { margin-top: 0 !important; }
+          .wr-deals-word img { height: 36px !important; }
+        }
+      `}</style>
 
       {/* Left rail */}
       <LeftRail active="DEALS" />
@@ -959,12 +1124,12 @@ function DealsPage() {
         <IdentityBand />
 
         {/* ── Tab row — 62px, FIXED ── */}
-        <div style={{
+        <div className="wr-engage-row" style={{
           height:80, flexShrink:0, display:'flex', alignItems:'center',
-          padding:'0 24px', boxSizing:'border-box',
+          padding:'0 24px', boxSizing:'border-box', gap:12,
           borderBottom: tab === 'listings' ? 'none' : `1px solid ${C.border}`,
         }}>
-          <div style={{ display:'flex', alignItems:'center', gap:15, flex:1 }}>
+          <div className="wr-engage-scroll" style={{ display:'flex', alignItems:'center', gap:15, flex:1, minWidth:0, overflowX:'auto' }}>
             {TABS.map((t, i) => {
               const isActive = t.key === tab
               return (
@@ -988,111 +1153,94 @@ function DealsPage() {
                 </React.Fragment>
               )
             })}
-            <div style={{ flex:1 }} />
-            {/* DI-3: delivered Fab object */}
-            <Fab label="Add listing" aria-label="Add listing" onClick={() => router.push('/warroom/deals/new')} />
           </div>
+          <Fab label="Add listing" aria-label="Add listing" onClick={() => router.push('/warroom/deals/new')} />
         </div>
 
-        {/* ── LISTINGS-specific chrome — filter row + col headers ── */}
         {tab === 'listings' && (
           <>
-            {/* Filter row — 46px FIXED, compact inline buttons left-aligned */}
             <div style={{
-              height:46, flexShrink:0, display:'flex', alignItems:'center',
-              paddingLeft:44, borderBottom:`1px solid ${C.borderPanel}`,
-              boxSizing:'border-box', gap:0,
+              height:46, flexShrink:0, display:'flex', alignItems:'stretch',
+              borderBottom:`1px solid ${C.borderPanel}`, boxSizing:'border-box',
             }}>
-              {FILTERS.map(f => {
-                const isActive = filter === f.key
-                return (
-                  <button key={f.key} onClick={() => setFilter(f.key)} style={{
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                    position:'relative', background:'none', border:'none', cursor:'pointer',
-                    padding:'0 16px', height:'100%',
-                  }}>
-                    <span style={{
-                      fontFamily:FONT_MONO, fontSize:13, lineHeight:1,
-                      fontWeight: isActive ? 700 : 600,
-                      color: isActive ? C.textHi : C.textMid,
-                    }}>{f.label}</span>
-                    {isActive && <div style={{ position:'absolute', left:0, right:0, bottom:0, height:2, background:C.brandStrong }} />}
-                  </button>
-                )
-              })}
-
-              {/* TYPE ▾ */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', position:'relative', height:'100%' }}>
+              <div className="wr-stage-scroll" style={{
+                flex:1, minWidth:0, display:'flex', alignItems:'stretch', overflowX:'auto', paddingLeft:28,
+              }}>
+                {PIPELINE_TABS.map(f => stageTab(f.key, f.label))}
+                <div style={{ width:1, height:18, background:C.border, alignSelf:'center', margin:'0 6px', flexShrink:0 }} />
+                {stageTab('in_service', 'IN SERVICE', true)}
+              </div>
+              <div style={{ display:'flex', alignItems:'center', position:'relative', flexShrink:0, borderLeft:`1px solid ${C.borderPanel}` }}>
                 <button onClick={() => setTypeDropOpen(o => !o)} style={{
                   display:'flex', alignItems:'center', gap:5, background:'none', border:'none',
                   cursor:'pointer', padding:'0 16px', height:'100%', position:'relative',
                 }}>
                   <span style={{
-                    fontFamily:FONT_MONO, fontSize:13, lineHeight:1,
-                    fontWeight: filter === 'type' ? 700 : 600,
-                    color: filter === 'type' ? C.textHi : C.textMid,
-                  }}>TYPE</span>
+                    fontFamily:FONT_MONO, fontSize:12, lineHeight:1, letterSpacing:'0.08em',
+                    fontWeight: typeValue ? 700 : 600,
+                    color: typeValue ? C.textHi : C.textMid,
+                  }}>{typeLabel}</span>
                   <span style={{ fontFamily:FONT_MONO, fontSize:11, color:C.textLow }}>▾</span>
-                  {filter === 'type' && <div style={{ position:'absolute', left:0, right:0, bottom:0, height:2, background:C.brandStrong }} />}
+                  {typeValue && <div style={{ position:'absolute', left:8, right:8, bottom:0, height:2, background:C.brandStrong }} />}
                 </button>
                 <TypeDropdown open={typeDropOpen} types={allTypes} activeType={typeValue}
-                  onSelect={v => setFilter('type', v)} onClose={() => setTypeDropOpen(false)} />
+                  onSelect={v => setType(v || null)} onClose={() => setTypeDropOpen(false)} />
               </div>
             </div>
 
-            {/* Column headers — 36px FIXED */}
             <div style={{
-              height:36, flexShrink:0, display:'flex', alignItems:'center',
-              background:C.bgPanel, borderBottom:`1px solid ${C.border}`, boxSizing:'border-box',
+              height:34, flexShrink:0, display:'flex', alignItems:'center', gap:18,
+              padding:'0 44px', borderBottom:`1px solid ${C.borderHair}`, boxSizing:'border-box',
             }}>
-              <CH label="ADDRESS" sk="address" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('address')}
-                style={{ flex:1, minWidth:0, padding:'0 14px 0 44px', boxSizing:'border-box' }} />
-              <CH label="CLIENT" sk="client" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('client')}
-                style={{ width:COL.client, flexShrink:0, padding:'0 14px', boxSizing:'border-box' }} />
-              <CH label="DEADLINE" sk="deadline" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('deadline')}
-                style={{ width:COL.deadline, flexShrink:0, padding:'0 14px', boxSizing:'border-box' }} />
-              {/* LACDB — non-sortable header (actionable column) */}
-              <div style={{ width:COL.lacdb, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
-                <span style={{ ...DT8, letterSpacing:'0.10em', color:C.textLow }}>LACDB</span>
-              </div>
-              {/* TASK — non-sortable */}
-              <div style={{ width:COL.task, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
-                <span style={{ ...DT8, letterSpacing:'0.10em', color:C.textLow }}>TASK</span>
-              </div>
-              <CH label="RANK" sk="rank" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('rank')}
-                style={{ width:COL.rank, flexShrink:0, padding:'0 14px', boxSizing:'border-box', display:'flex', justifyContent:'center' }} />
-              <CH label="VALUE" sk="value" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('value')}
-                style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', display:'flex', justifyContent:'flex-end' }} />
-              <CH label="COMM" sk="comm" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('comm')}
-                style={{ width:COL.comm, flexShrink:0, padding:'0 14px', boxSizing:'border-box', display:'flex', justifyContent:'flex-end' }} />
-              {/* DBX — non-sortable */}
-              <div style={{ width:COL.dbx, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
-                <span style={{ ...DT8, letterSpacing:'0.10em', color:C.textLow }}>DBX</span>
-              </div>
+              <span style={{ ...DT5, color:C.textHi }}>{matchedDeals.length} DEALS</span>
+              <span style={{ ...DT5, color:C.textLow }}>VALUE {totalValue != null ? fmtMoney(totalValue) : '—'}</span>
+              <span style={{ ...DT5, color:C.moneyIn }}>COMM {totalComm != null ? fmtMoney(totalComm) : '—'}</span>
             </div>
           </>
         )}
 
-        {/* ── Scrollable body ── */}
-        <div style={{ flex:1, overflowY:'auto', overflowX:'hidden', position:'relative', minHeight:0 }}>
+        {/* ── Scrollable body. Headers travel with the sheet so narrow widths scroll as one. ── */}
+        <div style={{ flex:1, overflow:'auto', position:'relative', minHeight:0 }}>
           {tab === 'listings' ? (
             loading ? (
               <div style={{ padding:40, textAlign:'center' }}>
                 <span style={{ ...DT3, color:C.textLow, fontFamily:FONT_MONO }}>LOADING…</span>
               </div>
             ) : (
-              <>
-                {/* PORTFOLIOS group — always present */}
-                <GroupHeader label="PORTFOLIOS" count={sortedPortfolios.length} />
-                {sortedPortfolios.length === 0
-                  ? null
-                  : sortedPortfolios.map(p => (
-                    <PortfolioRow key={p.portfolioId} portfolio={p} onNavigate={navigate} />
-                  ))
-                }
+              <div style={{ minWidth:1100 }}>
+                <div style={{
+                  position:'sticky', top:0, zIndex:20, height:36, display:'flex', alignItems:'center',
+                  background:C.bgPanel, borderBottom:`1px solid ${C.border}`, boxSizing:'border-box',
+                }}>
+                  <CH label="ADDRESS" sk="address" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('address')}
+                    style={{ flex:1, minWidth:0, padding:'0 14px 0 44px', boxSizing:'border-box' }} />
+                  <CH label="CLIENT" sk="client" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('client')}
+                    style={{ width:COL.client, flexShrink:0, padding:'0 14px', boxSizing:'border-box' }} />
+                  <CH label="DEADLINE" sk="deadline" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('deadline')}
+                    style={{ width:COL.deadline, flexShrink:0, padding:'0 14px', boxSizing:'border-box' }} />
+                  <div style={{ width:COL.lacdb, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
+                    <span style={{ ...DT8, letterSpacing:'0.10em', color:C.textLow }}>LACDB</span>
+                  </div>
+                  <div style={{ width:COL.task, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
+                    <span style={{ ...DT8, letterSpacing:'0.10em', color:C.textLow }}>TASK</span>
+                  </div>
+                  <CH label="RANK" sk="rank" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('rank')}
+                    style={{ width:COL.rank, flexShrink:0, padding:'0 14px', boxSizing:'border-box', display:'flex', justifyContent:'center' }} />
+                  <CH label="VALUE" sk="value" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('value')}
+                    style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', display:'flex', justifyContent:'flex-end' }} />
+                  <CH label="COMM" sk="comm" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('comm')}
+                    style={{ width:COL.comm, flexShrink:0, padding:'0 14px', boxSizing:'border-box', display:'flex', justifyContent:'flex-end' }} />
+                  <div style={{ width:COL.dbx, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
+                    <span style={{ ...DT8, letterSpacing:'0.10em', color:C.textLow }}>DBX</span>
+                  </div>
+                </div>
 
-                {/* DEALS group — always present */}
-                <GroupHeader label="DEALS" count={regularDealCount} />
+                <GroupHeader label="PORTFOLIOS" count={sortedPortfolios.length} />
+                {sortedPortfolios.map(p => (
+                  <PortfolioRow key={p.portfolioId} portfolio={p} onNavigate={navigate} />
+                ))}
+
+                <GroupHeader label="DEALS" count={sortedDeals.length} />
                 {sortedDeals.length === 0
                   ? <EmptyState filterName={allDeals.length === 0 ? 'NONE' : filterLabel} />
                   : sortedDeals.map(d => (
@@ -1102,7 +1250,7 @@ function DealsPage() {
                       onNavigate={navigate} />
                   ))
                 }
-              </>
+              </div>
             )
           ) : tab === 'buyers' ? (
             filteredDeals.filter(d => d.type?.toLowerCase() === 'buyer').length === 0 ? (
