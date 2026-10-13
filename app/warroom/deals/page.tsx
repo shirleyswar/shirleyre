@@ -4,7 +4,7 @@
  * D5.2 · build(48l) · from frame 49a · spec D5.2 + D5.2.1a · 8.24.26 1645
  *
  * Four tabs: LISTINGS / TENANTS / BUYERS / TARGETS
- * LISTINGS: stage tabs (Pipeline through Closed, then In Service) plus TYPE,
+ * LISTINGS: stage tabs (Pipeline through Closed, then In Service and Archived) plus TYPE,
  * sortable columns, LACDB icon for active listings, deadline date and label.
  * TENANTS / BUYERS / TARGETS: placeholder.
  *
@@ -28,6 +28,7 @@ import {
 import Fab from '@/assets/fab/Fab'
 import { LACDB_ACTIVE } from '@/lib/lacdbCatalog'
 import { lacdbFlagFor } from '@/lib/lacdbFlag'
+import { asArchiveKind, placeDealInService, recordArchive, type ArchiveKind } from '@/lib/dealArchive'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -76,7 +77,7 @@ const COL = {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TabKey    = 'listings' | 'tenants' | 'buyers' | 'targets'
-type StageKey  = 'all' | 'pipeline' | 'review' | 'active' | 'hot' | 'under_contract' | 'closed' | 'in_service'
+type StageKey  = 'all' | 'pipeline' | 'review' | 'active' | 'hot' | 'under_contract' | 'closed' | 'in_service' | 'archived'
 type SortKey   = 'address' | 'client' | 'deadline' | 'rank' | 'value' | 'comm'
 type SortDir   = 'asc' | 'desc'
 
@@ -131,6 +132,7 @@ interface EnrichedDeal extends DealRow {
   _value:          number | null
   _commission:     number | null
   _isMoneyMover:   boolean
+  _archiveKind:    ArchiveKind | null
 }
 
 interface PortfolioRollup {
@@ -167,7 +169,7 @@ function fmtDeadlineWhen(dateStr: string): string {
   return `${mon} ${d}`
 }
 
-const STAGES: StageKey[] = ['all', 'pipeline', 'review', 'active', 'hot', 'under_contract', 'closed', 'in_service']
+const STAGES: StageKey[] = ['all', 'pipeline', 'review', 'active', 'hot', 'under_contract', 'closed', 'in_service', 'archived']
 
 function isStageKey(value: string | null): value is StageKey {
   return !!value && (STAGES as string[]).includes(value)
@@ -227,27 +229,51 @@ function stageTone(status: string | null): { color: string; background: string; 
   }
 }
 
-function StagePill({ status }: { status: string | null }) {
-  const label = stageLabel(status)
+function StagePill({ status, archiveKind }: { status: string | null; archiveKind?: ArchiveKind | null }) {
+  const archived = (status ?? '').toLowerCase() === 'closed' && !!archiveKind
+  const label = archived ? 'ARCHIVED' : stageLabel(status)
   if (!label) return null
-  const tone = stageTone(status)
-  const wide = stageOf(status) === 'under_contract'
+  const tone = archived
+    ? { color: '#94A3B8', background: 'transparent', border: '1px solid rgba(148,163,184,0.45)' }
+    : stageTone(status)
+  const wide = !archived && stageOf(status) === 'under_contract'
   return (
-    <span data-stage={stageOf(status)} style={{
-      fontFamily: FONT_MONO,
-      fontSize: 10,
-      fontWeight: 700,
-      letterSpacing: wide ? '0.05em' : '0.08em',
-      lineHeight: 1,
-      color: tone.color,
-      background: tone.background,
-      border: tone.border,
-      borderRadius: 4,
-      padding: tone.background === 'transparent' ? '3px 6px' : '4px 7px',
-      flexShrink: 0,
-      whiteSpace: 'nowrap',
-    }}>{label}</span>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      <span data-stage={archived ? 'archived' : stageOf(status)} style={{
+        fontFamily: FONT_MONO,
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: wide ? '0.05em' : '0.08em',
+        lineHeight: 1,
+        color: tone.color,
+        background: tone.background,
+        border: tone.border,
+        borderRadius: 4,
+        padding: tone.background === 'transparent' ? '3px 6px' : '4px 7px',
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
+      }}>{label}</span>
+      {archived && (
+        <span data-archive={archiveKind} style={{
+          fontFamily: FONT_MONO,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          lineHeight: 1,
+          color: archiveKind === 'lease' ? '#5EEAD4' : C.moneyIn,
+          border: `1px solid ${archiveKind === 'lease' ? 'rgba(94,234,212,0.55)' : 'rgba(52,211,153,0.55)'}`,
+          borderRadius: 4,
+          padding: '3px 6px',
+          whiteSpace: 'nowrap',
+        }}>{archiveKind === 'lease' ? 'LEASE' : 'SALE'}</span>
+      )}
+    </span>
   )
+}
+
+function bucketOf(deal: { status: string | null; _archiveKind?: ArchiveKind | null }): StageKey | 'other' {
+  if ((deal.status ?? '').toLowerCase() === 'closed' && deal._archiveKind) return 'archived'
+  return stageOf(deal.status)
 }
 
 function shortDeadlineLabel(type: string | null, label: string | null): string {
@@ -640,13 +666,72 @@ function EmptyState({ filterName }: { filterName: string }) {
   )
 }
 
+const closeBtn: React.CSSProperties = {
+  fontFamily: FONT_MONO,
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  lineHeight: 1,
+  background: 'none',
+  borderRadius: 4,
+  padding: '4px 6px',
+  cursor: 'pointer',
+  flexShrink: 0,
+  whiteSpace: 'nowrap',
+}
+
+function CloseActions({
+  busy,
+  error,
+  onArchive,
+  onInService,
+}: {
+  busy: boolean
+  error?: string
+  onArchive: (kind: ArchiveKind) => void
+  onInService: () => void
+}) {
+  const [pick, setPick] = useState<'archive' | null>(null)
+  return (
+    <div
+      className="wr-close-actions"
+      data-close-choice="open"
+      onClick={e => e.stopPropagation()}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+    >
+      {pick === 'archive' ? (
+        <>
+          <button type="button" data-close-action="sale" disabled={busy} onClick={() => onArchive('sale')}
+            style={{ ...closeBtn, color: C.moneyIn, border: '1px solid rgba(52,211,153,0.55)', opacity: busy ? 0.5 : 1 }}>SALE</button>
+          <button type="button" data-close-action="lease" disabled={busy} onClick={() => onArchive('lease')}
+            style={{ ...closeBtn, color: '#5EEAD4', border: '1px solid rgba(94,234,212,0.55)', opacity: busy ? 0.5 : 1 }}>LEASE</button>
+          <button type="button" data-close-action="cancel" disabled={busy} onClick={() => setPick(null)}
+            style={{ ...closeBtn, color: C.textLow, border: `1px solid ${C.borderHair}` }}>×</button>
+        </>
+      ) : (
+        <>
+          <button type="button" data-close-action="archive" disabled={busy} onClick={() => setPick('archive')}
+            style={{ ...closeBtn, color: C.brandLift, border: '1px solid rgba(167,139,250,0.55)' }}>ARCHIVE</button>
+          <button type="button" data-close-action="in-service" disabled={busy} onClick={onInService}
+            style={{ ...closeBtn, color: '#6F6D80', border: '1px solid rgba(255,255,255,0.18)', opacity: busy ? 0.5 : 1 }}>IN SERVICE</button>
+        </>
+      )}
+      {error && <span style={{ ...closeBtn, color: C.late, border: 'none', padding: 0 }}>{error}</span>}
+    </div>
+  )
+}
+
 // ── LISTINGS deal row ─────────────────────────────────────────────────────────
-function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
+function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate, onArchive, onInService, disposing, disposeError }: {
   deal: EnrichedDeal;
   ratings: Record<string, number | null>;
   onRatingChange: (id: string, r: number | null) => void;
   onTaskOpen: (d: EnrichedDeal) => void;
   onNavigate: (id: string) => void;
+  onArchive: (id: string, kind: ArchiveKind) => void;
+  onInService: (id: string) => void;
+  disposing: boolean;
+  disposeError?: string;
 }) {
   const rating = ratings[deal.id] ?? null
   const deadlineText = deal._deadlineDate
@@ -662,7 +747,15 @@ function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
         <span style={{ ...DS3, color:C.textHi, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0 }}>
           {deal._shortAddr}
         </span>
-        <StagePill status={deal.status} />
+        <StagePill status={deal.status} archiveKind={deal._archiveKind} />
+        {(deal.status ?? '').toLowerCase() === 'closed' && !deal._archiveKind && (
+          <CloseActions
+            busy={disposing}
+            error={disposeError}
+            onArchive={kind => onArchive(deal.id, kind)}
+            onInService={() => onInService(deal.id)}
+          />
+        )}
       </div>
 
       {/* Client */}
@@ -798,6 +891,8 @@ function DealsPage() {
 
   const [sortKey, setSortKey] = useState<SortKey>('address')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [disposingId, setDisposingId] = useState<string | null>(null)
+  const [disposeErr, setDisposeErr] = useState<{ id: string; message: string } | null>(null)
 
   // ── Nav helpers ───────────────────────────────────────────────────────────
   function writeQuery(next: { stage?: StageKey; type?: string | null; tab?: TabKey }) {
@@ -823,7 +918,7 @@ function DealsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const [dealsRes, econRes, deadlinesRes, mmRes] = await Promise.all([
+      const [dealsRes, econRes, deadlinesRes, mmRes, archiveRes] = await Promise.all([
         supabase.from('deals').select(`
           id, name, address, addr_display, addr_number, addr_street_name, addr_street_type,
           addr_direction, addr_city, status, type, property_type, rating, lacdb_url, deal_source, dropbox_link,
@@ -840,6 +935,10 @@ function DealsPage() {
           .order('deadline_date'),
 
         supabase.from('money_movers').select('deal_id').not('deal_id', 'is', null),
+
+        supabase.from('activity_log')
+          .select('deal_id, description, created_at')
+          .eq('action_type', 'archived'),
       ])
 
       const rawDeals = (dealsRes.data ?? []) as DealRow[]
@@ -864,6 +963,18 @@ function DealsPage() {
       const mmSet = new Set<string>()
       for (const mm of (mmRes.data ?? []) as { deal_id: string }[]) {
         if (mm.deal_id) mmSet.add(mm.deal_id)
+      }
+
+      const archiveKind: Record<string, ArchiveKind> = {}
+      const archiveAt: Record<string, string> = {}
+      for (const row of (archiveRes.data ?? []) as { deal_id: string | null; description: string | null; created_at: string | null }[]) {
+        const kind = asArchiveKind(row.description)
+        if (!row.deal_id || !kind) continue
+        const at = row.created_at ?? ''
+        if (archiveAt[row.deal_id] == null || at >= archiveAt[row.deal_id]) {
+          archiveAt[row.deal_id] = at
+          archiveKind[row.deal_id] = kind
+        }
       }
 
       const ratingInit: Record<string, number | null> = {}
@@ -902,6 +1013,7 @@ function DealsPage() {
           _value:         value,
           _commission:    commission,
           _isMoneyMover:  mmSet.has(deal.id) || !!deal.is_money_mover,
+          _archiveKind:   archiveKind[deal.id] ?? null,
         }
       })
 
@@ -954,8 +1066,31 @@ function DealsPage() {
   }
   function matchesStage(d: EnrichedDeal): boolean {
     if (!matchesType(d)) return false
-    if (stage === 'all') return true
-    return stageOf(d.status) === stage
+    const bucket = bucketOf(d)
+    if (stage === 'all') return bucket !== 'archived'
+    return bucket === stage
+  }
+
+  async function handleArchive(id: string, kind: ArchiveKind) {
+    if (disposingId) return
+    setDisposingId(id)
+    setDisposeErr(null)
+    const err = await recordArchive(id, kind)
+    setDisposingId(null)
+    if (err) { setDisposeErr({ id, message: err }); return }
+    setAllDeals(prev => prev.map(d => d.id === id ? { ...d, _archiveKind: kind } : d))
+    setStage('archived')
+  }
+
+  async function handleInService(id: string) {
+    if (disposingId) return
+    setDisposingId(id)
+    setDisposeErr(null)
+    const err = await placeDealInService(id)
+    setDisposingId(null)
+    if (err) { setDisposeErr({ id, message: err }); return }
+    setAllDeals(prev => prev.map(d => d.id === id ? { ...d, status: 'in_service' } : d))
+    setStage('in_service')
   }
 
   function cmpNullLast(av: number | null, bv: number | null): number {
@@ -1000,14 +1135,15 @@ function DealsPage() {
   // Derived rows
   const typedDeals = allDeals.filter(matchesType)
   const stageCounts: Record<StageKey, number> = {
-    all: typedDeals.length,
-    pipeline: 0, review: 0, active: 0, hot: 0, under_contract: 0, closed: 0, in_service: 0,
+    all: 0,
+    pipeline: 0, review: 0, active: 0, hot: 0, under_contract: 0, closed: 0, in_service: 0, archived: 0,
   }
   for (const d of typedDeals) {
-    const key = stageOf(d.status)
+    const key = bucketOf(d)
+    if (key !== 'archived') stageCounts.all += 1
     if (key !== 'other') stageCounts[key] += 1
   }
-  const matchedDeals = typedDeals.filter(d => stage === 'all' || stageOf(d.status) === stage)
+  const matchedDeals = typedDeals.filter(d => matchesStage(d))
   const totalValue = matchedDeals.reduce<number | null>((acc, d) => d._value != null ? (acc ?? 0) + d._value : acc, null)
   const totalComm  = matchedDeals.reduce<number | null>((acc, d) => d._commission != null ? (acc ?? 0) + d._commission : acc, null)
 
@@ -1037,6 +1173,7 @@ function DealsPage() {
   const stageNames: Record<StageKey, string> = {
     all: 'ALL', pipeline: 'PIPELINE', review: 'REVIEW', active: 'ACTIVE',
     hot: 'HOT', under_contract: 'UNDER CONTRACT', closed: 'CLOSED', in_service: 'IN SERVICE',
+    archived: 'ARCHIVED',
   }
   const filterLabel = [stage === 'all' ? '' : stageNames[stage], typeValue?.toUpperCase() ?? ''].filter(Boolean).join(' · ') || 'NONE'
 
@@ -1169,6 +1306,7 @@ function DealsPage() {
                 {PIPELINE_TABS.map(f => stageTab(f.key, f.label))}
                 <div style={{ width:1, height:18, background:C.border, alignSelf:'center', margin:'0 6px', flexShrink:0 }} />
                 {stageTab('in_service', 'IN SERVICE', true)}
+                {stageTab('archived', 'ARCHIVED', true)}
               </div>
               <div style={{ display:'flex', alignItems:'center', position:'relative', flexShrink:0, borderLeft:`1px solid ${C.borderPanel}` }}>
                 <button onClick={() => setTypeDropOpen(o => !o)} style={{
@@ -1247,7 +1385,11 @@ function DealsPage() {
                     <DealRow key={d.id} deal={d} ratings={ratings}
                       onRatingChange={handleRatingChange}
                       onTaskOpen={setTaskDeal}
-                      onNavigate={navigate} />
+                      onNavigate={navigate}
+                      onArchive={handleArchive}
+                      onInService={handleInService}
+                      disposing={disposingId === d.id}
+                      disposeError={disposeErr?.id === d.id ? disposeErr.message : undefined} />
                   ))
                 }
               </div>
@@ -1263,7 +1405,11 @@ function DealsPage() {
                   <DealRow key={d.id} deal={d} ratings={ratings}
                     onRatingChange={handleRatingChange}
                     onTaskOpen={setTaskDeal}
-                    onNavigate={navigate} />
+                    onNavigate={navigate}
+                    onArchive={handleArchive}
+                    onInService={handleInService}
+                    disposing={disposingId === d.id}
+                    disposeError={disposeErr?.id === d.id ? disposeErr.message : undefined} />
                 ))}
               </>
             )
