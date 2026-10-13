@@ -1,7 +1,8 @@
 'use client'
 /**
  * Desktop deal page. 157: DP-1 rate chain, DP-4 one plate, DP-5 matte glows,
- * DP-7 edit-pill-master, DP-8 header address, DP-9 chain pre-launch, DP-10 empty states.
+ * DP-8 header address, DP-9 chain pre-launch, DP-10 empty states.
+ * Header actions are neon outline pills (DELETE / EDIT), same capsule as the type plates.
  * Canonical route: /warroom/deal/?id=<uuid>
  */
 
@@ -76,6 +77,122 @@ const PROPERTY_PLATE_MAP: Record<string, string> = {
 // DP-5: matte h180 plates for SALE + LEASE header pills (no baked glow)
 const SALE_PLATE  = '/assets/plates/sale-h180.png'
 const LEASE_PLATE = '/assets/plates/lease-h180.png'
+
+// Transaction plates (lease-h180 / sale-h180) carry transparent padding.
+// Property plates (v7, 132px, edge-to-edge) do not. Mounted at the same
+// 44px CSS height, OFFICE's neon capsule measured 43×135 against LEASE's
+// 38×120. 39px puts every v7 plate on LEASE's outer box (bright bounds
+// 119.7×38.4 at the 44px LEASE mount). Cap height follows.
+const TX_PLATE_H = 44
+const PROPERTY_PLATE_H = 39
+
+// Header actions. Same capsule height, radius and geometric caps as the
+// type plates, drawn quieter because they are actions. Hit target is 44px;
+// the visible tube is 38px so it sits on the type-plate ink, not the
+// transparent padding in the h180 files.
+const ACTION_PILL_CSS = `
+.wr-action-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  margin: 0;
+  padding: 3px 0;
+  height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.wr-action-pill:disabled { cursor: default; }
+.wr-action-pill span {
+  box-sizing: border-box;
+  height: 38px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: transparent;
+  font-family: ${FONT_DISPLAY};
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  border: 1.5px solid var(--pill);
+  color: var(--ink);
+  text-shadow: 0 0 8px var(--glow);
+  box-shadow: 0 0 8px var(--glow);
+  transition: border-color .18s ease, box-shadow .18s ease, text-shadow .18s ease, color .18s ease;
+}
+.wr-action-pill--delete span {
+  --pill: rgba(255, 77, 94, 0.62);
+  --ink: #F4F1F2;
+  --glow: rgba(255, 77, 94, 0.28);
+}
+.wr-action-pill--delete:hover:not(:disabled) span,
+.wr-action-pill--delete:focus-visible span {
+  --pill: #FF4D5E;
+  --ink: #FFFFFF;
+  --glow: rgba(255, 77, 94, 0.72);
+  border-color: #FF4D5E;
+  color: #FFFFFF;
+  box-shadow: 0 0 6px rgba(255, 77, 94, 0.65), 0 0 18px rgba(255, 77, 94, 0.42);
+  text-shadow: 0 0 6px rgba(255, 77, 94, 0.9), 0 0 16px rgba(255, 77, 94, 0.5);
+}
+.wr-action-pill--edit span {
+  --pill: rgba(226, 228, 236, 0.55);
+  --ink: rgba(244, 244, 248, 0.92);
+  --glow: rgba(255, 255, 255, 0.14);
+}
+.wr-action-pill--edit:hover:not(:disabled) span,
+.wr-action-pill--edit:focus-visible span {
+  --pill: rgba(255, 255, 255, 0.92);
+  --ink: #FFFFFF;
+  --glow: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.92);
+  color: #FFFFFF;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.32), 0 0 18px rgba(214, 218, 232, 0.24);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.55);
+}
+.wr-deal-header { flex-wrap: nowrap; }
+@media (max-width: 900px) {
+  .wr-deal-header { flex-wrap: wrap; row-gap: 12px; }
+}
+`
+
+function ActionPill({
+  tone,
+  label,
+  onClick,
+  disabled,
+  style,
+}: {
+  tone: 'delete' | 'edit'
+  label: string
+  onClick: () => void
+  disabled?: boolean
+  style?: React.CSSProperties
+}) {
+  return (
+    <button
+      type="button"
+      className={`wr-action-pill wr-action-pill--${tone}`}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={tone === 'delete' ? 'Delete deal' : 'Edit deal'}
+      style={style}
+    >
+      <span>{label}</span>
+    </button>
+  )
+}
 
 // ── Panel ────────────────────────────────────────────────────────────────────
 function Panel({
@@ -641,17 +758,17 @@ function DealPageClientInner({ id }: { id: string }) {
 
   return (
     <div style={{ background: T.bgBase, minHeight: '100vh', fontFamily: FONT_DISPLAY }}>
+      <style>{ACTION_PILL_CSS}</style>
 
       {/* ── HEADER BAND ───────────────────────────────────────────────────── */}
       <div style={{ borderBottom: `1px solid ${T.borderHair}` }}>
-        <div style={{
+        <div className="wr-deal-header" style={{
           maxWidth: 1440,
           margin: '0 auto',
           padding: '16px 32px',
           display: 'flex',
           alignItems: 'center',
           gap: 16,
-          flexWrap: 'nowrap',
         }}>
           {/* Back */}
           <a href="/warroom/deals" style={{ fontFamily: FONT_MONO, fontSize: 9.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: T.textLow, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
@@ -689,36 +806,32 @@ function DealPageClientInner({ id }: { id: string }) {
           {/* DP-4: one transaction plate — SALE wins for 'both' */}
           {/* DP-5: matte — no boxShadow/glow on header plates */}
           {showSalePlate && (
-            <div style={{ height: 44, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+            <div style={{ height: TX_PLATE_H, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={SALE_PLATE} alt="SALE" style={{ height: 44, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
+              <img src={SALE_PLATE} alt="SALE" style={{ height: TX_PLATE_H, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
             </div>
           )}
           {showLeasePlate && (
-            <div style={{ height: 44, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+            <div style={{ height: TX_PLATE_H, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={LEASE_PLATE} alt="LEASE" style={{ height: 44, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
+              <img src={LEASE_PLATE} alt="LEASE" style={{ height: TX_PLATE_H, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
             </div>
           )}
 
-          {/* Property plate — matte (DP-5) */}
+          {/* Property plate — same outer box as LEASE. v7 art is edge-to-edge, so the mount is shorter than the h180 files. */}
           {propPlateSrc && (
-            <div style={{ height: 44, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+            <div style={{ height: TX_PLATE_H, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={propPlateSrc} alt={propType ?? ''} style={{ height: 44, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
+              <img src={propPlateSrc} alt={propType ?? ''} style={{ height: PROPERTY_PLATE_H, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
             </div>
           )}
 
-          {/* DELETE and EDIT — hidden on closed deals */}
+          {/* DELETE and EDIT — hidden on closed deals. REOPEN below is its own control.
+              Grouped so the pair stays together and the gap between them stays clear when the row wraps. */}
           {deal?.status !== 'closed' && (
-            <>
-              {/* DELETE — matte (DP-5) */}
-              <button onClick={() => setDeleteMode(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }} aria-label="Delete deal">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/delete/delete-pill-candidate.png" alt="DELETE" style={{ height: 44, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 28, flexShrink: 0 }}>
+              <ActionPill tone="delete" label="DELETE" onClick={() => setDeleteMode(true)} />
 
-              {/* DP-7: EDIT pill — edit-pill-master.png 44×115, mix-blend-mode: screen */}
               {editMode ? (
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
                   <button onClick={handleEditSave} disabled={saving} style={{ background: T.brand, border: 'none', borderRadius: 6, padding: '6px 14px', fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#fff', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>
@@ -729,21 +842,13 @@ function DealPageClientInner({ id }: { id: string }) {
                   </button>
                 </div>
               ) : (
-                <button
+                <ActionPill
+                  tone="edit"
+                  label="EDIT"
                   onClick={() => router.push(`/warroom/deals/new?edit=${dealId}`)}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-                  aria-label="Edit deal"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/assets/buttons/edit-pill-master.png"
-                    alt="Edit"
-                    style={{ height: 44, width: 115, display: 'block', filter: 'none', boxShadow: 'none' }}
-                    draggable={false}
-                  />
-                </button>
+                />
               )}
-            </>
+            </div>
           )}
 
           {/* REOPEN button — violet pill, only on closed deals */}
@@ -797,10 +902,13 @@ function DealPageClientInner({ id }: { id: string }) {
           <div style={{ height: 44 }} />
           <div style={{ height: 96, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {deleteArmed && (
-              <button onClick={handleDeleteConfirm} disabled={deleting} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/delete/delete-pill-candidate.png" alt="DELETE" style={{ height: 82, width: 'auto', display: 'block', opacity: deleting ? 0.5 : 1 }} draggable={false} />
-              </button>
+              <ActionPill
+                tone="delete"
+                label="DELETE"
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                style={{ opacity: deleting ? 0.5 : 1 }}
+              />
             )}
           </div>
           <div style={{ position: 'absolute', bottom: 34, left: 0, right: 0, textAlign: 'center', fontFamily: FONT_MONO, fontSize: 10.5, fontWeight: 500, letterSpacing: '0.24em', color: '#3F3E4C' }}>SHIRLEYCRE · PERMANENT DELETION</div>
