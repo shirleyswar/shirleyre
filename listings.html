@@ -3,8 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Current Listings | Matthew Shirley</title>
-<meta name="description" content="Current commercial real estate listings from Matthew Shirley, Associate Broker at Saurage Rotenberg Commercial Real Estate, Baton Rouge, LA.">
+<title>Commercial Land, Industrial, Retail &amp; Office for Sale/Lease in Baton Rouge | Matthew Shirley</title>
+<meta name="description" content="Commercial land, industrial, retail, and office for sale or lease in Baton Rouge and South Louisiana. Matthew Shirley, Associate Broker, Saurage Rotenberg Commercial Real Estate.">
+<link rel="canonical" href="https://shirleyre.com/listings.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Matthew Shirley">
+<meta property="og:title" content="Commercial Land, Industrial, Retail &amp; Office for Sale/Lease in Baton Rouge | Matthew Shirley">
+<meta property="og:description" content="Commercial land, industrial, retail, and office for sale or lease in Baton Rouge and South Louisiana. Matthew Shirley, Associate Broker, Saurage Rotenberg Commercial Real Estate.">
+<meta property="og:url" content="https://shirleyre.com/listings.html">
+<meta property="og:image" content="https://shirleyre.com/android-chrome-512x512.png">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Commercial Land, Industrial, Retail &amp; Office for Sale/Lease in Baton Rouge | Matthew Shirley">
+<meta name="twitter:description" content="Commercial land, industrial, retail, and office for sale or lease in Baton Rouge and South Louisiana. Matthew Shirley, Associate Broker, Saurage Rotenberg Commercial Real Estate.">
+<meta name="twitter:image" content="https://shirleyre.com/android-chrome-512x512.png">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -85,13 +97,19 @@
   .listing-highlights li::before { content: '▸'; position: absolute; left: 0; color: var(--gold); font-size: 0.62rem; top: 0.3rem; }
 
   /* CTA */
-  .listing-cta { display: inline-block; font-family: 'Syne Mono', monospace; font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); border: 1px solid rgba(201,147,58,0.35); padding: 0.55rem 1.1rem; text-decoration: none; transition: background 0.2s, color 0.2s, border-color 0.2s; align-self: flex-start; }
-  .listing-cta:hover { background: rgba(201,147,58,0.1); color: var(--gold-light); border-color: var(--gold); }
+  .listing-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+  .listing-btn { display: inline-flex; align-items: center; justify-content: center; font-family: 'Syne Mono', monospace; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; padding: 0.55rem 0.85rem; border-radius: 2px; line-height: 1; }
+  .listing-btn-call { background: #FDDD3E; color: #060d0f; border: 1px solid #FDDD3E; font-weight: 700; }
+  .listing-btn-call:hover { background: #fff; border-color: #fff; color: #060d0f; }
+  .listing-btn-info { background: transparent; color: #FDDD3E; border: 1px solid #FDDD3E; }
+  .listing-btn-info:hover { background: #FDDD3E; color: #060d0f; }
+  .listing-cta { flex-basis: 100%; display: inline-block; font-family: 'Syne Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-decoration: none; border: none; padding: 0.35rem 0 0; background: transparent; align-self: flex-start; }
+  .listing-cta:hover { color: #FDDD3E; background: transparent; border-color: transparent; }
   .listing-call { color: #FDDD3E; text-decoration: none; font-family: 'Syne Mono', monospace; letter-spacing: 0.04em; white-space: nowrap; }
   .listing-call:hover { color: #fff; }
 
   /* FOOTER */
-  footer { position: relative; z-index: 5; text-align: center; padding: 2rem; border-top: 1px solid rgba(201,147,58,0.1); font-family: 'Syne Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--muted); }
+  footer { position: relative; z-index: 5; text-align: center; padding: 1.5rem 1.25rem 2rem; border-top: 1px solid rgba(201,147,58,0.1); font-family: 'Syne Mono', monospace; font-size: 0.68rem; letter-spacing: 0.04em; line-height: 1.8; color: var(--muted); }
   footer a { color: #FDDD3E; text-decoration: none; }
   footer a:hover { color: #fff; }
 
@@ -99,6 +117,22 @@
     nav, .page-header, .filter-row, .count-bar, .listings-grid { padding-left: 1.25rem; padding-right: 1.25rem; }
     .listings-grid { grid-template-columns: 1fr; gap: 1.5rem; }
     .page-title { font-size: 2.2rem; }
+  }
+
+  .need-block { position: relative; z-index: 5; width: min(880px, calc(100% - 48px)); margin: 8px auto 18px; padding: 22px 22px 20px; border: 1px solid rgba(253,221,62,0.28); background: rgba(255,255,255,0.03); border-radius: 14px; }
+  .need-block h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: clamp(20px, 2.4vw, 28px); letter-spacing: -0.02em; color: #fff; margin: 0 0 6px; }
+  .need-lede { font-family: 'Syne Mono', monospace; font-size: 12px; letter-spacing: 0.03em; color: var(--muted, #8a8070); margin: 0 0 16px; line-height: 1.5; }
+  .need-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .need-span { grid-column: 1 / -1; }
+  .need-block label { display: flex; flex-direction: column; gap: 6px; font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted, #8a8070); }
+  .need-block input { background: #060d0f; border: 1px solid rgba(253,221,62,0.35); border-radius: 8px; color: #fff; padding: 12px 14px; font-family: 'Syne', sans-serif; font-size: 14px; letter-spacing: 0; text-transform: none; outline: none; width: 100%; }
+  .need-block input:focus { border-color: #FDDD3E; }
+  .need-block button { margin-top: 14px; background: #FDDD3E; color: #060d0f; border: none; border-radius: 100px; padding: 12px 26px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.02em; cursor: pointer; }
+  .need-block button:hover { background: #fff; }
+  @media (max-width: 640px) {
+    .need-block { width: calc(100% - 32px); padding: 18px 16px; }
+    .need-fields { grid-template-columns: 1fr; }
+    .need-span { grid-column: auto; }
   }
 </style>
 </head>
@@ -146,7 +180,7 @@
       <ul class="listing-highlights">
 <li>Retail space available for lease</li><li>Baton Rouge market</li><li>Contact agent for details · <a class="listing-call" href="tel:+12259075214">Call 225.907.5214</a></li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/9a59f849-retail-for-lease" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20Retail%20For%20Lease&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20Retail%20For%20Lease.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/9a59f849-retail-for-lease" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="office">
@@ -167,7 +201,7 @@
       <ul class="listing-highlights">
 <li>Sprinklered Class A corporate HQ office</li><li>32 dedicated parking spaces on secured lot</li><li>Elevator · Backup generator · Flood Zone X</li><li>Renovated 2004 & 2014</li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/fe0c270f-the-annex" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20The%20Annex&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20The%20Annex.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/fe0c270f-the-annex" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="office">
@@ -188,7 +222,7 @@
       <ul class="listing-highlights">
 <li>Affordable office with high parking ratio</li><li>Jefferson at Government Street</li><li>For Lease · Baton Rouge</li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/7eb337d8-affordable-high-parking-ratio-office-on-jefferson-near-government-st" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20High%20Parking%20Ratio%20Office%20%E2%80%94%20Jefferson%20%40%20Government&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20High%20Parking%20Ratio%20Office%20%E2%80%94%20Jefferson%20%40%20Government.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/7eb337d8-affordable-high-parking-ratio-office-on-jefferson-near-government-st" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="industrial">
@@ -209,7 +243,7 @@
       <ul class="listing-highlights">
 <li>Shovel-ready industrial site</li><li>Near Dow / Shintech corridor, Iberville Parish</li><li>For Sale · Contact agent for details · <a class="listing-call" href="tel:+12259075214">Call 225.907.5214</a></li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/fa9c3a67-shovelready-site-near-dow-shintech-iberville-parish" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20Shovel-Ready%20Site%20%E2%80%94%20Iberville%20Parish%20%28For%20Sale%29&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20Shovel-Ready%20Site%20%E2%80%94%20Iberville%20Parish%20%28For%20Sale%29.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/fa9c3a67-shovelready-site-near-dow-shintech-iberville-parish" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="industrial">
@@ -230,7 +264,7 @@
       <ul class="listing-highlights">
 <li>Build-to-Suit industrial opportunity</li><li>Near Dow / Shintech corridor, Iberville Parish</li><li>Contact agent for program details · <a class="listing-call" href="tel:+12259075214">Call 225.907.5214</a></li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/b6e3c879-industrial-site-near-dow-shintech-iberville-parish" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20Industrial%20Site%20%E2%80%94%20Iberville%20Parish%20%28Build-to-Suit%29&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20Industrial%20Site%20%E2%80%94%20Iberville%20Parish%20%28Build-to-Suit%29.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/b6e3c879-industrial-site-near-dow-shintech-iberville-parish" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="industrial">
@@ -251,7 +285,7 @@
       <ul class="listing-highlights">
 <li>Shovel-ready industrial site near petrochemical corridor</li><li>Near Dow / Shintech, Iberville Parish</li><li>For Sale · Contact agent for details · <a class="listing-call" href="tel:+12259075214">Call 225.907.5214</a></li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/600d975e-shovelready-site-near-dow-shintech-iberville-parish" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20Shovel-Ready%20Industrial%20Site%20%E2%80%94%20Iberville%20Parish%20%28For%20Sale%29&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20Shovel-Ready%20Industrial%20Site%20%E2%80%94%20Iberville%20Parish%20%28For%20Sale%29.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/600d975e-shovelready-site-near-dow-shintech-iberville-parish" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="investment">
@@ -272,7 +306,7 @@
       <ul class="listing-highlights">
 <li>A-Credit tenant · Modified net lease</li><li>2026 NOI: $248,483</li><li>26,238 SF · 1.879 acres · Zoned B-3</li><li>Co-listed w/ Edward L. Rotenberg SIOR</li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/138d8815-leased-office-acredit-tenant-wmodified-net-lease" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20Leased%20Office%20%E2%80%94%20A-Credit%20Tenant%2C%20Modified%20Net%20Lease&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20Leased%20Office%20%E2%80%94%20A-Credit%20Tenant%2C%20Modified%20Net%20Lease.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/138d8815-leased-office-acredit-tenant-wmodified-net-lease" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="land">
@@ -293,7 +327,7 @@
       <ul class="listing-highlights">
 <li>Dual access — Lobdell to Wooddale Blvd</li><li>No wetlands · No flood zone · Level topography</li><li>All utilities on site · Near I-10, I-12, I-110 & BTR Airport</li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/d2e5861f-1293-acres-cw3-dual-access-cleared-buildready" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20129.3%20Acres%20CW3%20%E2%80%94%20Dual%20Access%2C%20Cleared%2C%20Build-Ready&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20129.3%20Acres%20CW3%20%E2%80%94%20Dual%20Access%2C%20Cleared%2C%20Build-Ready.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/d2e5861f-1293-acres-cw3-dual-access-cleared-buildready" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="land">
@@ -314,7 +348,7 @@
       <ul class="listing-highlights">
 <li>177 acres zoned C-1</li><li>No flood zone · Build-ready</li><li>Contact agent for pricing and access details · <a class="listing-call" href="tel:+12259075214">Call 225.907.5214</a></li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/0b5ed2a7-177-acres-c1-no-flood-buildready" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20177%20Acres%20C-1%20%E2%80%94%20No%20Flood%2C%20Build-Ready&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20177%20Acres%20C-1%20%E2%80%94%20No%20Flood%2C%20Build-Ready.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/0b5ed2a7-177-acres-c1-no-flood-buildready" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="land">
@@ -335,7 +369,7 @@
       <ul class="listing-highlights">
 <li>261 acres zoned C-1</li><li>No flood zone · Build-ready</li><li>Contact agent for pricing and access details · <a class="listing-call" href="tel:+12259075214">Call 225.907.5214</a></li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/c10c62e0-261-acres-c1-no-flood-build-ready" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20261%20Acres%20C-1%20%E2%80%94%20No%20Flood%2C%20Build-Ready&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20261%20Acres%20C-1%20%E2%80%94%20No%20Flood%2C%20Build-Ready.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/c10c62e0-261-acres-c1-no-flood-build-ready" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="land">
@@ -356,7 +390,7 @@
       <ul class="listing-highlights">
 <li>20 build-ready acres on Hwy 51</li><li>Highway frontage · Ready for development</li><li>Contact agent for pricing and details · <a class="listing-call" href="tel:+12259075214">Call 225.907.5214</a></li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/5296eedb-buildready-20-acres-on-hwy-51" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20Build-Ready%2020%20Acres%20on%20Hwy%2051&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20Build-Ready%2020%20Acres%20on%20Hwy%2051.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/5296eedb-buildready-20-acres-on-hwy-51" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="land">
@@ -377,7 +411,7 @@
       <ul class="listing-highlights">
 <li>Lit hard corner · Zoned C-1</li><li>No flood zone · Build-ready</li><li>Contact agent for pricing and details · <a class="listing-call" href="tel:+12259075214">Call 225.907.5214</a></li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/5d4a0303-084-acres-lit-hard-corner-c1-no-flood-buildready" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%200.84%20Acres%20%E2%80%94%20Lit%20Hard%20Corner%2C%20C-1%2C%20No%20Flood%2C%20Build-Ready&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%200.84%20Acres%20%E2%80%94%20Lit%20Hard%20Corner%2C%20C-1%2C%20No%20Flood%2C%20Build-Ready.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/5d4a0303-084-acres-lit-hard-corner-c1-no-flood-buildready" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="land">
@@ -398,7 +432,7 @@
       <ul class="listing-highlights">
 <li>0.48 acres zoned C-2</li><li>Vacant land ready for development</li><li>Contact agent for pricing and details · <a class="listing-call" href="tel:+12259075214">Call 225.907.5214</a></li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/30f8f0a3-048-acres-c2-vacant-land" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%200.48%20Acres%20C-2%20Vacant%20Land&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%200.48%20Acres%20C-2%20Vacant%20Land.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/30f8f0a3-048-acres-c2-vacant-land" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
   <article class="listing-card" data-type="land">
@@ -419,7 +453,7 @@
       <ul class="listing-highlights">
 <li>9.0 acres total — 6.5 useable & site-ready</li><li>Detention, wetlands, grading & utilities complete</li><li>City of St. George · Zoned C-2</li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/fca1102d-siteready-65-useable-acres" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20Site-Ready%206.5%20Useable%20Acres&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20Site-Ready%206.5%20Useable%20Acres.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/fca1102d-siteready-65-useable-acres" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
 
@@ -441,7 +475,7 @@
       <ul class="listing-highlights">
 <li>Office warehouse in Industriplex — ±3,000 SF office, ±7,550 SF warehouse</li><li>Climate-controlled warehouse ±1,450 SF · single tenant</li><li>Lease $11–$13/SF · as-is or built with the remodel</li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/d36904f1-12025-industriplex-blvd" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%2012025%20Industriplex%20Blvd%20%E2%80%94%20Office%20Warehouse&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%2012025%20Industriplex%20Blvd%20%E2%80%94%20Office%20Warehouse.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/d36904f1-12025-industriplex-blvd" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
 
@@ -463,7 +497,7 @@
       <ul class="listing-highlights">
 <li>Left-turn access via Burbank · City of St. George</li><li>Land splits available · $10.41/SF on 6.50 useable acres</li><li>Detention, wetlands, grading, and utilities complete</li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/11940dde-tract-a2a41b" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20Tract%20A-2-A-4-1-B%20%E2%80%94%20Burbank%2C%20St.%20George&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20Tract%20A-2-A-4-1-B%20%E2%80%94%20Burbank%2C%20St.%20George.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/11940dde-tract-a2a41b" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
 
@@ -485,7 +519,7 @@
       <ul class="listing-highlights">
 <li>Lit hard corner · about 100' of Government Street frontage</li><li>Across from Calandro's · Flood Zone X · utilities on site</li><li>Reduced · $339,000 · $15.88/SF</li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/e0963f9a-reduced-motivated-05-acre-tract-w-100-frontage" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%204109%20Government%20St%20%E2%80%94%200.49%20Acres%2C%20100%27%20Frontage&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%204109%20Government%20St%20%E2%80%94%200.49%20Acres%2C%20100%27%20Frontage.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/e0963f9a-reduced-motivated-05-acre-tract-w-100-frontage" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
 
@@ -507,14 +541,36 @@
       <ul class="listing-highlights">
 <li>Build-to-suit on 0.83 acres</li><li>5229 Government Street · Baton Rouge</li><li>Ground lease · $1 per square foot per year</li>
       </ul>
-      <a class="listing-cta" href="https://lacdb.resimplifi.com/listings/7b1ff984-bts-on-083-acres" target="_blank" rel="noopener">View Full Listing ↗</a>
+      <div class="listing-actions"><a class="listing-btn listing-btn-call" href="tel:+12259075214">Call Matthew</a><a class="listing-btn listing-btn-info" href="mailto:matthew@sr-cre.com?subject=Inquiry%3A%20BTS%20on%200.83%20Acres%20%E2%80%94%20Government%20St&body=Hello%20Matthew%2C%0A%0APlease%20send%20the%20OM%20and%20details%20for%20BTS%20on%200.83%20Acres%20%E2%80%94%20Government%20St.%0A%0AThank%20you.">Request Info</a><a class="listing-cta" href="https://lacdb.resimplifi.com/listings/7b1ff984-bts-on-083-acres" target="_blank" rel="noopener">View Full Listing ↗</a></div>
     </div>
   </article>
 
 </main>
 
+<section class="need-block" id="looking" aria-labelledby="need-heading">
+  <h2 id="need-heading">Looking for space or land?</h2>
+  <p class="need-lede">Size, use, and timing. Submit opens an email to Matthew.</p>
+  <form class="need-form">
+    <div class="need-fields">
+      <label>Name
+        <input type="text" name="name" required autocomplete="name">
+      </label>
+      <label>Phone
+        <input type="tel" name="phone" required autocomplete="tel">
+      </label>
+      <label>Email
+        <input type="email" name="email" required autocomplete="email">
+      </label>
+      <label class="need-span">What you need
+        <input type="text" name="need" required placeholder="Size, use, timing">
+      </label>
+    </div>
+    <button type="submit">Email Matthew</button>
+  </form>
+</section>
+
 <footer>
-  <a href="tel:+12259075214">225.907.5214</a> &mdash; <a href="mailto:matthew@sr-cre.com">matthew@sr-cre.com</a> &mdash; shirleyre.com &mdash; &copy; 2026 Matthew Shirley &mdash; <a href="https://www.srcommercial.com" target="_blank" rel="noopener">Saurage Rotenberg Commercial Real Estate</a>
+  Matthew Shirley · Associate Broker · <a href="https://sauragerotenberg.com/team/matthew-shirley/" target="_blank" rel="noopener">Saurage Rotenberg Commercial Real Estate</a> · <a href="tel:+12259075214">225.907.5214</a> · <a href="mailto:matthew@sr-cre.com">matthew@sr-cre.com</a> · © 2026 Matthew Shirley · <a href="/llms.txt">Agent feed</a>
 </footer>
 
 <script>
@@ -564,6 +620,29 @@ document.querySelectorAll('.filter-btn').forEach(function(btn) {
     document.getElementById('visible-count').textContent = vis;
   });
 });
+
+  document.querySelectorAll('.need-form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var fd = new FormData(form);
+      var name = String(fd.get('name') || '').trim();
+      var phone = String(fd.get('phone') || '').trim();
+      var email = String(fd.get('email') || '').trim();
+      var need = String(fd.get('need') || '').trim();
+      if (!name || !phone || !email || !need) return;
+      var body = [
+        'Hello Matthew,',
+        '',
+        'I am looking for space or land.',
+        '',
+        'Name: ' + name,
+        'Phone: ' + phone,
+        'Email: ' + email,
+        'What I need (size, use, timing): ' + need
+      ].join('\n');
+      window.location.href = 'mailto:matthew@sr-cre.com?subject=' + encodeURIComponent('Looking for space or land') + '&body=' + encodeURIComponent(body);
+    });
+  });
 </script>
 </body>
 </html>

@@ -5,15 +5,7 @@
     "broker_id": "f7d76849",
     "broker_name": "Matthew Shirley",
     "company": "Saurage Rotenberg Commercial Real Estate, LLC (SRCRE)",
-    "attribution": "Based on information from the LACDB for the period 2025-10-08 through 2026-10-05.",
-    "note": "Staging feed from a one-time public pull of Matthew Shirley's listings only. Co-listings with other firms excluded (see excluded_listing_ids). detail_level=full for records with full field maps; detail_level=summary for card-level stubs. Not an official LACDB API. Refresh is manual until written permission.",
-    "excluded_listing_ids": [
-      "1228a65b",
-      "2471e47a",
-      "3da3426b",
-      "8b786eb4"
-    ],
-    "excluded_reason": "Co-listed with other firms (NAI Faulk & Foster Monroe portfolios; Elifin Choctaw) — held out per Matthew GO until confirmation he submitted them."
+    "attribution": "Based on information from the LACDB for the period 2025-10-08 through 2026-10-05."
   },
   "broker_contact": {
     "name": "Matthew Shirley",
@@ -63,8 +55,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%2030f8f0a3",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%2030f8f0a3"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
-      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+      "last_updated": "2026-10-05T12:30:00Z"
     },
     {
       "id": "lacdb-5d4a0303",
@@ -263,8 +254,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%200b5ed2a7",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%200b5ed2a7"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
-      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+      "last_updated": "2026-10-05T12:30:00Z"
     },
     {
       "id": "lacdb-d2e5861f",
@@ -752,8 +742,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%207b1ff984",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%207b1ff984"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
-      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+      "last_updated": "2026-10-05T12:30:00Z"
     },
     {
       "id": "lacdb-7eb337d8",
@@ -936,8 +925,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%205296eedb",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%205296eedb"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
-      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+      "last_updated": "2026-10-05T12:30:00Z"
     },
     {
       "id": "lacdb-b6e3c879",
@@ -974,8 +962,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20b6e3c879",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20b6e3c879"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
-      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+      "last_updated": "2026-10-05T12:30:00Z"
     },
     {
       "id": "lacdb-138d8815",
@@ -1292,8 +1279,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%209a59f849",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%209a59f849"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
-      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+      "last_updated": "2026-10-05T12:30:00Z"
     },
     {
       "id": "lacdb-fa9c3a67",
@@ -1330,8 +1316,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20fa9c3a67",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20fa9c3a67"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
-      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+      "last_updated": "2026-10-05T12:30:00Z"
     },
     {
       "id": "lacdb-600d975e",
@@ -1368,8 +1353,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20600d975e",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20600d975e"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
-      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+      "last_updated": "2026-10-05T12:30:00Z"
     },
     {
       "id": "lacdb-fe0c270f",
@@ -1670,8 +1654,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20fca1102d",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20fca1102d"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
-      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+      "last_updated": "2026-10-05T12:30:00Z"
     },
     {
       "id": "lacdb-118b7fa2",
@@ -1708,8 +1691,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20118b7fa2",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20118b7fa2"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
-      "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
+      "last_updated": "2026-10-05T12:30:00Z"
     }
   ]
 }

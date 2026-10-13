@@ -3,8 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Matthew Shirley | Commercial Real Estate | Baton Rouge</title>
-<meta name="description" content="Baton Rouge commercial real estate broker with 15 years experience. Industrial, retail, office, and investment sales throughout Louisiana.">
+<title>Baton Rouge Commercial Real Estate Broker | Matthew Shirley</title>
+<meta name="description" content="Matthew Shirley, Associate Broker at Saurage Rotenberg Commercial Real Estate. Commercial broker in Baton Rouge, Louisiana.">
+<link rel="canonical" href="https://shirleyre.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Matthew Shirley">
+<meta property="og:title" content="Baton Rouge Commercial Real Estate Broker | Matthew Shirley">
+<meta property="og:description" content="Matthew Shirley, Associate Broker at Saurage Rotenberg Commercial Real Estate. Commercial broker in Baton Rouge, Louisiana.">
+<meta property="og:url" content="https://shirleyre.com/">
+<meta property="og:image" content="https://shirleyre.com/android-chrome-512x512.png">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Baton Rouge Commercial Real Estate Broker | Matthew Shirley">
+<meta name="twitter:description" content="Matthew Shirley, Associate Broker at Saurage Rotenberg Commercial Real Estate. Commercial broker in Baton Rouge, Louisiana.">
+<meta name="twitter:image" content="https://shirleyre.com/android-chrome-512x512.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "RealEstateAgent",
+  "name": "Matthew Shirley",
+  "jobTitle": "Associate Broker",
+  "url": "https://shirleyre.com/",
+  "image": "https://shirleyre.com/android-chrome-512x512.png",
+  "telephone": "+1-225-907-5214",
+  "email": "matthew@sr-cre.com",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "5135 Bluebonnet Blvd",
+    "addressLocality": "Baton Rouge",
+    "addressRegion": "LA",
+    "postalCode": "70809",
+    "addressCountry": "US"
+  },
+  "worksFor": {
+    "@type": "Organization",
+    "name": "Saurage Rotenberg Commercial Real Estate",
+    "url": "https://sauragerotenberg.com"
+  },
+  "sameAs": [
+    "https://sauragerotenberg.com/team/matthew-shirley/",
+    "https://www.loopnet.com/commercial-real-estate-brokers/profile/matthew-shirley/gpyd59zb",
+    "https://lacdb.resimplifi.com/brokers/f7d76849-matthew-shirley",
+    "https://www.linkedin.com/in/shirleycre"
+  ]
+}
+</script>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -31,13 +74,8 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; font-weight: 400; overflow-x: hidden; }
-  /* First screen: identity, six nav cards, footer — one desktop viewport. */
+  /* First screen stacks identity, six nav cards, the inquiry block, then the footer. */
   .home-fit { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: space-between; gap: clamp(6px, 1.2vh, 18px); }
-  /* Tall enough that the fitted column is the whole page — a wheel must not slide it. */
-  @media (min-width: 901px) and (min-height: 680px) {
-    html, body { height: 100%; overflow: hidden; }
-    .home-fit { height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; min-height: 0; }
-  }
   #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
   .glow-top { position: fixed; top: -30vh; left: 50%; transform: translateX(-50%); width: 80vw; height: 70vh; background: radial-gradient(ellipse, rgba(232,160,32,0.07) 0%, transparent 65%); pointer-events: none; z-index: 0; }
   .glow-left { position: fixed; top: 20vh; left: -20vw; width: 60vw; height: 60vh; background: radial-gradient(ellipse, rgba(10,60,50,0.25) 0%, transparent 65%); pointer-events: none; z-index: 0; }
@@ -122,15 +160,9 @@
   .form-group textarea { resize: vertical; min-height: 110px; }
   .form-submit { background: var(--gold); color: var(--bg); border: none; border-radius: 100px; padding: 14px 32px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; align-self: flex-start; margin-top: 4px; }
   .form-submit:hover { background: var(--gold2); transform: translateY(-1px); }
-  footer { position: relative; border-top: 1px solid var(--border); padding: clamp(10px, 1.5vh, 22px) 40px; display: flex; flex-direction: column; align-items: center; gap: clamp(2px, 0.4vh, 6px); text-align: center; }
-  .footer-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: -0.02em; background: linear-gradient(90deg, var(--gold), var(--gold2), var(--gold)); background-size: 200% 100%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: logoShift 6s ease infinite; }
-  .footer-tagline { font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--muted); line-height: 1.6; }
-  .footer-tagline a { color: var(--gold); text-decoration: none; transition: color 0.2s; }
-  .footer-tagline a:hover { color: var(--gold2); }
-  .footer-contact { font-family: 'Syne Mono', monospace; font-size: 12px; letter-spacing: 0.06em; line-height: 1.6; }
-  .footer-contact a { color: #FDDD3E; text-decoration: none; }
-  .footer-contact a:hover { color: #fff; }
-  .footer-copy { font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: rgba(122,138,143,0.5); }
+  footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 1.25rem 1.5rem 1.75rem; text-align: center; font-family: 'Syne Mono', monospace; font-size: 0.68rem; letter-spacing: 0.04em; line-height: 1.8; color: var(--muted); }
+  footer a { color: #FDDD3E; text-decoration: none; }
+  footer a:hover { color: #fff; }
   /* ── FEATURE CARDS ── */
   .features-wrap { position: relative; padding: clamp(2px, 0.6vh, 8px) clamp(24px, 4vw, 60px) 0; max-width: 1200px; margin: 0 auto; width: 100%; }
   .features-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(8px, 1.1vh, 12px); }
@@ -228,7 +260,7 @@
     .hero-firm { font-size: 10px; letter-spacing: 0.08em; }
     .about-grid, .contact-grid { grid-template-columns: 1fr; gap: 40px; }
     .listings-grid, .portfolio-grid { grid-template-columns: 1fr; }
-    footer { flex-direction: column; gap: 6px; text-align: center; padding: 16px 20px; }
+    footer { text-align: center; padding: 16px 20px; }
     .pulse-band { padding: 48px 24px; }
   }
 
@@ -259,6 +291,22 @@
     0%   { transform: translateX(calc(-50% - 5px)); }
     50%  { transform: translateX(calc(-50% + 5px)); }
     100% { transform: translateX(calc(-50% - 5px)); }
+  }
+
+  .need-block { position: relative; z-index: 5; width: min(880px, calc(100% - 48px)); margin: 8px auto 18px; padding: 22px 22px 20px; border: 1px solid rgba(253,221,62,0.28); background: rgba(255,255,255,0.03); border-radius: 14px; }
+  .need-block h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: clamp(20px, 2.4vw, 28px); letter-spacing: -0.02em; color: #fff; margin: 0 0 6px; }
+  .need-lede { font-family: 'Syne Mono', monospace; font-size: 12px; letter-spacing: 0.03em; color: var(--muted, #8a8070); margin: 0 0 16px; line-height: 1.5; }
+  .need-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .need-span { grid-column: 1 / -1; }
+  .need-block label { display: flex; flex-direction: column; gap: 6px; font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted, #8a8070); }
+  .need-block input { background: #060d0f; border: 1px solid rgba(253,221,62,0.35); border-radius: 8px; color: #fff; padding: 12px 14px; font-family: 'Syne', sans-serif; font-size: 14px; letter-spacing: 0; text-transform: none; outline: none; width: 100%; }
+  .need-block input:focus { border-color: #FDDD3E; }
+  .need-block button { margin-top: 14px; background: #FDDD3E; color: #060d0f; border: none; border-radius: 100px; padding: 12px 26px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.02em; cursor: pointer; }
+  .need-block button:hover { background: #fff; }
+  @media (max-width: 640px) {
+    .need-block { width: calc(100% - 32px); padding: 18px 16px; }
+    .need-fields { grid-template-columns: 1fr; }
+    .need-span { grid-column: auto; }
   }
 </style>
 </head>
@@ -295,7 +343,7 @@
     <span class="tooltip">LET'S DO THIS!</span>
   </div>
   <h1 class="hero-name"><span class="hero-name-line" style="font-variant: small-caps;">Matthew Shirley</span></h1>
-  <p class="hero-tagline">Commercial Real Estate Broker &nbsp;|&nbsp; HQ &nbsp;|&nbsp; Baton Rouge, LA</p>
+  <p class="hero-tagline">Commercial Real Estate Broker &nbsp;|&nbsp; Baton Rouge, LA</p>
   <p class="hero-sub">
     <span id="exp-counter"></span><br>
     as a broker (mostly), but also a buyer, seller,<br>landlord, tenant and even a wannabe developer.
@@ -418,11 +466,30 @@
 
 </div>
 
+<section class="need-block" id="looking" aria-labelledby="need-heading">
+  <h2 id="need-heading">Looking for space or land?</h2>
+  <p class="need-lede">Size, use, and timing. Submit opens an email to Matthew.</p>
+  <form class="need-form">
+    <div class="need-fields">
+      <label>Name
+        <input type="text" name="name" required autocomplete="name">
+      </label>
+      <label>Phone
+        <input type="tel" name="phone" required autocomplete="tel">
+      </label>
+      <label>Email
+        <input type="email" name="email" required autocomplete="email">
+      </label>
+      <label class="need-span">What you need
+        <input type="text" name="need" required placeholder="Size, use, timing">
+      </label>
+    </div>
+    <button type="submit">Email Matthew</button>
+  </form>
+</section>
+
 <footer>
-  <div class="footer-logo">Matthew Shirley</div>
-  <p class="footer-contact"><a href="tel:+12259075214">225.907.5214</a> · <a href="mailto:matthew@sr-cre.com">matthew@sr-cre.com</a></p>
-  <p class="footer-tagline">Associate Broker · <a href="https://www.srcommercial.com" target="_blank" rel="noopener">Saurage Rotenberg Commercial Real Estate</a> · Baton Rouge, Louisiana · Independent project, not affiliated with any other platform.</p>
-  <p class="footer-copy">© 2026 shirleyre.com</p>
+  Matthew Shirley · Associate Broker · <a href="https://sauragerotenberg.com/team/matthew-shirley/" target="_blank" rel="noopener">Saurage Rotenberg Commercial Real Estate</a> · <a href="tel:+12259075214">225.907.5214</a> · <a href="mailto:matthew@sr-cre.com">matthew@sr-cre.com</a> · © 2026 Matthew Shirley · <a href="/llms.txt">Agent feed</a>
 </footer>
 </div>
 
@@ -455,6 +522,29 @@
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
   }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
   reveals.forEach(el => observer.observe(el));
+
+  document.querySelectorAll('.need-form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var fd = new FormData(form);
+      var name = String(fd.get('name') || '').trim();
+      var phone = String(fd.get('phone') || '').trim();
+      var email = String(fd.get('email') || '').trim();
+      var need = String(fd.get('need') || '').trim();
+      if (!name || !phone || !email || !need) return;
+      var body = [
+        'Hello Matthew,',
+        '',
+        'I am looking for space or land.',
+        '',
+        'Name: ' + name,
+        'Phone: ' + phone,
+        'Email: ' + email,
+        'What I need (size, use, timing): ' + need
+      ].join('\n');
+      window.location.href = 'mailto:matthew@sr-cre.com?subject=' + encodeURIComponent('Looking for space or land') + '&body=' + encodeURIComponent(body);
+    });
+  });
 </script>
 
 </body>

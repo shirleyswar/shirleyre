@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /warroom/
+
+Sitemap: https://shirleyre.com/sitemap.xml
