@@ -15,6 +15,7 @@ import {
   DT5, DT7,
 } from '@/components/warroom/desktopTypes'
 import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
+import CalendarPicker from '@/components/warroom3/CalendarPicker'
 import chrome from '@/components/warroom/taskItemChrome.module.css'
 
 // ── Tokens — same as page.tsx C object ───────────────────────────────────────
@@ -182,16 +183,6 @@ function ChevronIcon() {
   )
 }
 
-function NotesEmptyIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M7 3.5h7.2L19 8.2V19.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z"/>
-      <path d="M14 3.5V8.2H19"/>
-      <path d="M9 13h6M9 16.5h4"/>
-    </svg>
-  )
-}
-
 // ── TaskModal ─────────────────────────────────────────────────────────────────
 export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreate = false, fill = 'task' }: TaskModalProps) {
   // ── State machine ──────────────────────────────────────────────────────────
@@ -209,6 +200,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [pickerDate, setPickerDate] = useState('')
+  const [titleEditing, setTitleEditing] = useState(false)
+  const [committedDue, setCommittedDue] = useState<string | null>(task.due_date)
+  const [savedOn, setSavedOn] = useState(false)
 
   // ── Check 59: fill-specific state ─────────────────────────────────────────
   // event fill
@@ -226,6 +220,10 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const noteRef = useRef<HTMLTextAreaElement>(null)
+  const titleCancelRef = useRef(false)
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Existing Battle Plan items save themselves. Create and fill forms still confirm.
+  const live = !isCreate && fill === 'task'
   const modalRef = useRef<HTMLDivElement>(null)
   const desktopDeleteRef = useRef<HTMLButtonElement>(null)
   // Ref-copy of isActive — prevents stale closure in the Esc keydown handler.
@@ -326,8 +324,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
         ;(active as HTMLElement).blur()
         return
       }
-      // Nothing focused (or focus is on modal container / body) → attempt close
-      if (isActiveRef.current) {
+      // Nothing focused (or focus is on modal container / body) → attempt close.
+      // A live item has already saved, so Esc closes. Create/fill still guard a draft.
+      if (!live && isActiveRef.current) {
         setShowDiscard(true)
       } else {
         onClose()
@@ -340,12 +339,106 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
   function attemptClose() {
     // Uses isActiveRef so this is always current, even when called from stable callbacks.
-    if (isActiveRef.current) {
+    if (!live && isActiveRef.current) {
       setShowDiscard(true)
     } else {
       onClose()
     }
   }
+
+  function flashSaved() {
+    setSavedOn(true)
+    if (savedTimer.current) clearTimeout(savedTimer.current)
+    savedTimer.current = setTimeout(() => setSavedOn(false), 1600)
+  }
+
+  // Same RPC CONFIRM used. Null fields are left alone by the deployed COALESCE.
+  async function saveFields(fields: { due?: string, list?: 'life' | 'entity', note?: string, title?: string }): Promise<boolean> {
+    setSaving(true)
+    setError(null)
+    const { error: rpcErr } = await supabase.rpc('commit_task_sheet', {
+      p_task_id: task.id,
+      p_due_date: fields.due ?? null,
+      p_list_type: fields.list ?? null,
+      p_note_body: fields.note ?? null,
+      p_title: fields.title ?? null,
+    })
+    setSaving(false)
+    if (rpcErr) {
+      setError(rpcErr.message || 'Save failed. Try again.')
+      return false
+    }
+    flashSaved()
+    return true
+  }
+
+  function growNote() {
+    const el = noteRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px'
+  }
+
+  async function commitTitle() {
+    if (titleCancelRef.current) {
+      titleCancelRef.current = false
+      setTitleEditing(false)
+      return
+    }
+    const next = localTitle.trim()
+    if (!next || next === committedTitleRef.current) {
+      setLocalTitle(committedTitleRef.current)
+      setTitleEditing(false)
+      return
+    }
+    const ok = await saveFields({ title: next })
+    if (!ok) return
+    committedTitleRef.current = next
+    setLocalTitle(next)
+    setTitleEditing(false)
+  }
+
+  function onTitleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+      titleCancelRef.current = true
+      setLocalTitle(committedTitleRef.current)
+      setTitleEditing(false)
+      return
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      e.currentTarget.blur()
+    }
+  }
+
+  async function commitNote() {
+    const body = noteText.trim()
+    if (!body) return
+    const ok = await saveFields({ note: body })
+    if (!ok) return
+    setNoteText('')
+    if (noteRef.current) noteRef.current.style.height = '44px'
+    loadNotes().catch(() => {})
+  }
+
+  function onNoteKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      e.currentTarget.blur()
+    }
+  }
+
+  function startTitleEdit() {
+    setTitleEditing(true)
+  }
+
+  useEffect(() => {
+    if (!titleEditing) return
+    titleRef.current?.focus()
+    autoSizeTitle()
+  }, [titleEditing])
 
   // ── Commit path ───────────────────────────────────────────────────────────
   async function runCommit(): Promise<boolean> {
@@ -473,6 +566,27 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
   }
 
   async function handleDone() {
+    // A live item has already saved its fields. The check only marks it complete.
+    if (live) {
+      if (noteText.trim()) {
+        const noted = await saveFields({ note: noteText.trim() })
+        if (!noted) return
+        setNoteText('')
+      }
+      setSaving(true)
+      setError(null)
+      const { error: updateErr } = await supabase
+        .from('tasks')
+        .update({ status: 'complete', completed_at: new Date().toISOString() })
+        .eq('id', task.id)
+      setSaving(false)
+      if (updateErr) {
+        setError('Could not mark complete.')
+        return false
+      }
+      onCompleted(task)
+      return
+    }
     // 49a ruling: CONFIRM owns date. Checkmark does NOT commit a staged date.
     // Only title, note, and listType are committed by the checkmark.
     setSaving(true)
@@ -532,13 +646,40 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
     { label: 'Pick date', value: 'pick' },
   ]
 
-  function chipClick(value: string) {
+  async function chipClick(value: string) {
+    if (live) {
+      if (value === 'pick') {
+        setShowDatePicker(open => !open)
+        return
+      }
+      setShowDatePicker(false)
+      if (value === committedDue) return
+      const ok = await saveFields({ due: value })
+      if (ok) setCommittedDue(value)
+      return
+    }
     if (value === 'pick') {
       setPickerDate(stagedDate ?? task.due_date ?? today)
       setShowDatePicker(true)
       return
     }
     setStagedDate(prev => prev === value ? null : value)
+  }
+
+  async function pickCalendarDay(d: Date) {
+    const dateStr = d.toLocaleDateString('en-CA')
+    setShowDatePicker(false)
+    if (dateStr === committedDue) return
+    const ok = await saveFields({ due: dateStr })
+    if (ok) setCommittedDue(dateStr)
+  }
+
+  async function pickList(next: 'life' | 'entity') {
+    if (next === listType) return
+    const prev = listType
+    setListType(next)
+    const ok = await saveFields({ list: next })
+    if (!ok) setListType(prev)
   }
 
   // ── Enter edit mode ───────────────────────────────────────────────────────
@@ -575,12 +716,12 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
   }
 
   // ── Due display ───────────────────────────────────────────────────────────
-  const displayDate = stagedDate ?? task.due_date
-  const overdue = isOverdue(task.due_date)
+  const displayDate = live ? committedDue : (stagedDate ?? task.due_date)
+  const overdue = isOverdue(live ? committedDue : task.due_date)
 
   // ── Scrim click — D11.4 ruling 3 ─────────────────────────────────────────
   function handleScrimClick() {
-    if (isActive) return // inert when staged
+    if (!live && isActive) return // inert when a create/fill draft is staged
     onClose()
   }
 
@@ -642,6 +783,11 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                : mode === 'edit' ? 'BATTLE PLAN · EDIT'
                : <>BATTLE PLAN · <span style={{ color: overdue ? C.late : '#B8B8C0' }}>{overdue ? 'OVERDUE' : 'OPEN'}</span></>}
             </span>
+            {live && savedOn && (
+              <span style={{ marginLeft: 12, fontFamily: FONT_DISP, fontSize: 13, fontWeight: 600, color: C.moneyIn, letterSpacing: '0.02em' }}>
+                Saved ✓
+              </span>
+            )}
           </div>
 
           {/* Centre zone — DELETE asset, edit state only, and NOT in create mode (Check 41) or fill mode. */}
@@ -715,8 +861,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
           <div style={{
             flex: 1,
             minWidth: 0,
-            marginRight: 300,
-            padding: '16px 24px 16px',
+            padding: '16px 24px 20px',
             overflowY: 'auto',
             minHeight: 0,
             display: 'flex',
@@ -855,8 +1000,50 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
             {/* Normal task body — shown for fill='task' (or default) */}
             {fill === 'task' && <>
-            {/* Title — status kicker lives in the header */}
-            {mode === 'read' ? (
+            {/* Title — click to edit. Enter or blur saves, Esc reverts. */}
+            {live ? (
+              titleEditing ? (
+                <textarea
+                  ref={titleRef}
+                  data-modal-title="true"
+                  value={localTitle}
+                  onChange={e => { setLocalTitle(e.target.value); autoSizeTitle() }}
+                  onBlur={commitTitle}
+                  onKeyDown={onTitleKey}
+                  rows={1}
+                  style={{
+                    ...DS0,
+                    color: C.textHi,
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: `1px solid ${C.brand}`,
+                    borderRadius: 0,
+                    padding: '0 0 8px',
+                    resize: 'none',
+                    width: '100%',
+                    outline: 'none',
+                    lineHeight: 1.3,
+                    fontFamily: FONT_DISP,
+                    overflow: 'hidden',
+                  }}
+                />
+              ) : (
+                <div
+                  data-modal-title="true"
+                  onClick={startTitleEdit}
+                  style={{
+                    ...DS0,
+                    color: C.textHi,
+                    cursor: 'text',
+                    borderBottom: `1px solid ${BORDER}`,
+                    paddingBottom: 8,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {localTitle}
+                </div>
+              )
+            ) : mode === 'read' ? (
               <div
                 data-modal-title="true"
                 onClick={enterEdit}
@@ -924,7 +1111,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
                 <span style={LABEL}>DUE</span>
-                {stagedDate && task.due_date && stagedDate !== task.due_date ? (
+                {!live && stagedDate && task.due_date && stagedDate !== task.due_date ? (
                   <>
                     <span style={{ ...DS5, color: C.textLow, textDecoration: 'line-through' }}>
                       {formatDue(task.due_date)}
@@ -936,7 +1123,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                 ) : displayDate ? (
                   <span style={{
                     ...DS5,
-                    color: overdue && !stagedDate ? C.late : C.textMid,
+                    color: overdue && (live || !stagedDate) ? C.late : C.textMid,
                   }}>
                     {formatDue(displayDate)}
                   </span>
@@ -949,8 +1136,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', position: 'relative' }}>
                 {chips.map(chip => {
                   const preset = chip.value !== 'pick'
-                  const pickSelected = !preset && (showDatePicker || (!!stagedDate && stagedDate !== today && stagedDate !== tomorrow && stagedDate !== nextMon))
-                  const isStaged = (preset && stagedDate === chip.value) || pickSelected
+                  const activeDate = live ? committedDue : stagedDate
+                  const pickSelected = !preset && (showDatePicker || (!!activeDate && activeDate !== today && activeDate !== tomorrow && activeDate !== nextMon))
+                  const isStaged = (preset && activeDate === chip.value) || pickSelected
                   return (
                     <button
                       key={chip.label}
@@ -964,8 +1152,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                   )
                 })}
 
-                {/* Inline date picker (desktop — no CalendarPicker needed) */}
-                {showDatePicker && (
+                {/* Create/fill still uses the native field. A live item draws the calendar below. */}
+                {showDatePicker && !live && (
                   <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 8, zIndex: 10 }}>
                     <input
                       type="date"
@@ -990,13 +1178,20 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                   </div>
                 )}
               </div>
+              {live && showDatePicker && (
+                <CalendarPicker
+                  value={committedDue ? new Date(committedDue + 'T00:00:00') : null}
+                  onChange={pickCalendarDay}
+                  onDone={pickCalendarDay}
+                  onCancel={() => setShowDatePicker(false)}
+                />
+              )}
             </div>
 
-            {/* 5. LIST — value row in READ. Segmented control only in EDIT.
-                Empty reads as a closed select: muted placeholder plus a chevron. */}
+            {/* 5. LIST — a live item saves the segment on tap. */}
             <div>
               <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
-              {mode === 'read' ? (
+              {!live && mode === 'read' ? (
                 <div className={chrome.fieldStatic}>
                   <span style={{ ...DS5, color: listType ? C.textHi : C.textLow, textTransform: listType ? 'capitalize' : 'none' }}>
                     {listType === 'life' ? 'Life' : listType === 'entity' ? 'Entity' : 'No list'}
@@ -1004,7 +1199,6 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                   <ChevronIcon />
                 </div>
               ) : (
-                // EDIT: segmented control
                 <div style={{
                   display: 'flex',
                   background: C.bgRaise,
@@ -1012,7 +1206,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                   border: `1px solid ${BORDER}`,
                   padding: 4,
                   gap: 4,
-                  width: 'fit-content',
+                  width: live ? '100%' : 'fit-content',
                 }}>
                   {(['life', 'entity'] as const).map(lt => {
                     const isSelected = listType === lt
@@ -1020,8 +1214,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                       <button
                         key={lt}
                         type="button"
-                        onClick={() => setListType(prev => prev === lt ? committeListType : lt)}
+                        onClick={() => live ? pickList(lt) : setListType(prev => prev === lt ? committeListType : lt)}
                         style={{
+                          flex: live ? 1 : undefined,
                           height: 36,
                           padding: '0 16px',
                           borderRadius: 8,
@@ -1042,86 +1237,45 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               )}
             </div>
 
+            {live && (
+              <div>
+                <textarea
+                  ref={noteRef}
+                  className={`${chrome.textarea} ${chrome.noteGrow}`}
+                  value={noteText}
+                  onChange={e => { setNoteText(e.target.value); growNote() }}
+                  onBlur={commitNote}
+                  onKeyDown={onNoteKey}
+                  placeholder="Add a note…"
+                  rows={1}
+                  style={{ ...DS5, color: C.textHi }}
+                />
+                {notes.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+                    {notes.map(note => (
+                      <div key={note.id}>
+                        <div style={{ ...DT7, color: C.textLow, marginBottom: 4 } as React.CSSProperties}>
+                          {formatNoteDate(note.created_at)}
+                        </div>
+                        <div style={{ ...DS6, color: C.textLow, lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>
+                          {note.body}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* D11.2 item 6 — STRUCK. Delete is behind the edit wall.
                 Header slot in edit mode carries the DELETE asset. Read state has no path to destruction. */}
             </>}
           </div>
 
-          {/* ── RIGHT RAIL — pinned to the left column, so the note field
-              shares the LIST field's bottom edge. Out of flow so its
-              empty state cannot stretch the modal. ─────────────────────── */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: 300,
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: 0,
-            borderLeft: `1px solid ${BORDER}`,
-          }}>
-            {/* Rail header */}
-            <div style={{
-              flexShrink: 0,
-              padding: '16px 16px 8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderBottom: `1px solid ${BORDER}`,
-            }}>
-              <span style={LABEL}>NOTES</span>
-              <span style={LABEL}>{notes.length}</span>
-            </div>
-
-            {/* Log — scrolls independently. Empty state is centered in the column. */}
-            <div style={{
-              flex: 1,
-              overflowY: notes.length === 0 ? 'hidden' : 'auto',
-              minHeight: 0,
-              padding: notes.length === 0 ? 0 : 16,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
-            }}>
-              {notes.length === 0 ? (
-                <div className={chrome.notesEmpty}>
-                  <NotesEmptyIcon />
-                  <span style={{ ...DS6, color: C.textLow }}>No notes yet</span>
-                </div>
-              ) : notes.map((note, i) => (
-                <div key={note.id}>
-                  {i > 0 && <div style={{ height: 1, background: BORDER, marginBottom: 16 }} />}
-                  <div style={{ ...DT7, color: C.textLow, marginBottom: 8 } as React.CSSProperties}>
-                    {formatNoteDate(note.created_at)}
-                  </div>
-                  <div style={{ ...DS6, color: C.textMid, lineHeight: 1.5 }}>
-                    {note.body}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Composer — pinned at foot, always visible in READ state */}
-            <div style={{
-              flexShrink: 0,
-              padding: 16,
-              borderTop: `1px solid ${BORDER}`,
-            }}>
-              <div style={{ ...LABEL, marginBottom: 8 }}>ADD A NOTE</div>
-              <textarea
-                ref={noteRef}
-                className={chrome.textarea}
-                value={noteText}
-                onChange={e => setNoteText(e.target.value)}
-                placeholder="Type a note…"
-                style={DS2}
-              />
-            </div>
-          </div>
         </div>
 
-        {/* ── FOOTER ───────────────────────────────────────────────────────── */}
+        {/* Footer stays for create and fill. A live item saves itself and has no bar. */}
+        {!live && (
         <div style={{
           flexShrink: 0,
           display: 'flex',
@@ -1171,6 +1325,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* ── Discard guard ────────────────────────────────────────────────── */}

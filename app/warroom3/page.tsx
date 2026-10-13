@@ -732,7 +732,7 @@ function HomeScreen({
       <TaskDetailSheet
         open={taskDetailOpen}
         task={selectedDetailTask}
-        onClose={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}
+        onClose={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false); setBpRefreshKey(k => k + 1) }}
         onCompleted={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false); setBpRefreshKey(k => k + 1) }}
         onSaved={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false); setBpRefreshKey(k => k + 1) }}
         onDeleted={() => { setTaskDetailOpen(false); setSelectedDetailTask(null); onTaskDetailOpenChange?.(false) }}

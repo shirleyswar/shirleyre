@@ -11,7 +11,6 @@ import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import CalendarPicker from '@/components/warroom3/CalendarPicker'
-import { isTaskStaged } from '@/lib/taskStagingPredicate'
 import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
 import chrome from '@/components/warroom/taskItemChrome.module.css'
 
@@ -76,24 +75,6 @@ const LABEL: React.CSSProperties = {
   letterSpacing: '0.14em',
   fontWeight: 600,
   color: T.textLow,
-}
-
-function ChevronIcon() {
-  return (
-    <svg className={chrome.chevron} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M4 6.2 L8 10.2 L12 6.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  )
-}
-
-function NotesEmptyIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M7 3.5h7.2L19 8.2V19.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z"/>
-      <path d="M14 3.5V8.2H19"/>
-      <path d="M9 13h6M9 16.5h4"/>
-    </svg>
-  )
 }
 
 // ── Interfaces ──────────────────────────────────────────────────────────────
@@ -192,17 +173,23 @@ export default function TaskDetailSheet({
   const [showCalendar, setShowCalendar] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [localTitle, setLocalTitle] = useState('')
-  const [listType, setListType] = useState<'life' | 'entity'>('life')
+  const [listType, setListType] = useState<'life' | 'entity' | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notes, setNotes] = useState<TaskNote[]>([])
   const [notesLoading, setNotesLoading] = useState(false)
   const [showDiscardGuard, setShowDiscardGuard] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [titleEditing, setTitleEditing] = useState(false)
+  const [committedDue, setCommittedDue] = useState<string | null>(null)
+  const [savedOn, setSavedOn] = useState(false)
 
   const titleRef = useRef<HTMLTextAreaElement>(null)
+  const noteRef = useRef<HTMLTextAreaElement>(null)
   const deleteRef = useRef<HTMLButtonElement>(null)
   const origTitle = useRef('')
+  const titleCancelRef = useRef(false)
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Reset when sheet opens on a new task
   useEffect(() => {
@@ -214,11 +201,14 @@ export default function TaskDetailSheet({
       setNoteText('')
       setLocalTitle(task.title)
       origTitle.current = task.title
-      setListType(task.is_life ? 'life' : 'entity')
+      setListType(task.is_life ? 'life' : task.is_entity ? 'entity' : null)
       setSaving(false)
       setError(null)
       setShowDiscardGuard(false)
       setShowDeleteConfirm(false)
+      setTitleEditing(false)
+      setCommittedDue(task.due_date)
+      setSavedOn(false)
       // Load notes
       setNotesLoading(true)
       supabase
@@ -233,13 +223,13 @@ export default function TaskDetailSheet({
     }
   }, [open, task?.id])
 
-  // Auto-focus + auto-size title field on edit mode
+  // Focus the title once it mounts as a field.
   useEffect(() => {
-    if (mode === 'edit' && titleRef.current) {
+    if (titleEditing && titleRef.current) {
       titleRef.current.focus()
       autoSizeTitle()
     }
-  }, [mode])
+  }, [titleEditing])
 
   // Auto-size title textarea — eliminates the ~90px dead band.
   // rows={3} at 23px/1.3 lineHeight ≈ 90px for a one-liner. Set height to scrollHeight
@@ -251,6 +241,19 @@ export default function TaskDetailSheet({
     el.style.height = el.scrollHeight + 'px'
   }
 
+  function growNote() {
+    const el = noteRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px'
+  }
+
+  function flashSaved() {
+    setSavedOn(true)
+    if (savedTimer.current) clearTimeout(savedTimer.current)
+    savedTimer.current = setTimeout(() => setSavedOn(false), 1600)
+  }
+
   // visualViewport listener removed — footer is now flex:none inside BottomSheet,
   // so it naturally tracks the visual bottom of the sheet without needing keyboard offset.
 
@@ -258,18 +261,103 @@ export default function TaskDetailSheet({
 
   const today = todayCST()
   const currentDue = task.due_date
-  const displayedDue = stagedDate ?? currentDue
-  const overdue = isOverdue(currentDue)
+  const displayedDue = committedDue ?? currentDue
+  const overdue = isOverdue(displayedDue)
   const titleEdited = localTitle !== origTitle.current
 
-  // §18.4 guard
-  function handleDismiss() {
-    const hasTyped = mode === 'edit' && (titleEdited || noteText.trim().length > 0)
-    if (hasTyped) {
-      setShowDiscardGuard(true)
-    } else {
-      resetAndClose()
+  // Same RPC CONFIRM used. Null fields are left alone by the deployed COALESCE.
+  async function saveFields(fields: { due?: string, list?: 'life' | 'entity', note?: string, title?: string }): Promise<boolean> {
+    if (!task) return false
+    setSaving(true)
+    setError(null)
+    const { error: rpcErr } = await (supabase as any).rpc('commit_task_sheet', {
+      p_task_id: task.id,
+      p_due_date: fields.due ?? null,
+      p_list_type: fields.list ?? null,
+      p_note_body: fields.note ?? null,
+      p_title: fields.title ?? null,
+    })
+    setSaving(false)
+    if (rpcErr) {
+      setError(rpcErr.message || 'Save failed — nothing was lost')
+      return false
     }
+    flashSaved()
+    return true
+  }
+
+  async function commitTitle(): Promise<boolean> {
+    if (titleCancelRef.current) {
+      titleCancelRef.current = false
+      setTitleEditing(false)
+      return true
+    }
+    const next = localTitle.trim()
+    if (!next || next === origTitle.current) {
+      setLocalTitle(origTitle.current)
+      setTitleEditing(false)
+      return true
+    }
+    const ok = await saveFields({ title: next })
+    if (!ok) return false
+    origTitle.current = next
+    setLocalTitle(next)
+    setTitleEditing(false)
+    return true
+  }
+
+  async function commitNote(): Promise<boolean> {
+    const body = noteText.trim()
+    if (!body || !task) return true
+    const ok = await saveFields({ note: body })
+    if (!ok) return false
+    setNoteText('')
+    if (noteRef.current) noteRef.current.style.height = '44px'
+    const { data } = await supabase
+      .from('task_note')
+      .select('id, task_id, body, created_at')
+      .eq('task_id', task.id)
+      .order('created_at', { ascending: false })
+    setNotes((data as TaskNote[]) ?? [])
+    return true
+  }
+
+  function onTitleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+      titleCancelRef.current = true
+      setLocalTitle(origTitle.current)
+      setTitleEditing(false)
+      return
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      e.currentTarget.blur()
+    }
+  }
+
+  function onNoteKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      e.currentTarget.blur()
+    }
+  }
+
+  function startTitleEdit() {
+    setTitleEditing(true)
+  }
+
+  async function handleDismiss() {
+    if (noteText.trim()) {
+      const ok = await commitNote()
+      if (!ok) return
+    }
+    if (titleEditing) {
+      const ok = await commitTitle()
+      if (!ok) return
+    }
+    resetAndClose()
   }
 
   function resetAndClose() {
@@ -287,7 +375,11 @@ export default function TaskDetailSheet({
   // Item 8 ruling: checkmark only fires when isActive === false (sheet untouched).
   // Nothing is staged — no RPC call needed. One write: mark status complete.
   async function handleComplete() {
-    if (!task || isActive) return false  // isActive guard: disabled checkmark produces no action
+    if (!task || saving) return false
+    if (noteText.trim()) {
+      const noted = await commitNote()
+      if (!noted) return false
+    }
     setSaving(true)
     setError(null)
     const { error: completeErr } = await supabase
@@ -308,7 +400,7 @@ export default function TaskDetailSheet({
   async function handleConfirm() {
     if (!task) return
     // Guard: only proceed if the shared predicate says something is staged
-    if (!isActive) return
+    if (!task) return
 
     setSaving(true)
     setError(null)
@@ -355,27 +447,41 @@ export default function TaskDetailSheet({
     resetAndClose()
   }
 
-  function handleChipTap(chip: 'today' | 'tomorrow' | 'nextmon' | 'pick') {
+  async function handleChipTap(chip: 'today' | 'tomorrow' | 'nextmon' | 'pick') {
     if (chip === 'pick') {
-      setStagedChip('pick')
-      setShowCalendar(true)
+      setShowCalendar(open => !open)
       return
     }
-    // 49a item 6 — non-pick chip hides calendar immediately
     setShowCalendar(false)
-    setStagedChip(chip)
-    if (chip === 'today') setStagedDate(today)
-    else if (chip === 'tomorrow') setStagedDate(addDays(1))
-    else if (chip === 'nextmon') setStagedDate(getNextMonday())
+    const next = chip === 'today' ? today : chip === 'tomorrow' ? addDays(1) : getNextMonday()
+    if (next === (committedDue ?? currentDue)) return
+    const ok = await saveFields({ due: next })
+    if (ok) setCommittedDue(next)
+  }
+
+  async function pickCalendarDay(d: Date) {
+    const dateStr = d.toLocaleDateString('en-CA')
+    setShowCalendar(false)
+    if (dateStr === (committedDue ?? currentDue)) return
+    const ok = await saveFields({ due: dateStr })
+    if (ok) setCommittedDue(dateStr)
+  }
+
+  async function pickList(next: 'life' | 'entity') {
+    if (next === listType) return
+    const prev = listType
+    setListType(next)
+    const ok = await saveFields({ list: next })
+    if (!ok) setListType(prev)
   }
 
   // Status word — moved into the header kicker. Red is applied only when overdue.
   let eyebrowText = 'LATER'
-  if (currentDue) {
+  if (displayedDue) {
     if (overdue) {
-      const n = daysOverdue(currentDue)
+      const n = daysOverdue(displayedDue)
       eyebrowText = `${n === 0 ? '0' : n} DAY${n === 1 ? '' : 'S'} LATE`
-    } else if (currentDue === today) {
+    } else if (displayedDue === today) {
       eyebrowText = 'TODAY'
     }
   }
@@ -384,56 +490,16 @@ export default function TaskDetailSheet({
   const committedListType: 'life' | 'entity' | null = task
     ? (task.is_life ? 'life' : task.is_entity ? 'entity' : null)
     : null
-  const isActive = task ? isTaskStaged({
-    stagedDate,
-    committedDate:    task.due_date,
-    noteText,
-    titleEdited,
-    listType:         mode === 'edit' ? listType : committedListType,
-    committedListType,
-  }) : false
-
-  // ── Header action — terminal action for the current mode.
+  // ── Header action — the checkmark stays. Fields save themselves.
   // READ  → DONE caption + checkmark (completion)
   // EDIT  → DELETE asset slot (104×44, right-aligned at 18px gutter)
   // One slot, one action, never both.
-  const headerAction = mode === 'read' ? (
-    // Item 8: checkmark mirrors CONFIRM — live when nothing staged, disabled when staged.
-    // Item 11: accessible name "Mark complete" in both states; aria-disabled when grey.
-    // PROVISIONAL: grey state uses opacity+filter desaturation per operator-authorised
-    // treatment 26 Aug — pending Design's inactive asset.
+  const headerAction = (
     <MarkCompleteButton
       onClick={handleComplete}
-      disabled={isActive || saving}
+      disabled={saving}
       hitSize={44}
-      style={{
-        opacity: isActive ? 0.35 : 1,
-        filter: isActive ? 'saturate(0)' : 'none',
-      }}
     />
-  ) : (
-    // DELETE — 104×44 slot, right-aligned at the 18px gutter.
-    // Asset names itself in its pixels — no caption.
-    // Triggers the existing confirmation dialog (unchanged).
-    <div style={{ width: 104, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-      <button
-        ref={deleteRef}
-        onClick={() => setShowDeleteConfirm(true)}
-        style={{
-          background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
-          display: 'flex', alignItems: 'center',
-          WebkitTapHighlightColor: 'transparent' as const,
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/assets/delete/delete-h76.png"
-          alt="Delete"
-          height={21}
-          style={{ height: 21, width: 'auto', display: 'block' }}
-        />
-      </button>
-    </div>
   )
 
   // List name in read mode
@@ -447,72 +513,16 @@ export default function TaskDetailSheet({
 
   const dealAddr = task.deals ? formatAddress(task.deals as any) : null
 
-  // Footer — rendered flex:none inside BottomSheet (no position:fixed).
-  // Sheet is a flex column: header / scroll body / footer.
-  // This eliminates the iOS visual-viewport mispositioning bug.
-  const footerEl = (
-    <div style={{
-      boxSizing: 'border-box',
-      height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
-      padding: '0 16px',
-      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 16,
-      borderTop: `1px solid ${T.borderDefault}`,
-      background: T.bgPanel,
-    }}>
-      <button
-        type="button"
-        className={chrome.editHit}
-        aria-label={mode === 'read' ? 'Edit' : 'Cancel'}
-        onClick={() => {
-          if (mode === 'read') {
-            setMode('edit')
-          } else {
-            const hasTyped = titleEdited || noteText.trim().length > 0
-            if (hasTyped) {
-              setShowDiscardGuard(true)
-            } else {
-              setStagedDate(null)
-              setStagedChip(null)
-              setNoteText('')
-              setLocalTitle(task?.title ?? '')
-              setMode('read')
-            }
-          }
-        }}
-      >
-        <span>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span>
-      </button>
 
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-        <button
-          type="button"
-          className={chrome.confirmHit}
-          onClick={handleConfirm}
-          disabled={!isActive || saving}
-          aria-disabled={!isActive || saving}
-        >
-          <span className={isActive ? chrome.confirmOn : chrome.confirmOff} style={{ opacity: saving ? 0.6 : 1 }}>
-            {saving ? 'SAVING…' : 'CONFIRM'}
-          </span>
-        </button>
-      </div>
-    </div>
-  )
-
-  const statusWord = mode === 'edit'
-    ? 'EDIT'
-    : eyebrowText.replace(/^●\s*/, '')
-  const statusColor = mode !== 'edit' && overdue ? T.late : '#B8B8C0'
+  const statusWord = eyebrowText.replace(/^●\s*/, '')
+  const statusColor = overdue ? T.late : '#B8B8C0'
 
   return (
     <>
       <BottomSheet
         open={open}
         onClose={handleDismiss}
-        label={<>BATTLE PLAN · <span style={{ color: statusColor }}>{statusWord}</span></>}
+        label={<>BATTLE PLAN · <span style={{ color: statusColor }}>{statusWord}</span>{savedOn && <span style={{ marginLeft: 10, color: T.moneyIn, letterSpacing: '0.02em', textTransform: 'none' }}>Saved ✓</span>}</>}
         labelStyle={{ color: '#B8B8C0', fontSize: 13, fontWeight: 600, letterSpacing: '0.12em' }}
         headerHeight={56}
         noHairline
@@ -520,7 +530,6 @@ export default function TaskDetailSheet({
         size="full"
         headerAction={headerAction}
         scrollPaddingBottom={16}
-        footer={footerEl}
       >
         {/* §18.7 Error banner */}
         {error && (
@@ -538,7 +547,7 @@ export default function TaskDetailSheet({
             <div style={{ fontFamily: FONT_DISPLAY, fontSize: 12, color: T.textMid }}>Nothing was lost.</div>
             <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
               <button
-                onClick={() => { setError(null); handleConfirm() }}
+                onClick={() => setError(null)}
                 style={{ flex: 1, height: 36, borderRadius: 8, background: T.late, color: T.textInvert, fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}
               >Try again</button>
               <button
@@ -551,213 +560,151 @@ export default function TaskDetailSheet({
 
         <div style={{ padding: '0 16px' }}>
 
-          {/* READ MODE */}
-          {mode === 'read' && (
-            <>
-              {/* 1. Title — D3, not a field. Status kicker lives in the header. */}
-              <div style={{
+          {titleEditing ? (
+            <textarea
+              ref={titleRef}
+              value={localTitle}
+              onChange={e => { setLocalTitle(e.target.value); autoSizeTitle() }}
+              onBlur={() => { commitTitle() }}
+              onKeyDown={onTitleKey}
+              rows={1}
+              style={{
+                ...styleD3,
+                background: 'transparent',
+                border: 'none',
+                borderBottom: `1px solid ${T.brand}`,
+                outline: 'none',
+                resize: 'none',
+                width: '100%',
+                padding: 0,
+                paddingBottom: 8,
+                marginBottom: 12,
+                overflow: 'hidden',
+                boxSizing: 'border-box',
+              }}
+            />
+          ) : (
+            <div
+              onClick={startTitleEdit}
+              style={{
                 ...styleD3,
                 marginBottom: 12,
                 textWrap: 'pretty',
-              } as React.CSSProperties}>
-                {task.title}
-              </div>
-
-              {/* 3. LIST */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
-                <div className={chrome.fieldStatic}>
-                  <span style={{ ...styleT3, color: listName === '—' ? T.textLow : T.textHi }}>
-                    {listName === '—' ? 'No list' : listName}
-                  </span>
-                  <ChevronIcon />
-                </div>
-              </div>
-
-              {/* 4. DEAL card */}
-              {task.deal_id && (
-                <div style={{
-                  background: T.bgRaise, borderRadius: 8, padding: '8px 16px', marginBottom: 12,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  border: `1px solid ${T.borderDefault}`,
-                  gap: 8,
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ ...LABEL, marginBottom: 8 }}>DEAL</div>
-                    <div style={styleT3}>{dealAddr || task.deals?.name || '—'}</div>
-                  </div>
-                  <button type="button" style={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    background: 'rgba(139,92,246,0.13)',
-                    border: '1px solid rgba(139,92,246,0.28)',
-                    color: T.brandLift,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', fontSize: 15, flexShrink: 0,
-                  }}>↗</button>
-                </div>
-              )}
-
-              {/* 5. DUE section — date sits beside the label. Red only for overdue. */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                  <span style={LABEL}>DUE</span>
-                  {stagedDate && currentDue && stagedDate !== currentDue && (
-                    <span style={{ ...styleT3, color: T.textLow, textDecoration: 'line-through' }}>
-                      {formatDueDisplay(currentDue)}
-                    </span>
-                  )}
-                  <span style={{ ...styleT3, color: stagedDate ? T.brandLift : (overdue ? T.late : T.textMid) }}>
-                    {displayedDue ? formatDueDisplay(displayedDue) : 'No due date'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {(['today', 'tomorrow', 'nextmon', 'pick'] as const).map(chip => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => handleChipTap(chip)}
-                      className={stagedChip === chip ? `${chrome.chip} ${chrome.chipOn}` : chrome.chip}
-                      style={{ fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 500 }}
-                    >
-                      {chip === 'today' ? 'Today' : chip === 'tomorrow' ? 'Tomorrow' : chip === 'nextmon' ? 'Next Mon' : 'Pick date'}
-                    </button>
-                  ))}
-                </div>
-                {showCalendar && (
-                  <div style={{ marginTop: 12 }}>
-                    <CalendarPicker
-                      value={displayedDue ? new Date(displayedDue + 'T00:00:00') : null}
-                      onChange={(d: Date) => {
-                        // 49a item 5 — day tap immediately stages date so CONFIRM lights up
-                        setStagedDate(d.toLocaleDateString('en-CA'))
-                        setStagedChip('pick')
-                      }}
-                      onDone={(d: Date) => {
-                        const dateStr = d.toLocaleDateString('en-CA')
-                        setStagedDate(dateStr)
-                        setStagedChip('pick')
-                        setShowCalendar(false)
-                      }}
-                      onCancel={() => {
-                        setShowCalendar(false)
-                        setStagedChip(null)
-                      }}
-                    />
-                  </div>
-                )}
-                {/* 80px spacer removed — introduced against rejected test target, removed per item 10 */}
-              </div>
-
-              {/* 6. NOTES section */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={LABEL}>NOTES</span>
-                  <span style={LABEL}>{notes.length}</span>
-                </div>
-                {notesLoading ? (
-                  <div style={{ height: 40, background: T.bgRaise, borderRadius: 8, opacity: 0.5 }} />
-                ) : notes.length === 0 ? (
-                  <div className={chrome.notesEmpty}>
-                    <NotesEmptyIcon />
-                    <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textLow }}>No notes yet</span>
-                  </div>
-                ) : (
-                  <div>
-                    {notes.map((note, i) => (
-                      <div key={note.id}>
-                        {i > 0 && <div style={{ height: 1, background: T.borderDefault, margin: '10px 0' }} />}
-                        <div style={{ ...styleT2, color: T.textLow, marginBottom: 4 }}>{formatNoteDate(note.created_at)}</div>
-                        <div style={{ ...styleT4 }}>{note.body}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* 6b. ADD A NOTE composer — in read state (ruling 8.18.26: composer moves here so checkmark + CONFIRM can carry note) */}
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ ...LABEL, marginBottom: 8 }}>ADD A NOTE</div>
-                <textarea
-                  className={chrome.textarea}
-                  value={noteText}
-                  onChange={e => setNoteText(e.target.value)}
-                  placeholder="Type a note…"
-                  style={{ fontSize: 16 }}
-                  rows={3}
-                />
-              </div>
-
-              {/* §13.2 item 8 delete row — REMOVED. Delete is behind the edit wall.
-                  Header slot in edit mode carries the DELETE asset. Read state has no path to destruction. */}
-            </>
+                cursor: 'text',
+                borderBottom: `1px solid ${T.borderDefault}`,
+                paddingBottom: 8,
+              } as React.CSSProperties}
+            >
+              {localTitle || task.title}
+            </div>
           )}
 
-          {/* EDIT MODE */}
-          {mode === 'edit' && (
-            <>
-              {/* Title field — auto-focused, auto-sized to eliminate ~90px dead band */}
-              <textarea
-                ref={titleRef}
-                value={localTitle}
-                onChange={e => { setLocalTitle(e.target.value); autoSizeTitle() }}
-                rows={1}
-                style={{
-                  fontFamily: FONT_DISPLAY,
-                  fontSize: 23,
-                  fontWeight: 500,
-                  color: T.textHi,
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  resize: 'none',
-                  width: '100%',
-                  padding: 0,
-                  borderBottom: `1px solid ${T.borderDefault}`,
-                  paddingBottom: 8,
-                  marginBottom: 12,
-                  lineHeight: 1.3,
-                  boxSizing: 'border-box',
-                  overflow: 'hidden',
-                }}
-              />
+          {task.deal_id && (
+            <div style={{
+              background: T.bgRaise, borderRadius: 8, padding: '8px 16px', marginBottom: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              border: `1px solid ${T.borderDefault}`,
+              gap: 8,
+            }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ ...LABEL, marginBottom: 8 }}>DEAL</div>
+                <div style={styleT3}>{dealAddr || task.deals?.name || '—'}</div>
+              </div>
+              <button type="button" style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: 'rgba(139,92,246,0.13)',
+                border: '1px solid rgba(139,92,246,0.28)',
+                color: T.brandLift,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', fontSize: 15, flexShrink: 0,
+              }}>↗</button>
+            </div>
+          )}
 
-              {/* ADD A NOTE */}
-              <div style={{ ...LABEL, marginBottom: 8 }}>ADD A NOTE</div>
-              <textarea
-                className={chrome.textarea}
-                value={noteText}
-                onChange={e => setNoteText(e.target.value)}
-                placeholder="Type a note…"
-                style={{ fontSize: 16, marginBottom: 12 }}
-                rows={3}
-              />
-
-              {/* LIST segmented control */}
-              <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
-              <div style={{
-                display: 'flex', padding: 4, borderRadius: 8, gap: 4,
-                background: T.bgRaise, border: `1px solid ${T.borderDefault}`, marginBottom: 12,
-              }}>
-                {(['life', 'entity'] as const).map(seg => (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              <span style={LABEL}>DUE</span>
+              <span style={{ ...styleT3, color: displayedDue ? (overdue ? T.late : T.textMid) : T.textLow }}>
+                {displayedDue ? formatDueDisplay(displayedDue) : 'No due date'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {(['today', 'tomorrow', 'nextmon', 'pick'] as const).map(chip => {
+                const chipDate = chip === 'today' ? today : chip === 'tomorrow' ? addDays(1) : chip === 'nextmon' ? getNextMonday() : null
+                const on = chip === 'pick'
+                  ? (showCalendar || (!!displayedDue && displayedDue !== today && displayedDue !== addDays(1) && displayedDue !== getNextMonday()))
+                  : displayedDue === chipDate
+                return (
                   <button
-                    key={seg}
+                    key={chip}
                     type="button"
-                    onClick={() => setListType(seg)}
-                    style={{
-                      flex: 1, height: 36, padding: '0 8px', borderRadius: 8, cursor: 'pointer',
-                      fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 500,
-                      border: 'none',
-                      background: listType === seg ? 'rgba(124,58,237,0.22)' : 'transparent',
-                      boxShadow: listType === seg ? 'inset 0 0 0 1px #8B5CF6' : 'none',
-                      color: listType === seg ? T.textHi : T.textMid,
-                    }}
+                    onClick={() => handleChipTap(chip)}
+                    className={on ? `${chrome.chip} ${chrome.chipOn}` : chrome.chip}
+                    style={{ fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 500 }}
                   >
-                    {seg === 'life' ? 'Life' : 'Entity'}
+                    {chip === 'today' ? 'Today' : chip === 'tomorrow' ? 'Tomorrow' : chip === 'nextmon' ? 'Next Mon' : 'Pick date'}
                   </button>
-                ))}
-              </div>
-            </>
+                )
+              })}
+            </div>
+            {showCalendar && (
+              <CalendarPicker
+                value={displayedDue ? new Date(displayedDue + 'T00:00:00') : null}
+                onChange={pickCalendarDay}
+                onDone={pickCalendarDay}
+                onCancel={() => setShowCalendar(false)}
+              />
+            )}
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
+            <div style={{
+              display: 'flex', padding: 4, borderRadius: 8, gap: 4,
+              background: T.bgRaise, border: `1px solid ${T.borderDefault}`,
+            }}>
+              {(['life', 'entity'] as const).map(seg => (
+                <button
+                  key={seg}
+                  type="button"
+                  onClick={() => pickList(seg)}
+                  style={{
+                    flex: 1, height: 36, padding: '0 8px', borderRadius: 8, cursor: 'pointer',
+                    fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 500,
+                    border: 'none',
+                    background: listType === seg ? 'rgba(124,58,237,0.22)' : 'transparent',
+                    boxShadow: listType === seg ? 'inset 0 0 0 1px #8B5CF6' : 'none',
+                    color: listType === seg ? T.textHi : T.textMid,
+                  }}
+                >
+                  {seg === 'life' ? 'Life' : 'Entity'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <textarea
+            ref={noteRef}
+            className={`${chrome.textarea} ${chrome.noteGrow}`}
+            value={noteText}
+            onChange={e => { setNoteText(e.target.value); growNote() }}
+            onBlur={() => { commitNote() }}
+            onKeyDown={onNoteKey}
+            placeholder="Add a note…"
+            rows={1}
+            style={{ fontSize: 16 }}
+          />
+          {notes.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+              {notes.map(note => (
+                <div key={note.id}>
+                  <div style={{ ...styleT2, color: T.textLow, marginBottom: 4 }}>{formatNoteDate(note.created_at)}</div>
+                  <div style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textLow, lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>{note.body}</div>
+                </div>
+              ))}
+            </div>
           )}
+
         </div>
       </BottomSheet>
 
