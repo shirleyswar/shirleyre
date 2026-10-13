@@ -374,6 +374,7 @@ LACDB ids on deals that are not listings were not tagged:
 ## REVIEW
 
 - **7eb337d8** 619 Jefferson Hwy — address ambiguous: Bob Belk · Jefferson Hwy. 619, Suite 2-G · active · active_listing; Bob Belk · Jefferson Hwy. 619, Suite 1-D · active · active_listing
+- Resolved 13 Oct 2026, after this dry run: the listing is Suite 2H. The Suite 2-G row is that suite. Suite 1-D is leased and is not written. The write is in `docs/lacdb-sync-applied.md`.
 
 ## Not active on the feed
 

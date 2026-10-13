@@ -8,8 +8,11 @@
  *
  * Default is --dry-run. Reads are HTTP GET.
  * --apply is a one-time write of the CREATE and UPDATE plan. It does not
- * schedule a pull, and it does not touch REVIEW or Off-LACDB rows.
+ * schedule a pull, and it does not touch Off-LACDB rows.
  * It writes a JSON pre-image of the update targets before any PATCH or POST.
+ * --apply-jefferson is the later decision for 619 Jefferson (7eb337d8):
+ * the Bob Belk row labeled Suite 2-G is Suite 2H, and Suite 1-D is leased
+ * and is not written. It appends that pre-image to the same backup.
  *
  * Match order:
  *   1. LACDB id already stored on the deal (deal_source "lacdb:<id>" or lacdb_url)
@@ -37,6 +40,11 @@ const EXPECT_UPDATE_NAMES = [
   'Hank Saurage', 'Charles Cooper', 'Food Bank', 'The Annex', 'Windy Gladney',
 ]
 const SKIP_REVIEW_TID = '7eb337d8'
+const JEFFERSON_2G_ID = 'b490c629-363b-41da-a63c-bb28e1c3a061'
+const JEFFERSON_1D_ID = '5acf7068-4117-4840-9811-f046390fbef9'
+const SUITE_2G = 'Suite 2-G'
+const SUITE_2H = 'Suite 2H'
+const SUITE_1D = 'Suite 1-D'
 
 const UPDATE_DEAL_ALLOW = new Set([
   'lacdb_url', 'photo_url', 'acreage', 'addr_number', 'addr_display', 'address',
@@ -102,13 +110,14 @@ const PROTECTED = [
 
 function parseArgs(argv) {
   const out = {
-    dryRun: true, apply: false, feed: DEFAULT_FEED, out: DEFAULT_OUT,
+    dryRun: true, apply: false, applyJefferson: false, feed: DEFAULT_FEED, out: DEFAULT_OUT,
     backup: DEFAULT_BACKUP, applied: DEFAULT_APPLIED, selfTestOnly: false,
   }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--dry-run') out.dryRun = true
     else if (a === '--apply') out.apply = true
+    else if (a === '--apply-jefferson') out.applyJefferson = true
     else if (a === '--self-test') out.selfTestOnly = true
     else if (a === '--feed') out.feed = resolve(argv[++i])
     else if (a === '--out') out.out = resolve(argv[++i])
@@ -1148,6 +1157,55 @@ function selfTest() {
   if (!denied) throw new Error('notes were allowed onto an update')
   const stripped = omitEmpty({ a: 1, b: null, c: '' })
   if (stripped.b !== undefined || stripped.c !== undefined || stripped.a !== 1) throw new Error('omitEmpty')
+  const jefferson = JSON.parse(readFileSync(resolve(ROOT, 'public/agents/listings/7eb337d8.json'), 'utf8'))
+  const mapped = mapListing(jefferson, new Set(['619']))
+  if (mapped.tid !== SKIP_REVIEW_TID) throw new Error('jefferson tid')
+  if (mapped.leaseRate !== 13.59 || mapped.leaseSf !== 1766) throw new Error('jefferson available space')
+  if (mapped.asking != null) throw new Error('jefferson asking should be empty')
+  const leasedSpaces = (jefferson.lease_spaces || []).filter(s => s.status === 'leased')
+  if (leasedSpaces.length !== 1 || leasedSpaces[0].available_sf_max !== 1667) throw new Error('jefferson leased space')
+  const patch = jeffersonDealPatch({
+    name: 'Bob Belk',
+    status: 'active',
+    type: 'active_listing',
+    notes: 'keep',
+    dropbox_link: 'keep',
+    deal_source: null,
+    lacdb_url: null,
+    photo_url: null,
+    acreage: null,
+    addr_state: null,
+    addr_zip: null,
+    addr_display: 'Jefferson Hwy. 619, Suite 2-G',
+    address: '619 Jefferson Hwy. Suite 2-G',
+  }, mapped)
+  if (patch.addr_display !== 'Jefferson Hwy. 619, Suite 2H') throw new Error('display suite ' + patch.addr_display)
+  if (patch.address !== '619 Jefferson Hwy. Suite 2H') throw new Error('address suite ' + patch.address)
+  if (patch.name || patch.status || patch.type || patch.notes || patch.dropbox_link || patch.deal_source) {
+    throw new Error('jefferson patch included a protected column')
+  }
+  if (!String(patch.lacdb_url).includes(SKIP_REVIEW_TID)) throw new Error('jefferson url')
+  if (!patch.photo_url) throw new Error('jefferson photo')
+  if (patch.addr_state !== 'LA' || patch.addr_zip !== '70806') throw new Error('jefferson state zip')
+  if (replaceSuiteLabel('Jefferson Hwy. 619, Suite 1-D') !== 'Jefferson Hwy. 619, Suite 1-D') {
+    throw new Error('suite 1-D label changed')
+  }
+  const econ = jeffersonEconPatch(null, mapped)
+  if (econ.transaction_type !== 'lease' || econ.lease_rate_psf !== 13.59 || econ.sqft !== 1766) {
+    throw new Error('jefferson economics ' + JSON.stringify(econ))
+  }
+  if ('sale_commission_pct' in econ || 'lease_commission_pct' in econ || 'asking_price' in econ) {
+    throw new Error('jefferson economics invented a price or commission')
+  }
+  const filled = jeffersonDealPatch({
+    lacdb_url: mapped.url,
+    photo_url: mapped.photo,
+    addr_state: 'LA',
+    addr_zip: '70806',
+    addr_display: 'Jefferson Hwy. 619, Suite 2H',
+    address: '619 Jefferson Hwy. Suite 2H',
+  }, mapped)
+  if (Object.keys(filled).length) throw new Error('filled jefferson deal was patched again')
 }
 
 function omitEmpty(obj) {
@@ -1165,6 +1223,40 @@ function assertAllow(patch, allow, label) {
       throw new Error(`${label} field ${key} is not allowed`)
     }
   }
+}
+
+function replaceSuiteLabel(value) {
+  if (value == null || value === '') return value
+  const text = String(value)
+  if (!text.includes(SUITE_2G)) return value
+  return text.split(SUITE_2G).join(SUITE_2H)
+}
+
+function jeffersonDealPatch(deal, mapped) {
+  const patch = {}
+  if (!deal.lacdb_url && mapped.url) patch.lacdb_url = mapped.url
+  if (!deal.photo_url && mapped.photo) patch.photo_url = mapped.photo
+  if ((deal.acreage == null || deal.acreage === '') && mapped.acres != null) patch.acreage = mapped.acres
+  if (!deal.addr_state && mapped.state) patch.addr_state = mapped.state
+  if (!deal.addr_zip && mapped.zip) patch.addr_zip = mapped.zip
+  const display = replaceSuiteLabel(deal.addr_display)
+  if (display !== deal.addr_display) patch.addr_display = display
+  const address = replaceSuiteLabel(deal.address)
+  if (address !== deal.address) patch.address = address
+  assertAllow(patch, UPDATE_DEAL_ALLOW, 'jefferson deal')
+  return patch
+}
+
+function jeffersonEconPatch(econ, mapped) {
+  const cur = econ || {}
+  const patch = {}
+  if ((cur.lease_rate_psf == null || cur.lease_rate_psf === '') && mapped.leaseRate != null) {
+    patch.lease_rate_psf = mapped.leaseRate
+  }
+  if ((cur.sqft == null || cur.sqft === '') && mapped.leaseSf != null) patch.sqft = mapped.leaseSf
+  if (!cur.transaction_type && mapped.leaseRate != null) patch.transaction_type = 'lease'
+  assertAllow(patch, UPDATE_ECON_ALLOW, 'jefferson economics')
+  return patch
 }
 
 function patchFromDiffs(diffs, table, allow) {
@@ -1488,13 +1580,211 @@ function renderApplied(result) {
   return lines.join('\n')
 }
 
+function jeffersonReport(info) {
+  const lines = []
+  lines.push('### UPDATE · Bob Belk · Suite 2H')
+  lines.push('')
+  lines.push(`Deal id \`${info.id}\`. Listing ${SKIP_REVIEW_TID}. The row was labeled Suite 2-G; that label is now Suite 2H.`)
+  lines.push('')
+  lines.push('`deals`:')
+  lines.push('')
+  lines.push('```json')
+  lines.push(JSON.stringify(info.deal, null, 2))
+  lines.push('```')
+  lines.push('')
+  lines.push('`deal_economics`:')
+  lines.push('')
+  lines.push('```json')
+  lines.push(JSON.stringify(info.economics, null, 2))
+  lines.push('```')
+  lines.push('')
+  lines.push('## Suite 1-D (leased, not written)')
+  lines.push('')
+  lines.push(`- Bob Belk · Jefferson Hwy. 619, Suite 1-D · \`${JEFFERSON_1D_ID}\` · leased. No columns were changed. Database status remains \`${info.leasedStatus}\`.`)
+  lines.push(`- The listing's leased space is ${info.leasedSf.toLocaleString('en-US')} SF at $${Number(info.leasedRate).toFixed(2)} SF/year. The available space is Suite 2H, 1,766 SF at $13.59 SF/year.`)
+  lines.push('')
+  return lines.join('\n')
+}
+
+function writeJeffersonReport(appliedPath, info) {
+  if (!existsSync(appliedPath)) throw new Error(`Applied report is missing: ${appliedPath}`)
+  let text = readFileSync(appliedPath, 'utf8')
+  const intro = '619 Jefferson (7eb337d8) was skipped. The 7 Off-LACDB deals were not modified.'
+  const introNext = '619 Jefferson (7eb337d8) is attached to Bob Belk Suite 2H. Suite 1-D was left unchanged and is leased. The 7 Off-LACDB deals were not modified.'
+  if (!text.includes(intro) && !text.includes(introNext)) throw new Error('Applied report intro does not mention Jefferson')
+  text = text.replace(intro, introNext)
+  const block = jeffersonReport(info)
+  if (!text.includes('### UPDATE · Bob Belk · Suite 2H')) {
+    const marker = '\n## Off LACDB (unchanged)\n'
+    if (!text.includes(marker)) throw new Error('Applied report is missing the Off LACDB section')
+    text = text.replace(marker, `\n${block}${marker}`)
+  }
+  const skipped = '## Skipped\n\n- 7eb337d8 619 Jefferson Hwy. Two suite deals were not updated.\n'
+  const skippedNext = '## Skipped\n\n- None. 619 Jefferson was resolved: Suite 2H was updated, Suite 1-D was listed as leased.\n'
+  if (text.includes(skipped)) text = text.replace(skipped, skippedNext)
+  if (text.includes('sb_publishable_') || text.includes('service_role')) throw new Error('Applied report contained a key')
+  writeFileSync(appliedPath, text)
+}
+
+async function applyJefferson(cfg, feed, paths, appliedPath) {
+  const listing = feed.listings.find(row => tidOfListing(row) === SKIP_REVIEW_TID)
+  if (!listing) throw new Error('Feed has no 7eb337d8')
+  const mapped = mapListing(listing, new Set(['619']))
+  if (mapped.leaseRate !== 13.59 || mapped.leaseSf !== 1766) {
+    throw new Error(`Jefferson available space is ${mapped.leaseRate} / ${mapped.leaseSf}`)
+  }
+  const leasedSpace = (listing.lease_spaces || []).find(s => s.status === 'leased')
+  if (!leasedSpace) throw new Error('Jefferson listing has no leased space')
+  if (!existsSync(paths[0])) throw new Error('Backup is missing. Refusing to write Jefferson without the original pre-image.')
+  const backup = JSON.parse(readFileSync(paths[0], 'utf8'))
+  if (!backup.applied) throw new Error('The original sync is not marked applied.')
+  if (backup.jefferson?.applied) throw new Error('Jefferson was already applied. Refusing a second write.')
+
+  const idFilter = `${JEFFERSON_2G_ID},${JEFFERSON_1D_ID}`
+  const deals = await restGet(cfg.url, cfg.key, `/rest/v1/deals?id=in.(${idFilter})&select=*`)
+  const econs = await restGet(cfg.url, cfg.key, `/rest/v1/deal_economics?deal_id=in.(${idFilter})&select=*`)
+  const deadlines = await restGet(cfg.url, cfg.key, `/rest/v1/contract_deadlines?deal_id=in.(${idFilter})&select=*`)
+  if (deals.length !== 2) throw new Error(`expected 2 Jefferson deals, got ${deals.length}`)
+  const target = deals.find(d => d.id === JEFFERSON_2G_ID)
+  const leased = deals.find(d => d.id === JEFFERSON_1D_ID)
+  if (!target || !leased) throw new Error('Jefferson deal ids did not match the approved rows')
+  if (target.name !== 'Bob Belk' || leased.name !== 'Bob Belk') throw new Error('Jefferson client name is not Bob Belk')
+  const targetLabel = `${target.addr_display || ''} ${target.address || ''}`
+  if (!targetLabel.includes(SUITE_2G) && !targetLabel.includes(SUITE_2H)) {
+    throw new Error(`Suite 2H row is labeled ${target.addr_display}`)
+  }
+  const leasedLabel = `${leased.addr_display || ''} ${leased.address || ''}`
+  if (!leasedLabel.includes(SUITE_1D)) throw new Error(`Suite 1-D row is labeled ${leased.addr_display}`)
+  if (leasedLabel.includes(SUITE_2G)) throw new Error('Suite 1-D row contains the 2-G label')
+
+  if (!backup.jefferson) {
+    const plannedDeal = jeffersonDealPatch(target, mapped)
+    const plannedEcon = jeffersonEconPatch(econs.find(e => e.deal_id === target.id) || null, mapped)
+    backup.jefferson = {
+      taken_at: new Date().toISOString(),
+      applied: false,
+      tid: SKIP_REVIEW_TID,
+      note: 'Matthew, 13 Oct 2026: listing 7eb337d8 is Suite 2H. The Bob Belk row labeled Suite 2-G is that suite. Suite 1-D is leased and was not written.',
+      suite_2h: {
+        deal: target,
+        deal_economics: econs.filter(e => e.deal_id === target.id),
+        contract_deadlines: deadlines.filter(d => d.deal_id === target.id),
+      },
+      suite_1d_leased_untouched: {
+        deal: leased,
+        deal_economics: econs.filter(e => e.deal_id === leased.id),
+        contract_deadlines: deadlines.filter(d => d.deal_id === leased.id),
+      },
+      written_deal: plannedDeal,
+      written_economics: econs.some(e => e.deal_id === target.id)
+        ? plannedEcon
+        : { ...plannedEcon, sale_commission_pct: null, lease_commission_pct: null },
+    }
+    saveBackup(paths, backup)
+  }
+
+  const pre = backup.jefferson.suite_2h.deal
+  const preLeased = backup.jefferson.suite_1d_leased_untouched.deal
+  const dealPatch = jeffersonDealPatch(target, mapped)
+  const existingEcon = econs.filter(e => e.deal_id === target.id)
+  const econPatch = jeffersonEconPatch(existingEcon[0] || null, mapped)
+  let econAction = existingEcon.length ? 'existing' : 'none'
+  let econWritten = econPatch
+  if (Object.keys(dealPatch).length) {
+    await restWrite(cfg.url, cfg.key, 'PATCH', `/rest/v1/deals?id=eq.${target.id}`, dealPatch)
+  }
+  if (Object.keys(econPatch).length) {
+    if (existingEcon.length) {
+      await restWrite(cfg.url, cfg.key, 'PATCH', `/rest/v1/deal_economics?deal_id=eq.${target.id}`, econPatch)
+      econAction = 'patch'
+    } else {
+      econWritten = { ...econPatch, sale_commission_pct: null, lease_commission_pct: null }
+      const econRow = await restWrite(cfg.url, cfg.key, 'POST', '/rest/v1/deal_economics', { deal_id: target.id, ...econWritten })
+      econAction = 'insert'
+      backup.jefferson.economics_id = econRow?.id || null
+    }
+  }
+
+  const check = await restGet(cfg.url, cfg.key, `/rest/v1/deals?id=eq.${target.id}&select=*`)
+  const econCheck = await restGet(cfg.url, cfg.key, `/rest/v1/deal_economics?deal_id=eq.${target.id}&select=*`)
+  const afterDeadlines = await restGet(cfg.url, cfg.key, `/rest/v1/contract_deadlines?deal_id=eq.${target.id}&select=id`)
+  const row = check[0]
+  if (row.name !== pre.name || row.status !== pre.status || row.type !== pre.type || row.representation_role !== pre.representation_role) {
+    throw new Error('Jefferson protected deal column changed')
+  }
+  if ((row.notes || '') !== (pre.notes || '') || (row.dropbox_link || '') !== (pre.dropbox_link || '')) {
+    throw new Error('Jefferson notes or dropbox changed')
+  }
+  if ((row.deal_source || '') !== (pre.deal_source || '')) throw new Error('Jefferson deal_source changed')
+  if (!String(row.addr_display).includes(SUITE_2H) || !String(row.address).includes(SUITE_2H)) {
+    throw new Error(`Suite label is ${row.addr_display} / ${row.address}`)
+  }
+  if (String(row.addr_display).includes(SUITE_2G) || String(row.address).includes(SUITE_2G)) {
+    throw new Error('Suite 2-G label is still on the 2H row')
+  }
+  for (const [col, value] of Object.entries(dealPatch)) {
+    if (!sameValue(row[col], value)) throw new Error(`Jefferson ${col} is ${row[col]}, expected ${value}`)
+  }
+  const econ = econCheck[0]
+  if (!econ) throw new Error('Jefferson economics row is missing')
+  const preEcon = backup.jefferson.suite_2h.deal_economics[0]
+  if (preEcon) {
+    if (!sameValue(econ.sale_commission_pct, preEcon.sale_commission_pct) || !sameValue(econ.lease_commission_pct, preEcon.lease_commission_pct)) {
+      throw new Error('Jefferson commission changed')
+    }
+  } else if (econ.sale_commission_pct != null || econ.lease_commission_pct != null) {
+    throw new Error('Jefferson economics invented a commission')
+  }
+  if (!sameValue(econ.lease_rate_psf, 13.59) || !sameValue(econ.sqft, 1766) || econ.transaction_type !== 'lease') {
+    throw new Error(`Jefferson economics persisted as ${econ.transaction_type} ${econ.lease_rate_psf} ${econ.sqft}`)
+  }
+  const beforeDeadlineIds = (backup.jefferson.suite_2h.contract_deadlines || []).map(d => d.id).sort().join()
+  const afterDeadlineIds = afterDeadlines.map(d => d.id).sort().join()
+  if (beforeDeadlineIds !== afterDeadlineIds) throw new Error('Jefferson deadlines changed')
+
+  const leasedAfter = await restGet(cfg.url, cfg.key, `/rest/v1/deals?id=eq.${JEFFERSON_1D_ID}&select=id,name,status,type,address,addr_display,updated_at,lacdb_url,notes,dropbox_link`)
+  const leasedRow = leasedAfter[0]
+  if (!leasedRow || leasedRow.updated_at !== preLeased.updated_at || leasedRow.status !== preLeased.status
+    || leasedRow.address !== preLeased.address || leasedRow.addr_display !== preLeased.addr_display
+    || leasedRow.name !== preLeased.name || (leasedRow.lacdb_url || '') !== (preLeased.lacdb_url || '')) {
+    throw new Error('Suite 1-D changed')
+  }
+
+  const written = {
+    action: 'UPDATE',
+    id: target.id,
+    name: 'Bob Belk',
+    tids: [SKIP_REVIEW_TID],
+    suite: SUITE_2H,
+    deal: backup.jefferson.written_deal,
+    economics: backup.jefferson.written_economics,
+    economics_action: econAction,
+  }
+  backup.jefferson.applied = true
+  backup.jefferson.applied_at = new Date().toISOString()
+  backup.written = backup.written || []
+  if (!backup.written.some(w => w.id === target.id)) backup.written.push(written)
+  saveBackup(paths, backup)
+  writeJeffersonReport(appliedPath, {
+    id: target.id,
+    deal: written.deal,
+    economics: written.economics,
+    leasedStatus: leasedRow.status,
+    leasedSf: Number(leasedSpace.available_sf_max ?? leasedSpace.available_sf_min),
+    leasedRate: Number(leasedSpace.rate_min),
+  })
+  return { id: target.id, deal: written.deal, economics: written.economics, leasedId: leased.id }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (args.help) {
     console.log('Usage: node scripts/lacdb-sync.mjs [--dry-run] [--feed path] [--out path]')
     console.log('       node scripts/lacdb-sync.mjs --apply')
+    console.log('       node scripts/lacdb-sync.mjs --apply-jefferson')
     return
   }
+  if (args.apply && args.applyJefferson) throw new Error('Pass one of --apply or --apply-jefferson')
   selfTest()
   if (args.selfTestOnly) {
     console.log('self-test ok')
@@ -1530,6 +1820,16 @@ async function main() {
       deadlineCounts.set(row.deal_id, (deadlineCounts.get(row.deal_id) || 0) + 1)
     }
     source = `${cfg.from}; GET only`
+  }
+
+  if (args.applyJefferson) {
+    if (!cfg) throw new Error('No Supabase client configured')
+    const result = await applyJefferson(cfg, feed, [args.backup, STORE_BACKUP], args.applied)
+    console.log(`Jefferson Suite 2H updated: ${result.id}`)
+    console.log(`Suite 1-D leased, unchanged: ${result.leasedId}`)
+    console.log(`Backup: ${args.backup}`)
+    console.log(`Wrote ${args.applied}`)
+    return
   }
 
   const plan = buildPlan(feed, deals, econs, deadlineCounts)
