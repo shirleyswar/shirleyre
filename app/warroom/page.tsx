@@ -26,6 +26,7 @@ import {
   DM0, DM1, DM2,
 } from '@/components/warroom/desktopTypes'
 import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
+import LacdbFlag from '@/components/warroom/LacdbFlag'
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -105,6 +106,8 @@ interface Deal {
   is_money_mover?: boolean | null
   type?: string | null
   representation_role?: string | null
+  lacdb_url?: string | null
+  deal_source?: string | null
   deal_contacts: Array<{ contacts: { name: string } | null }>
 }
 
@@ -1583,7 +1586,7 @@ function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChan
     async function load() {
       const { data } = await supabase
         .from('deals')
-        .select('id, name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city, status, commission_estimated, type, representation_role, deal_contacts(contacts(name))')
+        .select('id, name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city, status, commission_estimated, type, representation_role, lacdb_url, deal_source, deal_contacts(contacts(name))')
         .eq('status', 'under_contract')
         .order('created_at', { ascending: true })
         .limit(30)
@@ -1703,8 +1706,11 @@ function UnderContractPanel({ refreshKey, visibleRows: _visibleRows, onCountChan
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {shortAddr(d)}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                          {shortAddr(d)}
+                        </div>
+                        <LacdbFlag deal={d} size="row" />
                       </div>
                       {subline && <div style={{ ...DS7, color: C.textLow, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subline}</div>}
                     </div>

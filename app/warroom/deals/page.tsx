@@ -25,6 +25,7 @@ import {
   DM1,
 } from '@/components/warroom/desktopTypes'
 import Fab from '@/assets/fab/Fab'
+import LacdbFlag from '@/components/warroom/LacdbFlag'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -91,6 +92,7 @@ interface DealRow {
   property_type: string | null
   rating: number | null
   lacdb_url: string | null
+  deal_source: string | null
   dropbox_link: string | null
   portfolio_id: string | null
   is_money_mover: boolean | null
@@ -572,6 +574,7 @@ function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
           {deal._shortAddr}
         </span>
         {label && <span style={pillStyle(deal.status)}>{label}</span>}
+        <LacdbFlag deal={deal} size="row" />
       </div>
 
       {/* Client */}
@@ -735,7 +738,7 @@ function DealsPage() {
       const [dealsRes, econRes, deadlinesRes, mmRes] = await Promise.all([
         supabase.from('deals').select(`
           id, name, address, addr_display, addr_number, addr_street_name, addr_street_type,
-          addr_direction, addr_city, status, type, property_type, rating, lacdb_url, dropbox_link,
+          addr_direction, addr_city, status, type, property_type, rating, lacdb_url, deal_source, dropbox_link,
           portfolio_id, is_money_mover, deal_contacts(contacts(name))
         `).order('addr_street_name'),
 

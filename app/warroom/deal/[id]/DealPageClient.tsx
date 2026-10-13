@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase'
 import { formatDealTitle, parseListingFilingName, formatListingFilingName, canonicalizeFilingSlots } from '@/lib/formatAddress'
 import { dealPhotoPublicUrl, uploadDealPhoto } from '@/lib/dealPhoto'
 import { HOUSE_SPLIT } from '@/lib/dealMath'
+import LacdbFlag from '@/components/warroom/LacdbFlag'
 import LaunchControl from './LaunchControl'
 import LaunchModal from './LaunchModal'
 
@@ -286,6 +287,8 @@ interface DealData {
   type?: string | null
   property_type: string | null
   dropbox_link?: string | null
+  lacdb_url?: string | null
+  deal_source?: string | null
   representation_role?: string | null
   under_contract_at?: string | null
   closed_at?: string | null
@@ -534,7 +537,7 @@ function DealPageClientInner({ id }: { id: string }) {
       try {
         const { data: dealData, error: dealErr } = await supabase
           .from('deals')
-          .select('id,name,address,addr_display,addr_street_name,addr_street_type,addr_direction,addr_number,addr_city,status,type,property_type,dropbox_link,representation_role')
+          .select('id,name,address,addr_display,addr_street_name,addr_street_type,addr_direction,addr_number,addr_city,status,type,property_type,dropbox_link,lacdb_url,deal_source,representation_role')
           .eq('id', dealId)
           .single()
         if (dealErr || !dealData) { setError(true); setLoading(false); return }
@@ -849,6 +852,8 @@ function DealPageClientInner({ id }: { id: string }) {
               <img src={propPlateSrc} alt={propType ?? ''} style={{ height: PROPERTY_PLATE_H, width: 'auto', display: 'block', filter: 'none', boxShadow: 'none' }} draggable={false} />
             </div>
           )}
+
+          <LacdbFlag deal={deal} size="header" />
 
           {/* DELETE and EDIT — hidden on closed deals. REOPEN is its own control.
               Same 20px gap as the rest of the row; kept as a pair so EDIT does not wrap alone. */}
