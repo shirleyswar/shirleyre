@@ -31,7 +31,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; font-weight: 400; overflow-x: hidden; }
-  /* First screen: identity, six nav cards, War Room, footer — one desktop viewport. */
+  /* First screen: identity, six nav cards, footer — one desktop viewport. */
   .home-fit { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: space-between; gap: clamp(6px, 1.2vh, 18px); }
   /* Tall enough that the fitted column is the whole page — a wheel must not slide it. */
   @media (min-width: 901px) and (min-height: 680px) {
@@ -127,6 +127,9 @@
   .footer-tagline { font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--muted); line-height: 1.6; }
   .footer-tagline a { color: var(--gold); text-decoration: none; transition: color 0.2s; }
   .footer-tagline a:hover { color: var(--gold2); }
+  .footer-contact { font-family: 'Syne Mono', monospace; font-size: 12px; letter-spacing: 0.06em; line-height: 1.6; }
+  .footer-contact a { color: #FDDD3E; text-decoration: none; }
+  .footer-contact a:hover { color: #fff; }
   .footer-copy { font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: rgba(122,138,143,0.5); }
   /* ── FEATURE CARDS ── */
   .features-wrap { position: relative; padding: clamp(2px, 0.6vh, 8px) clamp(24px, 4vw, 60px) 0; max-width: 1200px; margin: 0 auto; width: 100%; }
@@ -199,9 +202,9 @@
   .feat-card:hover .feat-icon { color: var(--gold2); transform: scale(1.08); }
   .feat-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: clamp(15px, 1.9vh, 19px); color: var(--text); margin-bottom: 0; letter-spacing: -0.02em; line-height: 1.25; display: block; position: relative; z-index: 1; }
   .feat-arrow { font-family: 'Syne Mono', monospace; font-size: 13px; color: var(--gold); margin-top: clamp(4px, 0.6vh, 10px); opacity: 0; transform: translateX(-6px); transition: all 0.25s; position: relative; z-index: 1; }
-  .warroom-entry { margin-top: clamp(8px, 1.3vh, 18px); text-align: center; }
-  .warroom-btn { font-family: 'Syne Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; padding: clamp(8px, 1.15vh, 14px) 32px; border-radius: 8px; cursor: pointer; background: rgba(201,147,58,0.07); border: 1px solid rgba(201,147,58,0.22); color: rgba(201,147,58,0.6); transition: all 0.2s; }
-  .warroom-btn:hover { background: rgba(201,147,58,0.13); color: rgba(201,147,58,0.9); border-color: rgba(201,147,58,0.4); }
+  .feat-phone, .feat-mail { font-family: 'Syne Mono', monospace; letter-spacing: 0.04em; line-height: 1.45; position: relative; z-index: 1; display: block; }
+  .feat-phone { color: #FDDD3E; font-size: 13px; margin-top: 6px; }
+  .feat-mail { color: #fff; font-size: 11px; }
   .feat-card:hover .feat-arrow { opacity: 1; transform: translateX(0); }
   @media (max-width: 900px) {
     .features-wrap { padding: 4px 16px 0; }
@@ -365,7 +368,7 @@
     </a>
 
     <!-- Contact -->
-    <a href="javascript:void(0)" class="feat-card" onclick="if(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){window.location='tel:2259075214';}else{window.location='mailto:matthew@sr-cre.com';}">
+    <a href="tel:+12259075214" class="feat-card">
       <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/>
         <path d="M14 2c1.2.4 2.3 1 3.2 1.8"/>
@@ -374,7 +377,8 @@
         <path d="M16.5 7.5c.2.4.3.8.4 1.3"/>
       </svg></div>
       <div class="feat-title">Contact</div>
-      <div class="feat-arrow">→</div>
+      <span class="feat-phone">225.907.5214</span>
+      <span class="feat-mail">matthew@sr-cre.com</span>
     </a>
 
     <!-- About -->
@@ -412,118 +416,15 @@
 
   </div>
 
-  <!-- WAR ROOM ACCESS BUTTON -->
-  <div class="warroom-entry">
-    <button id="warroom-btn" class="warroom-btn" type="button" onclick="openWarRoomPin()">War Room</button>
-  </div>
 </div>
 
 <footer>
   <div class="footer-logo">Matthew Shirley</div>
-  <p class="footer-tagline">Associate Broker · <a href="https://saurage-rotenberg.com" target="_blank">Saurage Rotenberg Commercial Real Estate</a> · Baton Rouge, Louisiana · Independent project, not affiliated with any other platform.</p>
+  <p class="footer-contact"><a href="tel:+12259075214">225.907.5214</a> · <a href="mailto:matthew@sr-cre.com">matthew@sr-cre.com</a></p>
+  <p class="footer-tagline">Associate Broker · <a href="https://www.srcommercial.com" target="_blank" rel="noopener">Saurage Rotenberg Commercial Real Estate</a> · Baton Rouge, Louisiana · Independent project, not affiliated with any other platform.</p>
   <p class="footer-copy">© 2026 shirleyre.com</p>
 </footer>
 </div>
-
-<!-- WAR ROOM PIN GATE (inline, on homepage) -->
-<div id="wr-pin-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(6,13,15,0.96);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:28px;">
-  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;letter-spacing:-0.02em;background:linear-gradient(90deg,#a06820,#c9933a,#e0b060);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">WAR ROOM</div>
-  <div style="font-family:'Syne Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#6a7a80;">Access Code</div>
-  <div style="display:flex;gap:14px;" id="wr-dots">
-    <div class="wr-dot" id="wr-pd0" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #2a3a40;background:transparent;transition:all 0.15s;"></div>
-    <div class="wr-dot" id="wr-pd1" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #2a3a40;background:transparent;transition:all 0.15s;"></div>
-    <div class="wr-dot" id="wr-pd2" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #2a3a40;background:transparent;transition:all 0.15s;"></div>
-    <div class="wr-dot" id="wr-pd3" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #2a3a40;background:transparent;transition:all 0.15s;"></div>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(3,60px);gap:8px;" id="wr-keypad">
-    <button onclick="wrPin('1')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">1</button>
-    <button onclick="wrPin('2')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">2</button>
-    <button onclick="wrPin('3')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">3</button>
-    <button onclick="wrPin('4')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">4</button>
-    <button onclick="wrPin('5')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">5</button>
-    <button onclick="wrPin('6')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">6</button>
-    <button onclick="wrPin('7')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">7</button>
-    <button onclick="wrPin('8')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">8</button>
-    <button onclick="wrPin('9')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">9</button>
-    <button onclick="wrClear()" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#6a7a80;font-family:'Syne Mono',monospace;font-size:10px;letter-spacing:0.1em;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">CLR</button>
-    <button onclick="wrPin('0')" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#ddd6c8;font-family:'Syne',sans-serif;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">0</button>
-    <button onclick="wrBack()" style="height:52px;border-radius:8px;background:#0e1c21;border:1px solid rgba(201,147,58,0.15);color:#6a7a80;font-family:'Syne Mono',monospace;font-size:16px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(201,147,58,0.12)'" onmouseout="this.style.background='#0e1c21'">&#9003;</button>
-  </div>
-  <div id="wr-error" style="font-family:'Syne Mono',monospace;font-size:10px;color:#ef4444;letter-spacing:0.12em;opacity:0;transition:opacity 0.2s;">ACCESS DENIED</div>
-  <button onclick="closeWarRoomPin()" style="font-family:'Syne Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#3a4a50;background:none;border:none;cursor:pointer;margin-top:-8px;">Cancel</button>
-</div>
-
-<script>
-// War Room PIN (on homepage)
-const WR_DEFAULT_HASH = 'b136ef5f6a01d816991fe3cf7a6ac763300c1a26257de0e434e545c743fafe37'; // SHA-256('1234')
-const WR_SESSION_KEY  = 'warroom_session';
-const WR_SESSION_TTL  = 8 * 60 * 60 * 1000;
-let wrBuffer = '';
-
-async function wrSha256(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
-
-function openWarRoomPin() {
-  // Check active session first
-  try {
-    const s = JSON.parse(localStorage.getItem(WR_SESSION_KEY) || '{}');
-    if (s.ts && Date.now() - s.ts < WR_SESSION_TTL) { window.location.href = '/warroom/'; return; }
-  } catch(e) {}
-  wrBuffer = '';
-  wrUpdateDots();
-  const overlay = document.getElementById('wr-pin-overlay');
-  overlay.style.display = 'flex';
-}
-
-function closeWarRoomPin() {
-  document.getElementById('wr-pin-overlay').style.display = 'none';
-  wrBuffer = '';
-  wrUpdateDots();
-}
-
-function wrPin(d) {
-  if (wrBuffer.length >= 4) return;
-  wrBuffer += d;
-  wrUpdateDots();
-  if (wrBuffer.length === 4) wrVerify();
-}
-
-function wrBack() { wrBuffer = wrBuffer.slice(0,-1); wrUpdateDots(); }
-function wrClear() { wrBuffer = ''; wrUpdateDots(); }
-
-function wrUpdateDots() {
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById('wr-pd' + i);
-    if (i < wrBuffer.length) { dot.style.background='#c9933a'; dot.style.borderColor='#c9933a'; }
-    else { dot.style.background='transparent'; dot.style.borderColor='#2a3a40'; }
-  }
-}
-
-async function wrVerify() {
-  const stored = localStorage.getItem('warroom_pin') || WR_DEFAULT_HASH;
-  const input  = await wrSha256(wrBuffer);
-  if (input === stored) {
-    localStorage.setItem(WR_SESSION_KEY, JSON.stringify({ ts: Date.now() }));
-    window.location.href = '/warroom/';
-  } else {
-    const err = document.getElementById('wr-error');
-    err.style.opacity = '1';
-    setTimeout(() => { err.style.opacity='0'; wrBuffer=''; wrUpdateDots(); }, 1200);
-  }
-}
-
-// Keyboard support when overlay is open
-document.addEventListener('keydown', (e) => {
-  const overlay = document.getElementById('wr-pin-overlay');
-  if (overlay.style.display !== 'none' && overlay.style.display !== '') {
-    if (e.key >= '0' && e.key <= '9') wrPin(e.key);
-    if (e.key === 'Backspace') wrBack();
-    if (e.key === 'Escape') closeWarRoomPin();
-  }
-});
-</script>
 
 <script>
   const canvas = document.getElementById('stars');
