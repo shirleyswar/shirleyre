@@ -12,6 +12,7 @@ import { formatAddress } from '@/lib/formatAddress'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import CalendarPicker from '@/components/warroom3/CalendarPicker'
 import { isTaskStaged } from '@/lib/taskStagingPredicate'
+import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
 
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
@@ -263,7 +264,7 @@ export default function TaskDetailSheet({
   // Item 8 ruling: checkmark only fires when isActive === false (sheet untouched).
   // Nothing is staged — no RPC call needed. One write: mark status complete.
   async function handleComplete() {
-    if (!task || isActive) return  // isActive guard: disabled checkmark produces no action
+    if (!task || isActive) return false  // isActive guard: disabled checkmark produces no action
     setSaving(true)
     setError(null)
     const { error: completeErr } = await supabase
@@ -273,7 +274,7 @@ export default function TaskDetailSheet({
     if (completeErr) {
       setSaving(false)
       setError('Could not complete — try again')
-      return
+      return false
     }
     setSaving(false)
     onCompleted(task)
@@ -395,24 +396,15 @@ export default function TaskDetailSheet({
     // Item 11: accessible name "Mark complete" in both states; aria-disabled when grey.
     // PROVISIONAL: grey state uses opacity+filter desaturation per operator-authorised
     // treatment 26 Aug — pending Design's inactive asset.
-    <button
+    <MarkCompleteButton
       onClick={handleComplete}
       disabled={isActive || saving}
-      aria-label="Mark complete"
-      aria-disabled={isActive || saving}
+      hitSize={44}
       style={{
-        display: 'flex', alignItems: 'center',
-        border: 'none', background: 'transparent',
-        cursor: (isActive || saving) ? 'default' : 'pointer',
-        flexShrink: 0, padding: 0,
         opacity: isActive ? 0.35 : 1,
         filter: isActive ? 'saturate(0)' : 'none',
-        WebkitTapHighlightColor: 'transparent',
-      } as React.CSSProperties}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/assets/check/check-h140.png" alt="Mark complete" width={44} height={44} style={{ display: 'block' }} />
-    </button>
+      }}
+    />
   ) : (
     // DELETE — 104×44 slot, right-aligned at the 18px gutter.
     // Asset names itself in its pixels — no caption.

@@ -1,0 +1,79 @@
+/* Mark complete — 32px money-in ring, 2px check. No glow at rest.
+   Colour is the existing --wr3-money-in token (#34D399). */
+
+.button {
+  --wr-mark-green: var(--wr3-money-in);
+  --wr-mark-draw: 250ms;
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.button:disabled {
+  cursor: default;
+}
+
+.button:focus {
+  outline: none;
+}
+
+.button:focus-visible svg {
+  outline: 2px solid var(--wr-mark-green);
+  outline-offset: 3px;
+  border-radius: 50%;
+}
+
+.ring {
+  fill: transparent;
+  stroke: var(--wr-mark-green);
+  stroke-width: 1.5;
+  transition: fill var(--wr-mark-draw) linear;
+}
+
+.button:hover:not(:disabled):not(.drawing) .ring {
+  fill: color-mix(in srgb, var(--wr-mark-green) 12%, transparent);
+}
+
+.check {
+  fill: none;
+  stroke: var(--wr-mark-green);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.drawing .ring {
+  fill: var(--wr-mark-green);
+}
+
+.drawing .check {
+  stroke: #fff;
+  animation: draw var(--wr-mark-draw) linear forwards;
+}
+
+@keyframes draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    transition: none;
+  }
+  .drawing .check {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

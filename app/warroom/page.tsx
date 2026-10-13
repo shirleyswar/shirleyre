@@ -25,6 +25,7 @@ import {
   DT1, DT2, DT3, DT4, DT5, DT7, DT8,
   DM0, DM1, DM2,
 } from '@/components/warroom/desktopTypes'
+import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -856,13 +857,13 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
   async function handleCloseAndLog() {
     if (staged && !saving) {
       const ok = await commitStagedChanges()
-      if (!ok) return
+      if (!ok) return false
     }
     // Write logged_at timestamp so this appears in LOGS tab
     const { error } = await supabase.from('money_movers').update({ logged_at: new Date().toISOString() }).eq('id', mm.id)
     if (error) {
       setSaveError(error.message || 'Could not log this money mover.')
-      return
+      return false
     }
     onCloseAndLog(mm.id)
   }
@@ -929,13 +930,8 @@ function MoneyMoverModal({ mm, dealMap, econMap, onClose, onCloseAndLog, onNoteA
           />
           {/* Divider */}
           <div style={{ width: 1, height: 26, background: 'rgba(255,255,255,0.14)', margin: '0 20px' }} />
-          {/* MM-8: Close and Log group — bare check, no label */}
-          <div
-            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-            onClick={handleCloseAndLog}
-          >
-            <img src="/assets/check/check-h140.png" height={56} style={{ height: 56, width: 'auto' }} alt="" />
-          </div>
+          {/* MM-8: Close and Log — same complete mark as the task modal */}
+          <MarkCompleteButton hitSize={56} onClick={handleCloseAndLog} />
           {/* ESC button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', marginLeft: 10 }} onClick={onClose}>
             <span style={{ fontFamily: FONT_DISP, fontSize: 22, color: '#8E8CA0' }}>×</span>
