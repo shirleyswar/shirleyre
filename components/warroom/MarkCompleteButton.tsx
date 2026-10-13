@@ -68,11 +68,12 @@ export default function MarkCompleteButton({
     >
       <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
         <circle className={styles.ring} cx="16" cy="16" r="15.25" />
+        {/* Stroke mass of the previous path sat ~1px below the circle. Lifted so the check reads centered. */}
         <path
           ref={checkRef}
           className={styles.check}
           pathLength={1}
-          d="M9.5 16.2 L14.2 21 L22.8 11.2"
+          d="M9.5 14.8 L14.2 19.6 L22.8 9.8"
         />
       </svg>
     </button>

@@ -13,6 +13,7 @@ import BottomSheet from '@/components/warroom3/BottomSheet'
 import CalendarPicker from '@/components/warroom3/CalendarPicker'
 import { isTaskStaged } from '@/lib/taskStagingPredicate'
 import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
+import chrome from '@/components/warroom/taskItemChrome.module.css'
 
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
@@ -36,8 +37,6 @@ const T = {
 }
 
 // Staged chip gradient (FAB aperture fill)
-const STAGED_GRADIENT = 'radial-gradient(circle at 50% 47%, #5B3FA8 0%, #2A1D52 26%, #120E22 62%, #07060C 100%)'
-
 // §18.10 check 11 — footer bottom is derived, never a literal.
 // With flex layout inside BottomSheet, the footer sits at the true bottom of the sheet
 // and automatically clears the FAB (sheet top:34 + flex fill + footer height ≥ tab bar + FAB lift).
@@ -71,6 +70,30 @@ const styleD3: React.CSSProperties = {
   letterSpacing: '-0.02em',
   color: T.textHi,
   lineHeight: 1.3,
+}
+const LABEL: React.CSSProperties = {
+  ...styleT2,
+  letterSpacing: '0.14em',
+  fontWeight: 600,
+  color: T.textLow,
+}
+
+function ChevronIcon() {
+  return (
+    <svg className={chrome.chevron} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 6.2 L8 10.2 L12 6.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function NotesEmptyIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M7 3.5h7.2L19 8.2V19.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z"/>
+      <path d="M14 3.5V8.2H19"/>
+      <path d="M9 13h6M9 16.5h4"/>
+    </svg>
+  )
 }
 
 // ── Interfaces ──────────────────────────────────────────────────────────────
@@ -134,7 +157,7 @@ function getNextMonday(): string {
 
 function formatDueDisplay(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
 }
 
 function isOverdue(dateStr: string | null): boolean {
@@ -346,17 +369,14 @@ export default function TaskDetailSheet({
     else if (chip === 'nextmon') setStagedDate(getNextMonday())
   }
 
-  // Eyebrow meta
+  // Status word — moved into the header kicker. Red is applied only when overdue.
   let eyebrowText = 'LATER'
-  let eyebrowColor = T.textMid
   if (currentDue) {
     if (overdue) {
       const n = daysOverdue(currentDue)
-      eyebrowText = `● ${n === 0 ? '0' : n} DAY${n === 1 ? '' : 'S'} LATE`
-      eyebrowColor = T.late
+      eyebrowText = `${n === 0 ? '0' : n} DAY${n === 1 ? '' : 'S'} LATE`
     } else if (currentDue === today) {
       eyebrowText = 'TODAY'
-      eyebrowColor = T.hot
     }
   }
 
@@ -372,20 +392,6 @@ export default function TaskDetailSheet({
     listType:         mode === 'edit' ? listType : committedListType,
     committedListType,
   }) : false
-
-  // Chip style
-  const chipStyle = (active: boolean): React.CSSProperties => ({
-    padding: '11px 15px',
-    borderRadius: 9,
-    fontFamily: FONT_DISPLAY,
-    fontSize: 12,
-    fontWeight: 500,
-    cursor: 'pointer',
-    border: active ? 'none' : `1px solid ${T.borderStrong}`,
-    background: active ? STAGED_GRADIENT : 'transparent',
-    color: active ? T.textHi : T.textMid,
-    WebkitTapHighlightColor: 'transparent',
-  })
 
   // ── Header action — terminal action for the current mode.
   // READ  → DONE caption + checkmark (completion)
@@ -446,101 +452,68 @@ export default function TaskDetailSheet({
   // This eliminates the iOS visual-viewport mispositioning bug.
   const footerEl = (
     <div style={{
-      padding: '12px 18px',
-      paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+      padding: 16,
+      paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
       display: 'flex',
-      gap: 11,
+      alignItems: 'center',
+      gap: 16,
       borderTop: `1px solid ${T.borderDefault}`,
       background: T.bgPanel,
     }}>
-      {/* Secondary slot — EDIT / CANCEL asset slot.
-          Fixed box 140×52. PNG centred inside. Asset names itself — no text label.
-          Mount by height (52px → 128.55px art). Width follows aspect 2.4722. */}
-      <div style={{ width: 140, height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <button
-          onClick={() => {
-            if (mode === 'read') {
-              setMode('edit')
+      <button
+        type="button"
+        className={chrome.editHit}
+        aria-label={mode === 'read' ? 'Edit' : 'Cancel'}
+        onClick={() => {
+          if (mode === 'read') {
+            setMode('edit')
+          } else {
+            const hasTyped = titleEdited || noteText.trim().length > 0
+            if (hasTyped) {
+              setShowDiscardGuard(true)
             } else {
-              const hasTyped = titleEdited || noteText.trim().length > 0
-              if (hasTyped) {
-                setShowDiscardGuard(true)
-              } else {
-                setStagedDate(null)
-                setStagedChip(null)
-                setNoteText('')
-                setLocalTitle(task?.title ?? '')
-                setMode('read')
-              }
+              setStagedDate(null)
+              setStagedChip(null)
+              setNoteText('')
+              setLocalTitle(task?.title ?? '')
+              setMode('read')
             }
-          }}
-          style={{
-            background: 'transparent', border: 'none', padding: 0,
-            cursor: 'pointer', display: 'flex', alignItems: 'center',
-            WebkitTapHighlightColor: 'transparent' as const,
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={mode === 'read' ? '/assets/edit/edit-h180.png' : '/assets/cancel/cancel-h180.png'}
-            alt={mode === 'read' ? 'Edit' : 'Cancel'}
-            height={52}
-            style={{ height: 52, width: 'auto', display: 'block' }}
-          />
-        </button>
-      </div>
+          }
+        }}
+      >
+        <span><span className={chrome.editLabel}>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span></span>
+      </button>
 
-      {/* Primary slot — inert pill or CONFIRM plate */}
       <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-        {isActive ? (
-          <button
-            onClick={handleConfirm}
-            disabled={saving}
-            style={{
-              height: 52, padding: 0, border: 'none', background: 'transparent',
-              cursor: saving ? 'default' : 'pointer',
-              opacity: saving ? 0.6 : 1,
-              display: 'flex', alignItems: 'center',
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/assets/confirm/confirm-h180.png"
-              alt="Confirm"
-              height={52}
-              style={{ height: 52, width: 'auto', display: 'block' }}
-            />
-          </button>
-        ) : (
-          <div style={{
-            width: 128.55,
-            height: 52,
-            borderRadius: 12,
-            background: T.bgRaise,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <span style={{
-              fontFamily: FONT_MONO,
-              fontSize: 12,
-              fontWeight: 500,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase' as const,
-              color: T.textLow,
-            }}>CONFIRM</span>
-          </div>
-        )}
+        <button
+          type="button"
+          className={chrome.confirmHit}
+          onClick={handleConfirm}
+          disabled={!isActive || saving}
+          aria-disabled={!isActive || saving}
+        >
+          <span className={isActive ? chrome.confirmOn : chrome.confirmOff} style={{ opacity: saving ? 0.6 : 1 }}>
+            {saving ? 'SAVING…' : 'CONFIRM'}
+          </span>
+        </button>
       </div>
     </div>
   )
+
+  const statusWord = mode === 'edit'
+    ? 'EDIT'
+    : eyebrowText.replace(/^●\s*/, '')
+  const statusColor = mode !== 'edit' && overdue ? T.late : T.textLow
 
   return (
     <>
       <BottomSheet
         open={open}
         onClose={handleDismiss}
-        label={mode === 'edit' ? 'EDIT TASK' : 'TASK'}
+        label={<>BATTLE PLAN · <span style={{ color: statusColor }}>{statusWord}</span></>}
+        labelStyle={{ color: T.textLow, letterSpacing: '0.14em' }}
+        headerHeight={56}
+        noHairline
         noHandle
         size="full"
         headerAction={headerAction}
@@ -574,45 +547,44 @@ export default function TaskDetailSheet({
           </div>
         )}
 
-        <div style={{ padding: '0 18px' }}>
+        <div style={{ padding: '0 16px' }}>
 
           {/* READ MODE */}
           {mode === 'read' && (
             <>
-              {/* 1. Title — D3, not a field */}
+              {/* 1. Title — D3, not a field. Status kicker lives in the header. */}
               <div style={{
                 ...styleD3,
-                marginBottom: 10,
+                marginBottom: 16,
                 textWrap: 'pretty',
               } as React.CSSProperties}>
                 {task.title}
               </div>
 
-              {/* 2. Meta line */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <span style={{ ...styleT2, color: eyebrowColor }}>{eyebrowText}</span>
-                <span style={{ ...styleT2, color: T.textLow }}>BATTLE PLAN</span>
-              </div>
-
-              {/* 3. LIST card */}
-              <div style={{
-                background: T.bgRaise, borderRadius: 10, padding: 14, marginBottom: 12,
-              }}>
-                <div style={{ ...styleT2, color: T.textLow, marginBottom: 6 }}>LIST</div>
-                <div style={styleT3}>{listName}</div>
+              {/* 3. LIST */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
+                <div className={chrome.fieldStatic}>
+                  <span style={{ ...styleT3, color: listName === '—' ? T.textLow : T.textHi }}>
+                    {listName === '—' ? 'No list' : listName}
+                  </span>
+                  <ChevronIcon />
+                </div>
               </div>
 
               {/* 4. DEAL card */}
               {task.deal_id && (
                 <div style={{
-                  background: T.bgRaise, borderRadius: 10, padding: 14, marginBottom: 12,
+                  background: T.bgRaise, borderRadius: 8, padding: '8px 16px', marginBottom: 16,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  border: `1px solid ${T.borderDefault}`,
+                  gap: 8,
                 }}>
-                  <div>
-                    <div style={{ ...styleT2, color: T.textLow, marginBottom: 6 }}>DEAL</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ ...LABEL, marginBottom: 8 }}>DEAL</div>
                     <div style={styleT3}>{dealAddr || task.deals?.name || '—'}</div>
                   </div>
-                  <button style={{
+                  <button type="button" style={{
                     width: 32, height: 32, borderRadius: '50%',
                     background: 'rgba(139,92,246,0.13)',
                     border: '1px solid rgba(139,92,246,0.28)',
@@ -623,27 +595,27 @@ export default function TaskDetailSheet({
                 </div>
               )}
 
-              {/* 5. DUE section */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <span style={{ ...styleT2, color: T.textLow }}>DUE</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {stagedDate && currentDue && stagedDate !== currentDue && (
-                      <span style={{ ...styleT2, color: T.textLow, textDecoration: 'line-through' }}>
-                        {formatDueDisplay(currentDue)}
-                      </span>
-                    )}
-                    <span style={{ ...styleT2, color: stagedDate ? T.brandLift : (overdue ? T.late : T.textMid) }}>
-                      {displayedDue ? formatDueDisplay(displayedDue) : '—'}
+              {/* 5. DUE section — date sits beside the label. Red only for overdue. */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <span style={LABEL}>DUE</span>
+                  {stagedDate && currentDue && stagedDate !== currentDue && (
+                    <span style={{ ...styleT3, color: T.textLow, textDecoration: 'line-through' }}>
+                      {formatDueDisplay(currentDue)}
                     </span>
-                  </div>
+                  )}
+                  <span style={{ ...styleT3, color: stagedDate ? T.brandLift : (overdue ? T.late : T.textMid) }}>
+                    {displayedDue ? formatDueDisplay(displayedDue) : 'No due date'}
+                  </span>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {(['today', 'tomorrow', 'nextmon', 'pick'] as const).map(chip => (
                     <button
                       key={chip}
+                      type="button"
                       onClick={() => handleChipTap(chip)}
-                      style={chipStyle(stagedChip === chip)}
+                      className={stagedChip === chip ? `${chrome.chip} ${chrome.chipOn}` : chrome.chip}
+                      style={{ fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 500 }}
                     >
                       {chip === 'today' ? 'Today' : chip === 'tomorrow' ? 'Tomorrow' : chip === 'nextmon' ? 'Next Mon' : 'Pick date'}
                     </button>
@@ -675,15 +647,18 @@ export default function TaskDetailSheet({
               </div>
 
               {/* 6. NOTES section */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <span style={{ ...styleT2, color: T.textLow }}>NOTES</span>
-                  <span style={{ ...styleT2, color: T.textLow }}>{notes.length}</span>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={LABEL}>NOTES</span>
+                  <span style={LABEL}>{notes.length}</span>
                 </div>
                 {notesLoading ? (
                   <div style={{ height: 40, background: T.bgRaise, borderRadius: 8, opacity: 0.5 }} />
                 ) : notes.length === 0 ? (
-                  <div style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textLow }}>No notes yet</div>
+                  <div className={chrome.notesEmpty}>
+                    <NotesEmptyIcon />
+                    <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textLow }}>No notes yet</span>
+                  </div>
                 ) : (
                   <div>
                     {notes.map((note, i) => (
@@ -698,19 +673,14 @@ export default function TaskDetailSheet({
               </div>
 
               {/* 6b. ADD A NOTE composer — in read state (ruling 8.18.26: composer moves here so checkmark + CONFIRM can carry note) */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ ...styleT2, color: T.textLow, marginBottom: 10 }}>ADD A NOTE</div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ ...LABEL, marginBottom: 8 }}>ADD A NOTE</div>
                 <textarea
+                  className={chrome.textarea}
                   value={noteText}
                   onChange={e => setNoteText(e.target.value)}
-                  placeholder="Write what this is about…"
-                  style={{
-                    background: T.bgRaise, borderRadius: 10, padding: '12px 14px',
-                    minHeight: 72, border: `1px solid ${T.borderDefault}`,
-                    color: T.textHi, fontSize: 16, fontFamily: FONT_DISPLAY,  // 16px floor — iOS auto-zoom on focus
-                    resize: 'none', outline: 'none', width: '100%',
-                    boxSizing: 'border-box' as const,
-                  }}
+                  placeholder="Type a note…"
+                  style={{ fontSize: 16 }}
                   rows={3}
                 />
               </div>
@@ -740,9 +710,9 @@ export default function TaskDetailSheet({
                   resize: 'none',
                   width: '100%',
                   padding: 0,
-                  borderBottom: '1px solid rgba(255,255,255,0.18)',
-                  paddingBottom: 10,
-                  marginBottom: 18,
+                  borderBottom: `1px solid ${T.borderDefault}`,
+                  paddingBottom: 8,
+                  marginBottom: 16,
                   lineHeight: 1.3,
                   boxSizing: 'border-box',
                   overflow: 'hidden',
@@ -750,45 +720,34 @@ export default function TaskDetailSheet({
               />
 
               {/* ADD A NOTE */}
-              <div style={{ ...styleT2, color: T.textLow, marginBottom: 10 }}>ADD A NOTE</div>
+              <div style={{ ...LABEL, marginBottom: 8 }}>ADD A NOTE</div>
               <textarea
+                className={chrome.textarea}
                 value={noteText}
                 onChange={e => setNoteText(e.target.value)}
-                placeholder="Write what this is about…"
-                style={{
-                  background: T.bgRaise,
-                  borderRadius: 10,
-                  padding: '12px 14px',
-                  minHeight: 72,
-                  border: `1px solid ${T.borderDefault}`,
-                  color: T.textHi,
-                  fontSize: 16,  // 16px floor — iOS auto-zoom on focus
-                  fontFamily: FONT_DISPLAY,
-                  resize: 'none',
-                  outline: 'none',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  marginBottom: 18,
-                }}
+                placeholder="Type a note…"
+                style={{ fontSize: 16, marginBottom: 16 }}
                 rows={3}
               />
 
               {/* LIST segmented control */}
-              <div style={{ ...styleT2, color: T.textLow, marginBottom: 10 }}>LIST</div>
+              <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
               <div style={{
-                display: 'flex', padding: 4, borderRadius: 11,
-                background: 'rgba(255,255,255,0.05)', marginBottom: 18,
+                display: 'flex', padding: 4, borderRadius: 8, gap: 4,
+                background: T.bgRaise, border: `1px solid ${T.borderDefault}`, marginBottom: 16,
               }}>
                 {(['life', 'entity'] as const).map(seg => (
                   <button
                     key={seg}
+                    type="button"
                     onClick={() => setListType(seg)}
                     style={{
-                      flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
+                      flex: 1, height: 36, padding: '0 8px', borderRadius: 8, cursor: 'pointer',
                       fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 500,
-                      background: listType === seg ? T.textHi : 'transparent',
-                      color: listType === seg ? T.textInvert : T.textMid,
-                      transition: 'background 0.15s, color 0.15s',
+                      border: 'none',
+                      background: listType === seg ? 'rgba(124,58,237,0.22)' : 'transparent',
+                      boxShadow: listType === seg ? 'inset 0 0 0 1px #8B5CF6' : 'none',
+                      color: listType === seg ? T.textHi : T.textMid,
                     }}
                   >
                     {seg === 'life' ? 'Life' : 'Entity'}

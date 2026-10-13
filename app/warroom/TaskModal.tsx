@@ -12,9 +12,10 @@ import { formatAddress } from '@/lib/formatAddress'
 import { isTaskStaged, TaskStagingState } from '@/lib/taskStagingPredicate'
 import {
   DS0, DS2, DS4, DS5, DS6,
-  DT0, DT3, DT4, DT5, DT7, DM2,
+  DT5, DT7,
 } from '@/components/warroom/desktopTypes'
 import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
+import chrome from '@/components/warroom/taskItemChrome.module.css'
 
 // ── Tokens — same as page.tsx C object ───────────────────────────────────────
 const C = {
@@ -36,10 +37,19 @@ const C = {
   borderHair:  'rgba(255,255,255,0.10)',
 } as const
 
-const FONT_MONO = "'JetBrains Mono', ui-monospace, monospace"
 const FONT_DISP = "'Space Grotesk', system-ui, sans-serif"
 
-const STAGED_GRADIENT = 'radial-gradient(circle at 50% 47%, #5B3FA8 0%, #2A1D52 26%, #120E22 62%, #07060C 100%)'
+// One label: small caps, one tracking. Used for the header kicker and every field label.
+const LABEL: React.CSSProperties = {
+  ...DT5,
+  letterSpacing: '0.14em',
+  fontWeight: 600,
+  lineHeight: 1,
+  color: C.textLow,
+}
+
+const BORDER = 'rgba(255,255,255,0.14)'
+const RADIUS = 16
 
 // ── Task type ─────────────────────────────────────────────────────────────────
 export interface Task {
@@ -150,6 +160,24 @@ function ExternalIcon() {
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
       <polyline points="15 3 21 3 21 9"/>
       <line x1="10" y1="14" x2="21" y2="3"/>
+    </svg>
+  )
+}
+
+function ChevronIcon() {
+  return (
+    <svg className={chrome.chevron} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 6.2 L8 10.2 L12 6.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function NotesEmptyIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M7 3.5h7.2L19 8.2V19.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z"/>
+      <path d="M14 3.5V8.2H19"/>
+      <path d="M9 13h6M9 16.5h4"/>
     </svg>
   )
 }
@@ -575,8 +603,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
           maxHeight: 'calc(100vh - 120px)',
           zIndex: 300,
           background: C.bgPanel,
-          border: `1px solid ${C.border}`,
-          borderRadius: 18,
+          border: `1px solid ${BORDER}`,
+          borderRadius: RADIUS,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -584,26 +612,25 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
           color: C.textHi,
         }}
       >
-        {/* ── HEADER (72px) ──────────────────────────────────────────────── */}
-        {/* Three-column flex: left (label, flex:1) · centre (DELETE, shrink-0) · right (actions, flex:1 justify-end)
-            DELETE is immune to label length. × ESC is always the last child of the right zone. */}
+        {/* ── HEADER (56px) ──────────────────────────────────────────────── */}
+        {/* Kicker left. Check and ESC share the center line of this bar. */}
         <div style={{
-          height: 72,
+          height: 56,
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
           padding: '0 24px',
-          borderBottom: `1px solid ${C.borderPanel}`,
+          gap: 16,
+          borderBottom: `1px solid ${BORDER}`,
         }}>
-          {/* Left zone — flex:1 so it absorbs available space */}
-          {/* Check 42: READ → blank header, EDIT → "EDIT". Check 59: fill label */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-            <span style={{ ...DT0, color: C.textMid }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
+            <span style={LABEL}>
               {fill === 'event' ? 'ADD EVENT'
                : fill === 'deadline' ? 'ADD DEADLINE'
                : fill === 'money_mover' ? 'ADD MONEY MOVER'
-               : mode === 'edit' ? 'EDIT'
-               : ''}
+               : isCreate ? 'NEW TASK'
+               : mode === 'edit' ? 'BATTLE PLAN · EDIT'
+               : <>BATTLE PLAN · <span style={{ color: overdue ? C.late : C.textLow }}>{overdue ? 'OVERDUE' : 'OPEN'}</span></>}
             </span>
           </div>
 
@@ -630,34 +657,39 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
             <div style={{ flexShrink: 0, width: 0 }} />
           )}
 
-          {/* Right zone — flex:1, children pushed right. × ESC always last and never moves. */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16 }}>
-          {/* READ mode (non-create, non-fill) → DONE caption + checkmark. EDIT/create/fill → empty. */}
+          {/* Right zone — check and ESC are the same 44px row, so the ring and the close sit on one line. */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+          {/* READ mode (non-create, non-fill) → checkmark. EDIT/create/fill → empty. */}
           {/* Check 40/41: no DONE in create mode (task not saved yet) */}
           {mode === 'read' && !isCreate && fill === 'task' && (
             <MarkCompleteButton
               onClick={handleDone}
               disabled={saving}
-              hitSize={56}
+              hitSize={44}
             />
           )}
 
           {/* × ESC — always last in right zone, never moves. */}
           <button
             onClick={attemptClose}
+            aria-label="Close"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              justifyContent: 'center',
+              gap: 6,
+              height: 44,
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              padding: '4px 8px',
+              padding: '0 8px',
               flexShrink: 0,
             }}
           >
-            <span style={{ fontSize: 22, color: C.textLow, lineHeight: 1 }}>×</span>
-            <span style={{ ...DT5, color: C.textLow }}>ESC</span>
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+              <path d="M3 3 L11 11 M11 3 L3 11" stroke={C.textLow} strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <span style={LABEL}>ESC</span>
           </button>
           </div>{/* end right zone */}
         </div>{/* end header */}
@@ -671,15 +703,14 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
         }}>
           {/* ── LEFT COLUMN (600px) ──────────────────────────────────────── */}
           <div style={{
-            width: 600,
-            flexShrink: 0,
+            flex: 1,
+            minWidth: 0,
             padding: 24,
-            paddingBottom: 32,  // clearance so delete row doesn't press against the footer
             overflowY: 'auto',
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: 20,
+            gap: 16,
           }}>
             {/* Error banner */}
             {error && (
@@ -698,44 +729,48 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
             {/* ── Check 59: fill-specific bodies ──────────────────────────── */}
             {fill === 'event' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <span style={{ ...DT4, color: C.brandLift }}>NEW EVENT</span>
+                <span style={{ ...LABEL, color: C.brandLift }}>NEW EVENT</span>
                 <div>
-                  <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>TITLE</div>
+                  <div style={{ ...LABEL, marginBottom: 8 }}>TITLE</div>
                   <input
                     autoFocus
                     value={evTitle}
                     onChange={e => setEvTitle(e.target.value)}
                     placeholder="Event title"
-                    style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                    className={chrome.field}
+                    style={DS4}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>DATE</div>
+                    <div style={{ ...LABEL, marginBottom: 8 }}>DATE</div>
                     <input
                       type="date"
                       value={evDate}
                       onChange={e => setEvDate(e.target.value)}
-                      style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box', colorScheme: 'dark' } as React.CSSProperties}
+                      className={chrome.field}
+                      style={{ ...DS4, colorScheme: 'dark' }}
                     />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>TIME</div>
+                    <div style={{ ...LABEL, marginBottom: 8 }}>TIME</div>
                     <input
                       type="time"
                       value={evTime}
                       onChange={e => setEvTime(e.target.value)}
-                      style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box', colorScheme: 'dark' } as React.CSSProperties}
+                      className={chrome.field}
+                      style={{ ...DS4, colorScheme: 'dark' }}
                     />
                   </div>
                 </div>
                 <div>
-                  <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>LOCATION (OPTIONAL)</div>
+                  <div style={{ ...LABEL, marginBottom: 8 }}>LOCATION (OPTIONAL)</div>
                   <input
                     value={evLocation}
                     onChange={e => setEvLocation(e.target.value)}
                     placeholder="Location"
-                    style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                    className={chrome.field}
+                    style={DS4}
                   />
                 </div>
               </div>
@@ -743,34 +778,37 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
             {fill === 'deadline' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <span style={{ ...DT4, color: C.brandLift }}>NEW DEADLINE</span>
+                <span style={{ ...LABEL, color: C.brandLift }}>NEW DEADLINE</span>
                 <div>
-                  <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>LABEL</div>
+                  <div style={{ ...LABEL, marginBottom: 8 }}>LABEL</div>
                   <input
                     autoFocus
                     value={dlLabel}
                     onChange={e => setDlLabel(e.target.value)}
                     placeholder="Deadline label"
-                    style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                    className={chrome.field}
+                    style={DS4}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>DATE</div>
+                    <div style={{ ...LABEL, marginBottom: 8 }}>DATE</div>
                     <input
                       type="date"
                       value={dlDate}
                       onChange={e => setDlDate(e.target.value)}
-                      style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box', colorScheme: 'dark' } as React.CSSProperties}
+                      className={chrome.field}
+                      style={{ ...DS4, colorScheme: 'dark' }}
                     />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>TYPE</div>
+                    <div style={{ ...LABEL, marginBottom: 8 }}>TYPE</div>
                     <input
                       value={dlType}
                       onChange={e => setDlType(e.target.value)}
                       placeholder="e.g. inspection"
-                      style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                      className={chrome.field}
+                    style={DS4}
                     />
                   </div>
                 </div>
@@ -779,24 +817,26 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
             {fill === 'money_mover' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <span style={{ ...DT4, color: C.brandLift }}>NEW MONEY MOVER</span>
+                <span style={{ ...LABEL, color: C.brandLift }}>NEW MONEY MOVER</span>
                 <div>
-                  <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>TITLE</div>
+                  <div style={{ ...LABEL, marginBottom: 8 }}>TITLE</div>
                   <input
                     autoFocus
                     value={mmTitle}
                     onChange={e => setMmTitle(e.target.value)}
                     placeholder="Money mover title"
-                    style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                    className={chrome.field}
+                    style={DS4}
                   />
                 </div>
                 <div>
-                  <div style={{ ...DS6, color: C.textLow, marginBottom: 6 }}>VALUE (OPTIONAL)</div>
+                  <div style={{ ...LABEL, marginBottom: 8 }}>VALUE (OPTIONAL)</div>
                   <input
                     value={mmValue}
                     onChange={e => setMmValue(e.target.value)}
                     placeholder="e.g. 850000"
-                    style={{ ...DS4, color: C.textHi, background: C.bgRaise, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px', outline: 'none', fontFamily: FONT_DISP, width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+                    className={chrome.field}
+                    style={DS4}
                   />
                 </div>
               </div>
@@ -804,17 +844,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
             {/* Normal task body — shown for fill='task' (or default) */}
             {fill === 'task' && <>
-            {/* 1. Status eyebrow — DT4: 12px/500/0 mono UPPER (D2.5) */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ ...DT4, color: overdue ? C.late : C.brandLift }}>
-                {overdue ? 'OVERDUE' : 'OPEN'}
-              </span>
-              <span style={{ ...DT4, color: C.textLow }}>
-                BATTLE PLAN
-              </span>
-            </div>
-
-            {/* 2. Title */}
+            {/* Title — status kicker lives in the header */}
             {mode === 'read' ? (
               <div
                 data-modal-title="true"
@@ -823,8 +853,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                   ...DS0,
                   color: C.textHi,
                   cursor: 'pointer',
-                  borderBottom: '1px solid rgba(255,255,255,0.09)',
-                  paddingBottom: 12,
+                  borderBottom: `1px solid ${BORDER}`,
+                  paddingBottom: 8,
                   lineHeight: 1.3,
                 }}
               >
@@ -841,9 +871,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                   color: C.textHi,
                   background: 'transparent',
                   border: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,0.09)',
+                  borderBottom: `1px solid ${BORDER}`,
                   borderRadius: 0,
-                  padding: '0 0 12px',
+                  padding: '0 0 8px',
                   resize: 'none',
                   width: '100%',
                   outline: 'none',
@@ -863,14 +893,14 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   background: C.bgRaise,
-                  borderRadius: 10,
-                  padding: '10px 14px',
+                  borderRadius: 8,
+                  padding: '8px 16px',
                   textDecoration: 'none',
-                  border: `1px solid ${C.borderPanel}`,
+                  border: `1px solid ${BORDER}`,
                 }}
               >
                 <div>
-                  <div style={{ ...DT5, color: C.textLow, marginBottom: 2 }}>DEAL</div>
+                  <div style={{ ...LABEL, marginBottom: 8 }}>DEAL</div>
                   <div style={{ ...DS5, color: C.textHi }}>{dealAddr() || task.deals.name}</div>
                 </div>
                 <div style={{ color: C.brandLift, flexShrink: 0 }}>
@@ -879,51 +909,44 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               </a>
             )}
 
-            {/* 4. DUE section */}
+            {/* 4. DUE section — date sits beside the label. Red only while the committed date is overdue. */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span style={{ ...DT5, color: C.textLow }}>DUE</span>
-                <span style={{ position: 'relative' }}>
-                  {stagedDate && task.due_date && stagedDate !== task.due_date ? (
-                    <span>
-                      <span style={{ ...DS5, color: C.textMid, textDecoration: 'line-through', marginRight: 8 }}>
-                        {formatDue(task.due_date)}
-                      </span>
-                      <span style={{ ...DS5, color: C.brandLift }}>
-                        {formatDue(stagedDate)}
-                      </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                <span style={LABEL}>DUE</span>
+                {stagedDate && task.due_date && stagedDate !== task.due_date ? (
+                  <>
+                    <span style={{ ...DS5, color: C.textLow, textDecoration: 'line-through' }}>
+                      {formatDue(task.due_date)}
                     </span>
-                  ) : displayDate ? (
-                    <span style={{
-                      ...DS5,
-                      color: overdue && !stagedDate ? C.late : C.textMid,
-                    }}>
-                      {formatDue(displayDate)}
+                    <span style={{ ...DS5, color: C.brandLift }}>
+                      {formatDue(stagedDate)}
                     </span>
-                  ) : (
-                    <span style={{ ...DS5, color: C.textLow }}>No due date</span>
-                  )}
-                </span>
+                  </>
+                ) : displayDate ? (
+                  <span style={{
+                    ...DS5,
+                    color: overdue && !stagedDate ? C.late : C.textMid,
+                  }}>
+                    {formatDue(displayDate)}
+                  </span>
+                ) : (
+                  <span style={{ ...DS5, color: C.textLow }}>No due date</span>
+                )}
               </div>
 
               {/* Chips */}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', position: 'relative' }}>
                 {chips.map(chip => {
-                  const isStaged = chip.value !== 'pick' && stagedDate === chip.value
+                  const preset = chip.value !== 'pick'
+                  const pickSelected = !preset && (showDatePicker || (!!stagedDate && stagedDate !== today && stagedDate !== tomorrow && stagedDate !== nextMon))
+                  const isStaged = (preset && stagedDate === chip.value) || pickSelected
                   return (
                     <button
                       key={chip.label}
+                      type="button"
                       onClick={() => chipClick(chip.value)}
-                      style={{
-                        padding: '12px 18px',
-                        borderRadius: 10,
-                        border: isStaged ? 'none' : `1px solid rgba(255,255,255,0.20)`,
-                        background: isStaged ? STAGED_GRADIENT : 'transparent',
-                        ...DS5,
-                        color: isStaged ? C.textHi : C.textMid,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                      }}
+                      className={isStaged ? `${chrome.chip} ${chrome.chipOn}` : chrome.chip}
+                      style={DS5}
                     >
                       {chip.label}
                     </button>
@@ -935,6 +958,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                   <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 8, zIndex: 10 }}>
                     <input
                       type="date"
+                      className={chrome.field}
                       value={pickerDate}
                       onChange={e => {
                         const val = e.target.value
@@ -947,12 +971,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                       onBlur={() => setShowDatePicker(false)}
                       autoFocus
                       style={{
-                        background: C.bgRaise,
-                        border: `1px solid ${C.border}`,
-                        borderRadius: 10,
-                        padding: '10px 14px',
                         ...DS5,
-                        color: C.textHi,
+                        width: 'auto',
                         colorScheme: 'dark',
                       }}
                     />
@@ -961,28 +981,24 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               </div>
             </div>
 
-            {/* 5. LIST — read-only value card in READ state (D11.2: "same field set as mobile as currently built").
-                Mobile shows a bg-raise card with label over value in READ. Segmented control only in EDIT. */}
+            {/* 5. LIST — value row in READ. Segmented control only in EDIT.
+                Empty reads as a closed select: muted placeholder plus a chevron. */}
             <div>
-              <div style={{ ...DT5, color: C.textLow, marginBottom: 8 }}>LIST</div>
+              <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
               {mode === 'read' ? (
-                // READ: plain value card — matches mobile §13.2 read state item 3
-                <div style={{
-                  background: C.bgRaise,
-                  borderRadius: 10,
-                  padding: '10px 14px',
-                  border: `1px solid ${C.borderPanel}`,
-                }}>
-                  <span style={{ ...DS5, color: C.textHi, textTransform: 'capitalize' }}>
-                    {listType ?? '—'}
+                <div className={chrome.fieldStatic}>
+                  <span style={{ ...DS5, color: listType ? C.textHi : C.textLow, textTransform: listType ? 'capitalize' : 'none' }}>
+                    {listType === 'life' ? 'Life' : listType === 'entity' ? 'Entity' : 'No list'}
                   </span>
+                  <ChevronIcon />
                 </div>
               ) : (
                 // EDIT: segmented control
                 <div style={{
                   display: 'flex',
                   background: C.bgRaise,
-                  borderRadius: 10,
+                  borderRadius: 8,
+                  border: `1px solid ${BORDER}`,
                   padding: 4,
                   gap: 4,
                   width: 'fit-content',
@@ -992,12 +1008,15 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
                     return (
                       <button
                         key={lt}
+                        type="button"
                         onClick={() => setListType(prev => prev === lt ? committeListType : lt)}
                         style={{
-                          padding: '8px 20px',
+                          height: 36,
+                          padding: '0 16px',
                           borderRadius: 8,
                           border: 'none',
-                          background: isSelected ? C.brand : 'transparent',
+                          background: isSelected ? 'rgba(124,58,237,0.22)' : 'transparent',
+                          boxShadow: isSelected ? 'inset 0 0 0 1px #8B5CF6' : 'none',
                           ...DS5,
                           color: isSelected ? C.textHi : C.textMid,
                           cursor: 'pointer',
@@ -1017,47 +1036,47 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
             </>}
           </div>
 
-          {/* ── Vertical rule in gap ──────────────────────────────────────── */}
-          <div style={{ width: 1, background: C.borderHair, flexShrink: 0 }} />
-
-          {/* ── RIGHT RAIL (300px) ────────────────────────────────────────── */}
+          {/* ── RIGHT RAIL — one left border, full height of the body ──────── */}
           <div style={{
             width: 300,
             flexShrink: 0,
             display: 'flex',
             flexDirection: 'column',
             minHeight: 0,
+            borderLeft: `1px solid ${BORDER}`,
           }}>
             {/* Rail header */}
             <div style={{
               flexShrink: 0,
-              padding: '0 16px',
-              height: 44,
+              padding: '24px 24px 16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: `1px solid ${C.borderPanel}`,
+              borderBottom: `1px solid ${BORDER}`,
             }}>
-              <span style={{ ...DT5, color: C.textLow }}>NOTES</span>
-              <span style={{ ...DT5, color: C.textLow }}>{notes.length}</span>
+              <span style={LABEL}>NOTES</span>
+              <span style={LABEL}>{notes.length}</span>
             </div>
 
-            {/* Log — scrolls independently */}
+            {/* Log — scrolls independently. Empty state is centered in the column. */}
             <div style={{
               flex: 1,
-              overflowY: 'auto',
+              overflowY: notes.length === 0 ? 'hidden' : 'auto',
               minHeight: 0,
-              padding: 16,
+              padding: notes.length === 0 ? 0 : 16,
               display: 'flex',
               flexDirection: 'column',
-              gap: 12,
+              gap: 16,
             }}>
               {notes.length === 0 ? (
-                <span style={{ ...DS6, color: C.textLow }}>No notes yet</span>
+                <div className={chrome.notesEmpty}>
+                  <NotesEmptyIcon />
+                  <span style={{ ...DS6, color: C.textLow }}>No notes yet</span>
+                </div>
               ) : notes.map((note, i) => (
                 <div key={note.id}>
-                  {i > 0 && <div style={{ height: 1, background: C.borderHair, marginBottom: 12 }} />}
-                  <div style={{ ...DT7, color: C.textLow, marginBottom: 4 } as React.CSSProperties}>
+                  {i > 0 && <div style={{ height: 1, background: BORDER, marginBottom: 16 }} />}
+                  <div style={{ ...DT7, color: C.textLow, marginBottom: 8 } as React.CSSProperties}>
                     {formatNoteDate(note.created_at)}
                   </div>
                   <div style={{ ...DS6, color: C.textMid, lineHeight: 1.5 }}>
@@ -1071,114 +1090,68 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
             <div style={{
               flexShrink: 0,
               padding: 16,
-              borderTop: `1px solid ${C.borderPanel}`,
+              borderTop: `1px solid ${BORDER}`,
             }}>
-              <div style={{ ...DT5, color: C.textLow, marginBottom: 8 }}>ADD A NOTE</div>
+              <div style={{ ...LABEL, marginBottom: 8 }}>ADD A NOTE</div>
               <textarea
                 ref={noteRef}
+                className={chrome.textarea}
                 value={noteText}
                 onChange={e => setNoteText(e.target.value)}
                 placeholder="Type a note…"
-                style={{
-                  ...DS2,  // 16.5px Space Grotesk 500 — D2.5, no raw fontSize
-                  width: '100%',
-                  minHeight: 72,
-                  resize: 'none',
-                  background: C.bgRaise,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 9,
-                  padding: '12px 14px',
-                  color: C.textHi,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                style={DS2}
               />
             </div>
           </div>
         </div>
 
-        {/* ── FOOTER (72px) ────────────────────────────────────────────────── */}
+        {/* ── FOOTER ───────────────────────────────────────────────────────── */}
         <div style={{
-          height: 72,
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
-          padding: '0 24px',
-          gap: 12,
-          borderTop: `1px solid ${C.borderPanel}`,
+          padding: 16,
+          paddingLeft: 24,
+          paddingRight: 24,
+          gap: 16,
+          borderTop: `1px solid ${BORDER}`,
         }}>
-          {/* Left: EDIT / CANCEL asset slot — 161.5×60, PNG centred.
-              Check 40: hide this slot entirely in create mode (no EDIT toggle needed).
-              Check 59: hide for fill modes too. */}
-          <div style={{ width: 161.5, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {!isCreate && fill === 'task' && (
-              <button
-                onClick={mode === 'read' ? enterEdit : cancelEdit}
-                style={{
-                  background: 'transparent', border: 'none', padding: 0,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={mode === 'read' ? '/assets/edit/edit-h180.png' : '/assets/cancel/cancel-h180.png'}
-                  alt={mode === 'read' ? 'Edit' : 'Cancel'}
-                  height={60}
-                  style={{ height: 60, width: 'auto', display: 'block' }}
-                />
-              </button>
-            )}
-          </div>
+          {/* Left: EDIT / CANCEL. Hidden in create mode and fill modes. */}
+          {!isCreate && fill === 'task' && (
+            <button
+              type="button"
+              className={chrome.editHit}
+              onClick={mode === 'read' ? enterEdit : cancelEdit}
+              aria-label={mode === 'read' ? 'Edit' : 'Cancel'}
+            >
+              <span><span className={chrome.editLabel}>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span></span>
+            </button>
+          )}
 
-          {/* Spacer */}
           <div style={{ flex: 1 }} />
 
-          {/* CONFIRM slot — always 148.3px wide */}
-          <div style={{ width: 148.3, display: 'flex', justifyContent: 'flex-end' }}>
+          {/* CONFIRM — inert outline until something is staged, violet fill once it is. */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', minHeight: 44 }}>
             {committed ? (
-              // State: committed (1.5s flash)
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src="/assets/check/check-h280.png"
                 alt="Saved"
-                height={88}
-                style={{ height: 88, width: 'auto' }}
+                height={40}
+                style={{ height: 40, width: 'auto', display: 'block' }}
               />
-            ) : isActive ? (
-              // State: live
-              <button
-                onClick={handleConfirm}
-                disabled={saving}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  padding: 0,
-                  cursor: saving ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/assets/confirm/confirm-h180.png"
-                  alt="Confirm"
-                  height={60}
-                  style={{ height: 60, width: 'auto' }}
-                />
-              </button>
             ) : (
-              // State: inert
-              <div style={{
-                width: 148.3,
-                height: 48,
-                background: C.bgRaise,
-                borderRadius: 24,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <span style={{ ...DT3, color: C.textLow, fontFamily: FONT_MONO }}>CONFIRM</span>
-              </div>
+              <button
+                type="button"
+                className={chrome.confirmHit}
+                onClick={handleConfirm}
+                disabled={!isActive || saving}
+                aria-disabled={!isActive || saving}
+              >
+                <span className={isActive ? chrome.confirmOn : chrome.confirmOff} style={{ opacity: saving ? 0.6 : 1 }}>
+                  {saving ? 'SAVING…' : 'CONFIRM'}
+                </span>
+              </button>
             )}
           </div>
         </div>
