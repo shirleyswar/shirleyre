@@ -48,6 +48,16 @@ const LABEL: React.CSSProperties = {
   color: C.textLow,
 }
 
+// Header kicker only. Field labels stay on LABEL.
+const KICKER: React.CSSProperties = {
+  ...DT5,
+  fontSize: 13,
+  fontWeight: 600,
+  letterSpacing: '0.12em',
+  lineHeight: 1,
+  color: '#B8B8C0',
+}
+
 const BORDER = 'rgba(255,255,255,0.14)'
 const RADIUS = 16
 
@@ -624,13 +634,13 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
           borderBottom: `1px solid ${BORDER}`,
         }}>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
-            <span style={LABEL}>
+            <span style={KICKER}>
               {fill === 'event' ? 'ADD EVENT'
                : fill === 'deadline' ? 'ADD DEADLINE'
                : fill === 'money_mover' ? 'ADD MONEY MOVER'
                : isCreate ? 'NEW TASK'
                : mode === 'edit' ? 'BATTLE PLAN · EDIT'
-               : <>BATTLE PLAN · <span style={{ color: overdue ? C.late : C.textLow }}>{overdue ? 'OVERDUE' : 'OPEN'}</span></>}
+               : <>BATTLE PLAN · <span style={{ color: overdue ? C.late : '#B8B8C0' }}>{overdue ? 'OVERDUE' : 'OPEN'}</span></>}
             </span>
           </div>
 
@@ -696,21 +706,22 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
         {/* ── CONTENT ──────────────────────────────────────────────────────── */}
         <div style={{
+          position: 'relative',
           flex: 1,
           display: 'flex',
           minHeight: 0,
-          overflow: 'hidden',
         }}>
-          {/* ── LEFT COLUMN (600px) ──────────────────────────────────────── */}
+          {/* ── LEFT COLUMN — its content sets the body height ───────────── */}
           <div style={{
             flex: 1,
             minWidth: 0,
-            padding: 24,
+            marginRight: 300,
+            padding: '16px 24px 16px',
             overflowY: 'auto',
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: 16,
+            gap: 12,
           }}>
             {/* Error banner */}
             {error && (
@@ -1036,10 +1047,15 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
             </>}
           </div>
 
-          {/* ── RIGHT RAIL — one left border, full height of the body ──────── */}
+          {/* ── RIGHT RAIL — pinned to the left column, so the note field
+              shares the LIST field's bottom edge. Out of flow so its
+              empty state cannot stretch the modal. ─────────────────────── */}
           <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
             width: 300,
-            flexShrink: 0,
             display: 'flex',
             flexDirection: 'column',
             minHeight: 0,
@@ -1048,7 +1064,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
             {/* Rail header */}
             <div style={{
               flexShrink: 0,
-              padding: '24px 24px 16px',
+              padding: '16px 16px 8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -1110,9 +1126,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
-          padding: 16,
-          paddingLeft: 24,
-          paddingRight: 24,
+          boxSizing: 'border-box',
+          height: 64,
+          padding: '0 24px',
           gap: 16,
           borderTop: `1px solid ${BORDER}`,
         }}>
@@ -1124,14 +1140,14 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               onClick={mode === 'read' ? enterEdit : cancelEdit}
               aria-label={mode === 'read' ? 'Edit' : 'Cancel'}
             >
-              <span><span className={chrome.editLabel}>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span></span>
+              <span>{mode === 'read' ? 'EDIT' : 'CANCEL'}</span>
             </button>
           )}
 
           <div style={{ flex: 1 }} />
 
           {/* CONFIRM — inert outline until something is staged, violet fill once it is. */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', minHeight: 44 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             {committed ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
