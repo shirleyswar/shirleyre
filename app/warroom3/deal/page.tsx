@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 import { calcSaleCommission, calcLeaseCommission, HOUSE_SPLIT } from '@/lib/dealMath'
+import { latestArchiveKind, placeDealInService, recordArchive, type ArchiveKind } from '@/lib/dealArchive'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -358,6 +359,53 @@ function SectionRow({ label, meta }: { label: string; meta?: string }) {
   )
 }
 
+function CloseButton({
+  label, action, busy, tone, onClick,
+}: {
+  label: string
+  action: string
+  busy: boolean
+  tone: 'brand' | 'service' | 'sale' | 'lease' | 'muted'
+  onClick: () => void
+}) {
+  const color = tone === 'brand' ? T.brandLift
+    : tone === 'service' ? '#6F6D80'
+    : tone === 'sale' ? T.moneyIn
+    : tone === 'lease' ? '#5EEAD4'
+    : T.textLow
+  const border = tone === 'brand' ? 'rgba(167,139,250,0.55)'
+    : tone === 'service' ? 'rgba(255,255,255,0.18)'
+    : tone === 'sale' ? 'rgba(52,211,153,0.55)'
+    : tone === 'lease' ? 'rgba(94,234,212,0.55)'
+    : 'rgba(255,255,255,0.18)'
+  return (
+    <button
+      type="button"
+      data-close-action={action}
+      disabled={busy}
+      onClick={onClick}
+      style={{
+        flex: 1,
+        minHeight: 40,
+        padding: '0 10px',
+        borderRadius: 24,
+        background: 'none',
+        border: `1px solid ${border}`,
+        color,
+        fontFamily: FONT_MONO,
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '0.08em',
+        cursor: busy ? 'default' : 'pointer',
+        opacity: busy ? 0.5 : 1,
+        WebkitTapHighlightColor: 'transparent',
+      } as React.CSSProperties}
+    >
+      {label}
+    </button>
+  )
+}
+
 // ── Economics grid cell ───────────────────────────────────────────────────────
 function EconCell({ label, value, fullWidth }: { label: string; value: string; fullWidth?: boolean }) {
   return (
@@ -396,6 +444,10 @@ function DealPageContent() {
   const [error, setError] = useState(false)
   const commissionRef = useRef<HTMLDivElement>(null)
   const [padBottom, setPadBottom] = useState(104)
+  const [archiveKind, setArchiveKind] = useState<ArchiveKind | null>(null)
+  const [closePick, setClosePick] = useState(false)
+  const [closeBusy, setCloseBusy] = useState(false)
+  const [closeErr, setCloseErr] = useState('')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -452,6 +504,15 @@ function DealPageContent() {
           .eq('deal_id', dealId)
           .limit(100)
 
+        const { data: archiveRows } = await supabase
+          .from('activity_log')
+          .select('action_type, description, created_at')
+          .eq('deal_id', dealId)
+          .eq('action_type', 'archived')
+        setArchiveKind(latestArchiveKind((archiveRows ?? []) as { action_type: string; description: string | null; created_at: string | null }[]))
+        setClosePick(false)
+        setCloseErr('')
+
         const isLease = econData?.transaction_type === 'lease'
         let est_commission: number | null = null
         if (isLease) {
@@ -496,6 +557,28 @@ function DealPageContent() {
 
   function goBack() {
     router.back()
+  }
+
+  async function handleArchive(kind: ArchiveKind) {
+    if (!deal || closeBusy) return
+    setCloseBusy(true)
+    setCloseErr('')
+    const err = await recordArchive(deal.id, kind)
+    setCloseBusy(false)
+    if (err) { setCloseErr(err); return }
+    setArchiveKind(kind)
+    setClosePick(false)
+  }
+
+  async function handlePlaceInService() {
+    if (!deal || closeBusy) return
+    setCloseBusy(true)
+    setCloseErr('')
+    const err = await placeDealInService(deal.id)
+    setCloseBusy(false)
+    if (err) { setCloseErr(err); return }
+    setDeal({ ...deal, status: 'in_service' })
+    setClosePick(false)
   }
 
   if (loading) {
@@ -633,6 +716,49 @@ function DealPageContent() {
             </div>
           )}
         </div>
+
+        {deal.status === 'closed' && (
+          <div style={{ padding: '0 18px 16px' }}>
+            {archiveKind ? (
+              <div
+                data-archive={archiveKind}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: 32,
+                  padding: '0 12px',
+                  borderRadius: 16,
+                  border: '1px solid rgba(148,163,184,0.45)',
+                  fontFamily: FONT_MONO,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  color: '#94A3B8',
+                }}
+              >
+                ARCHIVED · {archiveKind.toUpperCase()}
+              </div>
+            ) : (
+              <div data-close-choice="open" style={{ display: 'flex', gap: 8 }}>
+                {closePick ? (
+                  <>
+                    <CloseButton label="SALE" action="sale" busy={closeBusy} tone="sale" onClick={() => handleArchive('sale')} />
+                    <CloseButton label="LEASE" action="lease" busy={closeBusy} tone="lease" onClick={() => handleArchive('lease')} />
+                    <CloseButton label="CANCEL" action="cancel" busy={closeBusy} tone="muted" onClick={() => setClosePick(false)} />
+                  </>
+                ) : (
+                  <>
+                    <CloseButton label="ARCHIVE" action="archive" busy={closeBusy} tone="brand" onClick={() => { setCloseErr(''); setClosePick(true) }} />
+                    <CloseButton label="PLACE IN SERVICE" action="in-service" busy={closeBusy} tone="service" onClick={handlePlaceInService} />
+                  </>
+                )}
+              </div>
+            )}
+            {closeErr && (
+              <div style={{ marginTop: 8, fontFamily: FONT_MONO, fontSize: 11, color: T.late }}>{closeErr}</div>
+            )}
+          </div>
+        )}
 
         {/* ── ITEM 71 — PHOTO ───────────────────────────────────────────────────
             16:9 within gutters, radius 14, placeholder when absent.
