@@ -64,7 +64,5 @@ jobs:
           echo "Cloudflare token is set; requesting the latest Pages deployment"
           curl -sS -H "Authorization: Bearer $token" \
             "https://api.cloudflare.com/client/v4/accounts/e7969d8b6291f3aa7784d466e5d22b51/pages/projects/shirleyre/deployments?per_page=3" \
-            | python3 -c 'import json,sys; d=json.load(sys.stdin); print("success", d.get("success"));
-res=d.get("result") or [];
-[print(i.get("id"), i.get("environment"), (i.get("latest_stage") or {}).get("status"), (i.get("latest_stage") or {}).get("name")) for i in res[:3]];
-err=(d.get("errors") or [{}])[0]; print(err.get("message",""))'
+            -o /tmp/pages-deployments.json
+          python3 -c 'import json; d=json.load(open("/tmp/pages-deployments.json")); print("success", d.get("success")); errs=d.get("errors") or []; print("error", (errs[0].get("message") if errs else "")); [print((i.get("id") or ""), (i.get("environment") or ""), ((i.get("latest_stage") or {}).get("status") or ""), ((i.get("latest_stage") or {}).get("name") or "")) for i in (d.get("result") or [])[:3]]'
