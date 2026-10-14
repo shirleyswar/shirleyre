@@ -297,3 +297,122 @@
 .notesEmpty svg {
   display: block;
 }
+
+/* New-task card. Title is the hero. Due and tag stay collapsed until tapped. */
+.createFields {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.heroTitle {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 2px 0 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.55);
+  border-radius: 0;
+  color: #EFEEF4;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 23px;
+  font-weight: 500;
+  line-height: 1.3;
+  caret-color: #A78BFA;
+}
+
+.heroTitle::placeholder {
+  color: #8E8CA0;
+  opacity: 1;
+}
+
+.heroTitle:focus {
+  border-bottom-color: #C4B5FD;
+  box-shadow: 0 10px 16px -14px rgba(167, 139, 250, 0.95);
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.metaChip {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: #B8B6C6;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.metaChipSet {
+  color: #EFEEF4;
+}
+
+.metaChipOn,
+.metaChipOn:hover {
+  border-color: rgba(167, 139, 250, 0.7);
+  color: #EFEEF4;
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.28);
+}
+
+.metaCaret {
+  font-size: 10px;
+  color: #8E8CA0;
+  line-height: 1;
+}
+
+.inlineOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.createClose {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: #8E8CA0;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.createClose:hover {
+  color: #EFEEF4;
+}
+
+.createCloseRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2px;
+}

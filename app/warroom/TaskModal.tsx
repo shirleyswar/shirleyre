@@ -18,6 +18,7 @@ import MarkCompleteButton, { CompleteRing } from '@/components/warroom/MarkCompl
 import CalendarPicker from '@/components/warroom3/CalendarPicker'
 import chrome from '@/components/warroom/taskItemChrome.module.css'
 import TaskTagControl from '@/components/warroom/TaskTagControl'
+import CreateTaskFields from '@/components/warroom/CreateTaskFields'
 import MoneyAmountField from '@/components/warroom/MoneyAmountField'
 import { DM0 } from '@/components/warroom/desktopTypes'
 import { commitMoney } from '@/lib/moneyInput'
@@ -219,6 +220,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
   const [showDiscard, setShowDiscard] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
+  const [dueMenu, setDueMenu] = useState(false)
+  const [tagMenu, setTagMenu] = useState(false)
   const [pickerDate, setPickerDate] = useState('')
   const [titleEditing, setTitleEditing] = useState(false)
   const [committedDue, setCommittedDue] = useState<string | null>(task.due_date)
@@ -244,6 +247,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Existing Battle Plan items save themselves. Create and fill forms still confirm.
   const live = !isCreate && fill === 'task'
+  const createCard = isCreate && fill === 'task'
   const modalRef = useRef<HTMLDivElement>(null)
   const createLock = useRef(false)
   const desktopDeleteRef = useRef<HTMLButtonElement>(null)
@@ -788,6 +792,49 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
   // ── Due display ───────────────────────────────────────────────────────────
   const displayDate = live ? committedDue : (stagedDate ?? task.due_date)
   const overdue = isOverdue(live ? committedDue : task.due_date)
+  const createDueLabel = !stagedDate ? 'No due date'
+    : stagedDate === today ? 'Today'
+    : stagedDate === tomorrow ? 'Tomorrow'
+    : stagedDate === nextMon ? 'Next Mon'
+    : formatDue(stagedDate)
+  const activeDue: string | 'pick' | null = showDatePicker ? 'pick'
+    : stagedDate === today || stagedDate === tomorrow || stagedDate === nextMon ? stagedDate
+    : stagedDate ? 'pick'
+    : null
+
+  function chooseCreateDue(value: string | 'pick') {
+    if (value === 'pick') {
+      void chipClick('pick')
+      return
+    }
+    void chipClick(value)
+    setDueMenu(false)
+  }
+
+  function chooseCreateTag(next: TaskTag) {
+    if (next === 'entity') {
+      if (listType !== 'entity') {
+        setListType('entity')
+        setEntityName(null)
+      }
+      setTagMenu(true)
+      return
+    }
+    if (listType === next) {
+      setListType(null)
+      setEntityName(null)
+    } else {
+      setListType(next)
+      setEntityName(null)
+    }
+    setTagMenu(false)
+  }
+
+  function chooseCreateEntity(name: string) {
+    setListType('entity')
+    setEntityName(name)
+    setTagMenu(false)
+  }
 
   // ── Scrim click — D11.4 ruling 3 ─────────────────────────────────────────
   function handleScrimClick() {
@@ -803,7 +850,9 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.65)',
+          background: createCard ? 'rgba(5,5,9,0.78)' : 'rgba(0,0,0,0.65)',
+          backdropFilter: createCard ? 'blur(10px)' : undefined,
+          WebkitBackdropFilter: createCard ? 'blur(10px)' : undefined,
           zIndex: 200,
         }}
       />
@@ -820,12 +869,13 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 'min(960px, calc(100vw - 96px))',
+          width: createCard ? 'min(560px, calc(100vw - 48px))' : 'min(960px, calc(100vw - 96px))',
           maxHeight: 'calc(100vh - 120px)',
           zIndex: 300,
           background: C.bgPanel,
-          border: `1px solid ${BORDER}`,
-          borderRadius: RADIUS,
+          border: createCard ? '1px solid rgba(139, 92, 246, 0.5)' : `1px solid ${BORDER}`,
+          borderRadius: createCard ? 20 : RADIUS,
+          boxShadow: createCard ? '0 0 0 1px rgba(139, 92, 246, 0.16), 0 24px 64px rgba(0,0,0,0.5), 0 0 48px rgba(124, 58, 237, 0.3)' : undefined,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -833,7 +883,20 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
           color: C.textHi,
         }}
       >
-        {/* ── HEADER (56px) ──────────────────────────────────────────────── */}
+        {createCard && (
+          <div className={chrome.createCloseRow} style={{ padding: '12px 16px 0' }}>
+            <button type="button" className={chrome.createClose} onClick={attemptClose} aria-label="Close">
+              <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true">
+                <path d="M3 3 L11 11 M11 3 L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              ESC
+            </button>
+          </div>
+        )}
+
+        {/* ── HEADER (56px) — create has no kicker, only the corner close ── */}
+        {!createCard && (
+        <>
         {/* Kicker left. Check and ESC share the center line of this bar. */}
         <div style={{
           height: 56,
@@ -919,6 +982,8 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
           </button>
           </div>{/* end right zone */}
         </div>{/* end header */}
+        </>
+        )}
 
         {/* ── CONTENT ──────────────────────────────────────────────────────── */}
         <div style={{
@@ -931,7 +996,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
           <div style={{
             flex: 1,
             minWidth: 0,
-            padding: '16px 24px 20px',
+            padding: createCard ? '4px 22px 0' : '16px 24px 20px',
             overflowY: 'auto',
             minHeight: 0,
             display: 'flex',
@@ -1066,7 +1131,47 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
             )}
 
             {/* Normal task body — shown for fill='task' (or default) */}
-            {fill === 'task' && <>
+            {fill === 'task' && createCard && (
+              <CreateTaskFields
+                title={localTitle}
+                onTitle={setLocalTitle}
+                titleRef={titleRef}
+                dueLabel={createDueLabel}
+                dueOpen={dueMenu}
+                onToggleDue={() => { setDueMenu(open => !open); setTagMenu(false); setShowDatePicker(false) }}
+                dueOptions={chips}
+                activeDue={activeDue}
+                onDue={chooseCreateDue}
+                picker={showDatePicker ? (
+                  <div style={{ marginTop: 8 }}>
+                    <input
+                      type="date"
+                      className={chrome.field}
+                      value={pickerDate}
+                      onChange={e => {
+                        const val = e.target.value
+                        setPickerDate(val)
+                        if (val) {
+                          setStagedDate(val)
+                          setShowDatePicker(false)
+                          setDueMenu(false)
+                        }
+                      }}
+                      onBlur={() => setShowDatePicker(false)}
+                      autoFocus
+                      style={{ ...DS5, width: 'auto', colorScheme: 'dark' }}
+                    />
+                  </div>
+                ) : null}
+                tag={listType}
+                entityName={entityName}
+                tagOpen={tagMenu}
+                onToggleTag={() => { setTagMenu(open => !open); setDueMenu(false) }}
+                onTag={chooseCreateTag}
+                onEntity={chooseCreateEntity}
+              />
+            )}
+            {fill === 'task' && !createCard && <>
             {/* Title — click to edit. Enter or blur saves, Esc reverts. */}
             {live ? (
               titleEditing ? (
@@ -1308,10 +1413,10 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box',
-          height: 64,
-          padding: '0 24px',
+          height: createCard ? 'auto' : 64,
+          padding: createCard ? '16px 22px 18px' : '0 24px',
           gap: 16,
-          borderTop: `1px solid ${BORDER}`,
+          borderTop: createCard ? 'none' : `1px solid ${BORDER}`,
         }}>
           {/* Left: EDIT / CANCEL. Hidden in create mode and fill modes. */}
           {!isCreate && fill === 'task' && (

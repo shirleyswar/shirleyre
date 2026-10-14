@@ -54,6 +54,8 @@ interface BottomSheetProps {
   footer?: React.ReactNode
   // Task item sheet: header is a label and an action, with no stretching rule between them.
   noHairline?: boolean
+  // New-task create: short bottom card, glow border, blurred scrim, no header kicker.
+  appearance?: 'panel' | 'create'
 }
 
 export default function BottomSheet({
@@ -72,6 +74,7 @@ export default function BottomSheet({
   scrollPaddingBottom = 104,
   footer,
   noHairline = false,
+  appearance = 'panel',
 }: BottomSheetProps) {
   const prefersReduced = useReducedMotion()
   const sheetTop = size === 'full' ? 34 : size === 'short' ? 112 : 78
@@ -154,7 +157,9 @@ export default function BottomSheet({
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(0,0,0,0.60)',
+              background: appearance === 'create' ? 'rgba(5,5,9,0.78)' : 'rgba(0,0,0,0.60)',
+              backdropFilter: appearance === 'create' ? 'blur(10px)' : undefined,
+              WebkitBackdropFilter: appearance === 'create' ? 'blur(10px)' : undefined,
               zIndex: 500,
             }}
           />
@@ -185,6 +190,15 @@ export default function BottomSheet({
               background: '#12111B',           // bg-panel
               borderRadius: '26px 26px 0 0',   // §5.8
               borderTop: '1px solid rgba(255,255,255,0.14)',  // border-default
+              ...(appearance === 'create' ? {
+                top: 'auto',
+                height: 'auto',
+                maxHeight: 'min(80vh, calc(100vh - 120px))',
+                borderRadius: '22px 22px 0 0',
+                border: '1px solid rgba(139, 92, 246, 0.5)',
+                borderBottom: 'none',
+                boxShadow: '0 0 0 1px rgba(139, 92, 246, 0.16), 0 0 42px rgba(124, 58, 237, 0.32)',
+              } : {}),
               zIndex: 501,
               display: 'flex',
               flexDirection: 'column',
@@ -196,8 +210,9 @@ export default function BottomSheet({
             }}
           >
             {/* Header row: label · hairline · headerAction|count.
-                Check 6: exactly three children — title, hairline, count/action. No extra elements. */}
-            <div style={{
+                Check 6: exactly three children — title, hairline, count/action. No extra elements.
+                Create hides this kicker. The sheet supplies its own corner close. */}
+            {appearance !== 'create' && <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: 10,
@@ -253,21 +268,22 @@ export default function BottomSheet({
                   <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>}
-            </div>
+            </div>}
 
             {/* Internal scroll container — padding-bottom configurable (default 104px §5.7/§5.8) */}
             <div
               ref={scrollRef}
               style={{
-                flex: 1,
+                flex: appearance === 'create' ? '0 1 auto' : 1,
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 minHeight: 0,
                 // height:0 forces iOS Safari to honour the flex:1 constraint.
                 // Without it, iOS ignores min-height:0 on flex children and the scroll
                 // body expands to content height, pushing the footer outside overflow:hidden.
-                height: 0,
-                paddingBottom: footer ? 0 : scrollPaddingBottom,
+                // Create sizes to its fields instead.
+                height: appearance === 'create' ? 'auto' : 0,
+                paddingBottom: appearance === 'create' || footer ? 0 : scrollPaddingBottom,
               }}
             >
               {children}
