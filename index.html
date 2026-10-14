@@ -161,7 +161,7 @@
   .form-group textarea { resize: vertical; min-height: 110px; }
   .form-submit { background: var(--gold); color: var(--bg); border: none; border-radius: 100px; padding: 14px 32px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; align-self: flex-start; margin-top: 4px; }
   .form-submit:hover { background: var(--gold2); transform: translateY(-1px); }
-  footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 5px 12px; text-align: center; font-family: 'Syne Mono', monospace; font-size: 10px; letter-spacing: 0.01em; line-height: 1.25; color: var(--muted); white-space: nowrap; }
+  footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 9px 16px 10px; text-align: center; font-family: 'Syne Mono', monospace; font-size: 12px; letter-spacing: 0.01em; line-height: 1.4; color: var(--muted); white-space: nowrap; }
   footer a { color: #FDDD3E; text-decoration: none; }
   footer a:hover { color: #fff; }
   /* ── FEATURE CARDS ── */
@@ -257,7 +257,7 @@
     .need-form { flex-direction: column; align-items: stretch; }
     .need-fields { grid-template-columns: 1fr 1fr; }
     .need-span { grid-column: 1 / -1; }
-    .need-block button { margin-top: 8px; align-self: flex-start; }
+    .need-block button { margin-top: 10px; align-self: stretch; width: 100%; height: 44px; }
     .hero-icon { width: 96px; height: 96px; }
     .hero-name { font-size: clamp(32px, 10vw, 48px); }
     .hero-tagline { font-size: 11px; letter-spacing: 0.16em; margin-bottom: 10px; }
@@ -265,7 +265,7 @@
     .hero-firm { font-size: 10px; letter-spacing: 0.08em; }
     .about-grid, .contact-grid { grid-template-columns: 1fr; gap: 40px; }
     .listings-grid, .portfolio-grid { grid-template-columns: 1fr; }
-    footer { white-space: normal; padding: 6px 14px; line-height: 1.45; }
+    footer { white-space: normal; padding: 10px 16px; line-height: 1.5; font-size: 12px; }
     .pulse-band { padding: 48px 24px; }
   }
 
@@ -298,17 +298,36 @@
     100% { transform: translateX(calc(-50% - 5px)); }
   }
 
-  .need-block { position: relative; z-index: 5; width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 8px 12px; border: 1px solid rgba(253,221,62,0.28); background: rgba(255,255,255,0.03); border-radius: 10px; }
-  .need-block h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -0.02em; color: #fff; margin: 0 0 2px; }
-  .need-lede { font-family: 'Syne Mono', monospace; font-size: 11px; letter-spacing: 0.02em; color: var(--muted, #8a8070); margin: 0 0 6px; line-height: 1.25; }
-  .need-form { display: flex; align-items: flex-end; gap: 8px; }
-  .need-fields { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr 1.35fr; gap: 8px; }
+  .need-block { position: relative; z-index: 5; width: min(1100px, calc(100% - 32px)); margin: 0 auto 12px; padding: 16px 16px 14px; border: 1px solid rgba(232,160,32,0.22); background: rgba(255,255,255,0.03); border-radius: 16px; overflow: visible; }
+  .need-block h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; color: #fff; margin: 0 0 3px; line-height: 1.15; }
+  .need-lede { font-family: 'Syne', sans-serif; font-size: 13px; letter-spacing: 0; color: #c5d0d4; margin: 0 0 12px; line-height: 1.35; }
+  .need-form { display: flex; align-items: flex-end; gap: 12px; }
+  .need-fields { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr 1.35fr; gap: 10px; align-items: end; }
   .need-span { grid-column: auto; }
-  .need-block label { display: flex; flex-direction: column; gap: 3px; font-family: 'Syne Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted, #8a8070); }
-  .need-block input { background: #060d0f; border: 1px solid rgba(253,221,62,0.35); border-radius: 6px; color: #fff; padding: 5px 8px; font-family: 'Syne', sans-serif; font-size: 13px; letter-spacing: 0; text-transform: none; outline: none; width: 100%; }
-  .need-block input:focus { border-color: #FDDD3E; }
-  .need-block button { margin-top: 0; background: #FDDD3E; color: #060d0f; border: none; border-radius: 100px; padding: 6px 14px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.02em; cursor: pointer; white-space: nowrap; }
+  .need-block label { display: flex; flex-direction: column; gap: 6px; font-family: 'Syne Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #c5d0d4; }
+  .need-block input { background: rgba(0,0,0,0.35); border: 1px solid rgba(232,160,32,0.28); border-radius: 10px; color: #fff; height: 40px; padding: 0 12px; font-family: 'Syne', sans-serif; font-size: 14px; letter-spacing: 0; text-transform: none; outline: none; width: 100%; }
+  .need-block input::placeholder { color: rgba(232,224,212,0.4); }
+  .need-block input:focus { border-color: #FDDD3E; background: rgba(232,160,32,0.04); }
+  .need-block button { margin-top: 0; align-self: flex-end; background: #FDDD3E; color: #060d0f; border: none; border-radius: 999px; height: 40px; padding: 0 22px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.01em; cursor: pointer; white-space: nowrap; }
   .need-block button:hover { background: #fff; }
+  .contact-toggle { appearance: none; -webkit-appearance: none; background: transparent; border: 0; margin: 0; padding: 0; width: 100%; min-width: 0; color: inherit; font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; z-index: 1; }
+  .contact-closed { display: flex; flex-direction: column; align-items: center; width: 100%; }
+  .contact-closed .feat-icon { display: block; }
+  .contact-actions { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+  .contact-actions[hidden] { display: none; }
+  .contact-actions a { flex: 1 1 0; display: flex; align-items: center; justify-content: center; min-height: 36px; padding: 8px 10px; border-radius: 999px; border: 1px solid rgba(232,160,32,0.55); background: rgba(6,13,15,0.72); color: #f5c040; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.02em; line-height: 1; text-decoration: none; }
+  .contact-actions a:hover, .contact-actions a:focus-visible { background: #FDDD3E; color: #060d0f; border-color: #FDDD3E; outline: none; }
+  .contact-card:hover { transform: none; }
+  .contact-card.is-open .contact-closed { visibility: hidden; }
+  .contact-card.is-open .contact-actions { position: absolute; left: 12px; right: 12px; top: 50%; transform: translateY(-50%); width: auto; }
+  .contact-card:has(.contact-toggle:focus-visible) { border-color: rgba(232,160,32,0.75); box-shadow: inset 0 0 0 1px rgba(232,160,32,0.45); }
+  @media (max-width: 900px) {
+    .need-form { flex-direction: column; align-items: stretch; }
+    .need-fields { grid-template-columns: 1fr 1fr; }
+    .need-span { grid-column: 1 / -1; }
+    .need-block button { margin-top: 10px; align-self: stretch; width: 100%; height: 44px; }
+    .contact-actions a { min-height: 44px; }
+  }
   @media (max-width: 640px) {
     .need-block { width: calc(100% - 32px); padding: 18px 16px; }
     .need-fields { grid-template-columns: 1fr; }
@@ -355,18 +374,19 @@
       grid-row: 5;
       width: min(1720px, calc(100vw - 96px));
       max-width: none;
-      margin: 0 auto clamp(10px, 1.25vh, 20px);
-      padding: clamp(14px, 1.85vh, 28px) clamp(16px, 1.5vw, 32px);
-      border-radius: clamp(10px, 0.7vw, 16px);
+      margin: 0 auto clamp(12px, 1.5vh, 20px);
+      padding: clamp(14px, 1.55vh, 20px) clamp(18px, 1.4vw, 28px) clamp(12px, 1.35vh, 18px);
+      border-radius: 18px;
     }
-    .need-block h2 { font-size: clamp(18px, 2.15vh, 30px); margin-bottom: clamp(4px, 0.5vh, 10px); }
-    .need-lede { font-size: clamp(11px, 1.35vh, 16px); margin-bottom: clamp(8px, 1.05vh, 16px); }
-    footer { grid-row: 6; }
-    .need-form { gap: clamp(10px, 1vw, 20px); }
-    .need-fields { gap: clamp(10px, 0.9vw, 18px); }
-    .need-block label { font-size: clamp(9px, 1.05vh, 13px); gap: clamp(4px, 0.5vh, 8px); }
-    .need-block input { font-size: clamp(13px, 1.5vh, 18px); padding: clamp(8px, 1.05vh, 14px) clamp(10px, 0.75vw, 16px); }
-    .need-block button { font-size: clamp(13px, 1.45vh, 18px); padding: clamp(9px, 1.2vh, 16px) clamp(18px, 1.4vw, 32px); }
+    .need-block h2 { font-size: clamp(17px, 1.85vh, 24px); margin-bottom: 2px; }
+    .need-lede { font-size: clamp(12px, 1.3vh, 15px); margin-bottom: clamp(8px, 1vh, 12px); }
+    footer { grid-row: 6; font-size: 12.5px; padding: 10px 20px 11px; line-height: 1.35; }
+    .need-form { gap: clamp(12px, 1vw, 18px); }
+    .need-fields { gap: clamp(10px, 0.8vw, 16px); }
+    .need-block label { font-size: clamp(11px, 1.15vh, 12px); gap: 6px; }
+    .need-block input, .need-block button { height: clamp(36px, 4.2vh, 44px); font-size: clamp(14px, 1.4vh, 16px); }
+    .need-block input { padding: 0 12px; }
+    .need-block button { padding: 0 clamp(18px, 1.3vw, 28px); }
   }
 </style>
 </head>
@@ -487,19 +507,25 @@
       <div class="feat-arrow">→</div>
     </a>
 
-    <!-- Contact -->
-    <a href="tel:+12259075214" class="feat-card">
-      <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/>
-        <path d="M14 2c1.2.4 2.3 1 3.2 1.8"/>
-        <path d="M17.8 5.5c.6.9 1 1.9 1.2 3"/>
-        <path d="M14 5.5c.5.2 1 .6 1.4 1"/>
-        <path d="M16.5 7.5c.2.4.3.8.4 1.3"/>
-      </svg></div>
-      <div class="feat-title">Contact</div>
-      <span class="feat-phone">225.907.5214</span>
-      <span class="feat-mail">matthew@sr-cre.com</span>
-    </a>
+    <!-- Contact swaps in place. No overlay. -->
+    <div class="feat-card contact-card" id="contact-card">
+      <button type="button" class="contact-toggle" aria-expanded="false" aria-controls="contact-actions">
+        <span class="contact-closed">
+          <span class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/>
+            <path d="M14 2c1.2.4 2.3 1 3.2 1.8"/>
+            <path d="M17.8 5.5c.6.9 1 1.9 1.2 3"/>
+            <path d="M14 5.5c.5.2 1 .6 1.4 1"/>
+            <path d="M16.5 7.5c.2.4.3.8.4 1.3"/>
+          </svg></span>
+          <span class="feat-title">Contact</span>
+        </span>
+      </button>
+      <div class="contact-actions" id="contact-actions" hidden>
+        <a href="tel:+12259075214">Call</a>
+        <a href="mailto:matthew@sr-cre.com">Email</a>
+      </div>
+    </div>
 
     <!-- About -->
     <a href="about.html" class="feat-card">
@@ -617,6 +643,42 @@
       window.location.href = 'mailto:matthew@sr-cre.com?subject=' + encodeURIComponent('Looking for space or land') + '&body=' + encodeURIComponent(body);
     });
   });
+
+  (function () {
+    var card = document.getElementById('contact-card');
+    var toggle = card.querySelector('.contact-toggle');
+    var actions = document.getElementById('contact-actions');
+    function openContact() {
+      card.classList.add('is-open');
+      actions.hidden = false;
+      toggle.setAttribute('aria-expanded', 'true');
+      actions.querySelector('a').focus();
+    }
+    function closeContact(restoreFocus) {
+      var wasOpen = card.classList.contains('is-open');
+      card.classList.remove('is-open');
+      actions.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+      if (restoreFocus && wasOpen) toggle.focus();
+    }
+    card.addEventListener('click', function (e) {
+      if (e.target.closest('a')) return;
+      if (card.classList.contains('is-open')) closeContact(false);
+      else openContact();
+    });
+    card.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeContact(true);
+      }
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && card.classList.contains('is-open')) {
+        e.preventDefault();
+        closeContact(true);
+      }
+    });
+  })();
 </script>
 
 </body>
