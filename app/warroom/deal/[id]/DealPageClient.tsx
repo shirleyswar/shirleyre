@@ -15,6 +15,7 @@ import { HOUSE_SPLIT } from '@/lib/dealMath'
 import LacdbFlag from '@/components/warroom/LacdbFlag'
 import LaunchControl from './LaunchControl'
 import LaunchModal from './LaunchModal'
+import { latestArchiveKind, placeDealInService, recordArchive, type ArchiveKind } from '@/lib/dealArchive'
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 const PIN_HASH = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -444,6 +445,8 @@ function DealPageClientInner({ id }: { id: string }) {
     setPhotoCacheBust(0)
     setEditPhotoFile(null)
     setEditPhotoPreview(null)
+    setClosePick(false)
+    setCloseErr('')
   }, [dealId])
 
   // Delete mode
@@ -459,6 +462,9 @@ function DealPageClientInner({ id }: { id: string }) {
   const [reopenError, setReopenError] = useState(false)
   const [reopenShake, setReopenShake] = useState(false)
   const [reopening, setReopening] = useState(false)
+  const [closePick, setClosePick] = useState(false)
+  const [closeBusy, setCloseBusy] = useState(false)
+  const [closeErr, setCloseErr] = useState('')
 
   // Launch gate
   const [pinValid,    setPinValid]    = useState<boolean | null>(null)
@@ -673,6 +679,34 @@ function DealPageClientInner({ id }: { id: string }) {
 
   // ── Derived state ──────────────────────────────────────────────────────────
   const isHot    = deal.status === 'hot'
+  const archiveKind = deal.status === 'closed' ? latestArchiveKind(activity) : null
+
+  async function handleArchive(kind: ArchiveKind) {
+    if (!deal || closeBusy) return
+    setCloseBusy(true)
+    setCloseErr('')
+    const err = await recordArchive(deal.id, kind)
+    setCloseBusy(false)
+    if (err) { setCloseErr(err); return }
+    setActivity(prev => [{
+      id: `local-${Date.now()}`,
+      action_type: 'archived',
+      description: kind,
+      created_at: new Date().toISOString(),
+    }, ...prev])
+    setClosePick(false)
+  }
+
+  async function handlePlaceInService() {
+    if (!deal || closeBusy) return
+    setCloseBusy(true)
+    setCloseErr('')
+    const err = await placeDealInService(deal.id)
+    setCloseBusy(false)
+    if (err) { setCloseErr(err); return }
+    setDeal({ ...deal, status: 'in_service' })
+    setClosePick(false)
+  }
   const txType   = econ?.transaction_type ?? null    // 'sale' | 'lease' | 'both' | null
   const isLease  = txType === 'lease'
   const isDevRole = deal.representation_role === 'developer'
@@ -824,10 +858,33 @@ function DealPageClientInner({ id }: { id: string }) {
           )}
           {!isHot && deal.status && (
             <span className="wr-deal-chip">
-              <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1, display: 'inline-flex', alignItems: 'center', padding: '4px 9px', borderRadius: 5, background: 'transparent', border: `1px solid ${T.border}`, color: T.textMid }}>
-                {deal.status.replace(/_/g, ' ')}
+              <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1, display: 'inline-flex', alignItems: 'center', padding: '4px 9px', borderRadius: 5, background: 'transparent', border: `1px solid ${archiveKind ? 'rgba(148,163,184,0.45)' : T.border}`, color: archiveKind ? '#94A3B8' : T.textMid }}>
+                {archiveKind ? `ARCHIVED · ${archiveKind}` : deal.status.replace(/_/g, ' ')}
               </span>
             </span>
+          )}
+
+          {deal.status === 'closed' && !archiveKind && (
+            <div data-close-choice="open" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              {closePick ? (
+                <>
+                  <button type="button" data-close-action="sale" disabled={closeBusy} onClick={() => handleArchive('sale')}
+                    style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: T.moneyIn, background: 'none', border: '1px solid rgba(52,211,153,0.55)', borderRadius: 24, padding: '8px 14px', cursor: closeBusy ? 'default' : 'pointer' }}>SALE</button>
+                  <button type="button" data-close-action="lease" disabled={closeBusy} onClick={() => handleArchive('lease')}
+                    style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: '#5EEAD4', background: 'none', border: '1px solid rgba(94,234,212,0.55)', borderRadius: 24, padding: '8px 14px', cursor: closeBusy ? 'default' : 'pointer' }}>LEASE</button>
+                  <button type="button" data-close-action="cancel" disabled={closeBusy} onClick={() => setClosePick(false)}
+                    style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: T.textLow, background: 'none', border: `1px solid ${T.border}`, borderRadius: 24, padding: '8px 14px', cursor: 'pointer' }}>CANCEL</button>
+                </>
+              ) : (
+                <>
+                  <button type="button" data-close-action="archive" disabled={closeBusy} onClick={() => { setCloseErr(''); setClosePick(true) }}
+                    style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: T.brandLift, background: 'none', border: '1px solid rgba(167,139,250,0.55)', borderRadius: 24, padding: '8px 14px', cursor: closeBusy ? 'default' : 'pointer' }}>ARCHIVE</button>
+                  <button type="button" data-close-action="in-service" disabled={closeBusy} onClick={handlePlaceInService}
+                    style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: '#6F6D80', background: 'none', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 24, padding: '8px 14px', cursor: closeBusy ? 'default' : 'pointer' }}>PLACE IN SERVICE</button>
+                </>
+              )}
+              {closeErr && <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: T.late }}>{closeErr}</span>}
+            </div>
           )}
 
           {/* DP-4: one transaction plate — SALE wins for 'both' */}
