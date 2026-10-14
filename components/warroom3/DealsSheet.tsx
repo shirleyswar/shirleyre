@@ -40,35 +40,33 @@ type PropertyType = typeof PROPERTY_TYPES[number]
 type StageKey = 'all' | 'pipeline' | 'review' | 'active' | 'hot' | 'under_contract' | 'closed' | 'in_service' | 'archived'
 type SortKey = 'name' | 'deadline' | 'value' | 'comm' | 'rank'
 
-const PIPELINE_TABS: { key: StageKey; label: string }[] = [
-  { key: 'all', label: 'ALL' },
-  { key: 'pipeline', label: 'PIPELINE' },
-  { key: 'review', label: 'REVIEW' },
-  { key: 'active', label: 'ACTIVE' },
-  { key: 'hot', label: 'HOT' },
-  { key: 'under_contract', label: 'UNDER CONTRACT' },
-  { key: 'closed', label: 'CLOSED' },
+type EngageKey = 'listings' | 'tenants' | 'buyers' | 'targets'
+
+const ENGAGE_TABS: { key: EngageKey; label: string }[] = [
+  { key: 'listings', label: 'Listings' },
+  { key: 'tenants', label: 'Tenants' },
+  { key: 'buyers', label: 'Buyers' },
+  { key: 'targets', label: 'Targets' },
 ]
 
-const STYLE_T0: React.CSSProperties = {
-  fontFamily: FONT_MONO,
-  fontSize: 13,
-  fontWeight: 500,
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase',
-  color: '#EFEEF4',
-  lineHeight: 1,
-}
+const STAGE_TABS: { key: StageKey; label: string }[] = [
+  { key: 'pipeline', label: 'Pipeline' },
+  { key: 'review', label: 'Review' },
+  { key: 'active', label: 'Active' },
+  { key: 'hot', label: 'HOT' },
+  { key: 'under_contract', label: 'Under Contract' },
+  { key: 'closed', label: 'Closed' },
+]
 
-const STYLE_M2: React.CSSProperties = {
-  fontFamily: FONT_MONO,
-  fontSize: 13.5,
-  fontWeight: 500,
-  letterSpacing: '0.04em',
-  color: '#8E8CA0',
-  fontVariantNumeric: 'tabular-nums',
+const TAB_GRAY = '#8E8CA0'
+const COUNT_MUTED = '#6F6D80'
+const HEADER_FACE: React.CSSProperties = {
+  fontFamily: FONT_DISPLAY,
+  letterSpacing: 0,
+  textTransform: 'none',
   lineHeight: 1,
 }
+const SHEET_EDGE = 16
 
 interface RawDeal {
   id: string
@@ -202,16 +200,33 @@ function stageTone(status: string | null, archiveKind: ArchiveKind | null): { co
   }
 }
 
-function tabTone(key: StageKey): string {
+function stageAccent(key: StageKey): string {
   switch (key) {
-    case 'hot': return T.hot
     case 'pipeline': return '#93C5FD'
     case 'review': return '#FBBF24'
     case 'active': return '#C4B5FD'
+    case 'hot': return T.hot
     case 'under_contract': return '#5EEAD4'
-    case 'closed': return T.textLow
-    default: return T.textMid
+    case 'closed': return '#D9D7E2'
+    case 'in_service': return '#A78BFA'
+    case 'archived': return '#CBD5E1'
+    default: return '#EFEEF4'
   }
+}
+
+function matchesEngage(deal: { type: string | null }, engage: EngageKey): boolean {
+  const type = deal.type?.toLowerCase()
+  if (engage === 'tenants') return type === 'tenant_rep'
+  if (engage === 'buyers') return type === 'buyer'
+  if (engage === 'targets') return type === 'potential_listing' || type === 'target'
+  return true
+}
+
+function typeTitle(value: string): string {
+  if (value === 'INDUSTRIAL') return 'Industrial'
+  if (value === 'MULTIFAMILY' || value === 'MULTI') return 'Multifamily'
+  const lower = value.toLowerCase()
+  return lower.charAt(0).toUpperCase() + lower.slice(1)
 }
 
 function shortDeadlineLabel(type: string | null, label: string | null): string {
@@ -282,6 +297,7 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+  const [engage, setEngage] = useState<EngageKey>('listings')
   const [stage, setStage] = useState<StageKey>('all')
   const [typeFilter, setTypeFilter] = useState<PropertyType | null>(null)
   const [typeMenuOpen, setTypeMenuOpen] = useState(false)
@@ -300,6 +316,7 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
 
   useEffect(() => {
     if (!open) return
+    setEngage('listings')
     setStage('all')
     setTypeFilter(null)
     setTypeMenuOpen(false)
@@ -389,13 +406,21 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
   }
 
   function matchesStage(d: EnrichedDeal): boolean {
+    if (!matchesEngage(d, engage)) return false
     if (!matchesType(d)) return false
+    if (engage !== 'listings') return true
     const bucket = bucketOf(d)
     if (stage === 'all') return bucket !== 'archived'
     return bucket === stage
   }
 
-  const typed = deals.filter(matchesType)
+  const typed = deals.filter(d => matchesEngage(d, 'listings') && matchesType(d))
+  const engageCounts: Record<EngageKey, number> = {
+    listings: deals.length,
+    tenants: deals.filter(d => matchesEngage(d, 'tenants')).length,
+    buyers: deals.filter(d => matchesEngage(d, 'buyers')).length,
+    targets: deals.filter(d => matchesEngage(d, 'targets')).length,
+  }
   const stageCounts: Record<StageKey, number> = {
     all: 0, pipeline: 0, review: 0, active: 0, hot: 0, under_contract: 0, closed: 0, in_service: 0, archived: 0,
   }
@@ -450,9 +475,9 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
     else { setSortKey(next); setSortDir('asc') }
   }
 
-  function stageTab(key: StageKey, label: string, muted = false) {
+  function stageTab(key: StageKey, label: string) {
     const on = stage === key
-    const tone = tabTone(key)
+    const accent = stageAccent(key)
     return (
       <button
         key={key}
@@ -460,35 +485,28 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
         data-stage-tab={key}
         onClick={() => { setStage(key); setTypeMenuOpen(false) }}
         style={{
+          position: 'relative',
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          height: 44,
-          padding: '0 12px',
+          height: 40,
+          padding: 0,
           background: 'transparent',
           border: 'none',
-          boxShadow: on ? `inset 0 -2px 0 ${muted ? '#6F6D80' : T.brandStrong}` : 'none',
           cursor: 'pointer',
           flexShrink: 0,
           WebkitTapHighlightColor: 'transparent',
         } as React.CSSProperties}
       >
         <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 11,
-          fontWeight: on ? 700 : 600,
-          letterSpacing: key === 'under_contract' ? '0.04em' : '0.08em',
-          color: muted ? '#6F6D80' : on ? T.textHi : tone,
-          lineHeight: 1,
+          ...HEADER_FACE,
+          fontSize: 14,
+          fontWeight: on ? 600 : 500,
+          color: on ? accent : TAB_GRAY,
           whiteSpace: 'nowrap',
         }}>{label}</span>
-        <span style={{
-          fontFamily: FONT_MONO,
-          fontSize: 11,
-          fontWeight: 400,
-          color: muted ? '#6F6D80' : T.textLow,
-          lineHeight: 1,
-        }}>{stageCounts[key]}</span>
+        <span style={{ ...HEADER_FACE, fontSize: 12, fontWeight: 500, color: COUNT_MUTED }}>{stageCounts[key]}</span>
+        {on && <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 2, background: accent }} />}
       </button>
     )
   }
@@ -497,35 +515,75 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
     <BottomSheet
       open={open}
       onClose={onClose}
-      label="DEAL PIPELINE"
-      labelStyle={STYLE_T0}
-      headerHeight={44}
-      count={deals.length}
-      countStyle={STYLE_M2}
+      label=""
+      headerHeight={0}
+      noHairline
       size="list"
     >
       <div style={{ position: 'sticky', top: 0, zIndex: 10, background: T.bgPanel }}>
+        <div className="wr-phone-stage-scroll" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          height: 48,
+          padding: `0 ${SHEET_EDGE}px`,
+          overflowX: 'auto',
+          borderBottom: '1px solid rgba(255,255,255,0.11)',
+        } as React.CSSProperties}>
+          {ENGAGE_TABS.map(tab => {
+            const on = engage === tab.key
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => { setEngage(tab.key); setStage('all'); setTypeMenuOpen(false) }}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  height: '100%',
+                  padding: 0,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  WebkitTapHighlightColor: 'transparent',
+                } as React.CSSProperties}
+              >
+                <span style={{ ...HEADER_FACE, fontSize: 18, fontWeight: on ? 600 : 500, color: on ? T.textHi : TAB_GRAY }}>{tab.label}</span>
+                <span style={{ ...HEADER_FACE, fontSize: 14, color: COUNT_MUTED }}>{engageCounts[tab.key]}</span>
+                {on && <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 2, background: T.brandStrong }} />}
+              </button>
+            )
+          })}
+        </div>
+        {engage === 'listings' && (
         <div style={{ display: 'flex', alignItems: 'stretch', borderBottom: '1px solid rgba(255,255,255,0.11)' }}>
           <div className="wr-phone-stage-scroll" style={{
             flex: 1,
             minWidth: 0,
             display: 'flex',
-            alignItems: 'stretch',
+            alignItems: 'center',
+            gap: 14,
             overflowX: 'auto',
+            padding: `0 ${SHEET_EDGE}px`,
             WebkitOverflowScrolling: 'touch',
           } as React.CSSProperties}>
-            {PIPELINE_TABS.map(tab => stageTab(tab.key, tab.label))}
-            <div style={{ width: 1, alignSelf: 'center', height: 18, background: 'rgba(255,255,255,0.14)', flexShrink: 0, margin: '0 4px' }} />
-            {stageTab('in_service', 'IN SERVICE', true)}
-            {stageTab('archived', 'ARCHIVED', true)}
+            {STAGE_TABS.map(tab => stageTab(tab.key, tab.label))}
+            <div style={{ width: 1, alignSelf: 'center', height: 16, background: 'rgba(255,255,255,0.14)', flexShrink: 0 }} />
+            {stageTab('in_service', 'In Service')}
+            {stageTab('archived', 'Archived')}
+            {stageTab('all', 'All')}
           </div>
           <button
             type="button"
             data-type-filter={typeFilter ?? 'all'}
             onClick={() => setTypeMenuOpen(v => !v)}
             style={{
+              position: 'relative',
               flexShrink: 0,
-              height: 44,
+              height: 40,
               padding: '0 14px',
               display: 'flex',
               alignItems: 'center',
@@ -533,27 +591,26 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
               background: 'transparent',
               border: 'none',
               borderLeft: '1px solid rgba(255,255,255,0.11)',
-              boxShadow: typeFilter ? `inset 0 -2px 0 ${T.brandStrong}` : 'none',
               cursor: 'pointer',
               WebkitTapHighlightColor: 'transparent',
             } as React.CSSProperties}
           >
             <span style={{
-              fontFamily: FONT_MONO,
-              fontSize: 11,
-              fontWeight: typeFilter ? 700 : 600,
-              letterSpacing: '0.1em',
-              color: typeFilter ? T.textHi : T.textMid,
-              lineHeight: 1,
-            }}>{typeFilter ?? 'TYPE'}</span>
-            <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: T.textLow }}>▾</span>
+              ...HEADER_FACE,
+              fontSize: 14,
+              fontWeight: typeFilter ? 600 : 500,
+              color: typeFilter ? T.textHi : TAB_GRAY,
+            }}>{typeFilter ? typeTitle(typeFilter) : 'Type'}</span>
+            <span style={{ ...HEADER_FACE, fontSize: 12, color: COUNT_MUTED }}>▾</span>
+            {typeFilter && <div style={{ position: 'absolute', left: 14, right: 14, bottom: 0, height: 2, background: T.brandStrong }} />}
           </button>
         </div>
+        )}
 
         {typeMenuOpen && (
           <div style={{
             position: 'absolute',
-            top: 44,
+            top: 88,
             right: 8,
             width: 220,
             background: T.bgRaise,
@@ -564,7 +621,7 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
             overflow: 'hidden',
           }}>
             <TypeRow
-              label="ALL TYPES"
+              label="All types"
               count={deals.length}
               selected={!typeFilter}
               onPress={() => { setTypeFilter(null); setTypeMenuOpen(false) }}
@@ -572,7 +629,7 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
             {PROPERTY_TYPES.map(pt => (
               <TypeRow
                 key={pt}
-                label={pt}
+                label={typeTitle(pt)}
                 count={typeCounts[pt] ?? 0}
                 selected={typeFilter === pt}
                 onPress={() => { setTypeFilter(pt); setTypeMenuOpen(false) }}
@@ -586,39 +643,32 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
-            height: 32,
-            padding: '0 16px',
+            height: 30,
+            padding: `0 ${SHEET_EDGE}px`,
             borderBottom: '1px solid rgba(255,255,255,0.10)',
+            ...HEADER_FACE,
+            fontSize: 12,
+            color: T.textMid,
           }}
         >
-          <span style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: T.textHi }}>
-            {matched.length} {matched.length === 1 ? 'DEAL' : 'DEALS'}
-          </span>
-          <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.06em', color: T.textLow }}>
-            VALUE {totalValue != null ? fmtMoney(totalValue) : '—'}
-          </span>
-          <span style={{ fontFamily: FONT_MONO, fontSize: 11, letterSpacing: '0.06em', color: T.moneyIn }}>
-            COMM {totalComm != null ? fmtMoney(totalComm) : '—'}
-          </span>
+          {matched.length} deals · {totalValue != null ? fmtMoney(totalValue) : '—'} value · {totalComm != null ? fmtMoney(totalComm) : '—'} commission
         </div>
 
         <div className="wr-phone-stage-scroll" style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
-          height: 36,
-          padding: '0 12px',
+          gap: 16,
+          height: 32,
+          padding: `0 ${SHEET_EDGE}px`,
           overflowX: 'auto',
           borderBottom: '1px solid rgba(255,255,255,0.10)',
         } as React.CSSProperties}>
-          <span style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '0.12em', color: T.textLow, flexShrink: 0 }}>SORT</span>
           {([
-            ['name', 'NAME'],
-            ['deadline', 'DEADLINE'],
-            ['value', 'VALUE'],
-            ['comm', 'COMM'],
-            ['rank', 'RANK'],
+            ['name', 'Address'],
+            ['deadline', 'Deadline'],
+            ['value', 'Value'],
+            ['comm', 'Comm'],
+            ['rank', 'Rank'],
           ] as [SortKey, string][]).map(([key, label]) => {
             const on = sortKey === key
             return (
@@ -629,16 +679,15 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
                 data-sort-on={on ? '1' : '0'}
                 onClick={() => pickSort(key)}
                 style={{
-                  height: 24,
-                  padding: '0 8px',
-                  borderRadius: 12,
-                  border: on ? `1px solid ${T.brandLift}` : '1px solid rgba(255,255,255,0.14)',
-                  background: on ? 'rgba(139,92,246,0.16)' : 'transparent',
-                  color: on ? T.textHi : T.textMid,
-                  fontFamily: FONT_MONO,
-                  fontSize: 10,
-                  fontWeight: on ? 700 : 500,
-                  letterSpacing: '0.08em',
+                  position: 'relative',
+                  height: '100%',
+                  padding: 0,
+                  border: 'none',
+                  background: 'transparent',
+                  color: on ? T.textHi : T.textLow,
+                  ...HEADER_FACE,
+                  fontSize: 13,
+                  fontWeight: on ? 600 : 500,
                   cursor: 'pointer',
                   flexShrink: 0,
                   WebkitTapHighlightColor: 'transparent',
@@ -671,6 +720,15 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
         </div>
       ) : (
         <div>
+          {visiblePortfolios.length > 0 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, height: 30,
+              padding: `0 ${SHEET_EDGE}px`, borderBottom: '1px solid rgba(255,255,255,0.11)',
+            }}>
+              <span style={{ ...HEADER_FACE, fontSize: 13, color: T.textLow }}>Portfolios</span>
+              <span style={{ ...HEADER_FACE, fontSize: 13, color: COUNT_MUTED }}>{visiblePortfolios.length}</span>
+            </div>
+          )}
           {visiblePortfolios.map(portfolio => {
             const children = sortDeals(byPortfolio.get(portfolio.id) ?? [])
             const isOpen = expanded.has(portfolio.id)
@@ -751,10 +809,10 @@ function TypeRow({
       } as React.CSSProperties}
     >
       <span style={{
-        fontFamily: FONT_MONO, fontSize: 11, fontWeight: 600, letterSpacing: '0.1em',
+        ...HEADER_FACE, fontSize: 14, fontWeight: 500,
         color: selected ? T.brandLift : T.textHi,
       }}>{label}</span>
-      <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: selected ? T.brandLift : T.textLow }}>{count}</span>
+      <span style={{ ...HEADER_FACE, fontSize: 13, color: selected ? T.brandLift : COUNT_MUTED }}>{count}</span>
     </button>
   )
 }

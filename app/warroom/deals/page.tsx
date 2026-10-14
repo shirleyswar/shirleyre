@@ -21,9 +21,8 @@ import PinGate from '@/components/warroom/PinGate'
 import TaskModal from '@/app/warroom/TaskModal'
 import type { Task } from '@/app/warroom/TaskModal'
 import {
-  DT1, DT2, DT3, DT5, DT7, DT8,
+  DT1, DT2, DT3, DT7,
   DS3, DS5,
-  DM1,
 } from '@/components/warroom/desktopTypes'
 import Fab from '@/assets/fab/Fab'
 import { LACDB_ACTIVE } from '@/lib/lacdbCatalog'
@@ -61,6 +60,25 @@ const C = {
 
 const FONT_MONO = "'JetBrains Mono', ui-monospace, monospace"
 const FONT_DISP = "'Space Grotesk', system-ui, sans-serif"
+
+/** Shared left edge for the type row, stage tabs, totals, Address header, and Portfolios row. */
+const HEADER_EDGE = 'var(--wr-edge)'
+const TAB_GRAY = '#8E8CA0'
+const COUNT_MUTED = '#6F6D80'
+
+const headerFace: React.CSSProperties = {
+  fontFamily: FONT_DISP,
+  letterSpacing: 0,
+  textTransform: 'none',
+  lineHeight: 1,
+}
+
+function typeTitle(value: string): string {
+  if (value === 'INDUSTRIAL') return 'Industrial'
+  if (value === 'MULTIFAMILY') return 'Multifamily'
+  const lower = value.toLowerCase()
+  return lower.charAt(0).toUpperCase() + lower.slice(1)
+}
 
 // ── Column widths (from 49a frame) ────────────────────────────────────────────
 const COL = {
@@ -573,19 +591,18 @@ function TypeDropdown({ open, types, activeType, onSelect, onClose }: {
         border:'none', cursor:'pointer',
         background: !activeType ? 'rgba(139,92,246,0.18)' : 'transparent',
         color: !activeType ? C.brandLift : C.textMid,
-        ...DT5,
-      }}>ALL TYPES</button>
-      {types.length === 0 && <div style={{ ...DT8, color:C.textLow, padding:'10px 14px' }}>NO TYPES</div>}
+        ...headerFace, fontSize: 14,
+      }}>All types</button>
+      {types.length === 0 && <div style={{ ...headerFace, fontSize: 13, color:C.textLow, padding:'10px 14px' }}>No types</div>}
       {types.map(t => {
-        const display = t === 'INDUSTRIAL' ? 'INDST' : t === 'MULTIFAMILY' ? 'MULTI' : t
         return (
           <button key={t} onClick={() => onSelect(t)} style={{
             display:'block', width:'100%', textAlign:'left', padding:'10px 14px',
             border:'none', cursor:'pointer',
             background: t === activeType ? 'rgba(139,92,246,0.18)' : 'transparent',
             color: t === activeType ? C.brandLift : C.textMid,
-            ...DT5,
-          }}>{display}</button>
+            ...headerFace, fontSize: 14,
+          }}>{typeTitle(t)}</button>
         )
       })}
     </div>
@@ -601,9 +618,9 @@ function CH({ label, sk, activeSk, sortDir, onClick, style }: {
   return (
     <div onClick={onClick} style={{ cursor:'pointer', display:'flex', alignItems:'center', ...style }}>
       <span style={{
-        ...DT8, letterSpacing:'0.14em',
+        ...headerFace, fontSize: 13,
         color: active ? C.textHi : C.textLow,
-        fontWeight: active ? 700 : 500,
+        fontWeight: active ? 600 : 500,
         userSelect: 'none', whiteSpace: 'nowrap',
       }}>
         {label}
@@ -619,12 +636,12 @@ function GroupHeader({ label, count }: { label: string; count: number }) {
     <div style={{
       position:'sticky', top:36, zIndex:10,
       display:'flex', alignItems:'center', height:30,
-      padding:'0 14px 0 44px', gap:10,
+      padding:'0 14px 0 var(--wr-edge)', gap:10,
       background:C.bgPanel, borderBottom:`1px solid ${C.borderPanel}`,
       boxSizing:'border-box',
     }}>
-      <span style={{ ...DT8, letterSpacing:'0.16em', color:C.textLow, fontWeight:700 }}>{label}</span>
-      <span style={{ ...DT8, color:C.textLow }}>{count}</span>
+      <span style={{ ...headerFace, fontSize: 13, color: C.textLow, fontWeight: 500 }}>{label}</span>
+      <span style={{ ...headerFace, fontSize: 13, color: COUNT_MUTED }}>{count}</span>
     </div>
   )
 }
@@ -658,7 +675,7 @@ function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
       style={{ position:'relative', display:'flex', alignItems:'center', height:46, borderBottom:`1px solid ${C.borderHair}`, boxSizing:'border-box', cursor:'pointer' }}>
 
       {/* Address, then the stage pill */}
-      <div style={{ flex:1, minWidth:0, padding:'0 14px 0 44px', display:'flex', alignItems:'center', gap:8, boxSizing:'border-box', overflow:'hidden' }}>
+      <div style={{ flex:1, minWidth:0, padding:'0 14px 0 var(--wr-edge)', display:'flex', alignItems:'center', gap:8, boxSizing:'border-box', overflow:'hidden' }}>
         <span style={{ ...DS3, color:C.textHi, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0 }}>
           {deal._shortAddr}
         </span>
@@ -729,7 +746,7 @@ function PortfolioRow({ portfolio, onNavigate }: { portfolio: PortfolioRollup; o
       style={{ display:'flex', alignItems:'center', height:46, borderBottom:`1px solid ${C.borderHair}`, boxSizing:'border-box', cursor:'pointer' }}>
 
       {/* Address area — layers glyph + name + site count */}
-      <div style={{ flex:1, minWidth:0, padding:'0 14px 0 44px', display:'flex', alignItems:'center', gap:11, boxSizing:'border-box', overflow:'hidden' }}>
+      <div style={{ flex:1, minWidth:0, padding:'0 14px 0 var(--wr-edge)', display:'flex', alignItems:'center', gap:11, boxSizing:'border-box', overflow:'hidden' }}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={C.brandLift} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
           <path d="M12 3 3 7.5l9 4.5 9-4.5L12 3Z"/>
           <path d="M3 12.5 12 17l9-4.5"/>
@@ -1035,60 +1052,63 @@ function DealsPage() {
 
   // Filter label for empty state
   const stageNames: Record<StageKey, string> = {
-    all: 'ALL', pipeline: 'PIPELINE', review: 'REVIEW', active: 'ACTIVE',
-    hot: 'HOT', under_contract: 'UNDER CONTRACT', closed: 'CLOSED', in_service: 'IN SERVICE',
+    all: 'All', pipeline: 'Pipeline', review: 'Review', active: 'Active',
+    hot: 'HOT', under_contract: 'Under Contract', closed: 'Closed', in_service: 'In Service',
   }
-  const filterLabel = [stage === 'all' ? '' : stageNames[stage], typeValue?.toUpperCase() ?? ''].filter(Boolean).join(' · ') || 'NONE'
+  const filterLabel = [stage === 'all' ? '' : stageNames[stage], typeValue ? typeTitle(typeValue) : ''].filter(Boolean).join(' · ') || 'NONE'
 
-  const PIPELINE_TABS: { key: StageKey; label: string }[] = [
-    { key: 'all', label: 'ALL' },
-    { key: 'pipeline', label: 'PIPELINE' },
-    { key: 'review', label: 'REVIEW' },
-    { key: 'active', label: 'ACTIVE' },
+  const STAGE_TABS: { key: StageKey; label: string }[] = [
+    { key: 'pipeline', label: 'Pipeline' },
+    { key: 'review', label: 'Review' },
+    { key: 'active', label: 'Active' },
     { key: 'hot', label: 'HOT' },
-    { key: 'under_contract', label: 'UNDER CONTRACT' },
-    { key: 'closed', label: 'CLOSED' },
+    { key: 'under_contract', label: 'Under Contract' },
+    { key: 'closed', label: 'Closed' },
   ]
 
   const TABS: { key: TabKey; label: string; count: number }[] = [
-    { key: 'listings', label: 'LISTINGS', count: tabCounts.listings },
-    { key: 'tenants',  label: 'TENANTS',  count: tabCounts.tenants  },
-    { key: 'buyers',   label: 'BUYERS',   count: tabCounts.buyers   },
-    { key: 'targets',  label: 'TARGETS',  count: tabCounts.targets  },
+    { key: 'listings', label: 'Listings', count: tabCounts.listings },
+    { key: 'tenants',  label: 'Tenants',  count: tabCounts.tenants  },
+    { key: 'buyers',   label: 'Buyers',   count: tabCounts.buyers   },
+    { key: 'targets',  label: 'Targets',  count: tabCounts.targets  },
   ]
 
-  function stageTab(key: StageKey, label: string, muted = false) {
+  function stageAccent(key: StageKey): string {
+    switch (key) {
+      case 'pipeline': return '#93C5FD'
+      case 'review': return '#FBBF24'
+      case 'active': return '#C4B5FD'
+      case 'hot': return C.hot
+      case 'under_contract': return '#5EEAD4'
+      case 'closed': return '#D9D7E2'
+      case 'in_service': return '#A78BFA'
+      default: return C.textHi
+    }
+  }
+
+  function stageTab(key: StageKey, label: string) {
     const isActive = stage === key
-    const tone = key === 'hot' ? C.hot
-      : key === 'pipeline' ? '#93C5FD'
-      : key === 'review' ? '#FBBF24'
-      : key === 'active' ? '#C4B5FD'
-      : key === 'under_contract' ? '#5EEAD4'
-      : key === 'closed' ? C.textLow
-      : C.textMid
+    const accent = stageAccent(key)
     return (
       <button key={key} onClick={() => setStage(key)} style={{
-        display:'flex', alignItems:'center', justifyContent:'center', gap:7,
+        display:'flex', alignItems:'center', justifyContent:'center', gap:6,
         position:'relative', background:'none', border:'none', cursor:'pointer',
-        padding:'0 12px', height:'100%', flexShrink:0,
+        padding:0, height:'100%', flexShrink:0,
       }}>
-        <span style={{
-          fontFamily:FONT_MONO, fontSize:12, lineHeight:1, letterSpacing:'0.08em',
-          fontWeight: isActive ? 700 : 600,
-          color: muted ? '#6F6D80' : isActive ? C.textHi : tone,
+        <span className="wr-stage-label" style={{
+          ...headerFace, fontSize: 15,
+          fontWeight: isActive ? 600 : 500,
+          color: isActive ? accent : TAB_GRAY,
         }}>{label}</span>
         <span style={{
-          fontFamily:FONT_MONO, fontSize:11, fontWeight:500, lineHeight:1,
-          color: muted ? '#6F6D80' : C.textLow,
+          ...headerFace, fontSize: 13, fontWeight: 500, color: COUNT_MUTED,
         }}>{stageCounts[key]}</span>
-        {isActive && <div style={{ position:'absolute', left:8, right:8, bottom:0, height:2, background: muted ? '#6F6D80' : C.brandStrong }} />}
+        {isActive && <div style={{ position:'absolute', left:0, right:0, bottom:0, height:2, background: accent }} />}
       </button>
     )
   }
 
-  const typeLabel = typeValue
-    ? (typeValue === 'INDUSTRIAL' ? 'INDST' : typeValue === 'MULTIFAMILY' ? 'MULTI' : typeValue)
-    : 'TYPE'
+  const typeLabel = typeValue ? typeTitle(typeValue) : 'Type'
 
   return (
     <div style={{ display:'flex', width:'100vw', maxWidth:'100vw', height:'100vh', background:C.bgBase, color:C.textHi, fontFamily:FONT_DISP, overflow:'hidden' }}>
@@ -1100,13 +1120,19 @@ function DealsPage() {
           .wr-deal-row:hover .wr-row-plus,
           .wr-deal-row:focus-within .wr-row-plus { opacity: 1; pointer-events: auto; }
         }
+        .wr-deals-main { --wr-edge: 24px; }
+        .wr-stage-scroll { gap: 18px; }
         @media (max-width: 1023px) {
+          .wr-deals-main { --wr-edge: 16px; }
           .wr-deals-rail { display: none !important; }
           .wr-row-plus { opacity: 1 !important; pointer-events: auto !important; }
           .wr-deals-plate, .wr-deals-clock { display: none !important; }
-          .wr-engage-row { height: 56px !important; padding: 0 12px !important; }
-          .wr-engage-scroll { gap: 10px !important; }
-          .wr-engage-scroll button span:first-child { font-size: 12px !important; letter-spacing: 0.08em !important; }
+          .wr-engage-row { height: 56px !important; padding: 0 var(--wr-edge) !important; }
+          .wr-engage-scroll { gap: 14px !important; }
+          .wr-type-label { font-size: 18px !important; letter-spacing: 0 !important; }
+          .wr-stage-label { font-size: 14px !important; }
+          .wr-stage-scroll { gap: 14px; }
+          .wr-totals { font-size: 12px !important; }
           .wr-deals-band { height: 64px !important; padding: 0 16px !important; gap: 12px !important; }
           .wr-deals-mark { width: 36px !important; height: 36px !important; }
           .wr-deals-word { margin-top: 0 !important; }
@@ -1118,39 +1144,32 @@ function DealsPage() {
       <LeftRail active="DEALS" />
 
       {/* Main column */}
-      <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0, overflow:'hidden' }}>
+      <div className="wr-deals-main" style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0, overflow:'hidden' }}>
 
         {/* Identity band */}
         <IdentityBand />
 
         {/* ── Tab row — 62px, FIXED ── */}
         <div className="wr-engage-row" style={{
-          height:80, flexShrink:0, display:'flex', alignItems:'center',
-          padding:'0 24px', boxSizing:'border-box', gap:12,
+          height:72, flexShrink:0, display:'flex', alignItems:'center',
+          padding:'0 var(--wr-edge)', boxSizing:'border-box', gap:12,
           borderBottom: tab === 'listings' ? 'none' : `1px solid ${C.border}`,
         }}>
-          <div className="wr-engage-scroll" style={{ display:'flex', alignItems:'center', gap:15, flex:1, minWidth:0, overflowX:'auto' }}>
-            {TABS.map((t, i) => {
+          <div className="wr-engage-scroll" style={{ display:'flex', alignItems:'center', gap:22, flex:1, minWidth:0, overflowX:'auto' }}>
+            {TABS.map((t) => {
               const isActive = t.key === tab
               return (
-                <React.Fragment key={t.key}>
-                  <button onClick={() => setTab(t.key)} style={{
-                    position:'relative', display:'flex', alignItems:'center', gap:9,
-                    background:'none', border:'none', cursor:'pointer', padding:0, height:'100%',
-                  }}>
-                    <span style={{
-                      fontFamily:FONT_MONO, fontSize:17, fontWeight:500, letterSpacing:'0.16em', lineHeight:1,
-                      color: isActive ? C.textHi : C.textLow,
-                    }}>{t.label}</span>
-                    <span style={{
-                      fontFamily:FONT_MONO, fontSize:13, fontWeight:400, letterSpacing:'0.10em', lineHeight:1, color:C.textLow,
-                    }}>{t.count}</span>
-                    {isActive && <div style={{ position:'absolute', bottom:0, left:0, right:0, height:2, background:C.brandStrong }} />}
-                  </button>
-                  {i < TABS.length - 1 && (
-                    <div style={{ width:1, height:20, background:C.border, flexShrink:0 }} />
-                  )}
-                </React.Fragment>
+                <button key={t.key} onClick={() => setTab(t.key)} style={{
+                  position:'relative', display:'flex', alignItems:'center', gap:8,
+                  background:'none', border:'none', cursor:'pointer', padding:0, height:'100%', flexShrink:0,
+                }}>
+                  <span className="wr-type-label" style={{
+                    ...headerFace, fontSize: 22, fontWeight: isActive ? 600 : 500,
+                    color: isActive ? C.textHi : TAB_GRAY,
+                  }}>{t.label}</span>
+                  <span style={{ ...headerFace, fontSize: 16, fontWeight: 500, color: COUNT_MUTED }}>{t.count}</span>
+                  {isActive && <div style={{ position:'absolute', bottom:0, left:0, right:0, height:2, background: C.brandStrong }} />}
+                </button>
               )
             })}
           </div>
@@ -1164,37 +1183,37 @@ function DealsPage() {
               borderBottom:`1px solid ${C.borderPanel}`, boxSizing:'border-box',
             }}>
               <div className="wr-stage-scroll" style={{
-                flex:1, minWidth:0, display:'flex', alignItems:'stretch', overflowX:'auto', paddingLeft:28,
+                flex:1, minWidth:0, display:'flex', alignItems:'stretch', overflowX:'auto', paddingLeft: HEADER_EDGE,
               }}>
-                {PIPELINE_TABS.map(f => stageTab(f.key, f.label))}
-                <div style={{ width:1, height:18, background:C.border, alignSelf:'center', margin:'0 6px', flexShrink:0 }} />
-                {stageTab('in_service', 'IN SERVICE', true)}
+                {STAGE_TABS.map(f => stageTab(f.key, f.label))}
+                <div style={{ width:1, height:16, background:C.border, alignSelf:'center', flexShrink:0 }} />
+                {stageTab('in_service', 'In Service')}
+                {stageTab('all', 'All')}
               </div>
               <div style={{ display:'flex', alignItems:'center', position:'relative', flexShrink:0, borderLeft:`1px solid ${C.borderPanel}` }}>
                 <button onClick={() => setTypeDropOpen(o => !o)} style={{
                   display:'flex', alignItems:'center', gap:5, background:'none', border:'none',
                   cursor:'pointer', padding:'0 16px', height:'100%', position:'relative',
                 }}>
-                  <span style={{
-                    fontFamily:FONT_MONO, fontSize:12, lineHeight:1, letterSpacing:'0.08em',
-                    fontWeight: typeValue ? 700 : 600,
-                    color: typeValue ? C.textHi : C.textMid,
+                  <span className="wr-stage-label" style={{
+                    ...headerFace, fontSize: 15,
+                    fontWeight: typeValue ? 600 : 500,
+                    color: typeValue ? C.textHi : TAB_GRAY,
                   }}>{typeLabel}</span>
-                  <span style={{ fontFamily:FONT_MONO, fontSize:11, color:C.textLow }}>▾</span>
-                  {typeValue && <div style={{ position:'absolute', left:8, right:8, bottom:0, height:2, background:C.brandStrong }} />}
+                  <span style={{ ...headerFace, fontSize: 13, color: COUNT_MUTED }}>▾</span>
+                  {typeValue && <div style={{ position:'absolute', left:16, right:16, bottom:0, height:2, background: C.brandStrong }} />}
                 </button>
                 <TypeDropdown open={typeDropOpen} types={allTypes} activeType={typeValue}
                   onSelect={v => setType(v || null)} onClose={() => setTypeDropOpen(false)} />
               </div>
             </div>
 
-            <div style={{
-              height:34, flexShrink:0, display:'flex', alignItems:'center', gap:18,
-              padding:'0 44px', borderBottom:`1px solid ${C.borderHair}`, boxSizing:'border-box',
+            <div className="wr-totals" style={{
+              height:32, flexShrink:0, display:'flex', alignItems:'center',
+              padding:'0 var(--wr-edge)', borderBottom:`1px solid ${C.borderHair}`, boxSizing:'border-box',
+              ...headerFace, fontSize: 13, color: C.textMid,
             }}>
-              <span style={{ ...DT5, color:C.textHi }}>{matchedDeals.length} DEALS</span>
-              <span style={{ ...DT5, color:C.textLow }}>VALUE {totalValue != null ? fmtMoney(totalValue) : '—'}</span>
-              <span style={{ ...DT5, color:C.moneyIn }}>COMM {totalComm != null ? fmtMoney(totalComm) : '—'}</span>
+              {matchedDeals.length} deals · {totalValue != null ? fmtMoney(totalValue) : '—'} value · {totalComm != null ? fmtMoney(totalComm) : '—'} commission
             </div>
           </>
         )}
@@ -1212,35 +1231,35 @@ function DealsPage() {
                   position:'sticky', top:0, zIndex:20, height:36, display:'flex', alignItems:'center',
                   background:C.bgPanel, borderBottom:`1px solid ${C.border}`, boxSizing:'border-box',
                 }}>
-                  <CH label="ADDRESS" sk="address" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('address')}
-                    style={{ flex:1, minWidth:0, padding:'0 14px 0 44px', boxSizing:'border-box' }} />
-                  <CH label="CLIENT" sk="client" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('client')}
+                  <CH label="Address" sk="address" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('address')}
+                    style={{ flex:1, minWidth:0, padding:'0 14px 0 var(--wr-edge)', boxSizing:'border-box' }} />
+                  <CH label="Client" sk="client" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('client')}
                     style={{ width:COL.client, flexShrink:0, padding:'0 14px', boxSizing:'border-box' }} />
-                  <CH label="DEADLINE" sk="deadline" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('deadline')}
+                  <CH label="Deadline" sk="deadline" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('deadline')}
                     style={{ width:COL.deadline, flexShrink:0, padding:'0 14px', boxSizing:'border-box' }} />
                   <div style={{ width:COL.lacdb, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
-                    <span style={{ ...DT8, letterSpacing:'0.10em', color:C.textLow }}>LACDB</span>
+                    <span style={{ ...headerFace, fontSize: 13, color: C.textLow }}>LACDB</span>
                   </div>
                   <div style={{ width:COL.task, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
-                    <span style={{ ...DT8, letterSpacing:'0.10em', color:C.textLow }}>TASK</span>
+                    <span style={{ ...headerFace, fontSize: 13, color: C.textLow }}>Task</span>
                   </div>
-                  <CH label="RANK" sk="rank" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('rank')}
+                  <CH label="Rank" sk="rank" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('rank')}
                     style={{ width:COL.rank, flexShrink:0, padding:'0 14px', boxSizing:'border-box', display:'flex', justifyContent:'center' }} />
-                  <CH label="VALUE" sk="value" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('value')}
+                  <CH label="Value" sk="value" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('value')}
                     style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', display:'flex', justifyContent:'flex-end' }} />
-                  <CH label="COMM" sk="comm" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('comm')}
+                  <CH label="Comm" sk="comm" activeSk={sortKey} sortDir={sortDir} onClick={() => handleSort('comm')}
                     style={{ width:COL.comm, flexShrink:0, padding:'0 14px', boxSizing:'border-box', display:'flex', justifyContent:'flex-end' }} />
                   <div style={{ width:COL.dbx, flexShrink:0, display:'flex', justifyContent:'center', alignItems:'center' }}>
-                    <span style={{ ...DT8, letterSpacing:'0.10em', color:C.textLow }}>DBX</span>
+                    <span style={{ ...headerFace, fontSize: 13, color: C.textLow }}>DBX</span>
                   </div>
                 </div>
 
-                <GroupHeader label="PORTFOLIOS" count={sortedPortfolios.length} />
+                <GroupHeader label="Portfolios" count={sortedPortfolios.length} />
                 {sortedPortfolios.map(p => (
                   <PortfolioRow key={p.portfolioId} portfolio={p} onNavigate={navigate} />
                 ))}
 
-                <GroupHeader label="DEALS" count={sortedDeals.length} />
+                <GroupHeader label="Deals" count={sortedDeals.length} />
                 {sortedDeals.length === 0
                   ? <EmptyState filterName={allDeals.length === 0 ? 'NONE' : filterLabel} />
                   : sortedDeals.map(d => (
