@@ -1,0 +1,81 @@
+# HTML documents. Cloudflare Pages defaults to
+# `Cache-Control: public, max-age=0, must-revalidate`.
+# iOS Add to Home Screen (standalone, start_url /warroom3/) stores that
+# response and replays it on later launches, so the phone keeps the
+# previous Battle Plan sheet after a deploy. no-store stops that.
+# A header named twice is joined with a comma, so these paths do not
+# overlap a second Cache-Control rule.
+#
+# No service worker is registered. Do not add one: a worker is another
+# cache in front of the same document.
+
+/
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/warroom
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/warroom/
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/warroom/*
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/warroom3
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/warroom3/
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/warroom3/*
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/404
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/404/
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/*.html
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+# Build stamp the page compares against. Must not be stored, or a
+# home-screen launch cannot tell that a newer deploy exists.
+/warroom-build.txt
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/icons/manifest.webmanifest
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/site.webmanifest
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+# Fingerprinted Next chunks. The filename changes when the file changes.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

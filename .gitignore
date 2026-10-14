@@ -5,6 +5,9 @@
 /.next/
 #/out/
 
+# Written by scripts/write-build-id.js during `npm run build`.
+/public/warroom-build.txt
+
 # Production
 /build
 

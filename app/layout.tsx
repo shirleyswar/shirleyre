@@ -42,6 +42,14 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 }
 
+const WARROOM_BUILD = process.env.NEXT_PUBLIC_WARROOM_BUILD || ''
+
+// Runs from the document itself, not a hashed chunk. A home-screen launch
+// that ignored Cache-Control still has this copy of the build id. If
+// /warroom-build.txt (no-store) names a newer deploy, replace onto ?v=
+// so the shortcut loads that document instead of the stored one.
+const buildGuard = `(function(){try{var build=${JSON.stringify(WARROOM_BUILD)};if(!build)return;fetch("/warroom-build.txt",{cache:"no-store"}).then(function(r){return r.ok?r.text():""}).then(function(t){var next=String(t||"").trim();if(!next||next===build)return;var key="wr_build_reload";try{if(sessionStorage.getItem(key)===next)return;sessionStorage.setItem(key,next)}catch(e){}var url=new URL(location.href);url.searchParams.set("v",next.slice(0,12));location.replace(url.toString())}).catch(function(){})}catch(e){}})();`
+
 export default function RootLayout({
   children,
 }: {
@@ -54,6 +62,7 @@ export default function RootLayout({
             Segment-level metadata in /warroom and /warroom3 layouts override apple-touch-icon
             for the War Room routes. Removing inline tags eliminates the injection-order race. */}
         <meta name="viewport"        content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <script dangerouslySetInnerHTML={{ __html: buildGuard }} />
       </head>
       <body>{children}</body>
     </html>
