@@ -8,7 +8,7 @@ on:
     paths:
       - 'supabase/migrations/20261014_guest_pin.sql'
       - '.github/workflows/guest-pin.yml'
-      - 'functions/**'
+      - 'public/_worker.js'
 
 concurrency:
   group: guest-pin
