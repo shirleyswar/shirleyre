@@ -298,18 +298,22 @@
     100% { transform: translateX(calc(-50% - 5px)); }
   }
 
-  .need-block { position: relative; z-index: 5; width: min(1100px, calc(100% - 32px)); margin: 0 auto 12px; padding: 16px 16px 14px; border: 1px solid rgba(232,160,32,0.22); background: rgba(255,255,255,0.03); border-radius: 16px; overflow: visible; }
-  .need-block h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; color: #fff; margin: 0 0 3px; line-height: 1.15; }
-  .need-lede { font-family: 'Syne', sans-serif; font-size: 13px; letter-spacing: 0; color: #c5d0d4; margin: 0 0 12px; line-height: 1.35; }
-  .need-form { display: flex; align-items: flex-end; gap: 12px; }
-  .need-fields { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr 1.35fr; gap: 10px; align-items: end; }
-  .need-span { grid-column: auto; }
-  .need-block label { display: flex; flex-direction: column; gap: 6px; font-family: 'Syne Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #c5d0d4; }
-  .need-block input { background: rgba(0,0,0,0.35); border: 1px solid rgba(232,160,32,0.28); border-radius: 10px; color: #fff; height: 40px; padding: 0 12px; font-family: 'Syne', sans-serif; font-size: 14px; letter-spacing: 0; text-transform: none; outline: none; width: 100%; }
-  .need-block input::placeholder { color: rgba(232,224,212,0.4); }
+  .need-block { position: relative; z-index: 5; width: min(1100px, calc(100% - 32px)); margin: 0 auto 12px; padding: 16px 16px 12px; border: 1px solid rgba(232,160,32,0.28); background: rgba(255,255,255,0.03); border-radius: 18px; overflow: visible; }
+  .need-eyebrow { margin: 0 0 6px; font-family: 'Syne Mono', monospace; font-size: 11px; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: #FDDD3E; line-height: 1.4; }
+  .need-block h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: #fff; margin: 0 0 8px; padding: 0 0 0.08em; line-height: 1.4; overflow: visible; }
+  .need-points { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 12px; padding: 0; overflow: visible; }
+  .need-points li { display: flex; align-items: center; gap: 8px; font-family: 'Syne', sans-serif; font-size: 13px; line-height: 1.45; color: var(--text); overflow: visible; }
+  .need-points li::before { content: ''; width: 7px; height: 11px; flex: 0 0 7px; margin-top: -3px; border: solid #FDDD3E; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .need-form { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+  .need-fields { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }
+  .need-span { grid-column: 1 / -1; }
+  .need-block label { display: flex; flex-direction: column; gap: 5px; font-family: 'Syne Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #c5d0d4; line-height: 1.4; overflow: visible; }
+  .need-block input { background: rgba(0,0,0,0.35); border: 1px solid rgba(232,160,32,0.28); border-radius: 10px; color: #fff; height: 40px; padding: 0 12px; font-family: 'Syne', sans-serif; font-size: 14px; line-height: 1.4; letter-spacing: 0; text-transform: none; outline: none; width: 100%; overflow: visible; }
+  .need-block input::placeholder { color: rgba(232,224,212,0.45); }
   .need-block input:focus { border-color: #FDDD3E; background: rgba(232,160,32,0.04); }
-  .need-block button { margin-top: 0; align-self: flex-end; background: #FDDD3E; color: #060d0f; border: none; border-radius: 999px; height: 40px; padding: 0 22px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.01em; cursor: pointer; white-space: nowrap; }
+  .need-block button { margin-top: 2px; align-self: stretch; width: 100%; background: #FDDD3E; color: #060d0f; border: none; border-radius: 999px; height: 44px; padding: 0 22px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; line-height: 1.2; letter-spacing: 0.01em; cursor: pointer; white-space: nowrap; }
   .need-block button:hover { background: #fff; }
+  .need-note { margin: 0; font-family: 'Syne', sans-serif; font-size: 12px; line-height: 1.4; color: #c5d0d4; text-align: center; }
   .contact-toggle { appearance: none; -webkit-appearance: none; background: transparent; border: 0; margin: 0; padding: 0; width: 100%; min-width: 0; color: inherit; font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; z-index: 1; }
   .contact-closed { display: flex; flex-direction: column; align-items: center; width: 100%; }
   .contact-closed .feat-icon { display: block; }
@@ -374,19 +378,21 @@
       grid-row: 5;
       width: min(1720px, calc(100vw - 96px));
       max-width: none;
-      margin: 0 auto clamp(12px, 1.5vh, 20px);
-      padding: clamp(14px, 1.55vh, 20px) clamp(18px, 1.4vw, 28px) clamp(12px, 1.35vh, 18px);
-      border-radius: 18px;
+      margin: 0 auto clamp(8px, 1vh, 14px);
+      padding: clamp(10px, 1.15vh, 16px) clamp(16px, 1.3vw, 26px) clamp(8px, 0.9vh, 12px);
     }
-    .need-block h2 { font-size: clamp(17px, 1.85vh, 24px); margin-bottom: 2px; }
-    .need-lede { font-size: clamp(12px, 1.3vh, 15px); margin-bottom: clamp(8px, 1vh, 12px); }
+    .need-eyebrow { font-size: clamp(10px, 1.05vh, 12px); margin-bottom: clamp(2px, 0.35vh, 5px); }
+    .need-block h2 { font-size: clamp(22px, 2.6vh, 32px); line-height: 1.4; padding-bottom: 0.08em; margin-bottom: clamp(4px, 0.45vh, 8px); }
+    .need-points { margin-bottom: clamp(6px, 0.7vh, 10px); gap: 4px 16px; }
+    .need-points li { font-size: clamp(12px, 1.2vh, 14px); }
     footer { grid-row: 6; font-size: 12.5px; padding: 10px 20px 11px; line-height: 1.35; }
-    .need-form { gap: clamp(12px, 1vw, 18px); }
-    .need-fields { gap: clamp(10px, 0.8vw, 16px); }
-    .need-block label { font-size: clamp(11px, 1.15vh, 12px); gap: 6px; }
-    .need-block input, .need-block button { height: clamp(36px, 4.2vh, 44px); font-size: clamp(14px, 1.4vh, 16px); }
-    .need-block input { padding: 0 12px; }
-    .need-block button { padding: 0 clamp(18px, 1.3vw, 28px); }
+    .need-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: clamp(12px, 1vw, 18px); row-gap: 4px; align-items: end; }
+    .need-fields { grid-column: 1; grid-row: 1; grid-template-columns: 1fr 1fr 1fr 1.35fr; gap: clamp(8px, 0.7vw, 14px); }
+    .need-span { grid-column: auto; }
+    .need-block button { grid-column: 2; grid-row: 1; width: auto; min-width: 196px; margin-top: 0; align-self: end; height: clamp(34px, 3.8vh, 42px); padding: 0 clamp(16px, 1.2vw, 26px); font-size: clamp(14px, 1.35vh, 16px); }
+    .need-note { grid-column: 2; grid-row: 2; max-width: 220px; justify-self: center; font-size: clamp(10px, 1.05vh, 12px); }
+    .need-block label { font-size: clamp(10px, 1.05vh, 12px); gap: 4px; }
+    .need-block input { height: clamp(34px, 3.8vh, 42px); font-size: clamp(13px, 1.3vh, 15px); padding: 0 12px; }
   }
 </style>
 </head>
@@ -438,6 +444,8 @@
       const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24));
       document.getElementById('exp-counter').innerHTML =
         `Been at this <strong style="color:var(--text)">${years} years, ${days} days</strong> —`;
+      var marketYears = document.getElementById('market-years');
+      if (marketYears) marketYears.textContent = years;
     }
     updateCounter();
     setInterval(updateCounter, 60000);
@@ -565,8 +573,13 @@
 </div>
 
 <section class="need-block" id="looking" aria-labelledby="need-heading">
-  <h2 id="need-heading">Looking for space or land?</h2>
-  <p class="need-lede">Size, use, and timing. Submit opens an email to Matthew.</p>
+  <p class="need-eyebrow">For owners, buyers &amp; tenants</p>
+  <h2 id="need-heading">Looking for space or land, or need the numbers first?</h2>
+  <ul class="need-points">
+    <li><span id="market-years">15</span> years in the Baton Rouge market</li>
+    <li>Buy, sell, lease or value</li>
+    <li>A direct line to Matthew, not a call center</li>
+  </ul>
   <form class="need-form">
     <div class="need-fields">
       <label>Name
@@ -582,7 +595,8 @@
         <input type="text" name="need" required placeholder="Size, use, timing">
       </label>
     </div>
-    <button type="submit">Email Matthew</button>
+    <button type="submit">Talk to Matthew →</button>
+    <p class="need-note">No obligation. Opens an email to Matthew.</p>
   </form>
 </section>
 
