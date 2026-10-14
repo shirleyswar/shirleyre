@@ -1,57 +1,14 @@
 'use client'
 
-// §18.3b Task sheet (36a, locked 13 Aug)
-// Full create-and-save sheet. Wraps in BottomSheet (size="list", label="New Task").
-// Title field: Space Grotesk 22/500, underline border, autofocused.
-// DUE: four chips (Today · Tomorrow · +3 · Pick date). Today default.
-// Pick date: drawn CalendarPicker — never native <input type="date">.
-// Save: INSERT to `tasks` table. Offline guard. Success → dismiss. Error → inline banner.
-// EYES-AUTO: sheet layout with title focused.
+// New-task sheet. Same card as the desktop create modal, anchored as a bottom sheet.
+// Title is the hero. Due and tag stay collapsed until tapped.
 
 import React, { useState, useEffect, useRef } from 'react'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import CalendarPicker from '@/components/warroom3/CalendarPicker'
-import { FAB_APERTURE_GRADIENT, FAB_APERTURE_SHADOW } from '@/lib/fabGradient'
 import chrome from '@/components/warroom/taskItemChrome.module.css'
-import TaskTagControl from '@/components/warroom/TaskTagControl'
+import CreateTaskFields from '@/components/warroom/CreateTaskFields'
 import { insertTaskRow, TASK_ARRIVE_MS, type TaskTag } from '@/lib/taskTags'
-
-// §3.1: UPPERCASE → JetBrains Mono. Sentence case → Space Grotesk.
-const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
-const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
-
-const T = {
-  textHi:     '#EFEEF4',
-  textMid:    '#B8B6C6',
-  textLow:    '#8E8CA0',
-  textInvert: '#0A0A0F',
-  bgRaise:    '#1E1D26',
-} as const
-
-// T2 §3.2 — 9.5px / 500 / 0.19em / UPPER / text-low — section eyebrow
-const styleT2: React.CSSProperties = {
-  fontFamily: FONT_MONO,
-  fontSize: 9.5,
-  fontWeight: 500,
-  letterSpacing: '0.19em',
-  textTransform: 'uppercase',
-  color: T.textLow,
-  lineHeight: 1,
-}
-
-type DueChip = 'today' | 'tomorrow' | 'plus3' | 'pick'
-
-function toISODate(d: Date): string {
-  return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
-}
-
-function chipDate(chip: DueChip): string {
-  const now = new Date()
-  if (chip === 'today')    return toISODate(now)
-  if (chip === 'tomorrow') { now.setDate(now.getDate() + 1); return toISODate(now) }
-  if (chip === 'plus3')    { now.setDate(now.getDate() + 3); return toISODate(now) }
-  return ''
-}
 
 export interface NewTaskDraft {
   id: string
@@ -78,20 +35,47 @@ interface TaskSheetProps {
   onCreateSettled?: (tempId: string, realId: string, notice?: string) => void
 }
 
+function toISODate(d: Date): string {
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
+}
+
+function addDays(dateStr: string, n: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d + n)
+  return dt.toLocaleDateString('en-CA')
+}
+
+function nextMonday(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  const diff = ((1 - dt.getDay()) + 7) % 7 || 7
+  dt.setDate(dt.getDate() + diff)
+  return dt.toLocaleDateString('en-CA')
+}
+
+function formatDue(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
+}
+
 export default function TaskSheet({ open, onClose, onOptimisticCreate, onCreateFailed, onCreateSettled }: TaskSheetProps) {
-  const [title, setTitle]             = useState('')
-  const [dueChip, setDueChip]         = useState<DueChip>('today')
-  const [calOpen, setCalOpen]         = useState(false)
-  const [pickedDate, setPickedDate]   = useState<Date | null>(null)
-  const [tag, setTag]                 = useState<TaskTag | null>(null)
-  const [entityName, setEntityName]   = useState<string | null>(null)
-  const [saving, setSaving]           = useState(false)
-  const [error, setError]             = useState<string | null>(null)
-  const [offline, setOffline]         = useState(false)
-  const titleRef = useRef<HTMLInputElement>(null)
+  const [title, setTitle] = useState('')
+  const [dueDate, setDueDate] = useState<string | null>(null)
+  const [dueOpen, setDueOpen] = useState(false)
+  const [calOpen, setCalOpen] = useState(false)
+  const [tag, setTag] = useState<TaskTag | null>(null)
+  const [entityName, setEntityName] = useState<string | null>(null)
+  const [tagOpen, setTagOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [offline, setOffline] = useState(false)
+  const titleRef = useRef<HTMLTextAreaElement>(null)
   const saveLock = useRef(false)
 
-  // Autofocus title on open
+  const today = toISODate(new Date())
+  const tomorrow = addDays(today, 1)
+  const nextMon = nextMonday(today)
+
   useEffect(() => {
     if (open) {
       const t = setTimeout(() => titleRef.current?.focus(), 80)
@@ -99,23 +83,40 @@ export default function TaskSheet({ open, onClose, onOptimisticCreate, onCreateF
     }
   }, [open])
 
-  // Reset state when closed
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      const active = document.activeElement
+      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+        e.preventDefault()
+        ;(active as HTMLElement).blur()
+        return
+      }
+      onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   useEffect(() => {
     if (!open) {
-      setTitle(''); setDueChip('today'); setCalOpen(false)
-      setPickedDate(null); setTag(null); setEntityName(null)
-      setSaving(false); setError(null); setOffline(false)
+      setTitle('')
+      setDueDate(null)
+      setDueOpen(false)
+      setCalOpen(false)
+      setTag(null)
+      setEntityName(null)
+      setTagOpen(false)
+      setSaving(false)
+      setError(null)
+      setOffline(false)
       saveLock.current = false
     }
   }, [open])
 
-  const effectiveDueDate = dueChip === 'pick'
-    ? (pickedDate ? toISODate(pickedDate) : '')
-    : chipDate(dueChip)
+  const canSave = title.trim().length > 0
 
-  const canSave = title.trim().length > 0  // §item 3 ruling: live when title non-empty; date is optional
-
-  // CODE: supabase insert logic
   const handleSave = async () => {
     if (!canSave || saving || saveLock.current) return
 
@@ -126,7 +127,7 @@ export default function TaskSheet({ open, onClose, onOptimisticCreate, onCreateF
 
     saveLock.current = true
     const tempId = `opt-${Date.now()}`
-    const due = effectiveDueDate || null
+    const due = dueDate
     const draft: NewTaskDraft = {
       id: tempId,
       title: title.trim(),
@@ -164,126 +165,97 @@ export default function TaskSheet({ open, onClose, onOptimisticCreate, onCreateF
     onCreateSettled?.(tempId, result.id, result.degraded ? 'Saved. SR and the entity name need the new database columns before they stick.' : undefined)
   }
 
+  function chooseDue(value: string | 'pick') {
+    if (value === 'pick') {
+      setCalOpen(true)
+      return
+    }
+    setDueDate(prev => prev === value ? null : value)
+    setCalOpen(false)
+    setDueOpen(false)
+  }
+
   function chooseTag(next: TaskTag) {
+    if (next === 'entity') {
+      if (tag !== 'entity') {
+        setTag('entity')
+        setEntityName(null)
+      }
+      setTagOpen(true)
+      return
+    }
     if (tag === next) {
       setTag(null)
       setEntityName(null)
-      return
+    } else {
+      setTag(next)
+      setEntityName(null)
     }
-    setTag(next)
-    if (next !== 'entity') setEntityName(null)
+    setTagOpen(false)
   }
 
-  const DUE_CHIPS: { key: DueChip; label: string }[] = [
-    { key: 'today',    label: 'Today' },
-    { key: 'tomorrow', label: 'Tomorrow' },
-    { key: 'plus3',    label: '+3' },
-    { key: 'pick',     label: 'Pick date' },
-  ]
+  const dueLabel = !dueDate ? 'No due date'
+    : dueDate === today ? 'Today'
+    : dueDate === tomorrow ? 'Tomorrow'
+    : dueDate === nextMon ? 'Next Mon'
+    : formatDue(dueDate)
+
+  const activeDue: string | 'pick' | null = calOpen ? 'pick'
+    : dueDate === today || dueDate === tomorrow || dueDate === nextMon ? dueDate
+    : dueDate ? 'pick'
+    : null
 
   return (
     <BottomSheet
       open={open}
       onClose={onClose}
       label="New Task"
-      size="list"
+      appearance="create"
     >
-      <div style={{ padding: '0 18px 24px' }}>
+      <div style={{ padding: '12px 18px 18px' }}>
+        <div className={chrome.createCloseRow}>
+          <button type="button" className={chrome.createClose} onClick={onClose} aria-label="Close">
+            <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true">
+              <path d="M3 3 L11 11 M11 3 L3 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            ESC
+          </button>
+        </div>
 
-        {/* Title field — D3 style: Space Grotesk 22/500, underline border, no box radius */}
-        {/* EYES-AUTO: sheet layout with title focused */}
-        <input
-          ref={titleRef}
-          type="text"
-          value={title}
-          onChange={e => { setTitle(e.target.value); setError(null) }}
-          placeholder="What needs to get done?"
-          aria-label="Task title"
-          className={chrome.titleField}
-          style={{ marginBottom: 28 }}
+        <CreateTaskFields
+          title={title}
+          onTitle={value => { setTitle(value); setError(null) }}
+          titleRef={titleRef}
+          dueLabel={dueLabel}
+          dueOpen={dueOpen}
+          onToggleDue={() => { setDueOpen(open => !open); setTagOpen(false); setCalOpen(false) }}
+          dueOptions={[
+            { label: 'Today', value: today },
+            { label: 'Tomorrow', value: tomorrow },
+            { label: 'Next Mon', value: nextMon },
+            { label: 'Pick date', value: 'pick' },
+          ]}
+          activeDue={activeDue}
+          onDue={chooseDue}
+          picker={calOpen ? (
+            <CalendarPicker
+              value={dueDate ? new Date(dueDate + 'T00:00:00') : null}
+              onCancel={() => setCalOpen(false)}
+              onDone={date => {
+                setDueDate(toISODate(date))
+                setCalOpen(false)
+                setDueOpen(false)
+              }}
+            />
+          ) : null}
+          tag={tag}
+          entityName={entityName}
+          tagOpen={tagOpen}
+          onToggleTag={() => { setTagOpen(open => !open); setDueOpen(false); setCalOpen(false) }}
+          onTag={chooseTag}
+          onEntity={name => { setTag('entity'); setEntityName(name); setTagOpen(false) }}
         />
 
-        {/* DUE section */}
-        <div style={{ ...styleT2, marginBottom: 12 }}>DUE</div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: calOpen ? 0 : 24 }}>
-          {DUE_CHIPS.map(chip => {
-            const sel = dueChip === chip.key
-            return (
-              <button
-                key={chip.key}
-                onClick={() => {
-                  setDueChip(chip.key)
-                  if (chip.key !== 'pick') setCalOpen(false)
-                  else setCalOpen(v => !v)
-                }}
-                style={{
-                  // §13.2 chip style
-                  padding: '11px 15px',
-                  borderRadius: 9,
-                  fontFamily: FONT_DISPLAY,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  border: sel ? 'none' : '1px solid rgba(255,255,255,0.20)',
-                  background: sel ? FAB_APERTURE_GRADIENT : 'transparent',
-                  boxShadow: sel ? FAB_APERTURE_SHADOW : 'none',
-                  color: sel ? T.textInvert : T.textMid,
-                  WebkitTapHighlightColor: 'transparent',
-                  whiteSpace: 'nowrap',
-                } as React.CSSProperties}
-              >
-                {chip.label}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Drawn calendar — only when Pick date is selected */}
-        {dueChip === 'pick' && calOpen && (
-          <CalendarPicker
-            value={pickedDate}
-            onCancel={() => { setCalOpen(false); setDueChip('today') }}
-            onDone={date => { setPickedDate(date); setCalOpen(false) }}
-          />
-        )}
-
-        {/* Show picked date label when calendar is closed */}
-        {dueChip === 'pick' && !calOpen && pickedDate && (
-          <div style={{
-            fontFamily: FONT_DISPLAY, fontSize: 12, color: T.textMid,
-            marginTop: 6, marginBottom: 18,
-          }}>
-            {pickedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-          </div>
-        )}
-
-        <div style={{ ...styleT2, marginBottom: 12 }}>TAG</div>
-        <div style={{ marginBottom: 8 }}>
-          <TaskTagControl
-            tag={tag}
-            entityName={entityName}
-            onTag={chooseTag}
-            onEntity={name => { setTag('entity'); setEntityName(name) }}
-            fill
-          />
-        </div>
-
-        {/* Deal placeholder row — v1 stub, never pushes title off-screen */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          minHeight: 44,
-          borderTop: '1px solid rgba(255,255,255,0.10)',
-          marginTop: 18,
-          paddingTop: 14,
-        }}>
-          <div style={{
-            fontFamily: FONT_DISPLAY, fontSize: 12, color: T.textLow,
-          }}>Link a deal (optional)</div>
-        </div>
-
-        {/* Offline banner */}
         {offline && (
           <div style={{
             marginTop: 12,
@@ -291,13 +263,14 @@ export default function TaskSheet({ open, onClose, onOptimisticCreate, onCreateF
             borderRadius: 9,
             background: 'rgba(255,162,58,0.10)',
             border: '1px solid rgba(255,162,58,0.22)',
-            fontFamily: FONT_DISPLAY, fontSize: 12, color: '#FFA23A',
+            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontSize: 12,
+            color: '#FFA23A',
           }}>
             You&apos;re offline — saved locally
           </div>
         )}
 
-        {/* Error banner */}
         {error && (
           <div style={{
             marginTop: 12,
@@ -305,49 +278,25 @@ export default function TaskSheet({ open, onClose, onOptimisticCreate, onCreateF
             borderRadius: 9,
             background: 'rgba(255,77,77,0.10)',
             border: '1px solid rgba(255,77,77,0.22)',
-            fontFamily: FONT_DISPLAY, fontSize: 12, color: '#FF4D4D',
+            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontSize: 12,
+            color: '#FF4D4D',
           }}>
             {error}
           </div>
         )}
 
-        {/* Footer: Cancel + Save task */}
-        <div style={{ display: 'flex', gap: 9, marginTop: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
           <button
-            onClick={onClose}
-            style={{
-              flex: 1, height: 46,
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.20)',
-              borderRadius: 11,
-              color: T.textMid,
-              fontFamily: FONT_DISPLAY,
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: 'pointer',
-              WebkitTapHighlightColor: 'transparent',
-            } as React.CSSProperties}
-          >
-            Cancel
-          </button>
-          <button
+            type="button"
+            className={chrome.confirmHit}
             onClick={handleSave}
             disabled={!canSave || saving}
-            style={{
-              flex: 1, height: 46,
-              background: canSave && !saving ? FAB_APERTURE_GRADIENT : 'rgba(139,92,246,0.3)',
-              boxShadow: canSave && !saving ? FAB_APERTURE_SHADOW : 'none',
-              border: 'none',
-              borderRadius: 11,
-              color: canSave && !saving ? T.textInvert : T.textLow,
-              fontFamily: FONT_DISPLAY,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: canSave && !saving ? 'pointer' : 'default',
-              WebkitTapHighlightColor: 'transparent',
-            } as React.CSSProperties}
+            aria-disabled={!canSave || saving}
           >
-            {saving ? 'Saving…' : 'Save task'}
+            <span className={canSave && !saving ? chrome.confirmOn : chrome.confirmOff}>
+              {saving ? 'SAVING…' : 'CONFIRM'}
+            </span>
           </button>
         </div>
       </div>
