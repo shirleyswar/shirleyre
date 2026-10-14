@@ -299,7 +299,6 @@
   }
 
   .need-block { position: relative; z-index: 5; width: min(1100px, calc(100% - 32px)); margin: 0 auto 12px; padding: 16px 16px 12px; border: 1px solid rgba(232,160,32,0.28); background: rgba(255,255,255,0.03); border-radius: 18px; overflow: visible; }
-  .need-eyebrow { margin: 0 0 6px; font-family: 'Syne Mono', monospace; font-size: 11px; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: #FDDD3E; line-height: 1.4; }
   .need-block h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: #fff; margin: 0 0 8px; padding: 0 0 0.08em; line-height: 1.4; overflow: visible; }
   .need-points { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 12px; padding: 0; overflow: visible; }
   .need-points li { display: flex; align-items: center; gap: 8px; font-family: 'Syne', sans-serif; font-size: 13px; line-height: 1.45; color: var(--text); overflow: visible; }
@@ -381,7 +380,6 @@
       margin: 0 auto clamp(8px, 1vh, 14px);
       padding: clamp(10px, 1.15vh, 16px) clamp(16px, 1.3vw, 26px) clamp(8px, 0.9vh, 12px);
     }
-    .need-eyebrow { font-size: clamp(10px, 1.05vh, 12px); margin-bottom: clamp(2px, 0.35vh, 5px); }
     .need-block h2 { font-size: clamp(22px, 2.6vh, 32px); line-height: 1.4; padding-bottom: 0.08em; margin-bottom: clamp(4px, 0.45vh, 8px); }
     .need-points { margin-bottom: clamp(6px, 0.7vh, 10px); gap: 4px 16px; }
     .need-points li { font-size: clamp(12px, 1.2vh, 14px); }
@@ -444,8 +442,6 @@
       const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24));
       document.getElementById('exp-counter').innerHTML =
         `Been at this <strong style="color:var(--text)">${years} years, ${days} days</strong> —`;
-      var marketYears = document.getElementById('market-years');
-      if (marketYears) marketYears.textContent = years;
     }
     updateCounter();
     setInterval(updateCounter, 60000);
@@ -573,12 +569,11 @@
 </div>
 
 <section class="need-block" id="looking" aria-labelledby="need-heading">
-  <p class="need-eyebrow">For owners, buyers &amp; tenants</p>
-  <h2 id="need-heading">Looking for space or land, or need the numbers first?</h2>
+  <h2 id="need-heading">Let's discuss, or meet in person.</h2>
   <ul class="need-points">
-    <li><span id="market-years">15</span> years in the Baton Rouge market</li>
-    <li>Buy, sell, lease or value</li>
-    <li>A direct line to Matthew, not a call center</li>
+    <li>Space needs</li>
+    <li>Advice</li>
+    <li>Property valuation</li>
   </ul>
   <form class="need-form">
     <div class="need-fields">
@@ -595,7 +590,7 @@
         <input type="text" name="need" required placeholder="Size, use, timing">
       </label>
     </div>
-    <button type="submit">Talk to Matthew →</button>
+    <button type="submit">Let's Talk →</button>
     <p class="need-note">No obligation. Opens an email to Matthew.</p>
   </form>
 </section>
