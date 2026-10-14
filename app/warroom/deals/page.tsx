@@ -1058,19 +1058,21 @@ function DealsPage() {
   const filterLabel = [stage === 'all' ? '' : stageNames[stage], typeValue ? typeTitle(typeValue) : ''].filter(Boolean).join(' · ') || 'NONE'
 
   const STAGE_TABS: { key: StageKey; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'active', label: 'Active' },
+    { key: 'closed', label: 'Closed' },
+    { key: 'hot', label: 'HOT' },
+    { key: 'in_service', label: 'In Service' },
     { key: 'pipeline', label: 'Pipeline' },
     { key: 'review', label: 'Review' },
-    { key: 'active', label: 'Active' },
-    { key: 'hot', label: 'HOT' },
     { key: 'under_contract', label: 'Under Contract' },
-    { key: 'closed', label: 'Closed' },
   ]
 
   const TABS: { key: TabKey; label: string; count: number }[] = [
-    { key: 'listings', label: 'Listings', count: tabCounts.listings },
-    { key: 'tenants',  label: 'Tenants',  count: tabCounts.tenants  },
     { key: 'buyers',   label: 'Buyers',   count: tabCounts.buyers   },
+    { key: 'listings', label: 'Listings', count: tabCounts.listings },
     { key: 'targets',  label: 'Targets',  count: tabCounts.targets  },
+    { key: 'tenants',  label: 'Tenants',  count: tabCounts.tenants  },
   ]
 
   function stageAccent(key: StageKey): string {
@@ -1186,9 +1188,6 @@ function DealsPage() {
                 flex:1, minWidth:0, display:'flex', alignItems:'stretch', overflowX:'auto', paddingLeft: HEADER_EDGE,
               }}>
                 {STAGE_TABS.map(f => stageTab(f.key, f.label))}
-                <div style={{ width:1, height:16, background:C.border, alignSelf:'center', flexShrink:0 }} />
-                {stageTab('in_service', 'In Service')}
-                {stageTab('all', 'All')}
               </div>
               <div style={{ display:'flex', alignItems:'center', position:'relative', flexShrink:0, borderLeft:`1px solid ${C.borderPanel}` }}>
                 <button onClick={() => setTypeDropOpen(o => !o)} style={{
