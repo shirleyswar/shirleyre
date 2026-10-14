@@ -12,7 +12,7 @@
 // Error: shake 6px×2 over 260ms, all four slot borders go late for 600ms. No error text.
 // Custom keypad — system keyboard never appears (no <input> elements).
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 
 const FONT_MONO = "'JetBrains Mono', ui-monospace, monospace"
@@ -25,40 +25,123 @@ interface PinGateProps {
 }
 
 const KEYS = ['1','2','3','4','5','6','7','8','9','C','0','⌫'] as const
+const MATTHEW_LEN = 4
+const GUEST_LEN = 6
+// A wrong 4-digit entry stays put briefly so a 6-digit guest code can continue.
+const GUEST_HOLD_MS = 10000
+const SESSION_MS = 8 * 60 * 60 * 1000
+const SESSION_KEYS = ['wr_session_exp_v2', 'wr3_session_exp'] as const
+
+function stampGuestSession() {
+  const expiry = String(Date.now() + SESSION_MS)
+  for (const key of SESSION_KEYS) localStorage.setItem(key, expiry)
+}
+
+async function redeemGuestPin(pin: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/guest-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify({ pin }),
+    })
+    if (!res.ok) return false
+    const data = await res.json()
+    return data?.ok === true
+  } catch {
+    return false
+  }
+}
 
 export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
   const [digits, setDigits] = useState<string[]>([])
   const [error, setError] = useState(false)
   const [shake, setShake] = useState(false)
+  const [extend, setExtend] = useState(false)
+  const digitsRef = useRef<string[]>([])
+  const busyRef = useRef(false)
+  const errorRef = useRef(false)
+  const holdRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearHold = () => {
+    if (holdRef.current) {
+      clearTimeout(holdRef.current)
+      holdRef.current = null
+    }
+  }
+
+  const fail = useCallback(() => {
+    clearHold()
+    setShake(true)
+    setError(true)
+    errorRef.current = true
+    setTimeout(() => {
+      setShake(false)
+      setError(false)
+      errorRef.current = false
+      digitsRef.current = []
+      setDigits([])
+      setExtend(false)
+      busyRef.current = false
+    }, 650)
+  }, [])
+
+  useEffect(() => () => clearHold(), [])
 
   const handleKey = useCallback(async (key: string) => {
-    if (error) return
-    if (key === 'C') { setDigits([]); return }
-    if (key === '⌫') {
-      setDigits(d => d.slice(0, -1))
+    if (errorRef.current || busyRef.current) return
+    if (key === 'C') {
+      clearHold()
+      digitsRef.current = []
+      setDigits([])
+      setExtend(false)
       return
     }
-    if (digits.length >= 4) return
+    if (key === '⌫') {
+      clearHold()
+      digitsRef.current = digitsRef.current.slice(0, -1)
+      setDigits([...digitsRef.current])
+      if (digitsRef.current.length < MATTHEW_LEN) setExtend(false)
+      return
+    }
+    if (digitsRef.current.length >= GUEST_LEN) return
 
-    const next = [...digits, key]
-    setDigits(next)
+    clearHold()
+    const next = [...digitsRef.current, key]
+    digitsRef.current = next
+    setDigits([...next])
 
-    if (next.length === 4) {
-      const pin = next.join('')
-      const hash = await sha256(pin)
+    if (next.length === MATTHEW_LEN) {
+      const hash = await sha256(next.join(''))
+      if (digitsRef.current.length !== MATTHEW_LEN || digitsRef.current.join('') !== next.join('')) return
       if (hash === pinHash) {
         onSuccess()
-      } else {
-        setShake(true)
-        setError(true)
-        setTimeout(() => {
-          setShake(false)
-          setError(false)
-          setDigits([])
-        }, 650)
+        return
       }
+      setExtend(true)
+      holdRef.current = setTimeout(() => {
+        if (digitsRef.current.length === MATTHEW_LEN && digitsRef.current.join('') === next.join('')) {
+          fail()
+        }
+      }, GUEST_HOLD_MS)
+      return
     }
-  }, [digits, error, pinHash, sha256, onSuccess])
+
+    if (next.length === GUEST_LEN) {
+      busyRef.current = true
+      const ok = await redeemGuestPin(next.join(''))
+      if (digitsRef.current.join('') !== next.join('')) {
+        busyRef.current = false
+        return
+      }
+      if (ok) {
+        stampGuestSession()
+        onSuccess()
+        return
+      }
+      fail()
+    }
+  }, [pinHash, sha256, onSuccess, fail])
 
   // §D6 — desktop hardware keyboard listener (additive, does not hide on-screen keypad)
   // CODE: useEffect attaches keydown on window; handleKey in dep array (it's a useCallback).
@@ -121,13 +204,14 @@ export default function PinGate({ pinHash, sha256, onSuccess }: PinGateProps) {
           WAR ROOM
         </div>
 
-        {/* §D6 + 29a: slots 44×54px, radius 10, gap 14px, 40px below mark */}
+        {/* §D6 + 29a: slots 44×54px, radius 10, gap 14px, 40px below mark.
+            Four slots for Matthew. Two more appear only after a non-matching 4. */}
         <motion.div
           animate={shake ? { x: [-6, 6, -6, 6, -4, 4, 0] } : {}}
           transition={{ duration: 0.26 }}
-          style={{ display: 'flex', gap: 14, marginTop: 40 }}
+          style={{ display: 'flex', gap: (digits.length > 4 || extend) ? 8 : 14, marginTop: 40 }}
         >
-          {[0,1,2,3].map(i => {
+          {Array.from({ length: (digits.length > 4 || extend) ? 6 : 4 }, (_, i) => {
             const filled = i < digits.length
             const isActive = i === digits.length && !error
             return (

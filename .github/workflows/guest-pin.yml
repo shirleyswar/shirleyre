@@ -1,0 +1,68 @@
+name: Install guest PIN
+
+on:
+  push:
+    branches:
+      - main
+      - cursor/guest-pin-aad7
+    paths:
+      - 'supabase/migrations/20261014_guest_pin.sql'
+      - '.github/workflows/guest-pin.yml'
+      - 'public/_worker.js'
+
+concurrency:
+  group: guest-pin
+  cancel-in-progress: false
+
+jobs:
+  install:
+    if: github.repository == 'shirleyswar/shirleyre'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Apply guest pin migration
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          url=""
+          if [ -n "$SUPABASE_DB_URL" ]; then url="$SUPABASE_DB_URL"; echo "using SUPABASE_DB_URL"; fi
+          if [ -z "$url" ] && [ -n "$DATABASE_URL" ]; then url="$DATABASE_URL"; echo "using DATABASE_URL"; fi
+          if [ -z "$url" ] && [ -n "$POSTGRES_URL" ]; then url="$POSTGRES_URL"; echo "using POSTGRES_URL"; fi
+          if [ -z "$url" ] && [ -n "$SUPABASE_DB_PASSWORD" ]; then
+            echo "using SUPABASE_DB_PASSWORD"
+            export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+            url="postgresql://postgres@db.mtkyyaorvensylrfbhxv.supabase.co:5432/postgres?sslmode=require"
+          fi
+          if [ -z "$url" ]; then
+            echo "no database secret is set (SUPABASE_DB_URL, DATABASE_URL, POSTGRES_URL, SUPABASE_DB_PASSWORD)"
+            exit 1
+          fi
+          psql "$url" -v ON_ERROR_STOP=1 -f supabase/migrations/20261014_guest_pin.sql
+          echo "guest pin migration applied"
+
+      - name: Fetch Pages build log if a Cloudflare token exists
+        if: always()
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+        run: |
+          token="$CLOUDFLARE_API_TOKEN"
+          if [ -z "$token" ]; then token="$CLOUDFLARE_API_KEY"; fi
+          if [ -z "$token" ]; then
+            echo "no Cloudflare API token secret is set"
+            exit 0
+          fi
+          echo "Cloudflare token is set; requesting the latest Pages deployment"
+          curl -sS -H "Authorization: Bearer $token" \
+            "https://api.cloudflare.com/client/v4/accounts/e7969d8b6291f3aa7784d466e5d22b51/pages/projects/shirleyre/deployments?per_page=3" \
+            -o /tmp/pages-deployments.json
+          python3 -c 'import json; d=json.load(open("/tmp/pages-deployments.json")); print("success", d.get("success")); errs=d.get("errors") or []; print("error", (errs[0].get("message") if errs else "")); [print((i.get("id") or ""), (i.get("environment") or ""), ((i.get("latest_stage") or {}).get("status") or ""), ((i.get("latest_stage") or {}).get("name") or "")) for i in (d.get("result") or [])[:3]]'

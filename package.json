@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/write-build-id.js && next build && cp public/warroom-app-icon.png out/warroom-icon.png",
+    "build": "node scripts/write-build-id.js && next build && cp public/_worker.js out/_worker.js && cp public/warroom-app-icon.png out/warroom-icon.png",
     "start": "next start",
     "lint": "next lint"
   },
