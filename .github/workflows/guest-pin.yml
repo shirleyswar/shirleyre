@@ -1,0 +1,39 @@
+name: Install guest PIN
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261014_guest_pin.sql'
+      - '.github/workflows/guest-pin.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20261014_guest_pin.sql'
+      - '.github/workflows/guest-pin.yml'
+
+concurrency:
+  group: guest-pin
+  cancel-in-progress: false
+
+jobs:
+  install:
+    if: github.repository == 'shirleyswar/shirleyre'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Apply guest pin migration
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "SUPABASE_DB_URL secret is missing"
+            exit 1
+          fi
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261014_guest_pin.sql
+          echo "guest pin migration applied"
