@@ -13,6 +13,8 @@ import BottomSheet from '@/components/warroom3/BottomSheet'
 import CalendarPicker from '@/components/warroom3/CalendarPicker'
 import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
 import chrome from '@/components/warroom/taskItemChrome.module.css'
+import TaskTagControl from '@/components/warroom/TaskTagControl'
+import { persistTaskTag, taskTagOf, type TaskTag } from '@/lib/taskTags'
 
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
 const FONT_MONO    = "'JetBrains Mono', ui-monospace, monospace"
@@ -86,6 +88,8 @@ export interface Task {
   deal_id: string | null
   is_life: boolean
   is_entity: boolean
+  is_sr?: boolean
+  entity_name?: string | null
   entity_id: string | null
   sort_order: number | null
   created_at: string
@@ -173,7 +177,8 @@ export default function TaskDetailSheet({
   const [showCalendar, setShowCalendar] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [localTitle, setLocalTitle] = useState('')
-  const [listType, setListType] = useState<'life' | 'entity' | null>(null)
+  const [listType, setListType] = useState<TaskTag | null>(null)
+  const [entityName, setEntityName] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notes, setNotes] = useState<TaskNote[]>([])
@@ -201,7 +206,8 @@ export default function TaskDetailSheet({
       setNoteText('')
       setLocalTitle(task.title)
       origTitle.current = task.title
-      setListType(task.is_life ? 'life' : task.is_entity ? 'entity' : null)
+      setListType(taskTagOf(task))
+      setEntityName(task.entity_name ?? task.entities?.name ?? null)
       setSaving(false)
       setError(null)
       setShowDiscardGuard(false)
@@ -467,12 +473,38 @@ export default function TaskDetailSheet({
     if (ok) setCommittedDue(dateStr)
   }
 
-  async function pickList(next: 'life' | 'entity') {
+  async function pickTag(next: TaskTag) {
     if (next === listType) return
-    const prev = listType
+    const prevTag = listType
+    const prevEntity = entityName
+    const nextEntity = next === 'entity' ? entityName : null
     setListType(next)
-    const ok = await saveFields({ list: next })
-    if (!ok) setListType(prev)
+    setEntityName(nextEntity)
+    if (!task) return
+    const res = await persistTaskTag(task.id, next, nextEntity)
+    if (!res.ok) {
+      setListType(prevTag)
+      setEntityName(prevEntity)
+      setError(res.message || 'Save failed — nothing was lost')
+      return
+    }
+    if (res.degraded && res.message) setError(res.message)
+    else flashSaved()
+  }
+
+  async function pickEntity(name: string) {
+    if (!task) return
+    const prev = entityName
+    setEntityName(name)
+    setListType('entity')
+    const res = await persistTaskTag(task.id, 'entity', name)
+    if (!res.ok) {
+      setEntityName(prev)
+      setError(res.message || 'Save failed — nothing was lost')
+      return
+    }
+    if (res.degraded && res.message) setError(res.message)
+    else flashSaved()
   }
 
   // Status word — moved into the header kicker. Red is applied only when overdue.
@@ -487,9 +519,6 @@ export default function TaskDetailSheet({
   }
 
   // D11.5 — shared staging predicate (lib/taskStagingPredicate.ts)
-  const committedListType: 'life' | 'entity' | null = task
-    ? (task.is_life ? 'life' : task.is_entity ? 'entity' : null)
-    : null
   // ── Header action — the checkmark stays. Fields save themselves.
   // READ  → DONE caption + checkmark (completion)
   // EDIT  → DELETE asset slot (104×44, right-aligned at 18px gutter)
@@ -503,14 +532,6 @@ export default function TaskDetailSheet({
   )
 
   // List name in read mode
-  const listName = task.is_life
-    ? 'Life'
-    : task.entity_id && task.entities?.name
-    ? task.entities.name
-    : task.is_entity
-    ? 'Entity'
-    : '—'
-
   const dealAddr = task.deals ? formatAddress(task.deals as any) : null
 
 
@@ -658,29 +679,14 @@ export default function TaskDetailSheet({
           </div>
 
           <div style={{ marginBottom: 12 }}>
-            <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
-            <div style={{
-              display: 'flex', padding: 4, borderRadius: 8, gap: 4,
-              background: T.bgRaise, border: `1px solid ${T.borderDefault}`,
-            }}>
-              {(['life', 'entity'] as const).map(seg => (
-                <button
-                  key={seg}
-                  type="button"
-                  onClick={() => pickList(seg)}
-                  style={{
-                    flex: 1, height: 36, padding: '0 8px', borderRadius: 8, cursor: 'pointer',
-                    fontFamily: FONT_DISPLAY, fontSize: 13, fontWeight: 500,
-                    border: 'none',
-                    background: listType === seg ? 'rgba(124,58,237,0.22)' : 'transparent',
-                    boxShadow: listType === seg ? 'inset 0 0 0 1px #8B5CF6' : 'none',
-                    color: listType === seg ? T.textHi : T.textMid,
-                  }}
-                >
-                  {seg === 'life' ? 'Life' : 'Entity'}
-                </button>
-              ))}
-            </div>
+            <div style={{ ...LABEL, marginBottom: 8 }}>TAG</div>
+            <TaskTagControl
+              tag={listType}
+              entityName={entityName}
+              onTag={pickTag}
+              onEntity={pickEntity}
+              fill
+            />
           </div>
 
           <textarea

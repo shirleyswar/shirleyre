@@ -14,9 +14,22 @@ import {
   DS0, DS2, DS4, DS5, DS6,
   DT5, DT7,
 } from '@/components/warroom/desktopTypes'
-import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
+import MarkCompleteButton, { CompleteRing } from '@/components/warroom/MarkCompleteButton'
 import CalendarPicker from '@/components/warroom3/CalendarPicker'
 import chrome from '@/components/warroom/taskItemChrome.module.css'
+import TaskTagControl from '@/components/warroom/TaskTagControl'
+import MoneyAmountField from '@/components/warroom/MoneyAmountField'
+import { DM0 } from '@/components/warroom/desktopTypes'
+import { commitMoney } from '@/lib/moneyInput'
+import {
+  insertTaskRow,
+  persistTaskTag,
+  taskTagLabel,
+  taskTagOf,
+  TAG_COLUMN_NOTICE,
+  TASK_ARRIVE_MS,
+  type TaskTag,
+} from '@/lib/taskTags'
 
 // ── Tokens — same as page.tsx C object ───────────────────────────────────────
 const C = {
@@ -72,7 +85,11 @@ export interface Task {
   deal_id: string | null
   is_life: boolean
   is_entity: boolean
+  is_sr?: boolean
+  entity_name?: string | null
   entity_id?: string | null
+  clientKey?: string
+  flashUntil?: number
   sort_order?: number | null
   created_at?: string
   deals?: {
@@ -99,6 +116,10 @@ export interface TaskModalProps {
   onClose: () => void
   onCompleted: (task: Task) => void
   onSaved: () => void
+  /** Create: parent paints the task and closes before the insert returns. */
+  onOptimisticCreate?: (task: Task) => void
+  onCreateFailed?: (tempId: string, message: string) => void
+  onCreateSettled?: (tempId: string, realId: string, notice?: string) => void
   /** Check 40: when true, modal opens in edit mode with no DELETE, no EDIT button */
   isCreate?: boolean
   /**
@@ -140,10 +161,8 @@ function isOverdue(dateStr: string | null): boolean {
   return dateStr < todayLocal()
 }
 
-function committedListType(task: Task): 'life' | 'entity' | null {
-  if (task.is_life) return 'life'
-  if (task.is_entity) return 'entity'
-  return null
+function committedListType(task: Task): TaskTag | null {
+  return taskTagOf(task)
 }
 
 function formatNoteDate(isoStr: string): string {
@@ -184,14 +203,15 @@ function ChevronIcon() {
 }
 
 // ── TaskModal ─────────────────────────────────────────────────────────────────
-export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreate = false, fill = 'task' }: TaskModalProps) {
+export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptimisticCreate, onCreateFailed, onCreateSettled, isCreate = false, fill = 'task' }: TaskModalProps) {
   // ── State machine ──────────────────────────────────────────────────────────
   // Check 40: create mode always starts in edit state
   const [mode, setMode] = useState<'read' | 'edit'>(isCreate ? 'edit' : 'read')
   const [stagedDate, setStagedDate] = useState<string | null>(null)
   const [noteText, setNoteText] = useState('')
   const [localTitle, setLocalTitle] = useState(task.title)
-  const [listType, setListType] = useState<'life' | 'entity' | null>(committedListType(task))
+  const [listType, setListType] = useState<TaskTag | null>(committedListType(task))
+  const [entityName, setEntityName] = useState<string | null>(task.entity_name ?? task.entities?.name ?? null)
   const [notes, setNotes] = useState<TaskNote[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -225,6 +245,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
   // Existing Battle Plan items save themselves. Create and fill forms still confirm.
   const live = !isCreate && fill === 'task'
   const modalRef = useRef<HTMLDivElement>(null)
+  const createLock = useRef(false)
   const desktopDeleteRef = useRef<HTMLButtonElement>(null)
   // Ref-copy of isActive — prevents stale closure in the Esc keydown handler.
   // Without this, a handler registered when isActive=false never sees it become true.
@@ -276,6 +297,13 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
   useLayoutEffect(() => {
     modalRef.current?.focus()
   }, [])
+
+  // New task: the title is the place to type. Focus it once the modal is up.
+  useEffect(() => {
+    if (!isCreate || fill !== 'task') return
+    const t = window.setTimeout(() => titleRef.current?.focus(), 40)
+    return () => window.clearTimeout(t)
+  }, [isCreate, fill])
 
   useEffect(() => {
     const handleTab = (e: KeyboardEvent) => {
@@ -508,9 +536,10 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
     if (fill === 'money_mover') {
       setSaving(true)
       setError(null)
+      const committedMoney = commitMoney(mmValue)
+      setMmValue(committedMoney.text)
       const insertPayload: Record<string, unknown> = { title: mmTitle.trim() }
-      const parsedVal = parseFloat(mmValue.replace(/[^0-9.]/g, ''))
-      if (!isNaN(parsedVal) && parsedVal > 0) insertPayload.commission = parsedVal
+      if (committedMoney.amount != null && committedMoney.amount > 0) insertPayload.commission = committedMoney.amount
       const { error: mmErr } = await supabase.from('money_movers').insert(insertPayload)
       setSaving(false)
       if (mmErr) { setError(mmErr.message || 'Could not save money mover.'); return }
@@ -519,29 +548,43 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
       return
     }
 
-    // Check 39: create mode — INSERT first, then close (do NOT call commit_task_sheet)
+    // Create closes immediately. The list already shows the task; a failed insert rolls it back.
     if (isCreate) {
-      setSaving(true)
-      setError(null)
-      const { error: insertErr } = await supabase
-        .from('tasks')
-        .insert({
-          title: localTitle,
-          status: 'open',
-          due_date: stagedDate ?? null,
-          is_life: listType === 'life',
-          is_entity: listType === 'entity',
-        })
-      setSaving(false)
-      if (insertErr) {
-        setError(insertErr.message || 'Could not create task. Try again.')
+      if (createLock.current) return
+      createLock.current = true
+      const tempId = `opt-${Date.now()}`
+      const due = stagedDate ?? null
+      const title = localTitle.trim()
+      const draft: Task = {
+        ...task,
+        id: tempId,
+        title,
+        status: 'open',
+        due_date: due,
+        is_life: listType === 'life',
+        is_entity: listType === 'entity',
+        is_sr: listType === 'sr',
+        entity_name: listType === 'entity' ? entityName : null,
+        entities: listType === 'entity' && entityName ? { name: entityName } : null,
+        clientKey: tempId,
+        flashUntil: Date.now() + TASK_ARRIVE_MS,
+      }
+      onOptimisticCreate?.(draft)
+      onClose()
+      const result = await insertTaskRow({
+        title,
+        status: 'open',
+        due_date: due,
+        is_life: listType === 'life',
+        is_entity: listType === 'entity',
+        is_sr: listType === 'sr',
+        entity_name: listType === 'entity' ? entityName : null,
+      }, listType, listType === 'entity' ? entityName : null)
+      if (result.error || !result.id) {
+        onCreateFailed?.(tempId, result.error?.message || 'Could not create task. Try again.')
         return
       }
-      setCommitted(true)
-      setTimeout(() => {
-        setCommitted(false)
-        onSaved()
-      }, 1500)
+      onCreateSettled?.(tempId, result.id, result.degraded ? TAG_COLUMN_NOTICE : undefined)
       return
     }
 
@@ -674,12 +717,39 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
     if (ok) setCommittedDue(dateStr)
   }
 
-  async function pickList(next: 'life' | 'entity') {
-    if (next === listType) return
-    const prev = listType
-    setListType(next)
-    const ok = await saveFields({ list: next })
-    if (!ok) setListType(prev)
+  async function pickTag(next: TaskTag) {
+    if (live && next === listType) return
+    const resolved = !live && listType === next ? committeListType : next
+    const prevTag = listType
+    const prevEntity = entityName
+    const nextEntity = resolved === 'entity' ? entityName : null
+    setListType(resolved)
+    setEntityName(nextEntity)
+    if (!live) return
+    const res = await persistTaskTag(task.id, resolved, nextEntity)
+    if (!res.ok) {
+      setListType(prevTag)
+      setEntityName(prevEntity)
+      setError(res.message || 'Save failed. Try again.')
+      return
+    }
+    if (res.degraded && res.message) setError(res.message)
+    else flashSaved()
+  }
+
+  async function pickEntity(name: string) {
+    const prev = entityName
+    setEntityName(name)
+    setListType('entity')
+    if (!live) return
+    const res = await persistTaskTag(task.id, 'entity', name)
+    if (!res.ok) {
+      setEntityName(prev)
+      setError(res.message || 'Save failed. Try again.')
+      return
+    }
+    if (res.degraded && res.message) setError(res.message)
+    else flashSaved()
   }
 
   // ── Enter edit mode ───────────────────────────────────────────────────────
@@ -973,26 +1043,23 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
 
             {fill === 'money_mover' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <span style={{ ...LABEL, color: C.brandLift }}>NEW MONEY MOVER</span>
                 <div>
                   <div style={{ ...LABEL, marginBottom: 8 }}>TITLE</div>
                   <input
                     autoFocus
                     value={mmTitle}
                     onChange={e => setMmTitle(e.target.value)}
-                    placeholder="Money mover title"
+                    placeholder="What is this for?"
                     className={chrome.field}
                     style={DS4}
                   />
                 </div>
                 <div>
-                  <div style={{ ...LABEL, marginBottom: 8 }}>VALUE (OPTIONAL)</div>
-                  <input
+                  <div style={{ ...LABEL, marginBottom: 8 }}>VALUE</div>
+                  <MoneyAmountField
                     value={mmValue}
-                    onChange={e => setMmValue(e.target.value)}
-                    placeholder="e.g. 850000"
-                    className={chrome.field}
-                    style={DS4}
+                    onChange={setMmValue}
+                    style={DM0}
                   />
                 </div>
               </div>
@@ -1062,23 +1129,11 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               <textarea
                 ref={titleRef}
                 value={localTitle}
-                onChange={e => { setLocalTitle(e.target.value); autoSizeTitle() }}
+                onChange={e => setLocalTitle(e.target.value)}
                 rows={1}
-                style={{
-                  ...DS0,
-                  color: C.textHi,
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: `1px solid ${BORDER}`,
-                  borderRadius: 0,
-                  padding: '0 0 8px',
-                  resize: 'none',
-                  width: '100%',
-                  outline: 'none',
-                  lineHeight: 1.3,
-                  fontFamily: FONT_DISP,
-                  overflow: 'hidden',  // prevents scrollbar flash during height transition
-                }}
+                placeholder="What needs to get done?"
+                aria-label="Task title"
+                className={chrome.titleField}
               />
             )}
 
@@ -1188,52 +1243,24 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
               )}
             </div>
 
-            {/* 5. LIST — a live item saves the segment on tap. */}
+            {/* 5. TAG — a live item saves the choice on tap. Entity opens the company row. */}
             <div>
-              <div style={{ ...LABEL, marginBottom: 8 }}>LIST</div>
+              <div style={{ ...LABEL, marginBottom: 8 }}>TAG</div>
               {!live && mode === 'read' ? (
                 <div className={chrome.fieldStatic}>
-                  <span style={{ ...DS5, color: listType ? C.textHi : C.textLow, textTransform: listType ? 'capitalize' : 'none' }}>
-                    {listType === 'life' ? 'Life' : listType === 'entity' ? 'Entity' : 'No list'}
+                  <span style={{ ...DS5, color: listType ? C.textHi : C.textLow }}>
+                    {taskTagLabel({ is_life: listType === 'life', is_sr: listType === 'sr', is_entity: listType === 'entity', entity_name: entityName }) ?? 'No tag'}
                   </span>
                   <ChevronIcon />
                 </div>
               ) : (
-                <div style={{
-                  display: 'flex',
-                  background: C.bgRaise,
-                  borderRadius: 8,
-                  border: `1px solid ${BORDER}`,
-                  padding: 4,
-                  gap: 4,
-                  width: live ? '100%' : 'fit-content',
-                }}>
-                  {(['life', 'entity'] as const).map(lt => {
-                    const isSelected = listType === lt
-                    return (
-                      <button
-                        key={lt}
-                        type="button"
-                        onClick={() => live ? pickList(lt) : setListType(prev => prev === lt ? committeListType : lt)}
-                        style={{
-                          flex: live ? 1 : undefined,
-                          height: 36,
-                          padding: '0 16px',
-                          borderRadius: 8,
-                          border: 'none',
-                          background: isSelected ? 'rgba(124,58,237,0.22)' : 'transparent',
-                          boxShadow: isSelected ? 'inset 0 0 0 1px #8B5CF6' : 'none',
-                          ...DS5,
-                          color: isSelected ? C.textHi : C.textMid,
-                          cursor: 'pointer',
-                          textTransform: 'capitalize',
-                        }}
-                      >
-                        {lt === 'life' ? 'Life' : 'Entity'}
-                      </button>
-                    )
-                  })}
-                </div>
+                <TaskTagControl
+                  tag={listType}
+                  entityName={entityName}
+                  onTag={pickTag}
+                  onEntity={pickEntity}
+                  fill={live}
+                />
               )}
             </div>
 
@@ -1303,13 +1330,10 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, isCreat
           {/* CONFIRM — inert outline until something is staged, violet fill once it is. */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             {committed ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src="/assets/check/check-h280.png"
-                alt="Saved"
-                height={40}
-                style={{ height: 40, width: 'auto', display: 'block' }}
-              />
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <CompleteRing size={32} />
+                <span style={{ fontFamily: FONT_DISP, fontSize: 13, fontWeight: 600, color: C.moneyIn }}>Saved</span>
+              </span>
             ) : (
               <button
                 type="button"

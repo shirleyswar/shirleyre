@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import PinGate from '@/components/warroom/PinGate'
 import BottomTabBar, { TabId } from '@/components/warroom3/BottomTabBar'
 import BottomSheet from '@/components/warroom3/BottomSheet'
-import BattlePlanSheet from '@/components/warroom3/BattlePlanSheet'
+import BattlePlanSheet, { Task as BattleTask } from '@/components/warroom3/BattlePlanSheet'
 import { DealsSheet } from '@/components/warroom3/DealsSheet'
 import ReceivablesCard from '@/components/warroom3/ReceivablesCard'
 import MoneyMoversSheet from '@/components/warroom3/MoneyMoversSheet'
@@ -510,6 +510,8 @@ function HomeScreen({
   const [dealsControl, setDealsControl] = useState<DealsControl>({ hotCount: 0, ucCount: 0, activeCount: 0, pipelineCount: 0, total: 0 })
   const [bpRefreshKey, setBpRefreshKey] = useState(0)
   const [mmRefreshKey, setMmRefreshKey] = useState(0)
+  const [pendingTasks, setPendingTasks] = useState<BattleTask[]>([])
+  const [taskNotice, setTaskNotice] = useState<string | null>(null)
   // Item 94: pressed state for DEALS plate
   const [dealPressed, setDealPressed] = useState(false)
 
@@ -722,6 +724,10 @@ function HomeScreen({
         open={openSheet === 'battleplan'}
         onClose={() => setOpenSheet(null)}
         refreshKey={bpRefreshKey}
+        pendingTasks={pendingTasks}
+        saveNotice={taskNotice}
+        onDismissNotice={() => setTaskNotice(null)}
+        onConsumePending={ids => setPendingTasks(prev => prev.filter(t => !ids.includes(t.id)))}
         onOpenTaskDetail={(task) => {
           setSelectedDetailTask(task as DetailTask)
           setTaskDetailOpen(true)
@@ -768,7 +774,29 @@ function HomeScreen({
         onOpenMoneyMover={() => { setOpenSheet(null); setTimeout(() => setOpenSheet('moneymovers_add'), 180) }}
       />
 
-      <TaskSheet open={openSheet === 'task'} onClose={() => setOpenSheet(null)} />
+      <TaskSheet
+        open={openSheet === 'task'}
+        onClose={() => setOpenSheet(null)}
+        onOptimisticCreate={draft => {
+          setPendingTasks(prev => [draft, ...prev.filter(t => t.id !== draft.id)])
+          setTaskNotice(null)
+        }}
+        onCreateFailed={(id, message) => {
+          setPendingTasks(prev => prev.filter(t => t.id !== id))
+          setTaskNotice(message)
+        }}
+        onCreateSettled={(tempId, realId, notice) => {
+          setPendingTasks(prev => prev.map(t => t.id === tempId ? { ...t, id: realId } : t))
+          if (notice) setTaskNotice(notice)
+          setBpRefreshKey(k => k + 1)
+        }}
+      />
+      {taskNotice && openSheet !== 'battleplan' && (
+        <div style={{ position: 'fixed', left: 14, right: 14, bottom: 118, zIndex: 70, padding: '10px 14px', borderRadius: 10, background: '#12111B', border: '1px solid rgba(255,255,255,0.14)', display: 'flex', gap: 10, alignItems: 'center' }}>
+          <span style={{ flex: 1, fontFamily: "'Space Grotesk', system-ui, sans-serif", fontSize: 13, color: taskNotice.startsWith('Saved.') ? '#FFA23A' : '#FF4D4D' }}>{taskNotice}</span>
+          <button type="button" onClick={() => setTaskNotice(null)} style={{ background: 'none', border: 'none', color: '#B8B6C6', fontSize: 12 }}>Dismiss</button>
+        </div>
+      )}
       <EventSheet open={openSheet === 'event'} onClose={() => setOpenSheet(null)} />
       <VoiceNoteSheet open={openSheet === 'voicenote'} onClose={() => setOpenSheet(null)} />
 

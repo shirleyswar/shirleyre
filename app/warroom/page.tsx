@@ -27,6 +27,9 @@ import {
 } from '@/components/warroom/desktopTypes'
 import MarkCompleteButton from '@/components/warroom/MarkCompleteButton'
 import LacdbFlag from '@/components/warroom/LacdbFlag'
+import { selectTasks, taskTagLabel } from '@/lib/taskTags'
+import { useArrivingRows } from '@/lib/useArrivingRows'
+import chrome from '@/components/warroom/taskItemChrome.module.css'
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 const PIN_HASH    = '8e93e440f571a4dac32666ef784bf1f995b3ae865d4a9aa0ef981a44442ad39e'
@@ -88,7 +91,13 @@ interface Task {
   due_date: string | null
   completed_at: string | null
   deal_id: string | null
-  deals?: { name: string; address: string | null } | null
+  is_life?: boolean | null
+  is_entity?: boolean | null
+  is_sr?: boolean | null
+  entity_name?: string | null
+  clientKey?: string
+  flashUntil?: number
+  deals?: { name: string; address: string | null; addr_display?: string | null } | null
 }
 
 interface Deal {
@@ -477,7 +486,15 @@ const G = {
 // 16px is clear air before every group that is not the first visible one.
 const BP_GROUP_BREAK = 16
 
-function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKey: number; onSelectTask?: (t: Task) => void; onCreateTask?: () => void }) {
+function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask, pendingTasks = [], saveNotice, onDismissNotice, onConsumePending }: {
+  refreshKey: number
+  onSelectTask?: (t: Task) => void
+  onCreateTask?: () => void
+  pendingTasks?: Task[]
+  saveNotice?: string | null
+  onDismissNotice?: () => void
+  onConsumePending?: (ids: string[]) => void
+}) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   // E: scroll container ref for custom thumb + bottom fade
@@ -487,22 +504,32 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
   const [thumbVisible, setThumbVisible] = useState(false)
   const [fadeVisible, setFadeVisible] = useState(false)
   const [staleOpen, setStaleOpen] = useState(false)
+  const loaded = useRef(false)
 
   useEffect(() => {
+    let cancel = false
     async function load() {
-      setLoading(true)
-      const { data } = await supabase
-        .from('tasks')
-        .select('id, title, status, due_date, completed_at, deal_id, deals(name, address, addr_display)')
-        .eq('status', 'open')
-        .is('deleted_at', null)
-        .order('due_date', { ascending: true, nullsFirst: false })
-        .limit(60)
-      setTasks((data ?? []) as unknown as Task[])
+      if (!loaded.current) setLoading(true)
+      const { data, error } = await selectTasks<Task>(tagCols => {
+        const columns = `id, title, status, due_date, completed_at, deal_id, ${tagCols}, deals(name, address, addr_display)`
+        return supabase
+          .from('tasks')
+          .select(columns)
+          .eq('status', 'open')
+          .is('deleted_at', null)
+          .order('due_date', { ascending: true, nullsFirst: false })
+          .limit(60)
+      })
+      if (cancel) return
+      if (!error) setTasks((data ?? []) as Task[])
+      loaded.current = true
       setLoading(false)
     }
     load()
+    return () => { cancel = true }
   }, [refreshKey])
+
+  const visibleTasks = useArrivingRows(tasks, pendingTasks, onConsumePending)
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0
@@ -526,15 +553,15 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
     setFadeVisible(el.scrollTop + el.clientHeight < el.scrollHeight - 4)
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [loading, staleOpen, tasks.length])
+  }, [loading, staleOpen, visibleTasks.length])
 
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 
   const groups = {
-    overdue:  tasks.filter(t => t.due_date && t.due_date < todayStr),
-    today:    tasks.filter(t => t.due_date === todayStr),
-    later:    tasks.filter(t => t.due_date && t.due_date > todayStr),
-    noDate:   tasks.filter(t => !t.due_date),
+    overdue:  visibleTasks.filter(t => t.due_date && t.due_date < todayStr),
+    today:    visibleTasks.filter(t => t.due_date === todayStr),
+    later:    visibleTasks.filter(t => t.due_date && t.due_date > todayStr),
+    noDate:   visibleTasks.filter(t => !t.due_date),
   }
 
   // More than 60 days late is a review pile, not the working list.
@@ -547,7 +574,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
     .filter(t => t.due_date != null && -daysBetween(t.due_date) > STALE_AFTER_DAYS)
 
   const lateCount = groups.overdue.length
-  const totalCount = tasks.length
+  const totalCount = visibleTasks.length
 
   // D4.1: hairline rows. Check 31: title line 1, "address · client" subline, right-aligned date gutter.
   function TaskRow({ t, overdue }: { t: Task; overdue?: boolean }) {
@@ -559,6 +586,8 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
     const dealAddr = (t as any).deals?.addr_display ?? (t as any).deals?.address ?? (t as any).deals?.name ?? null
     const dealClient = (t as any).deals?.name && (t as any).deals?.name !== dealAddr ? (t as any).deals.name : null
     const sublineParts: string[] = []
+    const tagLabel = taskTagLabel(t)
+    if (tagLabel) sublineParts.push(tagLabel)
     if (dealAddr) sublineParts.push(dealAddr)
     if (dealClient) sublineParts.push(dealClient)
     const subline = sublineParts.join(' · ')
@@ -571,6 +600,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
       <div
         onClick={() => onSelectTask?.(t)}
         style={{
+          position: 'relative',
           padding: isOverdue ? '10px 14px 10px 17px' : '10px 14px 10px 20px',
           display: 'flex',
           alignItems: 'center',
@@ -581,6 +611,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
           marginLeft: isOverdue ? -3 : 0,
         }}
       >
+        {t.clientKey && <span className={chrome.arriveLine} aria-hidden="true" />}
         {/* Content: title + subline */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ ...DS3, color: C.textHi, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -628,7 +659,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
           <div style={{ flex: 1, height: 1, background: C.borderHair }} />
         </div>
         {items.map((t, i) => (
-          <React.Fragment key={t.id}>
+          <React.Fragment key={t.clientKey ?? t.id}>
             <TaskRow t={t} overdue={overdue} />
             {i < items.length - 1 && <Hair />}
           </React.Fragment>
@@ -671,6 +702,21 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
           className="wr-home-scroll"
           style={{ height: '100%', overflowY: 'auto', padding: '4px 0 14px' }}
         >
+          {saveNotice && (
+            <div style={{
+              margin: '8px 14px 4px 20px',
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: saveNotice.startsWith('Saved.') ? 'rgba(255,162,58,0.10)' : 'rgba(255,77,77,0.10)',
+              border: saveNotice.startsWith('Saved.') ? '1px solid rgba(255,162,58,0.28)' : '1px solid rgba(255,77,77,0.28)',
+              display: 'flex',
+              gap: 8,
+              alignItems: 'flex-start',
+            }}>
+              <span style={{ ...DS6, color: saveNotice.startsWith('Saved.') ? C.hot : C.late, flex: 1 }}>{saveNotice}</span>
+              <button type="button" onClick={onDismissNotice} style={{ background: 'none', border: 'none', color: C.textMid, cursor: 'pointer', fontFamily: FONT_DISP, fontSize: 12 }}>Dismiss</button>
+            </div>
+          )}
           {loading ? (
             <div style={{ ...DS6, color: C.textLow, padding: '20px 0', textAlign: 'center' }}>Loading…</div>
           ) : (
@@ -701,7 +747,7 @@ function BattlePlanPanel({ refreshKey, onSelectTask, onCreateTask }: { refreshKe
                     <span style={{ ...DT7 as React.CSSProperties, color: C.textLow, marginLeft: 'auto' }}>{staleOpen ? '–' : '+'}</span>
                   </button>
                   {staleOpen && staleOverdue.map(t => (
-                    <React.Fragment key={t.id}>
+                    <React.Fragment key={t.clientKey ?? t.id}>
                       <Hair />
                       <TaskRow t={t} overdue />
                     </React.Fragment>
@@ -2458,6 +2504,8 @@ export default function WarRoomPage() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [drawerTask, setDrawerTask] = useState<Task | null>(null)
   const [createMode, setCreateMode] = useState(false)
+  const [pendingTasks, setPendingTasks] = useState<Task[]>([])
+  const [taskNotice, setTaskNotice] = useState<string | null>(null)
   // Check 59: unified create shell fill mode
   const [fillMode, setFillMode] = useState<'task' | 'event' | 'deadline' | 'money_mover' | null>(null)
 
@@ -2647,6 +2695,10 @@ export default function WarRoomPage() {
                 refreshKey={refreshKey}
                 onSelectTask={setDrawerTask}
                 onCreateTask={() => setCreateMode(true)}
+                pendingTasks={pendingTasks}
+                saveNotice={taskNotice}
+                onDismissNotice={() => setTaskNotice(null)}
+                onConsumePending={ids => setPendingTasks(prev => prev.filter(t => !ids.includes(t.id)))}
               />
             </div>
 
@@ -2704,6 +2756,21 @@ export default function WarRoomPage() {
           onClose={() => { setDrawerTask(null); setCreateMode(false); setFillMode(null); setRefreshKey(k => k + 1) }}
           onCompleted={() => { setDrawerTask(null); setCreateMode(false); setFillMode(null); setRefreshKey(k => k + 1) }}
           onSaved={() => { setDrawerTask(null); setCreateMode(false); setFillMode(null); setRefreshKey(k => k + 1) }}
+          onOptimisticCreate={draft => {
+            setPendingTasks(prev => [draft as Task, ...prev.filter(t => t.id !== draft.id)])
+            setTaskNotice(null)
+            setCreateMode(false)
+            setFillMode(null)
+          }}
+          onCreateFailed={(id, message) => {
+            setPendingTasks(prev => prev.filter(t => t.id !== id))
+            setTaskNotice(message)
+          }}
+          onCreateSettled={(tempId, realId, notice) => {
+            setPendingTasks(prev => prev.map(t => t.id === tempId ? { ...t, id: realId } : t))
+            if (notice) setTaskNotice(notice)
+            setRefreshKey(k => k + 1)
+          }}
           isCreate={createMode && !drawerTask}
           fill={fillMode ?? 'task'}
         />
