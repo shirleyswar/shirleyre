@@ -98,3 +98,13 @@ function waitForDraw(el: SVGPathElement | null): Promise<void> {
 function wait(ms: number) {
   return new Promise<void>(resolve => window.setTimeout(resolve, ms))
 }
+
+/** Resting complete mark from the ring button. Replaces the check-h280 tile. */
+export function CompleteRing({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+      <circle className={styles.ring} cx="16" cy="16" r="15.25" />
+      <path className={styles.check} d="M9.5 14.8 L14.2 19.6 L22.8 9.8" />
+    </svg>
+  )
+}

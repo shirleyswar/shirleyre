@@ -4,7 +4,7 @@
  *   1. A DUE chip has been tapped and differs from the committed value
  *   2. The note composer is non-empty (trimmed — whitespace-only does not stage)
  *   3. The title has been edited and differs from the committed value
- *   4. The LIST toggle differs from the committed value
+ *   4. The TAG toggle differs from the committed value
  *
  * Consumed by: mobile TaskDetailSheet, desktop D11 modal.
  * VoiceNote / NewTask / NewEvent keep their own canSave — different objects.
@@ -15,8 +15,8 @@ export interface TaskStagingState {
   committedDate: string | null     // task.due_date at open time
   noteText: string                 // raw composer value
   titleEdited: boolean             // title differs from committed
-  listType: 'life' | 'entity' | null
-  committedListType: 'life' | 'entity' | null
+  listType: 'life' | 'sr' | 'entity' | null
+  committedListType: 'life' | 'sr' | 'entity' | null
 }
 
 export function isTaskStaged(s: TaskStagingState): boolean {
@@ -26,7 +26,7 @@ export function isTaskStaged(s: TaskStagingState): boolean {
   if (s.noteText.trim().length > 0) return true
   // 3. Title edited and differs from committed
   if (s.titleEdited) return true
-  // 4. LIST toggle differs from committed
+  // 4. TAG toggle differs from committed
   if (s.listType !== s.committedListType) return true
   return false
 }

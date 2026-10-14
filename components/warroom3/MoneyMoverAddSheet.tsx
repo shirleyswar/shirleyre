@@ -8,8 +8,12 @@ import React, { useState, useEffect, useRef } from 'react'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import { supabase } from '@/lib/supabase'
 import { FAB_APERTURE_GRADIENT, FAB_APERTURE_SHADOW } from '@/lib/fabGradient'
+import chrome from '@/components/warroom/taskItemChrome.module.css'
+import MoneyAmountField from '@/components/warroom/MoneyAmountField'
+import { commitMoney } from '@/lib/moneyInput'
 
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
+const FONT_MONO = "'JetBrains Mono', ui-monospace, monospace"
 
 const T = {
   textHi:     '#EFEEF4',
@@ -66,14 +70,14 @@ export default function MoneyMoverAddSheet({ open, onClose, onSaved }: MoneyMove
     setOffline(false)
 
     // Strip non-numeric chars from commission (handles $1,234.56 → 1234.56)
-    const rawCommission = commission.replace(/[^0-9.]/g, '')
-    const parsedCommission = rawCommission.length > 0 ? parseFloat(rawCommission) : null
+    const committed = commitMoney(commission)
+    setCommission(committed.text)
 
     const { error: insertError } = await supabase
       .from('money_movers')
       .insert({
         title: title.trim(),
-        commission: parsedCommission || null,
+        commission: committed.amount && committed.amount > 0 ? committed.amount : null,
       })
 
     setSaving(false)
@@ -90,61 +94,40 @@ export default function MoneyMoverAddSheet({ open, onClose, onSaved }: MoneyMove
     <BottomSheet
       open={open}
       onClose={onClose}
-      label="New Money Mover"
+      label="Add Money Mover"
       size="list"
     >
       <div style={{ padding: '0 18px 24px' }}>
 
-        {/* Title field */}
         <input
           ref={titleRef}
           type="text"
           value={title}
           onChange={e => { setTitle(e.target.value); setError(null) }}
-          placeholder="Money mover title"
-          style={{
-            display: 'block',
-            width: '100%',
-            fontFamily: FONT_DISPLAY,
-            fontSize: 22,
-            fontWeight: 500,
-            color: T.textHi,
-            background: 'transparent',
-            border: 'none',
-            borderBottom: '1px solid rgba(255,255,255,0.18)',
-            borderRadius: 0,
-            outline: 'none',
-            padding: '8px 0 10px',
-            marginBottom: 24,
-            caretColor: '#8B5CF6',
-            boxSizing: 'border-box',
-          } as React.CSSProperties}
+          placeholder="What is this for?"
+          aria-label="Title"
+          className={chrome.titleField}
+          style={{ marginBottom: 22 }}
         />
 
-        {/* Commission field */}
-        <input
-          type="text"
-          inputMode="decimal"
+        <div style={{
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          fontWeight: 500,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: T.textLow,
+          marginBottom: 8,
+        }}>Value</div>
+        <MoneyAmountField
           value={commission}
-          onChange={e => setCommission(e.target.value)}
-          placeholder="Commission (optional)"
+          onChange={setCommission}
           style={{
-            display: 'block',
-            width: '100%',
-            fontFamily: FONT_DISPLAY,
-            fontSize: 16,
-            fontWeight: 400,
-            color: T.textHi,
-            background: 'transparent',
-            border: 'none',
-            borderBottom: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 0,
-            outline: 'none',
-            padding: '8px 0 10px',
-            marginBottom: 28,
-            caretColor: '#8B5CF6',
-            boxSizing: 'border-box',
-          } as React.CSSProperties}
+            fontFamily: FONT_MONO,
+            fontSize: 34,
+            fontWeight: 500,
+            marginBottom: 8,
+          }}
         />
 
         {/* Offline banner */}

@@ -19,6 +19,7 @@
 
 import React from 'react'
 import { ChevronRight, ChevronDown } from 'lucide-react'
+import chrome from '@/components/warroom/taskItemChrome.module.css'
 
 // §5.11.7 stacked-layers glyph — three diamond/chevron paths from reference render 32a.
 // Not Lucide Layers (filled document icon). This is the correct mark from the spec.
@@ -172,6 +173,7 @@ export interface ListRowProps {
   spineColor?: string | null
   // Link-out
   lacdbUrl?: string | null
+  arrive?: boolean
   onPress?: () => void
   onLinkOut?: () => void
   onChevronPress?: () => void
@@ -196,6 +198,7 @@ export default function ListRow({
   isPortfolioOpen = false,
   spineColor = null,
   lacdbUrl = null,
+  arrive = false,
   onPress,
   onLinkOut,
   onChevronPress,
@@ -273,6 +276,7 @@ export default function ListRow({
           WebkitTapHighlightColor: 'transparent',
         }}
       >
+        {arrive && <span className={chrome.arriveLine} aria-hidden="true" />}
         {/* Spine */}
         {spineColor && (
           <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: spineColor }} />
@@ -288,7 +292,7 @@ export default function ListRow({
             <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
               {/* Badge on meta line LEFT — entity/life tag (CODE: was its own line or right slot) */}
               {hasBadge && (
-                <span style={{ ...styleT5, color: T.textLow, border: '1px solid rgba(255,255,255,0.10)', borderRadius: 4, padding: '2px 5px', flexShrink: 0 }}>
+                <span style={{ ...styleT5, color: T.textLow, border: '1px solid rgba(255,255,255,0.10)', borderRadius: 4, padding: '2px 5px', flexShrink: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {metaBadge}
                 </span>
               )}

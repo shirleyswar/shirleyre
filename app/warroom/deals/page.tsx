@@ -811,6 +811,7 @@ function DealsPage() {
   const [allTypes,     setAllTypes]     = useState<string[]>([])
   const [loading,      setLoading]      = useState(true)
   const [taskDeal,     setTaskDeal]     = useState<EnrichedDeal | null>(null)
+  const [taskSaveError, setTaskSaveError] = useState<string | null>(null)
   const [typeDropOpen, setTypeDropOpen] = useState(false)
 
   const [sortKey, setSortKey] = useState<SortKey>('address')
@@ -1296,6 +1297,12 @@ function DealsPage() {
         </div>
       </div>
 
+      {taskSaveError && (
+        <div style={{ position: 'fixed', left: 24, right: 24, bottom: 24, zIndex: 400, padding: '10px 14px', borderRadius: 10, background: '#12111B', border: '1px solid rgba(255,77,77,0.4)', color: '#FF4D4D', fontFamily: "'Space Grotesk', system-ui, sans-serif", fontSize: 13, display: 'flex', gap: 12, alignItems: 'center' }}>
+          <span style={{ flex: 1 }}>{taskSaveError}</span>
+          <button type="button" onClick={() => setTaskSaveError(null)} style={{ background: 'none', border: 'none', color: '#B8B6C6', cursor: 'pointer' }}>Dismiss</button>
+        </div>
+      )}
       {/* Task modal */}
       {taskDeal && (
         <TaskModal
@@ -1303,6 +1310,7 @@ function DealsPage() {
           onClose={() => setTaskDeal(null)}
           onCompleted={() => setTaskDeal(null)}
           onSaved={() => { setTaskDeal(null); fetchData() }}
+          onCreateFailed={(_id, message) => setTaskSaveError(message)}
         />
       )}
     </div>

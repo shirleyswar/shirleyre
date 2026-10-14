@@ -7,11 +7,14 @@
 // §10 item 14: "View closed" link is RETIRED — not built here.
 // All type references bound to §3.2 named levels. No pixel literals for text.
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import ListRow from '@/components/warroom3/ListRow'
+import { CompleteRing } from '@/components/warroom/MarkCompleteButton'
+import { selectTasks, taskTagBadge, taskTagLabel } from '@/lib/taskTags'
+import { useArrivingRows } from '@/lib/useArrivingRows'
 
 // §3.1 / §3.2 — UPPERCASE → JetBrains Mono · sentence case → Space Grotesk
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
@@ -54,7 +57,7 @@ function daysOverdue(dateStr: string): number {
   return Math.floor((now.getTime() - target.getTime()) / 86400000)
 }
 
-interface Task {
+export interface Task {
   id: string
   title: string
   status: string
@@ -62,9 +65,13 @@ interface Task {
   deal_id: string | null
   is_life: boolean
   is_entity: boolean
+  is_sr?: boolean
+  entity_name?: string | null
   entity_id: string | null  // CODE: task.entity_id FK added — nullable, beside is_life|is_entity
   sort_order: number | null
   created_at: string
+  clientKey?: string
+  flashUntil?: number
   deals?: { name?: string; address?: string; addr_display?: string | null; addr_street_name?: string | null; addr_direction?: string | null; addr_number?: string | null; addr_city?: string | null } | null
   entities?: { name?: string } | null  // joined from entity_id FK
 }
@@ -74,6 +81,10 @@ interface BattlePlanSheetProps {
   onClose: () => void
   onOpenTaskDetail?: (task: Task) => void  // lifted to page — FAB × works automatically
   refreshKey?: number  // bump to force re-fetch after a task save (title edit, etc.)
+  pendingTasks?: Task[]
+  saveNotice?: string | null
+  onDismissNotice?: () => void
+  onConsumePending?: (ids: string[]) => void
 }
 
 // §5.1 Group header: T2 label · hairline · count
@@ -125,28 +136,32 @@ function sortTasks(tasks: Task[]): Task[] {
 
 // §13.1 SwipeRow — STRUCK 49a. Swipe actions removed from list row. Open task to work it.
 
-export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refreshKey = 0 }: BattlePlanSheetProps) {
+export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refreshKey = 0, pendingTasks = [], saveNotice, onDismissNotice, onConsumePending }: BattlePlanSheetProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
+  const loaded = useRef(false)
 
   // §13.3 confirmation bar state
   const [completionBar, setCompletionBar] = useState<Task | null>(null)
 
   useEffect(() => {
     if (!open) return
-    setLoading(true)
+    if (!loaded.current) setLoading(true)
     setLoadError(false)
     const run = async () => {
       try {
-        const { data, error } = await supabase
-          .from('tasks')
-          .select('id, title, status, due_date, deal_id, is_life, is_entity, entity_id, sort_order, created_at, deals(name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city), entities(name)')
-          .eq('status', 'open')  // tasks table: 'open' and 'complete' only
-          .is('deleted_at', null)
-          .order('created_at', { ascending: true })
-          .limit(200)
+        const { data, error } = await selectTasks<Task>(tagCols => {
+          const columns = `id, title, status, due_date, deal_id, ${tagCols}, entity_id, sort_order, created_at, deals(name, address, addr_display, addr_street_name, addr_direction, addr_number, addr_city), entities(name)`
+          return supabase
+            .from('tasks')
+            .select(columns)
+            .eq('status', 'open')  // tasks table: 'open' and 'complete' only
+            .is('deleted_at', null)
+            .order('created_at', { ascending: true })
+            .limit(200)
+        })
         if (error) { setLoadError(true); setLoading(false); return }
         if (!data) { setLoading(false); return }
 
@@ -163,6 +178,7 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
           return a.created_at.localeCompare(b.created_at)
         })
         setTasks(sorted)
+        loaded.current = true
         setLoading(false)
       } catch {
         setLoadError(true)
@@ -172,13 +188,15 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
     run()
   }, [open, retryCount, refreshKey])
 
+  const visibleTasks = useArrivingRows(tasks, pendingTasks, onConsumePending, open)
+
   const today = todayCST()
 
   // §14.9: Four buckets — OVERDUE · TODAY · LATER · NO DUE DATE
-  const overdue  = tasks.filter(t => t.due_date && t.due_date < today)
-  const todayBkt = tasks.filter(t => t.due_date && t.due_date === today)
-  const later    = tasks.filter(t => t.due_date && t.due_date > today)
-  const noDate   = tasks.filter(t => !t.due_date)
+  const overdue  = visibleTasks.filter(t => t.due_date && t.due_date < today)
+  const todayBkt = visibleTasks.filter(t => t.due_date && t.due_date === today)
+  const later    = visibleTasks.filter(t => t.due_date && t.due_date > today)
+  const noDate   = visibleTasks.filter(t => !t.due_date)
 
   function renderRow(task: Task) {
     const isOverdue = !!(task.due_date && task.due_date < today)
@@ -206,21 +224,14 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
 
     const dealAddr = (task.deals as any)?.address || null
     const dealName = (task.deals as any)?.name || null
-    // entity name from FK join (CODE: task.entity_id → entities.name)
-    const entityName = (task.entities as any)?.name || null
+    const badge = taskTagBadge(task)
 
-    // §5.11.5 meta line decision:
-    // - task on a deal → metaDeal (address preferred over name)
-    // - task on entity (entity_id or is_entity) → metaBadge (entity name or ENTITY tag)
-    // - task on life (is_life) → metaBadge LIFE
-    // Badge and day count never contend — entity/life tasks have no deal
+    // Tag wins the meta line. A deal address shows when the task is untagged.
     let metaDeal: string | null = null
     let metaBadge: string | null = null
 
-    if (task.is_life) {
-      metaBadge = 'LIFE'
-    } else if (task.entity_id || task.is_entity) {
-      metaBadge = entityName || 'ENTITY'
+    if (badge) {
+      metaBadge = badge
     } else {
       metaDeal = dealAddr || dealName || null
     }
@@ -228,13 +239,14 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
     // §13.1 swipe handlers removed 49a — swipe struck from list row entirely
     return (
       <ListRow
-        key={task.id}
+        key={task.clientKey ?? task.id}
         title={task.title}
         metaDeal={metaDeal}
         metaBadge={metaBadge}
         spineColor={spineColor}
         dayCount={dayCount}
         dayCountColor={dayCountColor}
+        arrive={!!task.clientKey}
         onPress={() => onOpenTaskDetail?.(task)}
       />
     )
@@ -246,10 +258,16 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
       open={open}
       onClose={onClose}
       label="Battle Plan"
-      count={loadError ? undefined : tasks.length}
+      count={loadError ? undefined : visibleTasks.length}
       size="list"
     >
-      {loading ? (
+      {saveNotice && (
+        <div style={{ margin: '8px 18px', padding: '8px 12px', borderRadius: 8, background: saveNotice.startsWith('Saved.') ? 'rgba(255,162,58,0.10)' : 'rgba(255,77,77,0.10)', border: '1px solid rgba(255,255,255,0.14)', display: 'flex', gap: 8 }}>
+          <span style={{ flex: 1, fontFamily: FONT_DISPLAY, fontSize: 13, color: saveNotice.startsWith('Saved.') ? T.hot : T.late }}>{saveNotice}</span>
+          <button type="button" onClick={onDismissNotice} style={{ background: 'none', border: 'none', color: T.textMid, fontFamily: FONT_DISPLAY, fontSize: 12 }}>Dismiss</button>
+        </div>
+      )}
+      {loading && visibleTasks.length === 0 ? (
         <SkeletonRows />
       ) : loadError ? (
         <div style={{ padding: '32px 18px', textAlign: 'center' }}>
@@ -258,7 +276,7 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
             style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.late, cursor: 'pointer' }}
           >Could not load — tap to retry</span>
         </div>
-      ) : tasks.length === 0 ? (
+      ) : visibleTasks.length === 0 ? (
         <div style={{ padding: '32px 18px', textAlign: 'center' }}>
           <span style={{ fontFamily: FONT_DISPLAY, fontSize: 13, color: T.textLow }}>No open tasks.</span>
         </div>
@@ -316,15 +334,13 @@ export default function BattlePlanSheet({ open, onClose, onOpenTaskDetail, refre
         alignItems: 'center',
         gap: 12,
       }}>
-        {/* check-h280.png at 88×88 — §17.5 */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/assets/check/check-h280.png" alt="" width={88} height={88} style={{ display: 'block', flexShrink: 0 }} />
+        <CompleteRing size={32} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:14.5, fontWeight:400, color:'#EFEEF4', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
             {completionBar.title}
           </div>
           <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11.5, fontWeight:400, color:'#8E8CA0', marginTop:3 }}>
-            Completed · {completionBar.is_life ? 'Life' : (completionBar.deals ? (formatAddress(completionBar.deals) || (completionBar.deals as any).name || '') : (completionBar.is_entity ? 'Entity' : 'Battle Plan'))}
+            Completed · {taskTagLabel(completionBar) ?? (completionBar.deals ? (formatAddress(completionBar.deals) || (completionBar.deals as any).name || '') : 'Battle Plan')}
           </div>
         </div>
         <button

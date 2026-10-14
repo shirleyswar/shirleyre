@@ -11,8 +11,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import CalendarPicker from '@/components/warroom3/CalendarPicker'
-import { supabase } from '@/lib/supabase'
 import { FAB_APERTURE_GRADIENT, FAB_APERTURE_SHADOW } from '@/lib/fabGradient'
+import chrome from '@/components/warroom/taskItemChrome.module.css'
+import TaskTagControl from '@/components/warroom/TaskTagControl'
+import { insertTaskRow, TASK_ARRIVE_MS, type TaskTag } from '@/lib/taskTags'
 
 // §3.1: UPPERCASE → JetBrains Mono. Sentence case → Space Grotesk.
 const FONT_DISPLAY = "'Space Grotesk', system-ui, sans-serif"
@@ -51,20 +53,43 @@ function chipDate(chip: DueChip): string {
   return ''
 }
 
+export interface NewTaskDraft {
+  id: string
+  title: string
+  status: string
+  due_date: string | null
+  deal_id: null
+  is_life: boolean
+  is_entity: boolean
+  is_sr: boolean
+  entity_name: string | null
+  entity_id: null
+  sort_order: null
+  created_at: string
+  clientKey: string
+  flashUntil: number
+}
+
 interface TaskSheetProps {
   open: boolean
   onClose: () => void
+  onOptimisticCreate?: (task: NewTaskDraft) => void
+  onCreateFailed?: (id: string, message: string) => void
+  onCreateSettled?: (tempId: string, realId: string, notice?: string) => void
 }
 
-export default function TaskSheet({ open, onClose }: TaskSheetProps) {
+export default function TaskSheet({ open, onClose, onOptimisticCreate, onCreateFailed, onCreateSettled }: TaskSheetProps) {
   const [title, setTitle]             = useState('')
   const [dueChip, setDueChip]         = useState<DueChip>('today')
   const [calOpen, setCalOpen]         = useState(false)
   const [pickedDate, setPickedDate]   = useState<Date | null>(null)
+  const [tag, setTag]                 = useState<TaskTag | null>(null)
+  const [entityName, setEntityName]   = useState<string | null>(null)
   const [saving, setSaving]           = useState(false)
   const [error, setError]             = useState<string | null>(null)
   const [offline, setOffline]         = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
+  const saveLock = useRef(false)
 
   // Autofocus title on open
   useEffect(() => {
@@ -78,7 +103,9 @@ export default function TaskSheet({ open, onClose }: TaskSheetProps) {
   useEffect(() => {
     if (!open) {
       setTitle(''); setDueChip('today'); setCalOpen(false)
-      setPickedDate(null); setSaving(false); setError(null); setOffline(false)
+      setPickedDate(null); setTag(null); setEntityName(null)
+      setSaving(false); setError(null); setOffline(false)
+      saveLock.current = false
     }
   }, [open])
 
@@ -90,31 +117,61 @@ export default function TaskSheet({ open, onClose }: TaskSheetProps) {
 
   // CODE: supabase insert logic
   const handleSave = async () => {
-    if (!canSave || saving) return
+    if (!canSave || saving || saveLock.current) return
 
     if (!navigator.onLine) {
       setOffline(true)
       return
     }
 
-    setSaving(true); setError(null); setOffline(false)
-
-    const { error: insertError } = await supabase
-      .from('tasks')
-      .insert({
-        title: title.trim(),
-        due_date: effectiveDueDate,
-        created_at: new Date().toISOString(),
-      })
-
-    setSaving(false)
-
-    if (insertError) {
-      setError(insertError.message || 'Save failed — try again')
-    } else {
-      // Success: dismiss and reset
-      onClose()
+    saveLock.current = true
+    const tempId = `opt-${Date.now()}`
+    const due = effectiveDueDate || null
+    const draft: NewTaskDraft = {
+      id: tempId,
+      title: title.trim(),
+      status: 'open',
+      due_date: due,
+      deal_id: null,
+      is_life: tag === 'life',
+      is_entity: tag === 'entity',
+      is_sr: tag === 'sr',
+      entity_name: tag === 'entity' ? entityName : null,
+      entity_id: null,
+      sort_order: null,
+      created_at: new Date().toISOString(),
+      clientKey: tempId,
+      flashUntil: Date.now() + TASK_ARRIVE_MS,
     }
+    onOptimisticCreate?.(draft)
+    onClose()
+
+    const result = await insertTaskRow({
+      title: draft.title,
+      status: 'open',
+      due_date: due,
+      created_at: draft.created_at,
+      is_life: draft.is_life,
+      is_entity: draft.is_entity,
+      is_sr: draft.is_sr,
+      entity_name: draft.entity_name,
+    }, tag, tag === 'entity' ? entityName : null)
+
+    if (result.error || !result.id) {
+      onCreateFailed?.(tempId, result.error?.message || 'Save failed — try again')
+      return
+    }
+    onCreateSettled?.(tempId, result.id, result.degraded ? 'Saved. SR and the entity name need the new database columns before they stick.' : undefined)
+  }
+
+  function chooseTag(next: TaskTag) {
+    if (tag === next) {
+      setTag(null)
+      setEntityName(null)
+      return
+    }
+    setTag(next)
+    if (next !== 'entity') setEntityName(null)
   }
 
   const DUE_CHIPS: { key: DueChip; label: string }[] = [
@@ -140,24 +197,10 @@ export default function TaskSheet({ open, onClose }: TaskSheetProps) {
           type="text"
           value={title}
           onChange={e => { setTitle(e.target.value); setError(null) }}
-          placeholder="Task title"
-          style={{
-            display: 'block',
-            width: '100%',
-            fontFamily: FONT_DISPLAY,
-            fontSize: 22,
-            fontWeight: 500,
-            color: T.textHi,
-            background: 'transparent',
-            border: 'none',
-            borderBottom: '1px solid rgba(255,255,255,0.18)',
-            borderRadius: 0,
-            outline: 'none',
-            padding: '8px 0 10px',
-            marginBottom: 28,
-            caretColor: '#8B5CF6',
-            boxSizing: 'border-box',
-          } as React.CSSProperties}
+          placeholder="What needs to get done?"
+          aria-label="Task title"
+          className={chrome.titleField}
+          style={{ marginBottom: 28 }}
         />
 
         {/* DUE section */}
@@ -213,6 +256,17 @@ export default function TaskSheet({ open, onClose }: TaskSheetProps) {
             {pickedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </div>
         )}
+
+        <div style={{ ...styleT2, marginBottom: 12 }}>TAG</div>
+        <div style={{ marginBottom: 8 }}>
+          <TaskTagControl
+            tag={tag}
+            entityName={entityName}
+            onTag={chooseTag}
+            onEntity={name => { setTag('entity'); setEntityName(name) }}
+            fill
+          />
+        </div>
 
         {/* Deal placeholder row — v1 stub, never pushes title off-screen */}
         <div style={{
