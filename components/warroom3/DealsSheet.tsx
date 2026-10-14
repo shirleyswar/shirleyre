@@ -43,19 +43,22 @@ type SortKey = 'name' | 'deadline' | 'value' | 'comm' | 'rank'
 type EngageKey = 'listings' | 'tenants' | 'buyers' | 'targets'
 
 const ENGAGE_TABS: { key: EngageKey; label: string }[] = [
-  { key: 'listings', label: 'Listings' },
-  { key: 'tenants', label: 'Tenants' },
   { key: 'buyers', label: 'Buyers' },
+  { key: 'listings', label: 'Listings' },
   { key: 'targets', label: 'Targets' },
+  { key: 'tenants', label: 'Tenants' },
 ]
 
 const STAGE_TABS: { key: StageKey; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'active', label: 'Active' },
+  { key: 'archived', label: 'Archived' },
+  { key: 'closed', label: 'Closed' },
+  { key: 'hot', label: 'HOT' },
+  { key: 'in_service', label: 'In Service' },
   { key: 'pipeline', label: 'Pipeline' },
   { key: 'review', label: 'Review' },
-  { key: 'active', label: 'Active' },
-  { key: 'hot', label: 'HOT' },
   { key: 'under_contract', label: 'Under Contract' },
-  { key: 'closed', label: 'Closed' },
 ]
 
 const TAB_GRAY = '#8E8CA0'
@@ -571,10 +574,6 @@ export function DealsSheet({ open, onClose }: DealsSheetProps) {
             WebkitOverflowScrolling: 'touch',
           } as React.CSSProperties}>
             {STAGE_TABS.map(tab => stageTab(tab.key, tab.label))}
-            <div style={{ width: 1, alignSelf: 'center', height: 16, background: 'rgba(255,255,255,0.14)', flexShrink: 0 }} />
-            {stageTab('in_service', 'In Service')}
-            {stageTab('archived', 'Archived')}
-            {stageTab('all', 'All')}
           </div>
           <button
             type="button"
