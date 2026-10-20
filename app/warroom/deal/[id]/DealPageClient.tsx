@@ -13,7 +13,9 @@ import { formatDealTitle, parseListingFilingName, formatListingFilingName, canon
 import { uploadDealPhoto } from '@/lib/dealPhoto'
 import DealLeadsSection from '@/components/warroom/DealLeadsSection'
 import { useDealPhoto } from '@/components/warroom/useDealPhoto'
-import { HOUSE_SPLIT } from '@/lib/dealMath'
+import { fmtAsking, HOUSE_SPLIT } from '@/lib/dealMath'
+import { fmtAcres } from '@/lib/landSize'
+import { applyFreshAsking } from '@/lib/lacdbPrice'
 import LacdbFlag from '@/components/warroom/LacdbFlag'
 import LaunchControl from './LaunchControl'
 import LaunchModal from './LaunchModal'
@@ -359,11 +361,6 @@ function fmtSF(n: number | null | undefined): string {
   return `${Math.round(n).toLocaleString('en-US')} SF`
 }
 
-function fmtAcres(n: number | null | undefined): string {
-  if (n == null) return ''
-  return `${n} AC`
-}
-
 function fmtPSF(price: number | null | undefined, sf: number | null | undefined): string {
   if (!price || !sf) return ''
   return `$${(price / sf).toFixed(2)}/SF`
@@ -697,8 +694,10 @@ function DealPageClientInner({ id }: { id: string }) {
 
   const clientName = contacts[0]?.contacts?.name ?? null
 
+  // Asking price for an active linked listing comes from the feed, then price/SF and commission follow it.
+  const pricedEcon = applyFreshAsking(deal, econ)
   // DP-1: Commission rate chain
-  const { listRate, coBroker, estComm, derivation } = calcCommissionChain(econ)
+  const { listRate, coBroker, estComm, derivation } = calcCommissionChain(pricedEcon)
   const isBuyer = (deal.type ?? '').toLowerCase() === 'buyer'
     || (deal.representation_role ?? '').toLowerCase() === 'buyer'
     || txType === 'buyer'
@@ -718,12 +717,12 @@ function DealPageClientInner({ id }: { id: string }) {
   const isClosed = deal.status === 'closed'
   const isUnderContract = deal.status === 'under_contract' || deal.status === 'pending_payment'
   const contractLabel = isClosed ? 'CLOSED AT' : 'UNDER CONTRACT AT'
-  const contractFigure = estComm != null ? `$${estComm.toLocaleString()}` : fmt(econ?.asking_price)
+  const contractFigure = estComm != null ? `$${estComm.toLocaleString()}` : fmtAsking(pricedEcon?.asking_price)
   const showContractSlot = (isClosed || isUnderContract) && contractFigure !== ''
 
   const glanceSale: GlanceCell[] = [
-    { label: 'Asking Price', value: fmt(econ?.asking_price) },
-    { label: 'Price/SF',     value: fmtPSF(econ?.asking_price, econ?.sqft) },
+    { label: 'Asking Price', value: fmtAsking(pricedEcon?.asking_price) },
+    { label: 'Price/SF',     value: fmtPSF(pricedEcon?.asking_price, pricedEcon?.sqft) },
     { label: 'Building SF',  value: fmtSF(econ?.sqft) },
     { label: 'Land Size',    value: fmtAcres(econ?.land_sqft) },
     // Slot 5: EST. COMMISSION
@@ -733,7 +732,7 @@ function DealPageClientInner({ id }: { id: string }) {
   ]
 
   const glanceLease: GlanceCell[] = [
-    { label: 'Asking Price',   value: fmt(econ?.asking_price) },
+    { label: 'Asking Price',   value: fmtAsking(pricedEcon?.asking_price) },
     { label: 'Lease Rate PSF', value: econ?.lease_rate_psf ? `$${econ.lease_rate_psf}/SF` : '' },
     { label: 'Building SF',    value: fmtSF(econ?.sqft) },
     { label: 'Land Size',      value: fmtAcres(econ?.land_sqft) },
@@ -777,7 +776,7 @@ function DealPageClientInner({ id }: { id: string }) {
       buyerCriteriaRows.push({ label: 'Close by', value: addCalendarDays(econ.buyer_1031_relinquished, 180) })
     }
     if (econ.offer_addr_display) buyerOfferRows.push({ label: 'Address', value: econ.offer_addr_display })
-    if (econ.asking_price != null) buyerOfferRows.push({ label: 'Asking price', value: fmt(econ.asking_price) })
+    if (pricedEcon?.asking_price != null) buyerOfferRows.push({ label: 'Asking price', value: fmtAsking(pricedEcon.asking_price) })
     if (econ.sqft != null) buyerOfferRows.push({ label: 'Building SF', value: fmtSF(econ.sqft) })
     if (econ.offer_price != null) buyerOfferRows.push({ label: 'Offer price', value: fmt(econ.offer_price) })
     if (econ.offer_date) buyerOfferRows.push({ label: 'Offer date', value: fmtDateOnly(econ.offer_date) })

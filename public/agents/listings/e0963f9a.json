@@ -5,7 +5,7 @@
     "listing_id": "e0963f9a",
     "listing_uuid": "e0963f9a-8235-4325-9f0d-f1d4a40ce237",
     "url": "https://lacdb.resimplifi.com/listings/e0963f9a-reduced-motivated-05-acre-tract-w-100-frontage",
-    "retrieved_at": "2026-10-05T12:30:00Z",
+    "retrieved_at": "2026-10-20T18:51:18.220Z",
     "attribution": "Based on information from the LACDB for the period 2026-03-25 through 2026-10-05."
   },
   "title": "REDUCED - Motivated ≈ 0.5 Acre Tract w. 100' Frontage",
@@ -41,7 +41,7 @@
     "unit": "total",
     "total_min": 339000,
     "total_max": 339000,
-    "label": "$339K",
+    "label": "$339,000",
     "currency": "USD",
     "sale_terms": null,
     "cap_rate_pct": null
@@ -133,6 +133,6 @@
     "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20e0963f9a",
     "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20e0963f9a"
   },
-  "last_updated": "2026-10-05T12:30:00Z",
+  "last_updated": "2026-10-20T18:51:18.220Z",
   "detail_level": "full"
 }

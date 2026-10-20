@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-05T12:30:00Z",
+  "generated_at": "2026-10-20T18:51:18.220Z",
   "source": {
     "system": "LACDB",
     "broker_id": "f7d76849",
@@ -35,7 +35,7 @@
         "system": "LACDB",
         "listing_id": "30f8f0a3",
         "url": "https://lacdb.resimplifi.com/listings/30f8f0a3-048-acres-c2-vacant-land",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period through 2026-10-05."
       },
       "title": "+/- 0.48 Acres C2 - Vacant Land",
@@ -50,7 +50,11 @@
       },
       "price": {
         "label": "$78,000",
-        "currency": "USD"
+        "currency": "USD",
+        "amount": 78000,
+        "unit": "total",
+        "total_min": 78000,
+        "total_max": 78000
       },
       "broker_contact": {
         "name": "Matthew Shirley",
@@ -63,7 +67,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%2030f8f0a3",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%2030f8f0a3"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
     },
     {
@@ -73,7 +77,7 @@
         "listing_id": "5d4a0303",
         "listing_uuid": "5d4a0303-b623-45be-b6fc-fb33c8d8c036",
         "url": "https://lacdb.resimplifi.com/listings/5d4a0303-084-acres-lit-hard-corner-c1-no-flood-buildready",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period 2025-09-30 through 2026-10-05."
       },
       "title": "0.84 Acres  Lit Hard Corner - C1 - No Flood - Build-Ready",
@@ -106,7 +110,7 @@
         "unit": "total",
         "total_min": 797000,
         "total_max": 797000,
-        "label": "$797K",
+        "label": "$797,000",
         "currency": "USD",
         "sale_terms": "Cash to Seller",
         "cap_rate_pct": null
@@ -225,7 +229,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%205d4a0303",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%205d4a0303"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "detail_level": "full"
     },
     {
@@ -235,7 +239,7 @@
         "system": "LACDB",
         "listing_id": "0b5ed2a7",
         "url": "https://lacdb.resimplifi.com/listings/0b5ed2a7-177-acres-c1-no-flood-buildready",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period through 2026-10-05."
       },
       "title": "1.77 Acres - C1 - No Flood - Build-Ready",
@@ -250,7 +254,11 @@
       },
       "price": {
         "label": "$875,000",
-        "currency": "USD"
+        "currency": "USD",
+        "amount": 875000,
+        "unit": "total",
+        "total_min": 875000,
+        "total_max": 875000
       },
       "broker_contact": {
         "name": "Matthew Shirley",
@@ -263,7 +271,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%200b5ed2a7",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%200b5ed2a7"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
     },
     {
@@ -273,7 +281,7 @@
         "listing_id": "d2e5861f",
         "listing_uuid": "d2e5861f-5a6d-466e-85ed-74e00a9c53ae",
         "url": "https://lacdb.resimplifi.com/listings/d2e5861f-1293-acres-cw3-dual-access-cleared-buildready",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period 2025-10-08 through 2026-10-05."
       },
       "title": "12.93 Acres – CW3 – Dual Access, Cleared & Build-Ready",
@@ -308,7 +316,7 @@
         "unit": "total",
         "total_min": 2957000,
         "total_max": 2957000,
-        "label": "$3M",
+        "label": "$2,957,000",
         "currency": "USD",
         "sale_terms": null,
         "cap_rate_pct": null
@@ -424,7 +432,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20d2e5861f",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20d2e5861f"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "detail_level": "full"
     },
     {
@@ -578,7 +586,7 @@
         "listing_id": "c10c62e0",
         "listing_uuid": "c10c62e0-89ff-417a-abfe-47ed5a2cd69c",
         "url": "https://lacdb.resimplifi.com/listings/c10c62e0-261-acres-c1-no-flood-build-ready",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period 2025-10-10 through 2026-10-05."
       },
       "title": "2.61 Acres - C1 - No Flood - Build Ready",
@@ -611,7 +619,7 @@
         "unit": "total",
         "total_min": 1672000,
         "total_max": 1672000,
-        "label": "$1.7M",
+        "label": "$1,672,000",
         "currency": "USD",
         "sale_terms": "Cash to Seller",
         "cap_rate_pct": null
@@ -714,7 +722,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20c10c62e0",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20c10c62e0"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "detail_level": "full"
     },
     {
@@ -908,7 +916,7 @@
         "system": "LACDB",
         "listing_id": "5296eedb",
         "url": "https://lacdb.resimplifi.com/listings/5296eedb-buildready-20-acres-on-hwy-51",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period through 2026-10-05."
       },
       "title": "Build-Ready 2.0 Acres on Hwy 51",
@@ -923,7 +931,11 @@
       },
       "price": {
         "label": "$1,267,455",
-        "currency": "USD"
+        "currency": "USD",
+        "amount": 1267455,
+        "unit": "total",
+        "total_min": 1267455,
+        "total_max": 1267455
       },
       "broker_contact": {
         "name": "Matthew Shirley",
@@ -936,7 +948,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%205296eedb",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%205296eedb"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
     },
     {
@@ -984,7 +996,7 @@
         "listing_id": "138d8815",
         "listing_uuid": "138d8815-c302-4ac7-bd8d-6519a3a6048c",
         "url": "https://lacdb.resimplifi.com/listings/138d8815-leased-office-acredit-tenant",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period 2026-02-24 through 2026-10-05."
       },
       "title": "Leased Office A-Credit Tenant",
@@ -1013,11 +1025,11 @@
         "tax_id": null
       },
       "price": {
-        "amount": 3095000,
+        "amount": 2950000,
         "unit": "total",
-        "total_min": 3095000,
-        "total_max": 3095000,
-        "label": "$3.1M",
+        "total_min": 2950000,
+        "total_max": 2950000,
+        "label": "$2,950,000",
         "currency": "USD",
         "sale_terms": null,
         "cap_rate_pct": null
@@ -1116,7 +1128,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20138d8815",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20138d8815"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "detail_level": "full"
     },
     {
@@ -1126,7 +1138,7 @@
         "listing_id": "e0963f9a",
         "listing_uuid": "e0963f9a-8235-4325-9f0d-f1d4a40ce237",
         "url": "https://lacdb.resimplifi.com/listings/e0963f9a-reduced-motivated-05-acre-tract-w-100-frontage",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period 2026-03-25 through 2026-10-05."
       },
       "title": "REDUCED - Motivated ≈ 0.5 Acre Tract w. 100' Frontage",
@@ -1162,7 +1174,7 @@
         "unit": "total",
         "total_min": 339000,
         "total_max": 339000,
-        "label": "$339K",
+        "label": "$339,000",
         "currency": "USD",
         "sale_terms": null,
         "cap_rate_pct": null
@@ -1254,7 +1266,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20e0963f9a",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20e0963f9a"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "detail_level": "full"
     },
     {
@@ -1302,7 +1314,7 @@
         "system": "LACDB",
         "listing_id": "fa9c3a67",
         "url": "https://lacdb.resimplifi.com/listings/fa9c3a67-shovelready-site-near-dow-shintech-iberville-parish",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period through 2026-10-05."
       },
       "title": "Shovel-Ready Site Near DOW & Shintech (Iberville Parish)",
@@ -1317,7 +1329,11 @@
       },
       "price": {
         "label": "$2,439,360",
-        "currency": "USD"
+        "currency": "USD",
+        "amount": 2439360,
+        "unit": "total",
+        "total_min": 2439360,
+        "total_max": 2439360
       },
       "broker_contact": {
         "name": "Matthew Shirley",
@@ -1330,7 +1346,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20fa9c3a67",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20fa9c3a67"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
     },
     {
@@ -1378,7 +1394,7 @@
         "listing_id": "fe0c270f",
         "listing_uuid": "fe0c270f-5f09-4f94-aabb-38439c2de6f1",
         "url": "https://lacdb.resimplifi.com/listings/fe0c270f-the-annex",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period 2026-01-27 through 2026-10-05."
       },
       "title": "The Annex",
@@ -1407,11 +1423,11 @@
         "tax_id": null
       },
       "price": {
-        "amount": 2000000,
+        "amount": 1500000,
         "unit": "total",
-        "total_min": 2000000,
-        "total_max": 2000000,
-        "label": "$2M",
+        "total_min": 1500000,
+        "total_max": 1500000,
+        "label": "$1,500,000",
         "currency": "USD",
         "sale_terms": "Cash to Seller",
         "cap_rate_pct": null
@@ -1519,7 +1535,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20fe0c270f",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20fe0c270f"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "detail_level": "full"
     },
     {
@@ -1642,7 +1658,7 @@
         "system": "LACDB",
         "listing_id": "fca1102d",
         "url": "https://lacdb.resimplifi.com/listings/fca1102d-zoned-mx3-finalized-siteready-65-useable-acres",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period through 2026-10-05."
       },
       "title": "Zoned MX-3 *Finalized* Site-Ready 6.5 Useable Acres",
@@ -1657,7 +1673,11 @@
       },
       "price": {
         "label": "$2,950,000",
-        "currency": "USD"
+        "currency": "USD",
+        "amount": 2950000,
+        "unit": "total",
+        "total_min": 2950000,
+        "total_max": 2950000
       },
       "broker_contact": {
         "name": "Matthew Shirley",
@@ -1670,7 +1690,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20fca1102d",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20fca1102d"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
     },
     {
@@ -1680,7 +1700,7 @@
         "system": "LACDB",
         "listing_id": "118b7fa2",
         "url": "https://lacdb.resimplifi.com/listings/118b7fa2-interstate-12-frontage-visibility",
-        "retrieved_at": "2026-10-05T12:30:00Z",
+        "retrieved_at": "2026-10-20T18:51:18.220Z",
         "attribution": "Based on information from the LACDB for the period through 2026-10-05."
       },
       "title": "Interstate 12 Frontage / Visibility",
@@ -1695,7 +1715,11 @@
       },
       "price": {
         "label": "$2,300,000",
-        "currency": "USD"
+        "currency": "USD",
+        "amount": 2300000,
+        "unit": "total",
+        "total_min": 2300000,
+        "total_max": 2300000
       },
       "broker_contact": {
         "name": "Matthew Shirley",
@@ -1708,7 +1732,7 @@
         "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20118b7fa2",
         "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20118b7fa2"
       },
-      "last_updated": "2026-10-05T12:30:00Z",
+      "last_updated": "2026-10-20T18:51:18.220Z",
       "note": "Summary card only — full detail was not in the one-time pull. Ask Matthew or refresh with permission for full fields."
     }
   ]

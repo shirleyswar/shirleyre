@@ -15,7 +15,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { calcCommission, calcLeaseValue, fmtMoney } from '@/lib/dealMath'
+import { calcCommission, calcLeaseValue, fmtAsking, fmtMoney } from '@/lib/dealMath'
+import { applyFreshAsking } from '@/lib/lacdbPrice'
 import { formatDealTitle } from '@/lib/formatAddress'
 import PinGate from '@/components/warroom/PinGate'
 import TaskModal from '@/app/warroom/TaskModal'
@@ -87,7 +88,7 @@ const COL = {
   lacdb:     56,
   task:      48,
   rank:      92,
-  value:    124,
+  value:    152,
   comm:     124,
   dbx:       52,
 } as const
@@ -728,7 +729,7 @@ function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
       <div style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
         <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.textHi }}>
           {/* DI-5: blank when no value */}
-          {deal._value != null ? fmtMoney(deal._value) : ''}
+          {deal._value != null ? fmtAsking(deal._value) : ''}
         </span>
       </div>
 
@@ -781,7 +782,7 @@ function PortfolioRow({ portfolio, onNavigate }: { portfolio: PortfolioRollup; o
       <div style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
         <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.textHi }}>
           {/* DI-5: blank when no value */}
-          {portfolio.value != null ? fmtMoney(portfolio.value) : ''}
+          {portfolio.value != null ? fmtAsking(portfolio.value) : ''}
         </span>
       </div>
 
@@ -897,7 +898,7 @@ function DealsPage() {
       const enriched: EnrichedDeal[] = rawDeals.map(deal => {
         ratingInit[deal.id] = deal.rating
 
-        const econ       = econMap[deal.id] ?? null
+        const econ       = applyFreshAsking(deal, econMap[deal.id] ?? null)
         const isBuyerDeal = deal.type?.toLowerCase() === 'buyer'
         let value: number | null = null
         let commission: number | null = null
@@ -1222,7 +1223,7 @@ function DealsPage() {
               padding:'0 var(--wr-edge)', borderBottom:`1px solid ${C.borderHair}`, boxSizing:'border-box',
               ...headerFace, fontSize: 13, color: C.textMid,
             }}>
-              {matchedDeals.length} deals · {totalValue != null ? fmtMoney(totalValue) : '—'} value · {totalComm != null ? fmtMoney(totalComm) : '—'} commission
+              {matchedDeals.length} deals · {totalValue != null ? fmtAsking(totalValue) : ''} value · {totalComm != null ? fmtMoney(totalComm) : ''} commission
             </div>
           </>
         )}

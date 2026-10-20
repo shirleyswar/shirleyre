@@ -1,0 +1,36 @@
+name: Refresh LACDB prices
+
+on:
+  schedule:
+    # Every 6 hours. The static site picks the new prices up on the Pages rebuild this push starts.
+    - cron: '15 */6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: lacdb-prices
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.repository == 'shirleyswar/shirleyre'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Refresh asking prices
+        run: node scripts/refresh-lacdb-prices.mjs
+
+      - name: Commit when a price or status changed
+        run: |
+          git diff --quiet && echo "no price changes" && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/agents/listings.json public/agents/listings
+          git commit -m "Refresh Louisiana Commercial Database asking prices."
+          git push

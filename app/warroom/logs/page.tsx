@@ -10,6 +10,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { motion } from 'framer-motion'
+import { fmtAsking } from '@/lib/dealMath'
+import { applyFreshAsking } from '@/lib/lacdbPrice'
 
 const SUPA_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
 const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10a3l5YW9ydmVuc3lscmZiaHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTU0OTUsImV4cCI6MjA4ODc3MTQ5NX0.YqyuBjymYf26cA6JF534NVmsTmdMv7ohB1LBCmdsaJA'
@@ -320,6 +322,8 @@ interface DealRow {
   status: string
   updated_at: string | null
   property_type: string | null
+  lacdb_url?: string | null
+  deal_source?: string | null
   deal_contacts: { contacts: { name: string | null } | null }[] | null
   deal_economics: DealEcon[] | null
 }
@@ -400,7 +404,7 @@ function LogsInner() {
       //        Never silent-swallow: log PostgREST errors to console so failures are visible.
       supabase
         .from('deals')
-        .select('id,addr_display,addr_street_name,status,updated_at,property_type,deal_contacts(contacts(name)),deal_economics(asking_price,sale_commission_pct,lease_rate_psf,lease_term_years,lease_commission_pct,sqft)')
+        .select('id,addr_display,addr_street_name,status,updated_at,property_type,lacdb_url,deal_source,deal_contacts(contacts(name)),deal_economics(asking_price,sale_commission_pct,lease_rate_psf,lease_term_years,lease_commission_pct,sqft)')
         .eq('status','closed')
         .order('updated_at', { ascending:false })
         .then(({ data, error }) => {
@@ -562,7 +566,8 @@ function LogsInner() {
           const contactsArr = Array.isArray(d.deal_contacts) ? d.deal_contacts : []
           const clientName = contactsArr[0]?.contacts?.name ?? ''
           // 164.2: normalize identically to totals (object | array[0]) — fixes dashes while footer shows dollars
-          const econ = Array.isArray(d.deal_economics) ? d.deal_economics[0] : d.deal_economics
+          const storedEcon = Array.isArray(d.deal_economics) ? d.deal_economics[0] : d.deal_economics
+          const econ = applyFreshAsking(d, storedEcon)
           const addrLabel = d.addr_display ?? d.addr_street_name ?? ''
           const plate = plateSrc(d.property_type)
           const canReopen = isCurrentYear
@@ -598,7 +603,7 @@ function LogsInner() {
               {/* VALUE */}
               <div style={{ width:150, textAlign:'right' }}>
                 <span style={{ fontFamily:FONT_MONO, fontSize:13, color:C.textHi }}>
-                  {fmtMoney(econ?.asking_price ?? null)}
+                  {fmtAsking(econ?.asking_price)}
                 </span>
               </div>
               {/* COMM */}

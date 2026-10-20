@@ -5,7 +5,7 @@
     "listing_id": "138d8815",
     "listing_uuid": "138d8815-c302-4ac7-bd8d-6519a3a6048c",
     "url": "https://lacdb.resimplifi.com/listings/138d8815-leased-office-acredit-tenant",
-    "retrieved_at": "2026-10-05T12:30:00Z",
+    "retrieved_at": "2026-10-20T18:51:18.220Z",
     "attribution": "Based on information from the LACDB for the period 2026-02-24 through 2026-10-05."
   },
   "title": "Leased Office A-Credit Tenant",
@@ -34,11 +34,11 @@
     "tax_id": null
   },
   "price": {
-    "amount": 3095000,
+    "amount": 2950000,
     "unit": "total",
-    "total_min": 3095000,
-    "total_max": 3095000,
-    "label": "$3.1M",
+    "total_min": 2950000,
+    "total_max": 2950000,
+    "label": "$2,950,000",
     "currency": "USD",
     "sale_terms": null,
     "cap_rate_pct": null
@@ -137,6 +137,6 @@
     "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20138d8815",
     "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20138d8815"
   },
-  "last_updated": "2026-10-05T12:30:00Z",
+  "last_updated": "2026-10-20T18:51:18.220Z",
   "detail_level": "full"
 }

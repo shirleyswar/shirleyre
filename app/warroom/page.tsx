@@ -13,6 +13,7 @@
 
 import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { calcCommission, calcLeaseValue, fmtMoney, HOUSE_SPLIT } from '@/lib/dealMath'
+import { applyFreshAsking } from '@/lib/lacdbPrice'
 import Fab from '@/assets/fab/Fab'
 import '@/assets/fab/fab.css'
 import { useRouter } from 'next/navigation'
@@ -1425,7 +1426,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
 
       const { data: dealDetails } = await supabase
         .from('deals')
-        .select('id, name, addr_display, addr_street_name, addr_direction, addr_number, deal_contacts(contacts(name))')
+        .select('id, name, addr_display, addr_street_name, addr_direction, addr_number, lacdb_url, deal_source, deal_contacts(contacts(name))')
         .in('id', dealIds)
       const dmap: Record<string, any> = {}
       ;(dealDetails ?? []).forEach((d: any) => { dmap[d.id] = d })
@@ -1439,7 +1440,8 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
   }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const enriched = mmRows.map(mm => {
-    const econ = mm.deal_id ? (econMap[mm.deal_id] ?? null) : null
+    const linked = mm.deal_id ? (dealMap[mm.deal_id] ?? null) : null
+    const econ = applyFreshAsking(linked, mm.deal_id ? (econMap[mm.deal_id] ?? null) : null)
     // For linked records: compute commission from deal economics; for unlinked: use typed commission field
     const commission = mm.deal_id ? (econ ? calcCommission(econ) : null) : (mm.commission ?? null)
     // dealValue: only for linked records — compute from deal economics
@@ -1597,9 +1599,10 @@ interface DealWithClosing extends Deal {
  * 6% × 50% × 75% chain. Buyer deals use offer price the same way.
  */
 function resolveDealFigures(
-  deal: { type?: string | null; representation_role?: string | null },
+  deal: { type?: string | null; representation_role?: string | null; lacdb_url?: string | null; deal_source?: string | null },
   econ: DealEconomics | null,
 ): { value: number | null; commission: number | null } {
+  econ = applyFreshAsking(deal, econ)
   if (!econ) return { value: null, commission: null }
   const tx = (econ.transaction_type ?? '').toLowerCase()
   const dealType = (deal.type ?? '').toLowerCase()

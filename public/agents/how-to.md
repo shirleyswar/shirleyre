@@ -19,4 +19,4 @@ Use the `actions.request_tour` or `actions.request_om` mailto on each record, or
 - Co-listings with other firms may be absent from this staging feed on purpose.
 
 ## Refresh
-Manual for now. Automated refresh requires written permission from Resimplifi / LACDB.
+Asking price and listing status refresh every 6 hours from the public listing pages already in this feed (`scripts/refresh-lacdb-prices.mjs`). The rest of the record stays as published. Do not scrape the Louisiana Commercial Database yourself.

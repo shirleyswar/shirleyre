@@ -5,7 +5,7 @@
     "listing_id": "d2e5861f",
     "listing_uuid": "d2e5861f-5a6d-466e-85ed-74e00a9c53ae",
     "url": "https://lacdb.resimplifi.com/listings/d2e5861f-1293-acres-cw3-dual-access-cleared-buildready",
-    "retrieved_at": "2026-10-05T12:30:00Z",
+    "retrieved_at": "2026-10-20T18:51:18.220Z",
     "attribution": "Based on information from the LACDB for the period 2025-10-08 through 2026-10-05."
   },
   "title": "12.93 Acres – CW3 – Dual Access, Cleared & Build-Ready",
@@ -40,7 +40,7 @@
     "unit": "total",
     "total_min": 2957000,
     "total_max": 2957000,
-    "label": "$3M",
+    "label": "$2,957,000",
     "currency": "USD",
     "sale_terms": null,
     "cap_rate_pct": null
@@ -156,6 +156,6 @@
     "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20d2e5861f",
     "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20d2e5861f"
   },
-  "last_updated": "2026-10-05T12:30:00Z",
+  "last_updated": "2026-10-20T18:51:18.220Z",
   "detail_level": "full"
 }
