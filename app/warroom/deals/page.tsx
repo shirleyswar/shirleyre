@@ -349,7 +349,7 @@ function IdentityBand() {
 
 // ── LeftRail — 160: 10 slots ─────────────────────────────────────────────────
 // HOME · DEALS · SCHED · DEADLINES · MONEY · PORTF · ENTITY · PEOPLE [spacer] LOGS · SET
-type RailSlot = 'HOME' | 'DEALS' | 'SCHED' | 'DEADLINES' | 'MONEY' | 'PORTF' | 'ENTITY' | 'PEOPLE' | 'LOGS' | 'SET'
+type RailSlot = 'HOME' | 'DEALS' | 'LEADS' | 'SCHED' | 'DEADLINES' | 'MONEY' | 'PORTF' | 'ENTITY' | 'PEOPLE' | 'LOGS' | 'SET'
 
 // SVG glyphs from /assets/rail/*.svg (inline to avoid img flicker)
 const G_HOME = (
@@ -361,6 +361,14 @@ const G_DEALS = (
   <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3.5" y="4" width="17" height="10" rx="1.5"/>
     <path d="M12 14v7M7 7.8h6M7 10.8h9"/>
+  </svg>
+)
+const G_LEADS = (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3.2" y="3.4" width="17.6" height="17.2" rx="2"/>
+    <circle cx="8.6" cy="10.2" r="2.1"/>
+    <path d="M5.2 16.8c.35-2.05 1.65-3.2 3.4-3.2s3.05 1.15 3.4 3.2"/>
+    <path d="M13.8 8.4h4.6M13.8 11.6h4.6"/>
   </svg>
 )
 const G_SCHED = (
@@ -421,6 +429,7 @@ function LeftRail({ active }: { active: RailSlot }) {
   const mainSlots: RailSlotDef[] = [
     { id: 'HOME',      label: 'HOME',      href: '/warroom',          glyph: G_HOME      },
     { id: 'DEALS',     label: 'DEALS',     href: '/warroom/deals',    glyph: G_DEALS     },
+    { id: 'LEADS',     label: 'LEADS',     href: '/warroom/leads',    glyph: G_LEADS     },
     { id: 'SCHED',     label: 'SCHED',     href: null,                glyph: G_SCHED     },
     { id: 'DEADLINES', label: 'DEADLINES', href: null,                glyph: G_DEADLINES },
     { id: 'MONEY',     label: 'MONEY',     href: null,                glyph: G_MONEY     },
@@ -459,7 +468,7 @@ function LeftRail({ active }: { active: RailSlot }) {
     <div className="wr-deals-rail" style={{
       width: 96, flexShrink: 0, height: '100%', background: C.bgRail,
       borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', paddingTop: 8, boxSizing: 'border-box',
+      alignItems: 'center', paddingTop: 8, boxSizing: 'border-box', overflowY: 'auto',
     }}>
       {/* Main 8 slots */}
       {mainSlots.map(s => renderSlot(s))}

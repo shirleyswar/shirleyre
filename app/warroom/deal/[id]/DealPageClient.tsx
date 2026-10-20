@@ -10,7 +10,9 @@ import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { formatDealTitle, parseListingFilingName, formatListingFilingName, canonicalizeFilingSlots } from '@/lib/formatAddress'
-import { dealPhotoPublicUrl, uploadDealPhoto } from '@/lib/dealPhoto'
+import { uploadDealPhoto } from '@/lib/dealPhoto'
+import DealLeadsSection from '@/components/warroom/DealLeadsSection'
+import { useDealPhoto } from '@/components/warroom/useDealPhoto'
 import { HOUSE_SPLIT } from '@/lib/dealMath'
 import LacdbFlag from '@/components/warroom/LacdbFlag'
 import LaunchControl from './LaunchControl'
@@ -445,6 +447,8 @@ function DealPageClientInner({ id }: { id: string }) {
     setEditPhotoFile(null)
     setEditPhotoPreview(null)
   }, [dealId])
+
+  const listingPhoto = useDealPhoto(dealId, deal, photoCacheBust)
 
   // Delete mode
   const [deleteMode,  setDeleteMode]  = useState(false)
@@ -988,17 +992,29 @@ function DealPageClientInner({ id }: { id: string }) {
               onDrop={editMode ? e => { e.preventDefault(); pickEditPhoto(e.dataTransfer.files?.[0]) } : undefined}
               style={{ margin: '0 18px 18px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, minHeight: 120, maxHeight: 420, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: editMode ? 'pointer' : 'default', border: editMode ? `2px dashed ${T.border}` : 'none', position: 'relative' }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={editPhotoPreview || dealPhotoPublicUrl(dealId, photoCacheBust)}
-                alt=""
-                onLoad={() => setPhotoVisible(true)}
-                onError={() => { if (!editPhotoPreview) setPhotoVisible(false) }}
-                style={{ width: '100%', height: 'auto', maxHeight: 420, objectFit: 'contain', display: photoVisible || editPhotoPreview ? 'block' : 'none' }}
-              />
+              {(editPhotoPreview || listingPhoto.src) && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  data-deal-photo={listingPhoto.kind}
+                  src={editPhotoPreview || listingPhoto.src}
+                  alt=""
+                  onLoad={() => setPhotoVisible(true)}
+                  onError={() => {
+                    if (editPhotoPreview) return
+                    setPhotoVisible(false)
+                    listingPhoto.onError()
+                  }}
+                  style={{ width: '100%', height: 'auto', maxHeight: 420, objectFit: 'contain', display: photoVisible || editPhotoPreview ? 'block' : 'none' }}
+                />
+              )}
               {!photoVisible && !editPhotoPreview && (
                 <span style={{ ...STYLE_LABEL, letterSpacing: '0.12em', position: 'absolute' }}>
                   {editMode ? 'DROP IMAGE OR CLICK TO UPLOAD' : 'PHOTO — No image uploaded.'}
+                </span>
+              )}
+              {listingPhoto.listingPhoto && photoVisible && !editPhotoPreview && (
+                <span style={{ ...STYLE_LABEL, letterSpacing: '0.08em', position: 'absolute', left: 10, bottom: 10, background: 'rgba(8,8,12,0.72)', padding: '5px 8px', borderRadius: 6 }}>
+                  Listing photo
                 </span>
               )}
               {editMode && photoVisible && !editPhotoFile && (
@@ -1085,6 +1101,8 @@ function DealPageClientInner({ id }: { id: string }) {
               onLaunched={() => { setLaunched(true); setLaunchOpen(false) }}
             />
           )}
+
+          <DealLeadsSection dealId={dealId} variant="desktop" />
 
           {/* COMMISSION BLOCK — DP-1: full rate chain */}
           {!isDevRole && (

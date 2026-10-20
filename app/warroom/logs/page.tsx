@@ -77,10 +77,11 @@ function fmtMoney(n: number | null | undefined): string {
 const RAIL_LOGS_SVG = `<rect x="5.4" y="4" width="13.2" height="16"/><path d="M8.6 8.4h7M8.6 12h7M8.6 15.6h4.2"/>`
 const RAIL_SET_SVG  = `<path d="M3.4 8.6h4M13 8.6h7.6M3.4 15.4h7.1M16.1 15.4h4.5"/><circle cx="10.1" cy="8.6" r="2.6"/><circle cx="13.3" cy="15.4" r="2.6"/>`
 
-type RailId = 'HOME'|'DEALS'|'SCHED'|'DEADLINES'|'MONEY'|'PORTF'|'ENTITY'|'PEOPLE'|'LOGS'|'SET'
+type RailId = 'HOME'|'DEALS'|'LEADS'|'SCHED'|'DEADLINES'|'MONEY'|'PORTF'|'ENTITY'|'PEOPLE'|'LOGS'|'SET'
 const TOP_SLOTS: { id: RailId; label: string; href: string; svgInner: string }[] = [
   { id:'HOME',      label:'HOME',      href:'/warroom',          svgInner:`<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>` },
   { id:'DEALS',     label:'DEALS',     href:'/warroom/deals',    svgInner:`<rect x="3.5" y="4" width="17" height="10" rx="1.5"/><path d="M12 14v7M7 7.8h6M7 10.8h9"/>` },
+  { id:'LEADS',     label:'LEADS',     href:'/warroom/leads',    svgInner:`<rect x="3.2" y="3.4" width="17.6" height="17.2" rx="2"/><circle cx="8.6" cy="10.2" r="2.1"/><path d="M5.2 16.8c.35-2.05 1.65-3.2 3.4-3.2s3.05 1.15 3.4 3.2"/><path d="M13.8 8.4h4.6M13.8 11.6h4.6"/>` },
   { id:'SCHED',     label:'SCHED',     href:'/warroom',          svgInner:`<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>` },
   { id:'DEADLINES', label:'DEADLINES', href:'/warroom',          svgInner:`<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>` },
   { id:'MONEY',     label:'MONEY',     href:'/warroom',          svgInner:`<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>` },
@@ -115,7 +116,7 @@ function LeftRail({ active }: { active: RailId }) {
       width:96, flexShrink:0, height:'100%', background:C.bgRail,
       borderRight:`1px solid ${C.border}`,
       display:'flex', flexDirection:'column', alignItems:'center',
-      paddingTop:13, boxSizing:'border-box',
+      paddingTop:13, boxSizing:'border-box', overflowY:'auto',
     }}>
       {TOP_SLOTS.map(s => <Slot key={s.id} s={s} />)}
       <div style={{ flex:1 }} />

@@ -20,6 +20,8 @@ import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
 import { calcSaleCommission, calcLeaseCommission, HOUSE_SPLIT } from '@/lib/dealMath'
 import { latestArchiveKind, placeDealInService, recordArchive, type ArchiveKind } from '@/lib/dealArchive'
+import DealLeadsSection from '@/components/warroom/DealLeadsSection'
+import { useDealPhoto } from '@/components/warroom/useDealPhoto'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -109,6 +111,8 @@ interface DealData {
   property_type: string | null
   portfolio_id: string | null
   dropbox_link?: string | null
+  lacdb_url?: string | null
+  deal_source?: string | null
   acreage?: number | null
   transaction_type?: string | null
   asking_price?: number | null
@@ -478,7 +482,7 @@ function DealPageContent() {
         // Core deal
         const { data: dealData, error: dealErr } = await supabase
           .from('deals')
-          .select('id, name, address, addr_display, addr_street_name, addr_street_type, addr_direction, addr_number, addr_city, status, property_type, portfolio_id, dropbox_link, acreage')
+          .select('id, name, address, addr_display, addr_street_name, addr_street_type, addr_direction, addr_number, addr_city, status, property_type, portfolio_id, dropbox_link, acreage, lacdb_url, deal_source')
           .eq('id', dealId)
           .single()
         if (dealErr || !dealData) { setError(true); setLoading(false); return }
@@ -580,6 +584,10 @@ function DealPageContent() {
     setDeal({ ...deal, status: 'in_service' })
     setClosePick(false)
   }
+
+  const listingPhoto = useDealPhoto(deal?.id ?? '', deal)
+  const [phonePhotoOn, setPhonePhotoOn] = useState(false)
+  useEffect(() => { setPhonePhotoOn(false) }, [listingPhoto.src])
 
   if (loading) {
     return (
@@ -763,6 +771,8 @@ function DealPageContent() {
         {/* ── ITEM 71 — PHOTO ───────────────────────────────────────────────────
             16:9 within gutters, radius 14, placeholder when absent.
         */}
+        <DealLeadsSection dealId={deal.id} variant="phone" />
+
         <div style={{ padding: '0 18px', marginBottom: 16 }}>
           <div style={{
             width: '100%',
@@ -772,8 +782,21 @@ function DealPageContent() {
             background: 'rgba(255,255,255,0.04)',
             position: 'relative',
           }}>
-            {/* No photo column exists in deals table (confirmed 2026-08-31) — placeholder is the correct state */}
+            {listingPhoto.src && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                data-deal-photo={listingPhoto.kind}
+                src={listingPhoto.src}
+                alt=""
+                onLoad={() => setPhonePhotoOn(true)}
+                onError={listingPhoto.onError}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: phonePhotoOn ? 1 : 0 }}
+              />
+            )}
           </div>
+          {listingPhoto.listingPhoto && (
+            <div style={{ ...STYLE_T1, marginTop: 8, letterSpacing: '0.08em' }}>Listing photo</div>
+          )}
         </div>
 
         {/* ── ITEM 69 — ECONOMICS ───────────────────────────────────────────────
