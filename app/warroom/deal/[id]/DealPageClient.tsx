@@ -13,7 +13,7 @@ import { formatDealTitle, parseListingFilingName, formatListingFilingName, canon
 import { uploadDealPhoto } from '@/lib/dealPhoto'
 import DealLeadsSection from '@/components/warroom/DealLeadsSection'
 import { useDealPhoto } from '@/components/warroom/useDealPhoto'
-import { fmtAsking, HOUSE_SPLIT } from '@/lib/dealMath'
+import { calcLeaseCommission, calcSaleCommission, fmtAsking, HOUSE_SPLIT } from '@/lib/dealMath'
 import { fmtAcres } from '@/lib/landSize'
 import { applyFreshAsking } from '@/lib/lacdbPrice'
 import LacdbFlag from '@/components/warroom/LacdbFlag'
@@ -401,16 +401,25 @@ function fmtDateTime(iso: string): string {
 
 // ── DP-1: Commission math helpers ────────────────────────────────────────────
 function calcCommissionChain(econ: DealEcon | null) {
-  // listing_rate / co_broker_split columns do not exist in deal_economics yet.
-  // Use standard defaults: 6% listing rate, 50% co-broker split, 75% house split.
+  // A stored sale_commission_pct is Matthew's side of the commission.
+  // Estimated commission is that rate times the 75% house split.
+  // The 6% listing rate × 50% co-broker default applies only when no rate is stored.
+  const askPrice = econ?.asking_price ?? null
+  const stored = econ?.sale_commission_pct
+  if (stored != null && Number.isFinite(stored)) {
+    const estComm = askPrice != null ? calcSaleCommission(askPrice, stored) : null
+    const derivation = askPrice != null
+      ? `$${askPrice.toLocaleString('en-US')} × ${stored}% × 75% house`
+      : null
+    return { usesStoredRate: true, storedRate: stored, listRate: 6, coBroker: 0.5, estComm, derivation }
+  }
   const listRate = 6.0
   const coBroker = 0.5
-  const askPrice = econ?.asking_price ?? null
-  const estComm  = askPrice ? Math.round(askPrice * (listRate / 100) * coBroker * 0.75) : null
-  const derivation = askPrice
-    ? `$${askPrice.toLocaleString()} × ${listRate.toFixed(2)}% × ${Math.round(coBroker * 100)}% × 75%`
+  const estComm = askPrice != null ? Math.round(askPrice * (listRate / 100) * coBroker * HOUSE_SPLIT) : null
+  const derivation = askPrice != null
+    ? `$${askPrice.toLocaleString('en-US')} × ${listRate.toFixed(2)}% × ${Math.round(coBroker * 100)}% × 75%`
     : null
-  return { listRate, coBroker, estComm, derivation }
+  return { usesStoredRate: false, storedRate: null as number | null, listRate, coBroker, estComm, derivation }
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -696,18 +705,35 @@ function DealPageClientInner({ id }: { id: string }) {
 
   // Asking price for an active linked listing comes from the feed, then price/SF and commission follow it.
   const pricedEcon = applyFreshAsking(deal, econ)
-  // DP-1: Commission rate chain
-  const { listRate, coBroker, estComm, derivation } = calcCommissionChain(pricedEcon)
+  // DP-1: Commission rate chain. Stored rate wins over the 6% × 50% default.
+  const { usesStoredRate, storedRate, listRate, coBroker, estComm: saleEstComm, derivation: saleDerivation } = calcCommissionChain(pricedEcon)
   const isBuyer = (deal.type ?? '').toLowerCase() === 'buyer'
     || (deal.representation_role ?? '').toLowerCase() === 'buyer'
     || txType === 'buyer'
-  // Same formula as the create form: offer × 6% × 50% × 75%. Asking price is the listing base.
+  const buyerStored = econ?.sale_commission_pct
   const buyerEstComm = isBuyer && econ?.offer_price != null
-    ? Math.round(econ.offer_price * (listRate / 100) * coBroker * HOUSE_SPLIT)
+    ? (buyerStored != null
+        ? calcSaleCommission(econ.offer_price, buyerStored)
+        : Math.round(econ.offer_price * (6 / 100) * 0.5 * HOUSE_SPLIT))
     : null
   const buyerDerivation = isBuyer && econ?.offer_price != null
-    ? `$${econ.offer_price.toLocaleString()} × ${listRate.toFixed(2)}% × ${Math.round(coBroker * 100)}% × ${Math.round(HOUSE_SPLIT * 100)}%`
+    ? (buyerStored != null
+        ? `$${econ.offer_price.toLocaleString('en-US')} × ${buyerStored}% × 75% house`
+        : `$${econ.offer_price.toLocaleString('en-US')} × 6.00% × 50% × 75%`)
     : null
+  const leaseEstComm = isLease
+    ? calcLeaseCommission(
+        pricedEcon?.sqft ?? null,
+        pricedEcon?.lease_rate_psf ?? null,
+        pricedEcon?.lease_term_years ?? null,
+        pricedEcon?.sale_commission_pct ?? null,
+      )
+    : null
+  const leaseDerivation = isLease && leaseEstComm != null && pricedEcon?.sqft && pricedEcon.lease_rate_psf && pricedEcon.lease_term_years && pricedEcon.sale_commission_pct != null
+    ? `${fmtSF(pricedEcon.sqft)} × $${pricedEcon.lease_rate_psf}/SF × ${pricedEcon.lease_term_years}yr × ${pricedEcon.sale_commission_pct}% × 75% house`
+    : null
+  const estComm = isLease ? leaseEstComm : saleEstComm
+  const derivation = isLease ? leaseDerivation : saleDerivation
 
   // Glance strip
   type GlanceCell = { label: string; value: string; glow?: boolean }
@@ -1112,21 +1138,29 @@ function DealPageClientInner({ id }: { id: string }) {
                 {(txType === 'sale' || txType === 'both' || !isLease) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-                    {/* LISTING RATE */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ ...STYLE_LABEL, fontSize: 9 }}>LISTING RATE</span>
-                      <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 500, color: T.textHi, fontVariantNumeric: 'tabular-nums' }}>
-                        {listRate.toFixed(2)}%
-                      </span>
-                    </div>
-
-                    {/* CO-BROKER SPLIT */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ ...STYLE_LABEL, fontSize: 9 }}>CO-BROKER SPLIT</span>
-                      <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 500, color: T.textHi, fontVariantNumeric: 'tabular-nums' }}>
-                        {Math.round(coBroker * 100)}%
-                      </span>
-                    </div>
+                    {usesStoredRate ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <span style={{ ...STYLE_LABEL, fontSize: 9 }}>COMMISSION RATE</span>
+                        <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 500, color: T.textHi, fontVariantNumeric: 'tabular-nums' }}>
+                          {storedRate}%
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                          <span style={{ ...STYLE_LABEL, fontSize: 9 }}>LISTING RATE</span>
+                          <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 500, color: T.textHi, fontVariantNumeric: 'tabular-nums' }}>
+                            {listRate.toFixed(2)}%
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                          <span style={{ ...STYLE_LABEL, fontSize: 9 }}>CO-BROKER SPLIT</span>
+                          <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 500, color: T.textHi, fontVariantNumeric: 'tabular-nums' }}>
+                            {Math.round(coBroker * 100)}%
+                          </span>
+                        </div>
+                      </>
+                    )}
 
                     {/* HOUSE SPLIT */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>

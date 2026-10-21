@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
-import { calcCommission, calcLeaseValue, fmtMoney, HOUSE_SPLIT } from '@/lib/dealMath'
+import { calcCommission, calcLeaseValue, calcSaleCommission, fmtMoney, HOUSE_SPLIT } from '@/lib/dealMath'
 import { applyFreshAsking } from '@/lib/lacdbPrice'
 import Fab from '@/assets/fab/Fab'
 import '@/assets/fab/fab.css'
@@ -1443,7 +1443,10 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
     const linked = mm.deal_id ? (dealMap[mm.deal_id] ?? null) : null
     const econ = applyFreshAsking(linked, mm.deal_id ? (econMap[mm.deal_id] ?? null) : null)
     // For linked records: compute commission from deal economics; for unlinked: use typed commission field
-    const commission = mm.deal_id ? (econ ? calcCommission(econ) : null) : (mm.commission ?? null)
+    let commission = mm.deal_id ? (econ ? calcCommission(econ) : null) : (mm.commission ?? null)
+    if (mm.deal_id && commission == null && econ?.asking_price != null && econ.sale_commission_pct != null) {
+      commission = calcSaleCommission(econ.asking_price, econ.sale_commission_pct)
+    }
     // dealValue: only for linked records — compute from deal economics
     let dealValue: number | null = null
     if (mm.deal_id && econ) {
@@ -1610,7 +1613,12 @@ function resolveDealFigures(
   const isBuyer = tx === 'buyer' || dealType === 'buyer' || role === 'buyer'
   if (isBuyer) {
     const basis = econ.offer_price ?? econ.asking_price ?? null
-    const commission = basis != null ? Math.round(basis * 0.06 * 0.5 * HOUSE_SPLIT) : null
+    const stored = econ.sale_commission_pct
+    const commission = basis == null
+      ? null
+      : stored != null
+        ? calcSaleCommission(basis, stored)
+        : Math.round(basis * 0.06 * 0.5 * HOUSE_SPLIT)
     return { value: basis, commission }
   }
   if (tx === 'lease') {
@@ -1619,7 +1627,10 @@ function resolveDealFigures(
   }
   const value = econ.asking_price ?? null
   let commission = calcCommission(econ)
-  if (commission == null && value != null) {
+  if (commission == null && value != null && econ.sale_commission_pct != null) {
+    commission = calcSaleCommission(value, econ.sale_commission_pct)
+  }
+  if (commission == null && value != null && econ.sale_commission_pct == null) {
     commission = Math.round(value * 0.06 * 0.5 * HOUSE_SPLIT)
   }
   return { value, commission }

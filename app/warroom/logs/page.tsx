@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { motion } from 'framer-motion'
-import { fmtAsking } from '@/lib/dealMath'
+import { calcLeaseCommission, calcSaleCommission, fmtAsking } from '@/lib/dealMath'
 import { applyFreshAsking } from '@/lib/lacdbPrice'
 
 const SUPA_URL = 'https://mtkyyaorvensylrfbhxv.supabase.co'
@@ -331,13 +331,12 @@ interface DealRow {
 // 163C2: calculate commission from real deal_economics columns (commission_estimated DNE)
 function calcCommission(econ: DealEcon | null | undefined): number | null {
   if (!econ) return null
-  // Sale: asking_price × sale_commission_pct%
-  if (econ.asking_price != null && econ.sale_commission_pct != null && econ.sale_commission_pct > 0) {
-    return econ.asking_price * (econ.sale_commission_pct / 100)
+  // Stored rate × 75% house split. Same figure as the phone deal page.
+  if (econ.asking_price != null && econ.sale_commission_pct != null) {
+    return calcSaleCommission(econ.asking_price, econ.sale_commission_pct)
   }
-  // Lease: rate_psf × sqft × term_years × lease_commission_pct%
   if (econ.lease_rate_psf != null && econ.sqft != null && econ.lease_term_years != null && econ.lease_commission_pct != null) {
-    return econ.lease_rate_psf * econ.sqft * econ.lease_term_years * (econ.lease_commission_pct / 100)
+    return calcLeaseCommission(econ.sqft, econ.lease_rate_psf, econ.lease_term_years, econ.lease_commission_pct)
   }
   return null
 }

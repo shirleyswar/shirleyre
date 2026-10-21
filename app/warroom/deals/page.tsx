@@ -15,7 +15,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { calcCommission, calcLeaseValue, fmtAsking, fmtMoney } from '@/lib/dealMath'
+import { calcCommission, calcLeaseValue, calcSaleCommission, fmtAsking, fmtMoney } from '@/lib/dealMath'
 import { applyFreshAsking } from '@/lib/lacdbPrice'
 import { formatDealTitle } from '@/lib/formatAddress'
 import PinGate from '@/components/warroom/PinGate'
@@ -905,8 +905,8 @@ function DealsPage() {
         if (econ) {
           if (isBuyerDeal) {
             value = econ.offer_price ?? null
-            if (value && econ.sale_commission_pct) {
-              commission = value * econ.sale_commission_pct * 0.75
+            if (value != null && econ.sale_commission_pct != null) {
+              commission = calcSaleCommission(value, econ.sale_commission_pct)
             }
           } else if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price != null) {
             value = econ.asking_price
