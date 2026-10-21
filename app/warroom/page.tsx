@@ -12,7 +12,8 @@
  */
 
 import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
-import { calcCommission, calcLeaseValue, fmtMoney, HOUSE_SPLIT } from '@/lib/dealMath'
+import { calcCommission, calcLeaseValue, calcSaleCommission, fmtMoney, HOUSE_SPLIT } from '@/lib/dealMath'
+import { applyFreshAsking } from '@/lib/lacdbPrice'
 import Fab from '@/assets/fab/Fab'
 import '@/assets/fab/fab.css'
 import { useRouter } from 'next/navigation'
@@ -1425,7 +1426,7 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
 
       const { data: dealDetails } = await supabase
         .from('deals')
-        .select('id, name, addr_display, addr_street_name, addr_direction, addr_number, deal_contacts(contacts(name))')
+        .select('id, name, addr_display, addr_street_name, addr_direction, addr_number, lacdb_url, deal_source, deal_contacts(contacts(name))')
         .in('id', dealIds)
       const dmap: Record<string, any> = {}
       ;(dealDetails ?? []).forEach((d: any) => { dmap[d.id] = d })
@@ -1439,9 +1440,13 @@ function MoneyMoversPanel({ refreshKey, visibleRows: _visibleRows, onCountChange
   }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const enriched = mmRows.map(mm => {
-    const econ = mm.deal_id ? (econMap[mm.deal_id] ?? null) : null
+    const linked = mm.deal_id ? (dealMap[mm.deal_id] ?? null) : null
+    const econ = applyFreshAsking(linked, mm.deal_id ? (econMap[mm.deal_id] ?? null) : null)
     // For linked records: compute commission from deal economics; for unlinked: use typed commission field
-    const commission = mm.deal_id ? (econ ? calcCommission(econ) : null) : (mm.commission ?? null)
+    let commission = mm.deal_id ? (econ ? calcCommission(econ) : null) : (mm.commission ?? null)
+    if (mm.deal_id && commission == null && econ?.asking_price != null && econ.sale_commission_pct != null) {
+      commission = calcSaleCommission(econ.asking_price, econ.sale_commission_pct)
+    }
     // dealValue: only for linked records — compute from deal economics
     let dealValue: number | null = null
     if (mm.deal_id && econ) {
@@ -1597,9 +1602,10 @@ interface DealWithClosing extends Deal {
  * 6% × 50% × 75% chain. Buyer deals use offer price the same way.
  */
 function resolveDealFigures(
-  deal: { type?: string | null; representation_role?: string | null },
+  deal: { type?: string | null; representation_role?: string | null; lacdb_url?: string | null; deal_source?: string | null },
   econ: DealEconomics | null,
 ): { value: number | null; commission: number | null } {
+  econ = applyFreshAsking(deal, econ)
   if (!econ) return { value: null, commission: null }
   const tx = (econ.transaction_type ?? '').toLowerCase()
   const dealType = (deal.type ?? '').toLowerCase()
@@ -1607,7 +1613,12 @@ function resolveDealFigures(
   const isBuyer = tx === 'buyer' || dealType === 'buyer' || role === 'buyer'
   if (isBuyer) {
     const basis = econ.offer_price ?? econ.asking_price ?? null
-    const commission = basis != null ? Math.round(basis * 0.06 * 0.5 * HOUSE_SPLIT) : null
+    const stored = econ.sale_commission_pct
+    const commission = basis == null
+      ? null
+      : stored != null
+        ? calcSaleCommission(basis, stored)
+        : Math.round(basis * 0.06 * 0.5 * HOUSE_SPLIT)
     return { value: basis, commission }
   }
   if (tx === 'lease') {
@@ -1616,7 +1627,10 @@ function resolveDealFigures(
   }
   const value = econ.asking_price ?? null
   let commission = calcCommission(econ)
-  if (commission == null && value != null) {
+  if (commission == null && value != null && econ.sale_commission_pct != null) {
+    commission = calcSaleCommission(value, econ.sale_commission_pct)
+  }
+  if (commission == null && value != null && econ.sale_commission_pct == null) {
     commission = Math.round(value * 0.06 * 0.5 * HOUSE_SPLIT)
   }
   return { value, commission }
@@ -2402,6 +2416,7 @@ function IdentityBand({ onSearch }: { onSearch?: () => void }) {
 // Rail SVG glyphs (inner content only; wrapped in <svg> below via dangerouslySetInnerHTML)
 const RAIL_HOME_SVG = `<rect x="3" y="3" width="7.5" height="18"/><rect x="13.5" y="3" width="7.5" height="8"/><rect x="13.5" y="14" width="7.5" height="7"/>`
 const RAIL_DEALS_SVG = `<rect x="3.5" y="4" width="17" height="10" rx="1.5"/><path d="M12 14v7M7 7.8h6M7 10.8h9"/>`
+const RAIL_LEADS_SVG = `<rect x="3.2" y="3.4" width="17.6" height="17.2" rx="2"/><circle cx="8.6" cy="10.2" r="2.1"/><path d="M5.2 16.8c.35-2.05 1.65-3.2 3.4-3.2s3.05 1.15 3.4 3.2"/><path d="M13.8 8.4h4.6M13.8 11.6h4.6"/>`
 const RAIL_SCHED_SVG = `<rect x="3.5" y="4.5" width="17" height="16" rx="2"/><path d="M3.5 9.5h17"/><rect x="7" y="12.6" width="4" height="4" fill="currentColor" stroke="none"/>`
 const RAIL_DEADLINES_SVG = `<path d="M6 20.8V3.6"/><path d="M6 4.4h10.4l-1.7 4.1 1.7 4.1H6"/>`
 const RAIL_MONEY_SVG = `<rect x="2.6" y="6.4" width="18.8" height="11.2" rx="2.2"/><circle cx="12" cy="12" r="3"/>`
@@ -2411,9 +2426,9 @@ const RAIL_PEOPLE_SVG = `<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.4 2.7
 const RAIL_SET_SVG = `<path d="M3.4 8.6h4M13 8.6h7.6M3.4 15.4h7.1M16.1 15.4h4.5"/><circle cx="10.1" cy="8.6" r="2.6"/><circle cx="13.3" cy="15.4" r="2.6"/>`
 const RAIL_LOGS_SVG = `<rect x="5.4" y="4" width="13.2" height="16"/><path d="M8.6 8.4h7M8.6 12h7M8.6 15.6h4.2"/>`
 
-type RailSlot2 = 'home' | 'deals' | 'sched' | 'deadlines' | 'money' | 'portf' | 'entity' | 'people' | 'logs' | 'set'
+type RailSlot2 = 'home' | 'deals' | 'leads' | 'sched' | 'deadlines' | 'money' | 'portf' | 'entity' | 'people' | 'logs' | 'set'
 // Legacy alias kept for LeftRail prop type
-type RailSlot = 'HOME' | 'PEOPLE' | 'DEALS' | 'LOGS'
+type RailSlot = 'HOME' | 'PEOPLE' | 'DEALS' | 'LEADS' | 'LOGS'
 
 function LeftRail({ active }: { active: RailSlot }) {
   const router = useRouter()
@@ -2421,6 +2436,7 @@ function LeftRail({ active }: { active: RailSlot }) {
   const slots: { id: RailSlot2; label: string; svgInner: string; href: string | null; hasRoute: boolean }[] = [
     { id: 'home',      label: 'HOME',      svgInner: RAIL_HOME_SVG,      href: '/warroom',          hasRoute: true },
     { id: 'deals',     label: 'DEALS',     svgInner: RAIL_DEALS_SVG,     href: '/warroom/deals',    hasRoute: true },
+    { id: 'leads',     label: 'LEADS',     svgInner: RAIL_LEADS_SVG,     href: '/warroom/leads',    hasRoute: true },
     { id: 'sched',     label: 'SCHED',     svgInner: RAIL_SCHED_SVG,     href: null,                hasRoute: false },
     { id: 'deadlines', label: 'DEADLINES', svgInner: RAIL_DEADLINES_SVG, href: null,                hasRoute: false },
     { id: 'money',     label: 'MONEY',     svgInner: RAIL_MONEY_SVG,     href: null,                hasRoute: false },
@@ -2435,6 +2451,7 @@ function LeftRail({ active }: { active: RailSlot }) {
     if (!slot.hasRoute) return false
     if (slot.id === 'home') return active === 'HOME'
     if (slot.id === 'deals') return active === 'DEALS'
+    if (slot.id === 'leads') return active === 'LEADS'
     if (slot.id === 'people') return active === 'PEOPLE'
     if (slot.id === 'logs') return active === 'LOGS'
     return false
@@ -2484,6 +2501,7 @@ function LeftRail({ active }: { active: RailSlot }) {
       alignItems: 'center',
       paddingTop: 16,
       gap: 4,
+      overflowY: 'auto',
     }}>
       {slots.map(s => <RailSlotEl key={s.id} slot={s} />)}
       <div style={{ flex: 1 }} />

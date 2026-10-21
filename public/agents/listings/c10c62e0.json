@@ -5,7 +5,7 @@
     "listing_id": "c10c62e0",
     "listing_uuid": "c10c62e0-89ff-417a-abfe-47ed5a2cd69c",
     "url": "https://lacdb.resimplifi.com/listings/c10c62e0-261-acres-c1-no-flood-build-ready",
-    "retrieved_at": "2026-10-05T12:30:00Z",
+    "retrieved_at": "2026-10-20T18:51:18.220Z",
     "attribution": "Based on information from the LACDB for the period 2025-10-10 through 2026-10-05."
   },
   "title": "2.61 Acres - C1 - No Flood - Build Ready",
@@ -38,7 +38,7 @@
     "unit": "total",
     "total_min": 1672000,
     "total_max": 1672000,
-    "label": "$1.7M",
+    "label": "$1,672,000",
     "currency": "USD",
     "sale_terms": "Cash to Seller",
     "cap_rate_pct": null
@@ -141,6 +141,6 @@
     "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%20c10c62e0",
     "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%20c10c62e0"
   },
-  "last_updated": "2026-10-05T12:30:00Z",
+  "last_updated": "2026-10-20T18:51:18.220Z",
   "detail_level": "full"
 }

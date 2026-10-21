@@ -15,7 +15,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { calcCommission, calcLeaseValue, fmtMoney } from '@/lib/dealMath'
+import { calcCommission, calcLeaseValue, calcSaleCommission, fmtAsking, fmtMoney } from '@/lib/dealMath'
+import { applyFreshAsking } from '@/lib/lacdbPrice'
 import { formatDealTitle } from '@/lib/formatAddress'
 import PinGate from '@/components/warroom/PinGate'
 import TaskModal from '@/app/warroom/TaskModal'
@@ -87,7 +88,7 @@ const COL = {
   lacdb:     56,
   task:      48,
   rank:      92,
-  value:    124,
+  value:    152,
   comm:     124,
   dbx:       52,
 } as const
@@ -349,7 +350,7 @@ function IdentityBand() {
 
 // ── LeftRail — 160: 10 slots ─────────────────────────────────────────────────
 // HOME · DEALS · SCHED · DEADLINES · MONEY · PORTF · ENTITY · PEOPLE [spacer] LOGS · SET
-type RailSlot = 'HOME' | 'DEALS' | 'SCHED' | 'DEADLINES' | 'MONEY' | 'PORTF' | 'ENTITY' | 'PEOPLE' | 'LOGS' | 'SET'
+type RailSlot = 'HOME' | 'DEALS' | 'LEADS' | 'SCHED' | 'DEADLINES' | 'MONEY' | 'PORTF' | 'ENTITY' | 'PEOPLE' | 'LOGS' | 'SET'
 
 // SVG glyphs from /assets/rail/*.svg (inline to avoid img flicker)
 const G_HOME = (
@@ -361,6 +362,14 @@ const G_DEALS = (
   <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3.5" y="4" width="17" height="10" rx="1.5"/>
     <path d="M12 14v7M7 7.8h6M7 10.8h9"/>
+  </svg>
+)
+const G_LEADS = (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3.2" y="3.4" width="17.6" height="17.2" rx="2"/>
+    <circle cx="8.6" cy="10.2" r="2.1"/>
+    <path d="M5.2 16.8c.35-2.05 1.65-3.2 3.4-3.2s3.05 1.15 3.4 3.2"/>
+    <path d="M13.8 8.4h4.6M13.8 11.6h4.6"/>
   </svg>
 )
 const G_SCHED = (
@@ -421,6 +430,7 @@ function LeftRail({ active }: { active: RailSlot }) {
   const mainSlots: RailSlotDef[] = [
     { id: 'HOME',      label: 'HOME',      href: '/warroom',          glyph: G_HOME      },
     { id: 'DEALS',     label: 'DEALS',     href: '/warroom/deals',    glyph: G_DEALS     },
+    { id: 'LEADS',     label: 'LEADS',     href: '/warroom/leads',    glyph: G_LEADS     },
     { id: 'SCHED',     label: 'SCHED',     href: null,                glyph: G_SCHED     },
     { id: 'DEADLINES', label: 'DEADLINES', href: null,                glyph: G_DEADLINES },
     { id: 'MONEY',     label: 'MONEY',     href: null,                glyph: G_MONEY     },
@@ -459,7 +469,7 @@ function LeftRail({ active }: { active: RailSlot }) {
     <div className="wr-deals-rail" style={{
       width: 96, flexShrink: 0, height: '100%', background: C.bgRail,
       borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', paddingTop: 8, boxSizing: 'border-box',
+      alignItems: 'center', paddingTop: 8, boxSizing: 'border-box', overflowY: 'auto',
     }}>
       {/* Main 8 slots */}
       {mainSlots.map(s => renderSlot(s))}
@@ -719,7 +729,7 @@ function DealRow({ deal, ratings, onRatingChange, onTaskOpen, onNavigate }: {
       <div style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
         <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.textHi }}>
           {/* DI-5: blank when no value */}
-          {deal._value != null ? fmtMoney(deal._value) : ''}
+          {deal._value != null ? fmtAsking(deal._value) : ''}
         </span>
       </div>
 
@@ -772,7 +782,7 @@ function PortfolioRow({ portfolio, onNavigate }: { portfolio: PortfolioRollup; o
       <div style={{ width:COL.value, flexShrink:0, padding:'0 14px', boxSizing:'border-box', textAlign:'right' }}>
         <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color:C.textHi }}>
           {/* DI-5: blank when no value */}
-          {portfolio.value != null ? fmtMoney(portfolio.value) : ''}
+          {portfolio.value != null ? fmtAsking(portfolio.value) : ''}
         </span>
       </div>
 
@@ -888,15 +898,15 @@ function DealsPage() {
       const enriched: EnrichedDeal[] = rawDeals.map(deal => {
         ratingInit[deal.id] = deal.rating
 
-        const econ       = econMap[deal.id] ?? null
+        const econ       = applyFreshAsking(deal, econMap[deal.id] ?? null)
         const isBuyerDeal = deal.type?.toLowerCase() === 'buyer'
         let value: number | null = null
         let commission: number | null = null
         if (econ) {
           if (isBuyerDeal) {
             value = econ.offer_price ?? null
-            if (value && econ.sale_commission_pct) {
-              commission = value * econ.sale_commission_pct * 0.75
+            if (value != null && econ.sale_commission_pct != null) {
+              commission = calcSaleCommission(value, econ.sale_commission_pct)
             }
           } else if ((econ.transaction_type === 'sale' || econ.transaction_type === 'both') && econ.asking_price != null) {
             value = econ.asking_price
@@ -1213,7 +1223,7 @@ function DealsPage() {
               padding:'0 var(--wr-edge)', borderBottom:`1px solid ${C.borderHair}`, boxSizing:'border-box',
               ...headerFace, fontSize: 13, color: C.textMid,
             }}>
-              {matchedDeals.length} deals · {totalValue != null ? fmtMoney(totalValue) : '—'} value · {totalComm != null ? fmtMoney(totalComm) : '—'} commission
+              {matchedDeals.length} deals · {totalValue != null ? fmtAsking(totalValue) : ''} value · {totalComm != null ? fmtMoney(totalComm) : ''} commission
             </div>
           </>
         )}

@@ -5,7 +5,7 @@
     "listing_id": "5d4a0303",
     "listing_uuid": "5d4a0303-b623-45be-b6fc-fb33c8d8c036",
     "url": "https://lacdb.resimplifi.com/listings/5d4a0303-084-acres-lit-hard-corner-c1-no-flood-buildready",
-    "retrieved_at": "2026-10-05T12:30:00Z",
+    "retrieved_at": "2026-10-20T18:51:18.220Z",
     "attribution": "Based on information from the LACDB for the period 2025-09-30 through 2026-10-05."
   },
   "title": "0.84 Acres  Lit Hard Corner - C1 - No Flood - Build-Ready",
@@ -38,7 +38,7 @@
     "unit": "total",
     "total_min": 797000,
     "total_max": 797000,
-    "label": "$797K",
+    "label": "$797,000",
     "currency": "USD",
     "sale_terms": "Cash to Seller",
     "cap_rate_pct": null
@@ -157,6 +157,6 @@
     "request_tour": "mailto:matthew@sr-cre.com?subject=Tour%20request%20-%20LACDB%205d4a0303",
     "request_om": "mailto:matthew@sr-cre.com?subject=Offering%20Memorandum%20(OM)%20request%20-%20LACDB%205d4a0303"
   },
-  "last_updated": "2026-10-05T12:30:00Z",
+  "last_updated": "2026-10-20T18:51:18.220Z",
   "detail_level": "full"
 }

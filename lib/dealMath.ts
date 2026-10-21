@@ -121,3 +121,12 @@ export function fmtMoney(n: number | null | undefined): string {
   if (abs >= 1_000) return `${sign}$${Math.round(abs / 1_000)}K`
   return `${sign}$${Math.round(abs).toLocaleString()}`
 }
+
+/** Asking price as full dollars with commas. Blank when the figure was never entered. */
+export function fmtAsking(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(Number(n))) return ''
+  const rounded = Math.round(Number(n))
+  if (rounded === 0) return ''
+  const sign = rounded < 0 ? '-' : ''
+  return `${sign}$${Math.abs(rounded).toLocaleString('en-US')}`
+}

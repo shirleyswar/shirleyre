@@ -18,8 +18,12 @@ import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { formatAddress } from '@/lib/formatAddress'
-import { calcSaleCommission, calcLeaseCommission, HOUSE_SPLIT } from '@/lib/dealMath'
+import { calcSaleCommission, calcLeaseCommission, fmtAsking, HOUSE_SPLIT } from '@/lib/dealMath'
+import { fmtAcres } from '@/lib/landSize'
+import { askingForDeal } from '@/lib/lacdbPrice'
 import { latestArchiveKind, placeDealInService, recordArchive, type ArchiveKind } from '@/lib/dealArchive'
+import DealLeadsSection from '@/components/warroom/DealLeadsSection'
+import { useDealPhoto } from '@/components/warroom/useDealPhoto'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const T = {
@@ -79,11 +83,6 @@ function fmtSF(n: number | null | undefined): string {
   return `${Math.round(n).toLocaleString('en-US')} SF`
 }
 
-function fmtAcres(n: number | null | undefined): string {
-  if (n == null) return ''
-  return `${n} AC`
-}
-
 function fmtPSF(price: number | null, sf: number | null): string {
   if (!price || !sf) return ''
   return `$${(price / sf).toFixed(2)}/SF`
@@ -109,6 +108,8 @@ interface DealData {
   property_type: string | null
   portfolio_id: string | null
   dropbox_link?: string | null
+  lacdb_url?: string | null
+  deal_source?: string | null
   acreage?: number | null
   transaction_type?: string | null
   asking_price?: number | null
@@ -252,7 +253,7 @@ function CommissionReveal({ deal }: { deal: DealData }) {
       const gross = deal.sqft * deal.lease_rate_psf * deal.lease_term_years * (deal.commission_pct / 100)
       derivation = `${fmtSF(deal.sqft)} × $${deal.lease_rate_psf}/SF × ${deal.lease_term_years}yr × ${fmtPct(deal.commission_pct)} × 75% house`
     } else if (!isLease && deal.asking_price && deal.commission_pct) {
-      derivation = `${fmt(deal.asking_price)} × ${fmtPct(deal.commission_pct)} × 75% house`
+      derivation = `${fmtAsking(deal.asking_price)} × ${fmtPct(deal.commission_pct)} × 75% house`
     }
   }
 
@@ -478,7 +479,7 @@ function DealPageContent() {
         // Core deal
         const { data: dealData, error: dealErr } = await supabase
           .from('deals')
-          .select('id, name, address, addr_display, addr_street_name, addr_street_type, addr_direction, addr_number, addr_city, status, property_type, portfolio_id, dropbox_link, acreage')
+          .select('id, name, address, addr_display, addr_street_name, addr_street_type, addr_direction, addr_number, addr_city, status, property_type, portfolio_id, dropbox_link, acreage, lacdb_url, deal_source')
           .eq('id', dealId)
           .single()
         if (dealErr || !dealData) { setError(true); setLoading(false); return }
@@ -514,6 +515,7 @@ function DealPageContent() {
         setCloseErr('')
 
         const isLease = econData?.transaction_type === 'lease'
+        const asking = askingForDeal(dealData as { lacdb_url?: string | null; deal_source?: string | null }, econData?.asking_price ?? null)
         let est_commission: number | null = null
         if (isLease) {
           est_commission = calcLeaseCommission(
@@ -524,7 +526,7 @@ function DealPageContent() {
           )
         } else {
           est_commission = calcSaleCommission(
-            econData?.asking_price ?? null,
+            asking,
             econData?.sale_commission_pct ?? null,
           )
         }
@@ -536,7 +538,7 @@ function DealPageContent() {
         const d: DealData = {
           ...(dealData as any),
           transaction_type: econData?.transaction_type ?? null,
-          asking_price:     econData?.asking_price ?? null,
+          asking_price:     asking,
           sqft:             econData?.sqft ?? null,
           land_size:        econData?.land_sqft ?? null,
           commission_pct:   econData?.sale_commission_pct ?? null,
@@ -580,6 +582,10 @@ function DealPageContent() {
     setDeal({ ...deal, status: 'in_service' })
     setClosePick(false)
   }
+
+  const listingPhoto = useDealPhoto(deal?.id ?? '', deal)
+  const [phonePhotoOn, setPhonePhotoOn] = useState(false)
+  useEffect(() => { setPhonePhotoOn(false) }, [listingPhoto.src])
 
   if (loading) {
     return (
@@ -627,7 +633,7 @@ function DealPageContent() {
     if (deal.acreage != null)          econCells.push({ label: 'Acreage',         value: fmtAcres(deal.acreage) })
     if (deal.commission_pct != null)   econCells.push({ label: 'Commission %',    value: fmtPct(deal.commission_pct) })
   } else {
-    if (deal.asking_price != null)     econCells.push({ label: 'Asking Price',    value: fmt(deal.asking_price) })
+    if (deal.asking_price != null)     econCells.push({ label: 'Asking Price',    value: fmtAsking(deal.asking_price) })
     if (deal.sqft != null)             econCells.push({ label: 'Building SF',     value: fmtSF(deal.sqft) })
     if (deal.asking_price != null && deal.sqft != null) econCells.push({ label: 'Price/SF', value: fmtPSF(deal.asking_price, deal.sqft) })
     if (deal.land_size != null)        econCells.push({ label: 'Land Size',       value: fmtAcres(deal.land_size) })
@@ -763,6 +769,8 @@ function DealPageContent() {
         {/* ── ITEM 71 — PHOTO ───────────────────────────────────────────────────
             16:9 within gutters, radius 14, placeholder when absent.
         */}
+        <DealLeadsSection dealId={deal.id} variant="phone" />
+
         <div style={{ padding: '0 18px', marginBottom: 16 }}>
           <div style={{
             width: '100%',
@@ -772,8 +780,21 @@ function DealPageContent() {
             background: 'rgba(255,255,255,0.04)',
             position: 'relative',
           }}>
-            {/* No photo column exists in deals table (confirmed 2026-08-31) — placeholder is the correct state */}
+            {listingPhoto.src && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                data-deal-photo={listingPhoto.kind}
+                src={listingPhoto.src}
+                alt=""
+                onLoad={() => setPhonePhotoOn(true)}
+                onError={listingPhoto.onError}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: phonePhotoOn ? 1 : 0 }}
+              />
+            )}
           </div>
+          {listingPhoto.listingPhoto && (
+            <div style={{ ...STYLE_T1, marginTop: 8, letterSpacing: '0.08em' }}>Listing photo</div>
+          )}
         </div>
 
         {/* ── ITEM 69 — ECONOMICS ───────────────────────────────────────────────

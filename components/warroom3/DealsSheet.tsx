@@ -11,7 +11,8 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import BottomSheet from '@/components/warroom3/BottomSheet'
 import { formatDealTitle } from '@/lib/formatAddress'
-import { HOUSE_SPLIT, calcCommission, calcLeaseValue, fmtMoney } from '@/lib/dealMath'
+import { HOUSE_SPLIT, calcCommission, calcLeaseValue, fmtAsking, fmtMoney } from '@/lib/dealMath'
+import { applyFreshAsking } from '@/lib/lacdbPrice'
 import { LACDB_ACTIVE } from '@/lib/lacdbCatalog'
 import { lacdbFlagFor } from '@/lib/lacdbFlag'
 import { asArchiveKind, type ArchiveKind } from '@/lib/dealArchive'
@@ -257,6 +258,7 @@ function deadlineInk(days: number | null): string {
 }
 
 function figuresFor(deal: RawDeal, econ: Econ | null): { value: number | null; commission: number | null } {
+  econ = applyFreshAsking(deal, econ)
   if (!econ) return { value: null, commission: null }
   if ((deal.type ?? '').toLowerCase() === 'buyer') {
     const value = econ.offer_price ?? null
@@ -939,7 +941,7 @@ function DealRow({
           <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 52 }}>
             {deal.value != null && (
               <div style={{ fontFamily: FONT_MONO, fontSize: 12, fontWeight: 500, color: T.textHi, lineHeight: 1.2 }}>
-                {fmtMoney(deal.value)}
+                {fmtAsking(deal.value)}
               </div>
             )}
             {deal.commission != null && (

@@ -4,6 +4,7 @@
 // Production /warroom and /warroom/deal: untouched.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import PinGate from '@/components/warroom/PinGate'
 import BottomTabBar, { TabId } from '@/components/warroom3/BottomTabBar'
@@ -514,6 +515,8 @@ function HomeScreen({
   const [taskNotice, setTaskNotice] = useState<string | null>(null)
   // Item 94: pressed state for DEALS plate
   const [dealPressed, setDealPressed] = useState(false)
+  const [leadsPressed, setLeadsPressed] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     loadHomeData()
@@ -714,6 +717,35 @@ function HomeScreen({
             alt="DEALS"
             style={{ display: 'block' }}
           />
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push('/warroom3/leads')}
+          aria-label="Open leads"
+          data-home-leads=""
+          style={{
+            marginTop: 14,
+            width: '100%',
+            height: 52,
+            borderRadius: 14,
+            border: '1px solid rgba(167,139,250,0.55)',
+            background: 'rgba(139,92,246,0.10)',
+            boxShadow: leadsPressed ? '0 0 10px rgba(124,58,237,0.2)' : '0 0 18px rgba(124,58,237,0.28)',
+            color: '#EFEEF4',
+            fontFamily: FONT_MONO,
+            fontSize: 13,
+            fontWeight: 600,
+            letterSpacing: '0.16em',
+            cursor: 'pointer',
+            transform: leadsPressed ? 'translateY(1px)' : 'none',
+          }}
+          onMouseDown={() => setLeadsPressed(true)}
+          onMouseUp={() => setLeadsPressed(false)}
+          onMouseLeave={() => setLeadsPressed(false)}
+          onTouchStart={() => setLeadsPressed(true)}
+          onTouchEnd={() => setTimeout(() => setLeadsPressed(false), 120)}
+        >
+          LEADS
         </button>
       </div>
 

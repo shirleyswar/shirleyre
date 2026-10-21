@@ -10,8 +10,12 @@ import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { formatDealTitle, parseListingFilingName, formatListingFilingName, canonicalizeFilingSlots } from '@/lib/formatAddress'
-import { dealPhotoPublicUrl, uploadDealPhoto } from '@/lib/dealPhoto'
-import { HOUSE_SPLIT } from '@/lib/dealMath'
+import { uploadDealPhoto } from '@/lib/dealPhoto'
+import DealLeadsSection from '@/components/warroom/DealLeadsSection'
+import { useDealPhoto } from '@/components/warroom/useDealPhoto'
+import { calcLeaseCommission, calcSaleCommission, fmtAsking, HOUSE_SPLIT } from '@/lib/dealMath'
+import { fmtAcres } from '@/lib/landSize'
+import { applyFreshAsking } from '@/lib/lacdbPrice'
 import LacdbFlag from '@/components/warroom/LacdbFlag'
 import LaunchControl from './LaunchControl'
 import LaunchModal from './LaunchModal'
@@ -357,11 +361,6 @@ function fmtSF(n: number | null | undefined): string {
   return `${Math.round(n).toLocaleString('en-US')} SF`
 }
 
-function fmtAcres(n: number | null | undefined): string {
-  if (n == null) return ''
-  return `${n} AC`
-}
-
 function fmtPSF(price: number | null | undefined, sf: number | null | undefined): string {
   if (!price || !sf) return ''
   return `$${(price / sf).toFixed(2)}/SF`
@@ -402,16 +401,25 @@ function fmtDateTime(iso: string): string {
 
 // ── DP-1: Commission math helpers ────────────────────────────────────────────
 function calcCommissionChain(econ: DealEcon | null) {
-  // listing_rate / co_broker_split columns do not exist in deal_economics yet.
-  // Use standard defaults: 6% listing rate, 50% co-broker split, 75% house split.
+  // A stored sale_commission_pct is Matthew's side of the commission.
+  // Estimated commission is that rate times the 75% house split.
+  // The 6% listing rate × 50% co-broker default applies only when no rate is stored.
+  const askPrice = econ?.asking_price ?? null
+  const stored = econ?.sale_commission_pct
+  if (stored != null && Number.isFinite(stored)) {
+    const estComm = askPrice != null ? calcSaleCommission(askPrice, stored) : null
+    const derivation = askPrice != null
+      ? `$${askPrice.toLocaleString('en-US')} × ${stored}% × 75% house`
+      : null
+    return { usesStoredRate: true, storedRate: stored, listRate: 6, coBroker: 0.5, estComm, derivation }
+  }
   const listRate = 6.0
   const coBroker = 0.5
-  const askPrice = econ?.asking_price ?? null
-  const estComm  = askPrice ? Math.round(askPrice * (listRate / 100) * coBroker * 0.75) : null
-  const derivation = askPrice
-    ? `$${askPrice.toLocaleString()} × ${listRate.toFixed(2)}% × ${Math.round(coBroker * 100)}% × 75%`
+  const estComm = askPrice != null ? Math.round(askPrice * (listRate / 100) * coBroker * HOUSE_SPLIT) : null
+  const derivation = askPrice != null
+    ? `$${askPrice.toLocaleString('en-US')} × ${listRate.toFixed(2)}% × ${Math.round(coBroker * 100)}% × 75%`
     : null
-  return { listRate, coBroker, estComm, derivation }
+  return { usesStoredRate: false, storedRate: null as number | null, listRate, coBroker, estComm, derivation }
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -445,6 +453,8 @@ function DealPageClientInner({ id }: { id: string }) {
     setEditPhotoFile(null)
     setEditPhotoPreview(null)
   }, [dealId])
+
+  const listingPhoto = useDealPhoto(dealId, deal, photoCacheBust)
 
   // Delete mode
   const [deleteMode,  setDeleteMode]  = useState(false)
@@ -693,18 +703,37 @@ function DealPageClientInner({ id }: { id: string }) {
 
   const clientName = contacts[0]?.contacts?.name ?? null
 
-  // DP-1: Commission rate chain
-  const { listRate, coBroker, estComm, derivation } = calcCommissionChain(econ)
+  // Asking price for an active linked listing comes from the feed, then price/SF and commission follow it.
+  const pricedEcon = applyFreshAsking(deal, econ)
+  // DP-1: Commission rate chain. Stored rate wins over the 6% × 50% default.
+  const { usesStoredRate, storedRate, listRate, coBroker, estComm: saleEstComm, derivation: saleDerivation } = calcCommissionChain(pricedEcon)
   const isBuyer = (deal.type ?? '').toLowerCase() === 'buyer'
     || (deal.representation_role ?? '').toLowerCase() === 'buyer'
     || txType === 'buyer'
-  // Same formula as the create form: offer × 6% × 50% × 75%. Asking price is the listing base.
+  const buyerStored = econ?.sale_commission_pct
   const buyerEstComm = isBuyer && econ?.offer_price != null
-    ? Math.round(econ.offer_price * (listRate / 100) * coBroker * HOUSE_SPLIT)
+    ? (buyerStored != null
+        ? calcSaleCommission(econ.offer_price, buyerStored)
+        : Math.round(econ.offer_price * (6 / 100) * 0.5 * HOUSE_SPLIT))
     : null
   const buyerDerivation = isBuyer && econ?.offer_price != null
-    ? `$${econ.offer_price.toLocaleString()} × ${listRate.toFixed(2)}% × ${Math.round(coBroker * 100)}% × ${Math.round(HOUSE_SPLIT * 100)}%`
+    ? (buyerStored != null
+        ? `$${econ.offer_price.toLocaleString('en-US')} × ${buyerStored}% × 75% house`
+        : `$${econ.offer_price.toLocaleString('en-US')} × 6.00% × 50% × 75%`)
     : null
+  const leaseEstComm = isLease
+    ? calcLeaseCommission(
+        pricedEcon?.sqft ?? null,
+        pricedEcon?.lease_rate_psf ?? null,
+        pricedEcon?.lease_term_years ?? null,
+        pricedEcon?.sale_commission_pct ?? null,
+      )
+    : null
+  const leaseDerivation = isLease && leaseEstComm != null && pricedEcon?.sqft && pricedEcon.lease_rate_psf && pricedEcon.lease_term_years && pricedEcon.sale_commission_pct != null
+    ? `${fmtSF(pricedEcon.sqft)} × $${pricedEcon.lease_rate_psf}/SF × ${pricedEcon.lease_term_years}yr × ${pricedEcon.sale_commission_pct}% × 75% house`
+    : null
+  const estComm = isLease ? leaseEstComm : saleEstComm
+  const derivation = isLease ? leaseDerivation : saleDerivation
 
   // Glance strip
   type GlanceCell = { label: string; value: string; glow?: boolean }
@@ -714,12 +743,12 @@ function DealPageClientInner({ id }: { id: string }) {
   const isClosed = deal.status === 'closed'
   const isUnderContract = deal.status === 'under_contract' || deal.status === 'pending_payment'
   const contractLabel = isClosed ? 'CLOSED AT' : 'UNDER CONTRACT AT'
-  const contractFigure = estComm != null ? `$${estComm.toLocaleString()}` : fmt(econ?.asking_price)
+  const contractFigure = estComm != null ? `$${estComm.toLocaleString()}` : fmtAsking(pricedEcon?.asking_price)
   const showContractSlot = (isClosed || isUnderContract) && contractFigure !== ''
 
   const glanceSale: GlanceCell[] = [
-    { label: 'Asking Price', value: fmt(econ?.asking_price) },
-    { label: 'Price/SF',     value: fmtPSF(econ?.asking_price, econ?.sqft) },
+    { label: 'Asking Price', value: fmtAsking(pricedEcon?.asking_price) },
+    { label: 'Price/SF',     value: fmtPSF(pricedEcon?.asking_price, pricedEcon?.sqft) },
     { label: 'Building SF',  value: fmtSF(econ?.sqft) },
     { label: 'Land Size',    value: fmtAcres(econ?.land_sqft) },
     // Slot 5: EST. COMMISSION
@@ -729,7 +758,7 @@ function DealPageClientInner({ id }: { id: string }) {
   ]
 
   const glanceLease: GlanceCell[] = [
-    { label: 'Asking Price',   value: fmt(econ?.asking_price) },
+    { label: 'Asking Price',   value: fmtAsking(pricedEcon?.asking_price) },
     { label: 'Lease Rate PSF', value: econ?.lease_rate_psf ? `$${econ.lease_rate_psf}/SF` : '' },
     { label: 'Building SF',    value: fmtSF(econ?.sqft) },
     { label: 'Land Size',      value: fmtAcres(econ?.land_sqft) },
@@ -773,7 +802,7 @@ function DealPageClientInner({ id }: { id: string }) {
       buyerCriteriaRows.push({ label: 'Close by', value: addCalendarDays(econ.buyer_1031_relinquished, 180) })
     }
     if (econ.offer_addr_display) buyerOfferRows.push({ label: 'Address', value: econ.offer_addr_display })
-    if (econ.asking_price != null) buyerOfferRows.push({ label: 'Asking price', value: fmt(econ.asking_price) })
+    if (pricedEcon?.asking_price != null) buyerOfferRows.push({ label: 'Asking price', value: fmtAsking(pricedEcon.asking_price) })
     if (econ.sqft != null) buyerOfferRows.push({ label: 'Building SF', value: fmtSF(econ.sqft) })
     if (econ.offer_price != null) buyerOfferRows.push({ label: 'Offer price', value: fmt(econ.offer_price) })
     if (econ.offer_date) buyerOfferRows.push({ label: 'Offer date', value: fmtDateOnly(econ.offer_date) })
@@ -988,17 +1017,29 @@ function DealPageClientInner({ id }: { id: string }) {
               onDrop={editMode ? e => { e.preventDefault(); pickEditPhoto(e.dataTransfer.files?.[0]) } : undefined}
               style={{ margin: '0 18px 18px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, minHeight: 120, maxHeight: 420, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: editMode ? 'pointer' : 'default', border: editMode ? `2px dashed ${T.border}` : 'none', position: 'relative' }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={editPhotoPreview || dealPhotoPublicUrl(dealId, photoCacheBust)}
-                alt=""
-                onLoad={() => setPhotoVisible(true)}
-                onError={() => { if (!editPhotoPreview) setPhotoVisible(false) }}
-                style={{ width: '100%', height: 'auto', maxHeight: 420, objectFit: 'contain', display: photoVisible || editPhotoPreview ? 'block' : 'none' }}
-              />
+              {(editPhotoPreview || listingPhoto.src) && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  data-deal-photo={listingPhoto.kind}
+                  src={editPhotoPreview || listingPhoto.src}
+                  alt=""
+                  onLoad={() => setPhotoVisible(true)}
+                  onError={() => {
+                    if (editPhotoPreview) return
+                    setPhotoVisible(false)
+                    listingPhoto.onError()
+                  }}
+                  style={{ width: '100%', height: 'auto', maxHeight: 420, objectFit: 'contain', display: photoVisible || editPhotoPreview ? 'block' : 'none' }}
+                />
+              )}
               {!photoVisible && !editPhotoPreview && (
                 <span style={{ ...STYLE_LABEL, letterSpacing: '0.12em', position: 'absolute' }}>
                   {editMode ? 'DROP IMAGE OR CLICK TO UPLOAD' : 'PHOTO — No image uploaded.'}
+                </span>
+              )}
+              {listingPhoto.listingPhoto && photoVisible && !editPhotoPreview && (
+                <span style={{ ...STYLE_LABEL, letterSpacing: '0.08em', position: 'absolute', left: 10, bottom: 10, background: 'rgba(8,8,12,0.72)', padding: '5px 8px', borderRadius: 6 }}>
+                  Listing photo
                 </span>
               )}
               {editMode && photoVisible && !editPhotoFile && (
@@ -1086,6 +1127,8 @@ function DealPageClientInner({ id }: { id: string }) {
             />
           )}
 
+          <DealLeadsSection dealId={dealId} variant="desktop" />
+
           {/* COMMISSION BLOCK — DP-1: full rate chain */}
           {!isDevRole && (
             <Panel label="COMMISSION">
@@ -1095,21 +1138,29 @@ function DealPageClientInner({ id }: { id: string }) {
                 {(txType === 'sale' || txType === 'both' || !isLease) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-                    {/* LISTING RATE */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ ...STYLE_LABEL, fontSize: 9 }}>LISTING RATE</span>
-                      <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 500, color: T.textHi, fontVariantNumeric: 'tabular-nums' }}>
-                        {listRate.toFixed(2)}%
-                      </span>
-                    </div>
-
-                    {/* CO-BROKER SPLIT */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ ...STYLE_LABEL, fontSize: 9 }}>CO-BROKER SPLIT</span>
-                      <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 500, color: T.textHi, fontVariantNumeric: 'tabular-nums' }}>
-                        {Math.round(coBroker * 100)}%
-                      </span>
-                    </div>
+                    {usesStoredRate ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <span style={{ ...STYLE_LABEL, fontSize: 9 }}>COMMISSION RATE</span>
+                        <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 500, color: T.textHi, fontVariantNumeric: 'tabular-nums' }}>
+                          {storedRate}%
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                          <span style={{ ...STYLE_LABEL, fontSize: 9 }}>LISTING RATE</span>
+                          <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 500, color: T.textHi, fontVariantNumeric: 'tabular-nums' }}>
+                            {listRate.toFixed(2)}%
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                          <span style={{ ...STYLE_LABEL, fontSize: 9 }}>CO-BROKER SPLIT</span>
+                          <span style={{ fontFamily: FONT_MONO, fontSize: 14, fontWeight: 500, color: T.textHi, fontVariantNumeric: 'tabular-nums' }}>
+                            {Math.round(coBroker * 100)}%
+                          </span>
+                        </div>
+                      </>
+                    )}
 
                     {/* HOUSE SPLIT */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>

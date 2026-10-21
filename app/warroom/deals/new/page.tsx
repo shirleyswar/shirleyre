@@ -145,6 +145,14 @@ const RAIL_TOP_SLOTS = [
       <path d="M12 14v7M7 7.8h6M7 10.8h9"/>
     </svg>
   )},
+  { id: 'LEADS',     label: 'LEADS',     href: '/warroom/leads',    glyph: (
+    <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.2" y="3.4" width="17.6" height="17.2" rx="2"/>
+      <circle cx="8.6" cy="10.2" r="2.1"/>
+      <path d="M5.2 16.8c.35-2.05 1.65-3.2 3.4-3.2s3.05 1.15 3.4 3.2"/>
+      <path d="M13.8 8.4h4.6M13.8 11.6h4.6"/>
+    </svg>
+  )},
   { id: 'SCHED',     label: 'SCHED',     href: '/warroom',          glyph: (
     <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
@@ -219,7 +227,7 @@ function LeftRail({ active }: { active: string }) {
       width: 96, flexShrink: 0, height: '100%', background: C.bgRail,
       borderRight: `1px solid ${C.border}`,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      paddingTop: 13, boxSizing: 'border-box',
+      paddingTop: 13, boxSizing: 'border-box', overflowY: 'auto',
     }}>
       {/* Top 8 slots */}
       {RAIL_TOP_SLOTS.map(s => <RailBtn key={s.id} s={s} />)}
