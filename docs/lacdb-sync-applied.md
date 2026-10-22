@@ -2,7 +2,7 @@
 
 Applied at 2026-10-13T18:34:37.064Z. One-time write from public/agents/listings.json (generated 2026-10-05T12:30:00Z). No schedule was added.
 
-619 Jefferson (7eb337d8) was skipped. The 7 Off-LACDB deals were not modified.
+619 Jefferson (7eb337d8) is attached to Bob Belk Suite 2H. Suite 1-D was left unchanged and is leased. The 7 Off-LACDB deals were not modified.
 
 ## Written
 
@@ -328,6 +328,40 @@ Deal id `cdc472c5-de58-476d-84c7-616856599b13`. Listings 5296eedb, 9a59f849.
 }
 ```
 
+### UPDATE · Bob Belk · Suite 2H
+
+Deal id `b490c629-363b-41da-a63c-bb28e1c3a061`. Listing 7eb337d8. The row was labeled Suite 2-G; that label is now Suite 2H.
+
+`deals`:
+
+```json
+{
+  "lacdb_url": "https://lacdb.resimplifi.com/listings/7eb337d8-best-value-mid-city-office-great-parking-full-service-",
+  "photo_url": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-82f3c55e.webp",
+  "addr_state": "LA",
+  "addr_zip": "70806",
+  "addr_display": "Jefferson Hwy. 619, Suite 2H",
+  "address": "619 Jefferson Hwy. Suite 2H"
+}
+```
+
+`deal_economics`:
+
+```json
+{
+  "lease_rate_psf": 13.59,
+  "sqft": 1766,
+  "transaction_type": "lease",
+  "sale_commission_pct": null,
+  "lease_commission_pct": null
+}
+```
+
+## Suite 1-D (leased, not written)
+
+- Bob Belk · Jefferson Hwy. 619, Suite 1-D · `5acf7068-4117-4840-9811-f046390fbef9` · leased. No columns were changed. Database status remains `active`.
+- The listing's leased space is 1,667 SF at $14.40 SF/year. The available space is Suite 2H, 1,766 SF at $13.59 SF/year.
+
 ## Off LACDB (unchanged)
 
 - Debbie Guerin · Bluebonnet Blvd. 5139 · under_contract · d18319c8
@@ -340,4 +374,4 @@ Deal id `cdc472c5-de58-476d-84c7-616856599b13`. Listings 5296eedb, 9a59f849.
 
 ## Skipped
 
-- 7eb337d8 619 Jefferson Hwy. Two suite deals were not updated.
+- None. 619 Jefferson was resolved: Suite 2H was updated, Suite 1-D was listed as leased.

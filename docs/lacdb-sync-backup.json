@@ -1123,6 +1123,142 @@
         "sale_commission_pct": null,
         "lease_commission_pct": null
       }
+    },
+    {
+      "action": "UPDATE",
+      "id": "b490c629-363b-41da-a63c-bb28e1c3a061",
+      "name": "Bob Belk",
+      "tids": [
+        "7eb337d8"
+      ],
+      "suite": "Suite 2H",
+      "deal": {
+        "lacdb_url": "https://lacdb.resimplifi.com/listings/7eb337d8-best-value-mid-city-office-great-parking-full-service-",
+        "photo_url": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-82f3c55e.webp",
+        "addr_state": "LA",
+        "addr_zip": "70806",
+        "addr_display": "Jefferson Hwy. 619, Suite 2H",
+        "address": "619 Jefferson Hwy. Suite 2H"
+      },
+      "economics": {
+        "lease_rate_psf": 13.59,
+        "sqft": 1766,
+        "transaction_type": "lease",
+        "sale_commission_pct": null,
+        "lease_commission_pct": null
+      },
+      "economics_action": "insert"
     }
-  ]
+  ],
+  "jefferson": {
+    "taken_at": "2026-10-13T18:44:25.817Z",
+    "applied": true,
+    "tid": "7eb337d8",
+    "note": "Matthew, 13 Oct 2026: listing 7eb337d8 is Suite 2H. The Bob Belk row labeled Suite 2-G is that suite. Suite 1-D is leased and was not written.",
+    "suite_2h": {
+      "deal": {
+        "id": "b490c629-363b-41da-a63c-bb28e1c3a061",
+        "name": "Bob Belk",
+        "address": "619 Jefferson Hwy. Suite 2-G",
+        "type": "active_listing",
+        "status": "active",
+        "tier": "tracked",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": null,
+        "notes": null,
+        "created_at": "2026-08-13T19:08:52.272189+00:00",
+        "updated_at": "2026-08-18T20:30:01.665796+00:00",
+        "dropbox_link": null,
+        "parent_deal_id": null,
+        "rating": null,
+        "addr_number": "619",
+        "addr_street_name": "Jefferson",
+        "addr_street_type": "Hwy.",
+        "addr_direction": null,
+        "addr_city": "Baton Rouge",
+        "addr_display": "Jefferson Hwy. 619, Suite 2-G",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": false,
+        "portfolio_id": "a0000003-0000-0000-0000-000000000003",
+        "representation_role": "landlord",
+        "reporting_cadence_days": 7,
+        "property_type": "OFFICE",
+        "representation_role_prior": null,
+        "lacdb_url": null,
+        "addr_state": null,
+        "addr_zip": null,
+        "photo_url": null
+      },
+      "deal_economics": [],
+      "contract_deadlines": []
+    },
+    "suite_1d_leased_untouched": {
+      "deal": {
+        "id": "5acf7068-4117-4840-9811-f046390fbef9",
+        "name": "Bob Belk",
+        "address": "619 Jefferson Hwy. Suite 1-D",
+        "type": "active_listing",
+        "status": "active",
+        "tier": "tracked",
+        "value": null,
+        "commission_rate": null,
+        "commission_estimated": null,
+        "commission_collected": 0,
+        "deal_source": null,
+        "notes": null,
+        "created_at": "2026-08-13T19:08:52.272189+00:00",
+        "updated_at": "2026-08-18T20:30:01.665796+00:00",
+        "dropbox_link": null,
+        "parent_deal_id": null,
+        "rating": null,
+        "addr_number": "619",
+        "addr_street_name": "Jefferson",
+        "addr_street_type": "Hwy.",
+        "addr_direction": null,
+        "addr_city": "Baton Rouge",
+        "addr_display": "Jefferson Hwy. 619, Suite 1-D",
+        "priority": null,
+        "earned": false,
+        "deadline": null,
+        "sqft": null,
+        "acreage": null,
+        "is_money_mover": false,
+        "portfolio_id": "a0000003-0000-0000-0000-000000000003",
+        "representation_role": "landlord",
+        "reporting_cadence_days": 7,
+        "property_type": "OFFICE",
+        "representation_role_prior": null,
+        "lacdb_url": null,
+        "addr_state": null,
+        "addr_zip": null,
+        "photo_url": null
+      },
+      "deal_economics": [],
+      "contract_deadlines": []
+    },
+    "written_deal": {
+      "lacdb_url": "https://lacdb.resimplifi.com/listings/7eb337d8-best-value-mid-city-office-great-parking-full-service-",
+      "photo_url": "https://storage.googleapis.com/resimplifi-associate/lacdb/images/7eb337d8/full-service-midcity-office-82f3c55e.webp",
+      "addr_state": "LA",
+      "addr_zip": "70806",
+      "addr_display": "Jefferson Hwy. 619, Suite 2H",
+      "address": "619 Jefferson Hwy. Suite 2H"
+    },
+    "written_economics": {
+      "lease_rate_psf": 13.59,
+      "sqft": 1766,
+      "transaction_type": "lease",
+      "sale_commission_pct": null,
+      "lease_commission_pct": null
+    },
+    "economics_id": "d58e62b8-76ff-459c-9a61-9a514344a581",
+    "applied_at": "2026-10-13T18:44:27.320Z"
+  }
 }
