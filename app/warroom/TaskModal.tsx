@@ -246,6 +246,7 @@ export default function TaskModal({ task, onClose, onCompleted, onSaved, onOptim
   const titleCancelRef = useRef(false)
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Existing Battle Plan items save themselves. Create and fill forms still confirm.
+  // A null field on commit_task_sheet is left as-is by the deployed function.
   const live = !isCreate && fill === 'task'
   const createCard = isCreate && fill === 'task'
   const modalRef = useRef<HTMLDivElement>(null)
